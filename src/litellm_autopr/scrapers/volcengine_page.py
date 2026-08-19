@@ -1,5 +1,9 @@
 """scrape doubao pricing from the volcengine model plaza page.
 
+dormant: volcengine is disabled in providers.toml while pricing exists only
+as CNY on the CN plaza (2026-08-19); re-enable when a USD source appears and
+drop the pinned-rate conversion then.
+
 one card per model; the card text carries "输入价格 6 元/百万 tokens" and
 "输出价格 30 元/百万 tokens" (CNY per 1M tokens). reasoning cards
 (doubao-seed-2-0-lite/mini) carry "推理输入" / "推理输出" instead and quote

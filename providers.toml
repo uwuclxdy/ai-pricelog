@@ -61,14 +61,6 @@ detector_url = "https://docs.mistral.ai/models/model-cards/"
 scraper = "mistral_page"
 scraper_url = "https://docs.mistral.ai/inference/pricing"
 
-[volcengine]
-provider = "volcengine"
-namespace = "volcengine"
-detector = "volcengine_page"
-detector_url = "https://ai.volcengine.com/model"
-scraper = "volcengine_page"
-scraper_url = "https://ai.volcengine.com/model"
-
 [perplexity]
 provider = "perplexity"
 namespace = "perplexity"
