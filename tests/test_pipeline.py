@@ -398,7 +398,9 @@ def test_noop_state_commit_logs_info_not_error(caplog, tmp_path, fake_modules, u
     assert skip_records and all(r.levelno == logging.INFO for r in skip_records)
 
 
-def test_dedup_keys_settle_without_scrape(tmp_path, upstream, repo_root, fake_modules, live, monkeypatch):
+def test_dedup_keys_settle_without_scrape(
+    tmp_path, upstream, repo_root, fake_modules, live, monkeypatch
+):
     # a provider whose key spelling differs from its detected id (mistral slugs)
     # settles through the scraper's dedup_keys hook without scraping or opening
     from litellm_autopr import pipeline
