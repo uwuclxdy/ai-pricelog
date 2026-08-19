@@ -1,0 +1,31 @@
+# Python CI — uv sync + ruff + pytest.
+# cp into: .github/workflows/ci.yml
+
+name: ci
+
+on:
+  push:
+    branches: [main]  # customize per project (e.g. main / master / mommy), or drop this section
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      - name: ruff check
+        run: uv run ruff check
+
+      - name: ruff format --check
+        run: uv run ruff format --check
+
+      - name: pytest
+        run: uv run pytest -q

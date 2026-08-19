@@ -1,0 +1,35 @@
+# watchdog run: detect new models, open draft PRs to REPO, commit state back.
+# REPO = full https url of the target litellm-layout repo (repo secret).
+# GH_TOKEN = PAT with repo scope (repo secret). falls back to GITHUB_TOKEN,
+# which only reaches this repo, so a cross-repo REPO needs the PAT.
+
+name: autopr
+
+on:
+  schedule:
+    - cron: "17 5 * * *" # daily 05:17 utc
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      - name: run watchdog
+        run: uv run litellm-autopr
+        env:
+          REPO: ${{ secrets.REPO }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
