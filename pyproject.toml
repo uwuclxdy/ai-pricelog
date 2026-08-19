@@ -5,13 +5,19 @@ description     = "watch model releases, open draft PRs to LiteLLM's model-price
 requires-python = ">=3.12"
 license         = { text = "MIT" }
 dependencies = [
-  # add runtime deps with `uv add <pkg>`
+  "beautifulsoup4>=4.15.0",
+  "httpx>=0.28.1",
 ]
+
+[project.scripts]
+litellm-autopr = "litellm_autopr.pipeline:main"
 
 [dependency-groups]
 dev = [
   "pytest",
   "pytest-asyncio",
+  "pytest-timeout>=2.4.0",
+  "pytest-xdist>=3.8.0",
   "ruff",
 ]
 
@@ -33,3 +39,6 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths    = ["tests"]
+addopts      = ["-n", "auto", "--dist", "loadscope"]
+timeout      = 120
+timeout_method = "thread"
