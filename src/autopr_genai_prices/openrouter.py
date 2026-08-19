@@ -74,4 +74,9 @@ def _price(value: object, model_id: str) -> float | None:
             f"model {model_id!r}: pricing values must be per-token strings, "
             f"got {type(value).__name__}"
         )
-    return to_mtok(float(value))
+    per_token = float(value)
+    if per_token == 0:
+        # free models ship all-zero pricing strings; the target represents
+        # them as an empty prices mapping, and its schema forbids zero prices
+        return None
+    return to_mtok(per_token)
