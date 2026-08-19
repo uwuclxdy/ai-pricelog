@@ -118,6 +118,24 @@ def test_scrape_exact_prices(live_blob):
     assert xai_scraper.scrape(cfg, "grok-build-0.1") == Pricing(1e-6, 2e-6, "chat", 0)
 
 
+def test_dedup_keys_dated_snapshots():
+    # page ids spelled as dated snapshots normalize to the tracked base id,
+    # measured against prices/providers/x_ai.yml (2026-08-19)
+    cases = {
+        "grok-4.20-0309-reasoning": "grok-4.20",
+        "grok-4.20-0309-non-reasoning": "grok-4.20",
+        "grok-4.20-multi-agent-0309": "grok-4.20-multi-agent",
+        "grok-4-0709": "grok-4",
+    }
+    for page_id, base in cases.items():
+        assert xai_scraper.dedup_keys(page_id) == [base], page_id
+
+
+def test_dedup_keys_plain_ids_return_nothing():
+    for page_id in ("grok-4.6", "grok-4.5", "grok-4.3", "grok-4.20", "grok-build-0.1"):
+        assert xai_scraper.dedup_keys(page_id) == [], page_id
+
+
 def test_scrape_unknown_model_returns_none(live_blob):
     assert xai_scraper.scrape(make_cfg(), "grok-4") is None
 

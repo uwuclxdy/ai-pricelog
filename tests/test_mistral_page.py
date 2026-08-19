@@ -235,16 +235,26 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
 def test_dedup_keys_compaction():
     from autopr_genai_prices.scrapers.mistral_page import dedup_keys
 
+    # page slug -> the target's tracked spelling, measured against
+    # prices/providers/mistral.yml (codestral-2508 etc., 2026-08-19)
     cases = {
-        # slug -> key litellm's file actually uses
-        "mistral-medium-3-5-26-04": "mistral/mistral-medium-2604",
-        "mistral-small-4-0-26-03": "mistral/mistral-small-2603",
-        "mistral-moderation-2603": "mistral/mistral-moderation-2603",
-        "ministral-3-3b-2512": "mistral/ministral-3-3b-2512",
-        "mistral-medium-3-5": "mistral/mistral-medium-3-5",
-        "codestral-2508": "mistral/codestral-2508",
+        "codestral-25-08": "codestral-2508",
+        "codestral-25-01": "codestral-2501",
+        "mistral-medium-3-5-26-04": "mistral-medium-2604",
+        "mistral-small-4-0-26-03": "mistral-small-2603",
+        "mistral-large-3-25-12": "mistral-large-2512",
+        "mistral-large-2-1-24-11": "mistral-large-2411",
+        "mistral-large-2-0-24-07": "mistral-large-2407",
+        "pixtral-large-24-11": "pixtral-large-2411",
+        "devstral-2-25-12": "devstral-2512",
+        "magistral-medium-1-1-25-07": "magistral-medium-2507",
     }
-    for slug, key in cases.items():
-        assert key in dedup_keys("mistral", slug), slug
-    # ocr slugs get the mistral- prefix litellm uses
-    assert "mistral/mistral-ocr-4-0" in dedup_keys("mistral", "ocr-4-0")
+    for slug, tracked in cases.items():
+        assert dedup_keys(slug) == [tracked], slug
+
+
+def test_dedup_keys_unchanged_spellings_return_nothing():
+    from autopr_genai_prices.scrapers.mistral_page import dedup_keys
+
+    for slug in ("codestral-2508", "mistral-medium-3-5", "mistral-7b-0-3", "ocr-4-0"):
+        assert dedup_keys(slug) == [], slug

@@ -9,11 +9,10 @@ client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
 non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
 pricing -> None. the page carries no context window -> max_tokens 0. mode is chat.
 
-note: entry keys use the slug verbatim (``mistral/mistral-medium-3-5-26-04``);
-litellm's own newest keys compact the slug (``mistral-medium-2604``) - the human
-verifier may rename; no compaction is invented here. the pipeline's in-file
-dedup consults ``dedup_keys``, which lists the compacted spellings litellm has
-used, so a model already tracked under a compacted key settles without a PR.
+note: the page spells dated slugs with dashes (``codestral-25-08``) while the
+target's mistral.yml compacts them (``codestral-2508``). the pipeline's dedup
+consults ``dedup_keys`` for the compacted spelling, so a model already tracked
+under it settles without a PR.
 """
 
 import re
@@ -27,20 +26,10 @@ _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"
 _DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
 
-# slug tail like -4-0-26-03 (one to three version segments, then yy-mm) compacts
-# to -2603, the form litellm's keys use for dated models. slugs without a dated
-# tail stay verbatim. best-effort: upstream is inconsistent (mistral-medium-3-1-2508
-# keeps its version), the raw slug is always checked first.
-_DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){1,3}-(\d{2})-(\d{2})$")
-_MISTRAL_FAMILIES = (
-    "mistral",
-    "ministral",
-    "pixtral",
-    "codestral",
-    "devstral",
-    "magistral",
-    "labs",
-)
+# slug tail like -4-0-26-03 or -25-08 (zero to three version segments, then
+# yy-mm) compacts to -2603 / -2508, the spellings the target's mistral.yml
+# tracks (codestral-2508 etc.). slugs without a dated tail stay verbatim.
+_DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){0,3}-(\d{2})-(\d{2})$")
 
 
 def _compact(slug: str) -> str:
@@ -50,13 +39,10 @@ def _compact(slug: str) -> str:
     return f"{match.group(1)}-{match.group(2)}{match.group(3)}"
 
 
-def dedup_keys(namespace: str, model_id: str) -> list[str]:
-    """Spellings of this model's key that litellm may already track it under."""
+def dedup_keys(model_id: str) -> list[str]:
+    """The target's tracked spelling of this page slug, or [] when unchanged."""
     compacted = _compact(model_id)
-    keys = [f"{namespace}/{compacted}"]
-    if not compacted.startswith(_MISTRAL_FAMILIES):
-        keys.append(f"{namespace}/mistral-{compacted}")
-    return keys
+    return [] if compacted == model_id else [compacted]
 
 
 def _price(cell: str) -> float | None:

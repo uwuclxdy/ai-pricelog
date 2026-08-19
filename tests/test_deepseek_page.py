@@ -61,22 +61,33 @@ def test_detect_fetch_error_propagates(monkeypatch):
         detector.detect(cfg())
 
 
-def test_scrape_flash_peak_pricing(monkeypatch):
+WINDOWS = (("01:00:00Z", "04:00:00Z"), ("06:00:00Z", "10:00:00Z"))
+
+
+def test_scrape_flash_split_pricing(monkeypatch):
+    # the off-peak subrow becomes the default price, the peak subrow the
+    # constrained peak entries, and the schedule footnote the windows
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     pricing = scraper.scrape(cfg(), "deepseek-v4-flash")
     assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.44 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
+    assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
+    assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.peak_windows == WINDOWS
     assert pricing.mode == "chat"
     assert pricing.max_tokens == 384 * 1024
 
 
-def test_scrape_pro_peak_pricing(monkeypatch):
+def test_scrape_pro_split_pricing(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     pricing = scraper.scrape(cfg(), "deepseek-v4-pro")
     assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(1.32 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(3.96 / 1e6)
+    assert pricing.input_cost_per_token == pytest.approx(0.66 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(1.98 / 1e6)
+    assert pricing.peak_input_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.peak_output_cost_per_token == pytest.approx(3.96 / 1e6)
+    assert pricing.peak_windows == WINDOWS
     assert pricing.max_tokens == 384 * 1024
 
 
@@ -106,7 +117,8 @@ def test_scrape_per_model_max_output_cells(monkeypatch):
         "<td>$0.22</td><td>$0.66</td></tr>"
         "<tr><td>PEAK</td><td>$0.44</td><td>$1.32</td></tr>"
         "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td><td>$1.98</td></tr>"
-        "<tr><td>PEAK</td><td>$1.32</td><td>$3.96</td></tr></table>",
+        "<tr><td>PEAK</td><td>$1.32</td><td>$3.96</td></tr></table>"
+        "<p>Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC.</p>",
     )
     flash = scraper.scrape(cfg(), "deepseek-v4-flash")
     assert flash is not None
@@ -128,7 +140,8 @@ def test_scrape_per_model_cell_without_k_value_is_zero(monkeypatch):
         "<td>$0.22</td><td>$0.66</td></tr>"
         "<tr><td>PEAK</td><td>$0.44</td><td>$1.32</td></tr>"
         "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td><td>$1.98</td></tr>"
-        "<tr><td>PEAK</td><td>$1.32</td><td>$3.96</td></tr></table>",
+        "<tr><td>PEAK</td><td>$1.32</td><td>$3.96</td></tr></table>"
+        "<p>Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC.</p>",
     )
     flash = scraper.scrape(cfg(), "deepseek-v4-flash")
     assert flash is not None
@@ -138,8 +151,8 @@ def test_scrape_per_model_cell_without_k_value_is_zero(monkeypatch):
     assert pro.max_tokens == 0
 
 
-def test_scrape_off_peak_fallback(monkeypatch):
-    # a label carrying no PEAK subrow falls back to its OFF-PEAK value
+def test_scrape_off_peak_only_is_flat_pricing(monkeypatch):
+    # labels carrying no PEAK subrow are flat: no peak fields, no windows
     patch_soup(
         monkeypatch,
         scraper,
@@ -152,4 +165,55 @@ def test_scrape_off_peak_fallback(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
+    assert pricing.peak_input_cost_per_token is None
+    assert pricing.peak_output_cost_per_token is None
+    assert pricing.peak_windows == ()
     assert pricing.max_tokens == 128 * 1024
+
+
+def test_scrape_peak_rows_without_footnote_fail(monkeypatch):
+    # peak prices are mandatory with the peak windows (yml.py enforces it), so
+    # peak subrows without the schedule footnote are a scrape failure
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr>"
+        "<tr><td>PEAK</td><td>$1.32</td></tr></table>",
+    )
+    with pytest.raises(FetchError, match="footnote"):
+        scraper.scrape(cfg(), "deepseek-v4-flash")
+
+
+def test_scrape_footnote_without_peak_rows_is_flat(monkeypatch):
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr></table>"
+        "<p>Off-peak rates are half of the peak rates. "
+        "Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC (all other hours are off-peak).</p>",
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4-flash")
+    assert pricing is not None
+    assert pricing.peak_input_cost_per_token is None
+    assert pricing.peak_windows == ()
+
+
+def test_scrape_one_sided_peak_rows_return_none(monkeypatch):
+    # a PEAK subrow on one label only is an unusable split: no pricing
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr></table>",
+    )
+    assert scraper.scrape(cfg(), "deepseek-v4-flash") is None
