@@ -34,6 +34,7 @@ class PrSpec:
 
     key: str
     model_id: str
+    entry_id: str
     vendor_yml: str
     vendor_name: str
     vendor_entry: str
@@ -58,13 +59,13 @@ class PrSpec:
     @property
     def title(self) -> str:
         if self.openrouter_entry is not None:
-            return f"Add {self.model_id} pricing for {self.vendor_name} and OpenRouter"
-        return f"Add {self.model_id} pricing for {self.vendor_name}"
+            return f"Add {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
+        return f"Add {self.entry_id} pricing for {self.vendor_name}"
 
     @property
     def body(self) -> str:
         lines: list[str] = []
-        lines.append(f"Add `{self.model_id}` pricing for {self.vendor_name}.")
+        lines.append(f"Add `{self.entry_id}` pricing for {self.vendor_name}.")
         lines.append("")
         lines.append(f"## {self.vendor_name}")
         lines.append("")
@@ -73,16 +74,16 @@ class PrSpec:
         if self.vendor_peak_input_mtok is not None:
             windows = " and ".join(f"{start} - {end}" for start, end in self.vendor_peak_windows)
             lines.append(
-                f"| `{self.model_id}` off-peak | {self.vendor_input_mtok:g} "
+                f"| `{self.entry_id}` off-peak | {self.vendor_input_mtok:g} "
                 f"| {self.vendor_output_mtok:g} |"
             )
             lines.append(
-                f"| `{self.model_id}` peak {windows} | {self.vendor_peak_input_mtok:g} "
+                f"| `{self.entry_id}` peak {windows} | {self.vendor_peak_input_mtok:g} "
                 f"| {self.vendor_peak_output_mtok:g} |"
             )
         else:
             lines.append(
-                f"| `{self.model_id}` | {self.vendor_input_mtok:g} | {self.vendor_output_mtok:g} |"
+                f"| `{self.entry_id}` | {self.vendor_input_mtok:g} | {self.vendor_output_mtok:g} |"
             )
         lines.append("")
         lines.append(f"source: {self.source_url}")
@@ -114,6 +115,10 @@ class PrSpec:
         lines.append(
             "- no cache-read pricing on the vendor page: the vendor entry carries no "
             "`cache_read_mtok`"
+        )
+        lines.append(
+            "- closing this draft settles the model in the watchdog's state; it will "
+            "not re-candidate on its own"
         )
         if self.skipped_latest:
             aliases = ", ".join(f"`{value}`" for value in self.skipped_latest)

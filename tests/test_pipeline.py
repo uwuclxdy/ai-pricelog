@@ -667,3 +667,38 @@ def test_state_commit_sets_identity_when_missing(
         git(repo_root, "log", "--format=%an <%ae>", "-1").strip()
         == "octocat <octocat@users.noreply.github.com>"
     )
+
+
+def test_pr_spec_uses_target_spelling_for_mistral():
+    from autopr_genai_prices import yml
+    from autopr_genai_prices.scrapers import mistral_page
+
+    pcfg = config.ProviderCfg(
+        key="mistral",
+        yml="mistral.yml",
+        or_prefix="mistralai",
+        detector="fake_det",
+        detector_url="https://example.com/models",
+        scraper="fake_scr",
+        scraper_url="https://example.com/pricing",
+    )
+    vendor = yml.parse(Path("tests/fixtures/genai_prices/mistral.yml"))
+    or_yml = yml.parse(Path("tests/fixtures/genai_prices/openrouter.yml"))
+    or_models = [
+        openrouter.OpenrouterModel(
+            id="mistralai/codestral-2608",
+            name="Codestral 2608",
+            input_mtok=0.3,
+            output_mtok=0.9,
+            cache_read_mtok=0.03,
+        )
+    ]
+    spec = pipeline._pr_spec(
+        pcfg, vendor, or_yml, or_models, "codestral-26-08", pricing(), mistral_page
+    )
+
+    assert spec.entry_id == "codestral-2608"
+    assert spec.model_id == "codestral-26-08"
+    assert "  - id: codestral-2608" in spec.vendor_entry
+    assert spec.openrouter_slug == "mistralai/codestral-2608"
+    assert spec.title == "Add codestral-2608 pricing for Mistral and OpenRouter"

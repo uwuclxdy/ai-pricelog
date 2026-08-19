@@ -9,6 +9,7 @@ def spec(**overrides) -> pr.PrSpec:
     values = dict(
         key="deepseek",
         model_id="deepseek-v4-pro",
+        entry_id="deepseek-v4-pro",
         vendor_yml="deepseek.yml",
         vendor_name="Deepseek",
         vendor_entry="  - id: deepseek-v4-pro\n",
@@ -140,6 +141,13 @@ def test_spec_body_cache_read_note():
     assert (
         "- no cache-read pricing on the vendor page: the vendor entry carries no `cache_read_mtok`"
         in spec().body
+    )
+
+
+def test_spec_body_closed_draft_note():
+    assert (
+        "- closing this draft settles the model in the watchdog's state; it will "
+        "not re-candidate on its own" in spec().body
     )
 
 

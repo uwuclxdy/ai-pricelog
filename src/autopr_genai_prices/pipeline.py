@@ -7,6 +7,7 @@ import tempfile
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from autopr_genai_prices import build, config, openrouter, pr, validate, yml
 from autopr_genai_prices.pricing import Pricing
@@ -127,7 +128,7 @@ def run(
             if open_drafts >= cfg.cap:
                 provider_report.skipped_cap.append(model_id)
                 continue
-            spec = _pr_spec(pcfg, vendor_yml, or_yml, or_models, model_id, pricing)
+            spec = _pr_spec(pcfg, vendor_yml, or_yml, or_models, model_id, pricing, scraper)
             try:
                 url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
             except build.BuildError as exc:
@@ -190,13 +191,19 @@ def _pr_spec(
     or_models: list[openrouter.OpenrouterModel],
     model_id: str,
     pricing: Pricing,
+    scraper: Any,
 ) -> pr.PrSpec:
     checked = date.today().isoformat()
+    # the page spelling may diverge from the target's tracked spelling
+    # (mistral dashed dates vs compacted); the entry and the openrouter slug
+    # carry the target spelling, state and branch keep the page id
+    dedup_keys = getattr(scraper, "dedup_keys", None)
+    entry_id = (dedup_keys(model_id) or [model_id])[0] if dedup_keys else model_id
     vendor_entry, skipped = yml.build_vendor_entry(
-        vendor_yml, model_id, pricing, checked, pcfg.scraper_url
+        vendor_yml, entry_id, pricing, checked, pcfg.scraper_url
     )
-    slug = f"{pcfg.or_prefix}/{model_id.lower()}"
-    or_model = openrouter.find(or_models, pcfg.or_prefix, model_id)
+    slug = f"{pcfg.or_prefix}/{entry_id.lower()}"
+    or_model = openrouter.find(or_models, pcfg.or_prefix, entry_id)
     if or_model is None:
         or_entry, or_note = (
             None,
@@ -219,6 +226,7 @@ def _pr_spec(
     return pr.PrSpec(
         key=pcfg.key,
         model_id=model_id,
+        entry_id=entry_id,
         vendor_yml=pcfg.yml,
         vendor_name=vendor_yml.name,
         vendor_entry=vendor_entry,
