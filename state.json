@@ -1,1 +1,13 @@
-{"providers": {"deepseek": {"last_seen": ["deepseek-v4-flash"], "handled": []}}}
+{
+  "providers": {
+    "deepseek": {
+      "last_seen": [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro"
+      ],
+      "handled": [
+        "deepseek-v4-pro"
+      ]
+    }
+  }
+}
