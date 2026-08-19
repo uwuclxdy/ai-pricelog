@@ -80,7 +80,7 @@ def test_pending_pr_url():
     assert cmd[0:3] == ["gh", "pr", "list"]
     assert "--repo" in cmd and "pydantic/genai-prices" in cmd
     assert "--state" in cmd and "open" in cmd
-    assert "--search" in cmd and cmd[cmd.index("--search") + 1] == '"grok-4.6 in:title,body"'
+    assert "--search" in cmd and cmd[cmd.index("--search") + 1] == "grok-4.6 in:title,body"
     assert "--json" in cmd and "url" in cmd
     assert "--jq" in cmd and ".[0].url" in cmd
 

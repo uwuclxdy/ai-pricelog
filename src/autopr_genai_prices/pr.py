@@ -162,7 +162,7 @@ def pending_pr(model_id: str, runner: PrRunner) -> str | None:
             "--state",
             "open",
             "--search",
-            f'"{model_id} in:title,body"',
+            f"{model_id} in:title,body",
             "--json",
             "url",
             "--jq",
