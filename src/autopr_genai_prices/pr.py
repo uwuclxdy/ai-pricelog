@@ -248,14 +248,31 @@ def push_or_fork(repo_url: str, branch: str, slot: Path, runner: PrRunner) -> st
     except PrError as exc:
         if not _is_permission_denied(exc):
             raise
-        fork_url = runner.run(
-            ["gh", "repo", "fork", repo_url, "--clone=false", "--remote=false"], cwd=slot
-        ).strip()
+        fork_url = _fork_url(owner, _name, runner, slot)
         fork_owner, _name = parse_github_url(fork_url)
         runner.run(["git", "remote", "add", "fork", fork_url], cwd=slot)
         runner.run(["git", "push", "fork", branch], cwd=slot)
         return fork_owner
     return owner
+
+
+def _fork_url(owner: str, name: str, runner: PrRunner, slot: Path) -> str:
+    """The authenticated user's fork, creating it when it does not exist.
+
+    Goes through the api: `gh repo fork`'s flag set changed across versions
+    (newer gh rejects --remote when a repository argument is given), the api
+    shape is stable.
+    """
+    login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=slot).strip()
+    try:
+        return runner.run(
+            ["gh", "api", f"repos/{login}/{name}", "--jq", ".html_url"], cwd=slot
+        ).strip()
+    except PrError:
+        return runner.run(
+            ["gh", "api", f"repos/{owner}/{name}/forks", "-X", "POST", "--jq", ".html_url"],
+            cwd=slot,
+        ).strip()
 
 
 def open_draft_pr(cfg: Config, base: str, slot: Path, spec: PrSpec, runner: PrRunner) -> str:

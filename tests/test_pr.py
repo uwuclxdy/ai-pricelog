@@ -179,7 +179,11 @@ def test_push_or_fork_forks_on_403(tmp_path):
         FakeRunner()
         .on("gh auth", output="")
         .on("git push origin", failure=pr.PrError("push failed", stderr="remote: 403 Forbidden"))
-        .on("gh repo fork", output="https://github.com/octocat/genai-prices-fork\n")
+        .on("gh api user", output="octocat\n")
+        .on(
+            "gh api repos/octocat/genai-prices --jq",
+            output="https://github.com/octocat/genai-prices\n",
+        )
         .on("git remote add", output="")
         .on("git push fork", output="")
     )
@@ -188,9 +192,31 @@ def test_push_or_fork_forks_on_403(tmp_path):
     )
     assert owner == "octocat"
     cmds = [" ".join(cmd) for cmd, _cwd in fake.calls]
-    fork_cmd = "git remote add fork https://github.com/octocat/genai-prices-fork"
+    fork_cmd = "git remote add fork https://github.com/octocat/genai-prices"
     assert any(fork_cmd in c for c in cmds)
     assert any("git push fork autopr/deepseek/x" in c for c in cmds)
+
+
+def test_push_or_fork_creates_the_fork_when_absent(tmp_path):
+    fake = (
+        FakeRunner()
+        .on("gh auth", output="")
+        .on("git push origin", failure=pr.PrError("push failed", stderr="remote: denied!"))
+        .on("gh api user", output="octocat\n")
+        .on("gh api repos/octocat/genai-prices --jq", failure=pr.PrError("not found"))
+        .on(
+            "gh api repos/octo/genai-prices/forks",
+            output="https://github.com/octocat/genai-prices\n",
+        )
+        .on("git remote add", output="")
+        .on("git push fork", output="")
+    )
+    owner = pr.push_or_fork(
+        "https://github.com/octo/genai-prices", "autopr/deepseek/x", tmp_path, fake
+    )
+    assert owner == "octocat"
+    cmds = [" ".join(cmd) for cmd, _cwd in fake.calls]
+    assert any("gh api repos/octo/genai-prices/forks -X POST" in c for c in cmds)
 
 
 def test_push_or_fork_denied_word_takes_fork_path(tmp_path):
@@ -198,7 +224,11 @@ def test_push_or_fork_denied_word_takes_fork_path(tmp_path):
         FakeRunner()
         .on("gh auth", output="")
         .on("git push origin", failure=pr.PrError("push failed", stderr="remote: denied!"))
-        .on("gh repo fork", output="https://github.com/octocat/genai-prices-fork\n")
+        .on("gh api user", output="octocat\n")
+        .on(
+            "gh api repos/octocat/genai-prices --jq",
+            output="https://github.com/octocat/genai-prices\n",
+        )
         .on("git remote add", output="")
         .on("git push fork", output="")
     )
