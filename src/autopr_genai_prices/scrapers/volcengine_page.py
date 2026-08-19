@@ -21,10 +21,10 @@ carries no doubao-seed id at all (page redesigned).
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.volcengine_page import _page
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.volcengine_page import _page
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError
 
 CNY_PER_USD = 7.2
 _WINDOW_CHARS = 400

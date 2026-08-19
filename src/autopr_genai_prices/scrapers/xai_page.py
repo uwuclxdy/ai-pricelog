@@ -7,9 +7,9 @@ max_tokens comes from ``maxOutputTokens`` when present (absent on the live page 
 0, the entry builder omits it). mode is chat.
 """
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.xai_page import _blob, _language_models
-from litellm_autopr.pricing import Pricing
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.xai_page import _blob, _language_models
+from autopr_genai_prices.pricing import Pricing
 
 _PER_1M_SCALE = 1e-4
 _PER_TOKEN = _PER_1M_SCALE / 1e6

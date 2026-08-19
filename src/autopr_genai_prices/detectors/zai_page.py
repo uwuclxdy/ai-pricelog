@@ -13,8 +13,8 @@ import re
 
 from bs4 import BeautifulSoup
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_soup
 
 _GLM_ID_PATTERN = re.compile(r"^glm-[a-z0-9][a-z0-9.-]*$", re.IGNORECASE)
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")

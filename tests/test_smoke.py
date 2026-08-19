@@ -1,4 +1,4 @@
 def test_import() -> None:
-    import litellm_autopr
+    import autopr_genai_prices
 
-    assert litellm_autopr is not None
+    assert autopr_genai_prices is not None

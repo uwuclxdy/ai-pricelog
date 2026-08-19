@@ -3,8 +3,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, fetch_text
 
 LITELLM_FILE_URL = (
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"

@@ -1,6 +1,6 @@
 # one section per watched provider. provider = the litellm_provider value,
 # namespace = the key prefix in the prices file, detector/scraper = module
-# names under litellm_autopr.{detectors,scrapers}. sources pinned 2026-08-19.
+# names under autopr_genai_prices.{detectors,scrapers}. sources pinned 2026-08-19.
 
 [settings]
 cap = 3

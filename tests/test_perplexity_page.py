@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors import perplexity_page as detector
-from litellm_autopr.scrapers import perplexity_page as scraper
-from litellm_autopr.web import FetchError
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors import perplexity_page as detector
+from autopr_genai_prices.scrapers import perplexity_page as scraper
+from autopr_genai_prices.web import FetchError
 
 PAGE_URL = "https://docs.perplexity.ai/guides/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "perplexity_page" / "pricing.html"

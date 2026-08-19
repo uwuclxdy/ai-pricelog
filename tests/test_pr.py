@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
+from autopr_genai_prices import pr
+from autopr_genai_prices.config import Config
 from conftest import FakeRunner, git, git_init_repo
-from litellm_autopr import pr
-from litellm_autopr.config import Config
 
 PRICES = Path("model_prices_and_context_window.json")
 

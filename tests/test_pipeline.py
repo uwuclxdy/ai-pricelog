@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
+from autopr_genai_prices import config, litellm, pipeline, pr
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.state import load as load_state
 from conftest import git, git_init_repo, register_fake_module
-from litellm_autopr import config, litellm, pipeline, pr
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.state import load as load_state
 
 
 def pricing() -> Pricing:
@@ -88,12 +88,12 @@ def fake_modules(monkeypatch):
 
     for kind in ("detectors", "scrapers"):
         register_fake_module(monkeypatch, kind, "placeholder")
-    det = types.ModuleType("litellm_autopr.detectors.fake_det")
+    det = types.ModuleType("autopr_genai_prices.detectors.fake_det")
     det.detect = detect
-    scr = types.ModuleType("litellm_autopr.scrapers.fake_scr")
+    scr = types.ModuleType("autopr_genai_prices.scrapers.fake_scr")
     scr.scrape = scrape
-    monkeypatch.setitem(sys.modules, "litellm_autopr.detectors.fake_det", det)
-    monkeypatch.setitem(sys.modules, "litellm_autopr.scrapers.fake_scr", scr)
+    monkeypatch.setitem(sys.modules, "autopr_genai_prices.detectors.fake_det", det)
+    monkeypatch.setitem(sys.modules, "autopr_genai_prices.scrapers.fake_scr", scr)
     return detect_controls, scrape_controls
 
 
@@ -387,7 +387,7 @@ def test_noop_state_commit_logs_info_not_error(caplog, tmp_path, fake_modules, u
     workdir = tmp_path / "work"
     runner = PipelineRunner()
 
-    with caplog.at_level(logging.INFO, logger="litellm_autopr.pipeline"):
+    with caplog.at_level(logging.INFO, logger="autopr_genai_prices.pipeline"):
         report = pipeline.run(cfg, workdir, root, runner)
 
     provider_report = report.providers["deepseek"]
@@ -403,13 +403,13 @@ def test_dedup_keys_settle_without_scrape(
 ):
     # a provider whose key spelling differs from its detected id (mistral slugs)
     # settles through the scraper's dedup_keys hook without scraping or opening
-    from litellm_autopr import pipeline
+    from autopr_genai_prices import pipeline
 
     repo = upstream({"mistral/mistral-medium-2604": {"input_cost_per_token": 1e-6}})
     detect, scrape = fake_modules
     detect["mistral"] = ["mistral-medium-3-5-26-04"]
     scrape["mistral"] = {}
-    scr = sys.modules["litellm_autopr.scrapers.fake_scr"]
+    scr = sys.modules["autopr_genai_prices.scrapers.fake_scr"]
     scr.dedup_keys = lambda namespace, model_id: [f"{namespace}/mistral-medium-2604"]
     monkeypatch.setattr(litellm, "fetch_live", lambda: live)
     cfg = make_cfg(repo, 3, ("mistral",))
@@ -431,7 +431,7 @@ def test_dedup_keys_settle_without_scrape(
 def test_state_push_uses_github_ref_name(
     tmp_path, fake_modules, upstream, repo_root, wire, monkeypatch
 ):
-    from litellm_autopr import pipeline
+    from autopr_genai_prices import pipeline
 
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -449,7 +449,7 @@ def test_state_push_uses_github_ref_name(
 def test_state_push_uses_current_branch_without_env(
     tmp_path, fake_modules, upstream, repo_root, wire, monkeypatch
 ):
-    from litellm_autopr import pipeline
+    from autopr_genai_prices import pipeline
 
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     detect, scrape = fake_modules
@@ -465,7 +465,7 @@ def test_state_push_uses_current_branch_without_env(
 
 
 def test_state_commit_sets_identity_when_missing(tmp_path, fake_modules, upstream, repo_root, wire):
-    from litellm_autopr import pipeline
+    from autopr_genai_prices import pipeline
 
     git(repo_root, "config", "--unset", "user.name")
     git(repo_root, "config", "--unset", "user.email")

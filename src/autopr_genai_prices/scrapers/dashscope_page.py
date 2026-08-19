@@ -17,9 +17,9 @@ tokens -> /1e6. the page carries no context window, so max_tokens stays 0
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, extract_tables, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, extract_tables, fetch_soup
 
 _AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
 

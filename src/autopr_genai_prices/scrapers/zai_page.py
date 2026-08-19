@@ -13,10 +13,10 @@ amount. FetchError = the fetch failed or the page has no text-models table.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.zai_page import _text_models_table
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.zai_page import _text_models_table
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, fetch_soup
 
 _PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
 

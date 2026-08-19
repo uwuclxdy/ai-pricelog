@@ -16,10 +16,10 @@ FetchError = the fetch failed or the page has no MODEL header table.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.deepseek_page import _model_table
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import extract_tables, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.deepseek_page import _model_table
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import extract_tables, fetch_soup
 
 _CACHE_MISS = "1M INPUT TOKENS (CACHE MISS)"
 _OUTPUT = "1M OUTPUT TOKENS"

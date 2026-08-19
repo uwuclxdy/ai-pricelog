@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from litellm_autopr import litellm
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError
+from autopr_genai_prices import litellm
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError
 
 FIXTURE = Path(__file__).parent / "fixtures" / "litellm_live.json"
 

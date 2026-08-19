@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from litellm_autopr import web
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors import mistral_page
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.scrapers import mistral_page as mistral_scraper
+from autopr_genai_prices import web
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors import mistral_page
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.scrapers import mistral_page as mistral_scraper
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mistral_page"
 CARDS_URL = "https://docs.mistral.ai/models/model-cards/"
@@ -233,7 +233,7 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
 
 
 def test_dedup_keys_compaction():
-    from litellm_autopr.scrapers.mistral_page import dedup_keys
+    from autopr_genai_prices.scrapers.mistral_page import dedup_keys
 
     cases = {
         # slug -> key litellm's file actually uses

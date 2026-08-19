@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from litellm_autopr import state as state_mod
-from litellm_autopr.state import ProviderState, State, load, new_ids, save
+from autopr_genai_prices import state as state_mod
+from autopr_genai_prices.state import ProviderState, State, load, new_ids, save
 
 
 def test_roundtrip(tmp_path):

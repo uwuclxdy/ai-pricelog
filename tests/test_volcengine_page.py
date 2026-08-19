@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors import volcengine_page as detector
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.scrapers import volcengine_page as scraper
-from litellm_autopr.web import FetchError
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors import volcengine_page as detector
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.scrapers import volcengine_page as scraper
+from autopr_genai_prices.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "volcengine_page"
 PAGE_URL = "https://ai.volcengine.com/model"

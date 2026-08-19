@@ -101,7 +101,7 @@ def resolve_provider_module(kind: str, name: str) -> Any:
         raise ConfigError(
             f"unknown provider module kind '{kind}' (expected one of {_MODULE_KINDS})"
         )
-    target = f"litellm_autopr.{kind}.{name}"
+    target = f"autopr_genai_prices.{kind}.{name}"
     try:
         return importlib.import_module(target)
     except ModuleNotFoundError as exc:

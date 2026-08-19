@@ -10,8 +10,8 @@ table rows is a parse failure (FetchError).
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_text
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 _HEADING_PATTERN = re.compile(r"^#{1,6}\s+(.*)")

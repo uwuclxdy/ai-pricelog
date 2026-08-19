@@ -11,8 +11,8 @@ raised as FetchError instead of a silent empty list.
 import re
 from functools import cache
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_soup
 
 _ID_RE = re.compile(r"doubao-seed(?!ream|ance)[a-z0-9.-]+")
 

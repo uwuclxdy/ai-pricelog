@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from litellm_autopr.pr import PrRunner
+from autopr_genai_prices.pr import PrRunner
 
 
 class FakeRunner:
@@ -55,8 +55,8 @@ def git_init_repo(path: Path) -> None:
 
 
 def register_fake_module(monkeypatch: pytest.MonkeyPatch, kind: str, name: str) -> types.ModuleType:
-    pkg = types.ModuleType(f"litellm_autopr.{kind}")
-    monkeypatch.setitem(sys.modules, f"litellm_autopr.{kind}", pkg)
-    module = types.ModuleType(f"litellm_autopr.{kind}.{name}")
-    monkeypatch.setitem(sys.modules, f"litellm_autopr.{kind}.{name}", module)
+    pkg = types.ModuleType(f"autopr_genai_prices.{kind}")
+    monkeypatch.setitem(sys.modules, f"autopr_genai_prices.{kind}", pkg)
+    module = types.ModuleType(f"autopr_genai_prices.{kind}.{name}")
+    monkeypatch.setitem(sys.modules, f"autopr_genai_prices.{kind}.{name}", module)
     return module

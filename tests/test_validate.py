@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from litellm_autopr import litellm, validate
-from litellm_autopr.config import Config, ProviderCfg
-from litellm_autopr.validate import ValidationError, validate_entry
+from autopr_genai_prices import litellm, validate
+from autopr_genai_prices.config import Config, ProviderCfg
+from autopr_genai_prices.validate import ValidationError, validate_entry
 
 
 def make_live(providers=("deepseek",), modes=("chat", "completion")) -> litellm.LitellmFile:

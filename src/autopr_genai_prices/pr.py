@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from litellm_autopr.config import Config
+from autopr_genai_prices.config import Config
 
 PRICES_FILE = Path("model_prices_and_context_window.json")
 

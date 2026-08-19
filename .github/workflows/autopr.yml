@@ -29,7 +29,7 @@ jobs:
         run: uv sync --frozen
 
       - name: run watchdog
-        run: uv run litellm-autopr
+        run: uv run autopr-genai-prices
         env:
           REPO: ${{ secrets.REPO }}
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}

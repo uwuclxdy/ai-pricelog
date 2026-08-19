@@ -10,8 +10,8 @@ has `-lightning`; the human verifier reconciles that drift.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_text
 
 _ID_RE = re.compile(r"^MiniMax-M[\w.-]+$")
 _LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")

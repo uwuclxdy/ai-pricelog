@@ -2,8 +2,8 @@ import json
 import math
 from pathlib import Path
 
-from litellm_autopr.config import Config, ProviderCfg
-from litellm_autopr.litellm import LitellmFile
+from autopr_genai_prices.config import Config, ProviderCfg
+from autopr_genai_prices.litellm import LitellmFile
 
 
 class ValidationError(ValueError):

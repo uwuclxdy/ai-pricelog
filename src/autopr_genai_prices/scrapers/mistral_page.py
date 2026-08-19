@@ -18,10 +18,10 @@ used, so a model already tracked under a compacted key settles without a PR.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.mistral_page import SLUG_RE
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.mistral_page import SLUG_RE
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, fetch_soup
 
 _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"

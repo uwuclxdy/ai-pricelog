@@ -6,8 +6,8 @@ slugs verbatim (e.g. ``mistral-medium-3-5-26-04``), deduped, in page order.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_soup
 
 SLUG_RE = re.compile(r"^/models/([a-z0-9-]+)$")
 

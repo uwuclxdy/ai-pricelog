@@ -1,12 +1,12 @@
 <div align="center">
 
-# litellm-autopr
+# autopr-genai-prices
 
-**watch model releases, open draft PRs to LiteLLM's model-prices file**
+**watch model releases, open draft PRs to a genai-prices-layout repo**
 
 detectors scrape each provider's own docs and pricing pages daily, one draft PR per new model, a human verifies prices and marks it ready
 
-![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/litellm-autopr/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/litellm-autopr)
+![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/autopr-genai-prices/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/autopr-genai-prices)
 
 </div>
 
@@ -46,7 +46,7 @@ volcengine (doubao) ships as dormant code: static pricing exists only in CNY on 
 ```sh
 uv sync --frozen
 export REPO=https://github.com/<owner>/<litellm-layout-repo>
-uv run litellm-autopr
+uv run autopr-genai-prices
 ```
 
 `REPO` is the only required input. clone source, base branch, push target and PR target all derive from it. push permission decides the flow: the token can push to `REPO` and the PR opens in-repo, or it cannot and the run forks first. no fork detection, one code path.
@@ -70,7 +70,7 @@ scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 ```
 
-`detector`/`scraper` name modules under `litellm_autopr.{detectors,scrapers}`; adding a provider is a config section plus a module pair. `LITELLM_FILE_URL` overrides the live-file fetch (default: the litellm main-branch raw url).
+`detector`/`scraper` name modules under `autopr_genai_prices.{detectors,scrapers}`; adding a provider is a config section plus a module pair. `LITELLM_FILE_URL` overrides the live-file fetch (default: the litellm main-branch raw url).
 
 ## Development
 

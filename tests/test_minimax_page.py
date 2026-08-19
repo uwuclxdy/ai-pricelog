@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors import minimax_page as minimax_detect
-from litellm_autopr.scrapers import minimax_page as minimax_scrape
-from litellm_autopr.web import FetchError
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors import minimax_page as minimax_detect
+from autopr_genai_prices.scrapers import minimax_page as minimax_scrape
+from autopr_genai_prices.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "minimax_page"
 

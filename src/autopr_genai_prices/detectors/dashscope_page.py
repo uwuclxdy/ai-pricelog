@@ -13,8 +13,8 @@ tracks them all. dedupe preserves page order.
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, extract_tables, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, extract_tables, fetch_soup
 
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*$", re.IGNORECASE)
 

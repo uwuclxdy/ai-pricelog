@@ -7,11 +7,11 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from litellm_autopr import config, litellm, pr, validate
-from litellm_autopr.state import ProviderState, append_unique
-from litellm_autopr.state import load as load_state
-from litellm_autopr.state import new_ids as state_new_ids
-from litellm_autopr.state import save as save_state
+from autopr_genai_prices import config, litellm, pr, validate
+from autopr_genai_prices.state import ProviderState, append_unique
+from autopr_genai_prices.state import load as load_state
+from autopr_genai_prices.state import new_ids as state_new_ids
+from autopr_genai_prices.state import save as save_state
 
 log = logging.getLogger(__name__)
 

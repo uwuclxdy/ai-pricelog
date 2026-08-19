@@ -2,8 +2,8 @@ import types
 
 import pytest
 
+from autopr_genai_prices import config
 from conftest import register_fake_module
-from litellm_autopr import config
 
 HAPPY_TOML = """
 [settings]

@@ -10,8 +10,8 @@ skipped; a page whose MODEL row carries no id is a parse failure (FetchError).
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, extract_tables, fetch_soup
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, extract_tables, fetch_soup
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 

@@ -9,8 +9,8 @@ and video entries have no token pricing and are out of scope.
 import json
 from functools import cache
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.web import FetchError, fetch_text
 
 _MARKER = "__XAI_PUBLIC_MODELS__"
 

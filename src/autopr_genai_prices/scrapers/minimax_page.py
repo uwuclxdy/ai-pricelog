@@ -12,10 +12,10 @@ context window, so max_tokens stays 0 (the entry builder omits it).
 
 import re
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.detectors.minimax_page import _markdown_tables
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.detectors.minimax_page import _markdown_tables
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, fetch_text
 
 _AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
 _MODEL_RE = re.compile(r"\*\*(.+?)\*\*")

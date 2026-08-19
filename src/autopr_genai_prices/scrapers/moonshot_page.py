@@ -35,9 +35,9 @@ import functools
 import re
 from urllib.parse import urljoin, urlsplit
 
-from litellm_autopr.config import ProviderCfg
-from litellm_autopr.pricing import Pricing
-from litellm_autopr.web import FetchError, fetch_text
+from autopr_genai_prices.config import ProviderCfg
+from autopr_genai_prices.pricing import Pricing
+from autopr_genai_prices.web import FetchError, fetch_text
 
 _LINK_PATTERN = re.compile(r"^\s*-\s*\[([^\]]+)\]\(([^)]+)\)")
 _FAMILY_PATTERN = re.compile(r"(?:kimi|moonshot)(?:\s+[a-z0-9][a-z0-9.]*)+", re.IGNORECASE)
