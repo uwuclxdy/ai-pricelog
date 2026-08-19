@@ -1,53 +1,47 @@
-import json
-from pathlib import Path
-
 import pytest
 
 from autopr_genai_prices import pr
 from autopr_genai_prices.config import Config
-from conftest import FakeRunner, git, git_init_repo
-
-PRICES = Path("model_prices_and_context_window.json")
+from conftest import FakeRunner
 
 
-class GitRealGhScripted:
-    """real git subprocesses, scripted gh calls."""
-
-    def __init__(self, scripted: FakeRunner) -> None:
-        self.scripted = scripted
-        self.real = pr.PrRunner()
-
-    def run(self, cmd: list[str], cwd: Path) -> str:
-        if cmd[0] == "gh":
-            return self.scripted.run(cmd, cwd)
-        return self.real.run(cmd, cwd)
-
-
-@pytest.fixture
-def seeded_repo(tmp_path):
-    def make(entries: dict):
-        src = tmp_path / "src"
-        git_init_repo(src)
-        (src / PRICES).write_text(json.dumps(entries, indent=2) + "\n")
-        git(src, "add", str(PRICES))
-        git(src, "commit", "-m", "seed")
-        return src
-
-    return make
+def spec(**overrides) -> pr.PrSpec:
+    values = dict(
+        key="deepseek",
+        model_id="deepseek-v4-pro",
+        vendor_yml="deepseek.yml",
+        vendor_name="Deepseek",
+        vendor_entry="  - id: deepseek-v4-pro\n",
+        vendor_input_mtok=0.22,
+        vendor_output_mtok=0.66,
+        vendor_peak_input_mtok=None,
+        vendor_peak_output_mtok=None,
+        vendor_peak_windows=(),
+        skipped_latest=(),
+        source_url="https://api-docs.deepseek.com/quick_start/pricing",
+        openrouter_entry="  - id: deepseek/deepseek-v4-pro\n",
+        openrouter_slug="deepseek/deepseek-v4-pro",
+        openrouter_input_mtok=0.22,
+        openrouter_output_mtok=0.66,
+        openrouter_cache_read_mtok=0.003625,
+        openrouter_note="",
+    )
+    values.update(overrides)
+    return pr.PrSpec(**values)
 
 
 def test_parse_github_url_good():
-    assert pr.parse_github_url("https://github.com/octo/litellm") == ("octo", "litellm")
+    assert pr.parse_github_url("https://github.com/octo/genai-prices") == ("octo", "genai-prices")
 
 
 @pytest.mark.parametrize(
     "repo",
     [
-        "https://gitlab.com/octo/litellm",
+        "https://gitlab.com/octo/genai-prices",
         "https://github.com/octo",
-        "https://github.com/octo/litellm/issues/1",
-        "https://github.com/octo/litellm/",
-        "https://github.com//litellm",
+        "https://github.com/octo/genai-prices/issues/1",
+        "https://github.com/octo/genai-prices/",
+        "https://github.com//genai-prices",
         "not-a-url",
     ],
 )
@@ -62,91 +56,106 @@ def test_branch_name_sanitizes():
     assert pr.branch_name("a/b_c-d.e") == "autopr/a/b_c-d.e"
 
 
-def test_prepare_branch_writes_entry_and_commits(tmp_path, seeded_repo):
-    src = seeded_repo({"deepseek/deepseek-chat": {"input_cost_per_token": 0.1}})
-    scripted = FakeRunner().on("gh api user", output="octocat\n")
-    runner = GitRealGhScripted(scripted)
-    entry = {"input_cost_per_token": 0.2}
-    slot = pr.prepare_branch(
-        tmp_path / "work",
-        str(src),
-        "main",
-        "autopr/deepseek/new-model",
-        "deepseek/new-model",
-        entry,
-        PRICES,
-        runner,
+def test_spec_branch():
+    assert spec(key="deepseek", model_id="deepseek-chat").branch == "autopr/deepseek/deepseek-chat"
+
+
+def test_spec_title_with_openrouter():
+    assert spec().title == "Add deepseek-v4-pro pricing for Deepseek and OpenRouter"
+
+
+def test_spec_title_vendor_only():
+    assert (
+        spec(openrouter_entry=None, openrouter_note="absent").title
+        == "Add deepseek-v4-pro pricing for Deepseek"
     )
-    assert slot is not None
-    data = json.loads((slot / PRICES).read_text())
-    assert list(data) == ["deepseek/deepseek-chat", "deepseek/new-model"]
-    assert data["deepseek/new-model"] == entry
-    assert (slot / PRICES).read_text().endswith("\n")
-    assert git(slot, "branch", "--show-current").strip() == "autopr/deepseek/new-model"
-    assert git(slot, "log", "--format=%s", "-1").strip() == "add deepseek/new-model pricing"
-    assert git(slot, "config", "user.name").strip() == "octocat"
-    assert git(slot, "config", "user.email").strip() == "octocat@users.noreply.github.com"
 
 
-def test_prepare_branch_commit_bypasses_global_hooks(tmp_path, seeded_repo, monkeypatch):
-    # reproduce the production failure: the operator's global hooksPath points at
-    # a hook that rejects every commit; the clone's commit must bypass it
-    src = seeded_repo({"deepseek/deepseek-chat": {"input_cost_per_token": 0.1}})
-    hooks = tmp_path / "hooks"
-    hooks.mkdir()
-    (hooks / "commit-msg").write_text("#!/bin/sh\nexit 1\n")
-    (hooks / "commit-msg").chmod(0o755)
-    global_cfg = tmp_path / "global.gitconfig"
-    global_cfg.write_text(f"[core]\n\thooksPath = {hooks}\n")
-    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(global_cfg))
-    # sanity: a plain commit under the poisoned config does fail
-    probe = tmp_path / "probe"
-    git_init_repo(probe)
-    (probe / "f").write_text("x")
-    git(probe, "add", "f")
-    with pytest.raises(pr.PrError):
-        git(probe, "commit", "-m", "seed")
-    scripted = FakeRunner().on("gh api user", output="octocat\n")
-    runner = GitRealGhScripted(scripted)
-    slot = pr.prepare_branch(
-        tmp_path / "work",
-        str(src),
-        "main",
-        "autopr/deepseek/new-model",
-        "deepseek/new-model",
-        {"input_cost_per_token": 0.2},
-        PRICES,
-        runner,
+def test_pending_pr_url():
+    fake = FakeRunner().on(
+        "gh pr list", output="https://github.com/pydantic/genai-prices/pull/42\n"
     )
-    assert slot is not None
-    assert git(slot, "log", "--format=%s", "-1").strip() == "add deepseek/new-model pricing"
+    assert pr.pending_pr("grok-4.6", fake) == "https://github.com/pydantic/genai-prices/pull/42"
+    (cmd, _cwd) = fake.calls[0]
+    assert cmd[0:3] == ["gh", "pr", "list"]
+    assert "--repo" in cmd and "pydantic/genai-prices" in cmd
+    assert "--state" in cmd and "open" in cmd
+    assert "--search" in cmd and cmd[cmd.index("--search") + 1] == '"grok-4.6 in:title,body"'
+    assert "--json" in cmd and "url" in cmd
+    assert "--jq" in cmd and ".[0].url" in cmd
 
 
-def test_prepare_branch_noop_when_entry_identical(tmp_path, seeded_repo):
-    entry = {"input_cost_per_token": 0.1}
-    src = seeded_repo({"deepseek/deepseek-chat": entry})
-    scripted = FakeRunner()
-    runner = GitRealGhScripted(scripted)
-    slot = pr.prepare_branch(
-        tmp_path / "work",
-        str(src),
-        "main",
-        "autopr/deepseek/deepseek-chat",
-        "deepseek/deepseek-chat",
-        entry,
-        PRICES,
-        runner,
+def test_pending_pr_empty_is_none():
+    fake = FakeRunner().on("gh pr list", output="\n")
+    assert pr.pending_pr("grok-4.6", fake) is None
+
+
+def test_spec_body_flat_vendor_table():
+    body = spec().body
+    assert "Add `deepseek-v4-pro` pricing for Deepseek." in body
+    assert "## Deepseek" in body
+    assert "| model | input (/1M) | output (/1M) |" in body
+    assert "| `deepseek-v4-pro` | 0.22 | 0.66 |" in body
+    assert "source: https://api-docs.deepseek.com/quick_start/pricing" in body
+
+
+def test_spec_body_split_pricing_table():
+    body = spec(
+        vendor_input_mtok=0.22,
+        vendor_output_mtok=0.66,
+        vendor_peak_input_mtok=0.44,
+        vendor_peak_output_mtok=1.32,
+        vendor_peak_windows=(("01:00:00Z", "04:00:00Z"), ("06:00:00Z", "10:00:00Z")),
+    ).body
+    assert "| `deepseek-v4-pro` off-peak | 0.22 | 0.66 |" in body
+    assert (
+        "| `deepseek-v4-pro` peak 01:00:00Z - 04:00:00Z and 06:00:00Z - 10:00:00Z | 0.44 | 1.32 |"
+        in body
     )
-    assert slot is None
-    assert scripted.calls == []
-    cloned = tmp_path / "work" / "autopr" / "deepseek" / "deepseek-chat"
-    assert git(cloned, "log", "--format=%s", "-1").strip() == "seed"
+
+
+def test_spec_body_openrouter_table():
+    body = spec().body
+    assert "## OpenRouter" in body
+    assert "| model | input (/1M) | cache read (/1M) | output (/1M) |" in body
+    assert "| `deepseek/deepseek-v4-pro` | 0.22 | 0.003625 | 0.66 |" in body
+    assert "source: https://openrouter.ai/api/v1/models" in body
+
+
+def test_spec_body_free_openrouter_row():
+    body = spec(
+        openrouter_input_mtok=None, openrouter_output_mtok=None, openrouter_cache_read_mtok=None
+    ).body
+    assert "| `deepseek/deepseek-v4-pro` | free | — | — |" in body
+
+
+def test_spec_body_openrouter_deferral():
+    body = spec(openrouter_entry=None, openrouter_note="`deepseek/deepseek-v4-pro` is absent").body
+    assert "## OpenRouter" in body
+    assert "`deepseek/deepseek-v4-pro` is absent" in body
+    assert "| model | input (/1M) | cache read (/1M) | output (/1M) |" not in body
+
+
+def test_spec_body_cache_read_note():
+    assert (
+        "- no cache-read pricing on the vendor page: the vendor entry carries no `cache_read_mtok`"
+        in spec().body
+    )
+
+
+def test_spec_body_skipped_latest_note():
+    body = spec(skipped_latest=("deepseek-v4-pro-latest",)).body
+    assert (
+        "- `-latest` alias clauses skipped: `deepseek-v4-pro-latest` "
+        "(family/version aliases, not separately priced models)" in body
+    )
+    assert "`-latest` alias clauses skipped" not in spec().body
 
 
 def test_existing_pr_parses_url():
-    fake = FakeRunner().on("gh pr list", output="https://github.com/octo/litellm/pull/42\n")
-    assert pr.existing_pr("octo", "litellm", "autopr/deepseek/x", fake) == (
-        "https://github.com/octo/litellm/pull/42"
+    fake = FakeRunner().on("gh pr list", output="https://github.com/octo/genai-prices/pull/42\n")
+    assert pr.existing_pr("octo", "genai-prices", "autopr/deepseek/x", fake) == (
+        "https://github.com/octo/genai-prices/pull/42"
     )
     (cmd, _cwd) = fake.calls[0]
     assert "--head" in cmd and "autopr/deepseek/x" in cmd
@@ -154,7 +163,7 @@ def test_existing_pr_parses_url():
 
 def test_existing_pr_empty_is_none():
     fake = FakeRunner().on("gh pr list", output="\n")
-    assert pr.existing_pr("octo", "litellm", "autopr/deepseek/x", fake) is None
+    assert pr.existing_pr("octo", "genai-prices", "autopr/deepseek/x", fake) is None
 
 
 def test_push_or_fork_forks_on_403(tmp_path):
@@ -162,14 +171,17 @@ def test_push_or_fork_forks_on_403(tmp_path):
         FakeRunner()
         .on("gh auth", output="")
         .on("git push origin", failure=pr.PrError("push failed", stderr="remote: 403 Forbidden"))
-        .on("gh repo fork", output="https://github.com/octocat/litellm-fork\n")
+        .on("gh repo fork", output="https://github.com/octocat/genai-prices-fork\n")
         .on("git remote add", output="")
         .on("git push fork", output="")
     )
-    owner = pr.push_or_fork("https://github.com/octo/litellm", "autopr/deepseek/x", tmp_path, fake)
+    owner = pr.push_or_fork(
+        "https://github.com/octo/genai-prices", "autopr/deepseek/x", tmp_path, fake
+    )
     assert owner == "octocat"
     cmds = [" ".join(cmd) for cmd, _cwd in fake.calls]
-    assert any("git remote add fork https://github.com/octocat/litellm-fork" in c for c in cmds)
+    fork_cmd = "git remote add fork https://github.com/octocat/genai-prices-fork"
+    assert any(fork_cmd in c for c in cmds)
     assert any("git push fork autopr/deepseek/x" in c for c in cmds)
 
 
@@ -178,17 +190,21 @@ def test_push_or_fork_denied_word_takes_fork_path(tmp_path):
         FakeRunner()
         .on("gh auth", output="")
         .on("git push origin", failure=pr.PrError("push failed", stderr="remote: denied!"))
-        .on("gh repo fork", output="https://github.com/octocat/litellm-fork\n")
+        .on("gh repo fork", output="https://github.com/octocat/genai-prices-fork\n")
         .on("git remote add", output="")
         .on("git push fork", output="")
     )
-    owner = pr.push_or_fork("https://github.com/octo/litellm", "autopr/deepseek/x", tmp_path, fake)
+    owner = pr.push_or_fork(
+        "https://github.com/octo/genai-prices", "autopr/deepseek/x", tmp_path, fake
+    )
     assert owner == "octocat"
 
 
 def test_push_or_fork_direct_push(tmp_path):
     fake = FakeRunner().on("gh auth", output="").on("git push origin", output="")
-    owner = pr.push_or_fork("https://github.com/octo/litellm", "autopr/deepseek/x", tmp_path, fake)
+    owner = pr.push_or_fork(
+        "https://github.com/octo/genai-prices", "autopr/deepseek/x", tmp_path, fake
+    )
     assert owner == "octo"
     cmds = [" ".join(cmd) for cmd, _cwd in fake.calls]
     assert not any("gh repo fork" in c for c in cmds)
@@ -201,35 +217,51 @@ def test_push_or_fork_other_error_raises(tmp_path):
         .on("git push origin", failure=pr.PrError("push failed", stderr="fatal: network down"))
     )
     with pytest.raises(pr.PrError, match="push failed") as exc_info:
-        pr.push_or_fork("https://github.com/octo/litellm", "autopr/deepseek/x", tmp_path, fake)
+        pr.push_or_fork("https://github.com/octo/genai-prices", "autopr/deepseek/x", tmp_path, fake)
     assert "network down" in exc_info.value.stderr
 
 
-def test_open_draft_pr_returns_existing_without_touching_workdir(tmp_path):
-    fake = (
-        FakeRunner()
-        .on("gh api", output="main\n")
-        .on("gh pr list", output="https://github.com/octo/litellm/pull/7\n")
-    )
-    cfg = Config(repo="https://github.com/octo/litellm", providers=(), cap=1)
-    workdir = tmp_path / "work"
-    url = pr.open_draft_pr(cfg, "deepseek/deepseek-chat", {}, "https://src.example", workdir, fake)
-    assert url == "https://github.com/octo/litellm/pull/7"
-    assert not workdir.exists()
+def test_open_draft_pr_returns_existing_without_preparing(tmp_path, monkeypatch):
+    fake = FakeRunner().on("gh pr list", output="https://github.com/octo/genai-prices/pull/7\n")
+    cfg = Config(repo="https://github.com/octo/genai-prices", providers=(), cap=1)
+    prepared = []
+    monkeypatch.setattr("autopr_genai_prices.build.prepare", lambda *args: prepared.append(args))
+    url = pr.open_draft_pr(cfg, "main", tmp_path / "slot", spec(), fake)
+    assert url == "https://github.com/octo/genai-prices/pull/7"
+    assert prepared == []
     assert not any(cmd[0] == "git" for cmd, _cwd in fake.calls)
 
 
-def test_open_draft_pr_returns_empty_when_entry_already_merged(tmp_path, seeded_repo, monkeypatch):
-    # prepare_branch no-ops (entry identical upstream) -> "" and no pr create
-    entry = {"input_cost_per_token": 0.1}
-    src = seeded_repo({"deepseek/deepseek-chat": entry})
-    monkeypatch.setattr(pr, "parse_github_url", lambda repo: ("octo", "litellm"))
-    fake = FakeRunner().on("gh api", output="main\n").on("gh pr list", output="\n")
-    runner = GitRealGhScripted(fake)
-    cfg = Config(repo=str(src), providers=(), cap=1)
-    url = pr.open_draft_pr(
-        cfg, "deepseek/deepseek-chat", entry, "https://src.example", tmp_path / "work", runner
+def test_open_draft_pr_prepares_pushes_and_opens(tmp_path, monkeypatch):
+    fake = (
+        FakeRunner()
+        .on("gh pr list", output="\n")
+        .on("gh auth", output="")
+        .on("gh pr create", output="https://github.com/octo/genai-prices/pull/9\n")
     )
-    assert url == ""
-    assert not any(cmd[:3] == ["gh", "pr", "create"] for cmd, _cwd in fake.calls)
-    assert not any(cmd[:2] == ["git", "push"] for cmd, _cwd in fake.calls)
+    cfg = Config(repo="https://github.com/octo/genai-prices", providers=(), cap=1)
+    prepared = []
+    monkeypatch.setattr("autopr_genai_prices.build.prepare", lambda *args: prepared.append(args))
+    monkeypatch.setattr(pr, "push_or_fork", lambda repo_url, branch, slot, runner: "octo")
+    slot = tmp_path / "slot"
+    url = pr.open_draft_pr(cfg, "main", slot, spec(), fake)
+    assert url == "https://github.com/octo/genai-prices/pull/9"
+    assert prepared == [(slot, "main", spec(), fake)]
+    (cmd, _cwd) = fake.calls[-1]
+    assert cmd[:3] == ["gh", "pr", "create"]
+    assert "--draft" in cmd
+    assert "--repo" in cmd and "octo/genai-prices" in cmd
+    assert "--head" in cmd and "octo:autopr/deepseek/deepseek-v4-pro" in cmd
+    assert "--title" in cmd and "Add deepseek-v4-pro pricing for Deepseek and OpenRouter" in cmd
+    body = cmd[cmd.index("--body") + 1]
+    assert "| `deepseek-v4-pro` | 0.22 | 0.66 |" in body
+
+
+def test_open_pr_uses_spec_title_and_body():
+    spec_ = spec()
+    fake = FakeRunner().on("gh pr create", output="https://github.com/octo/genai-prices/pull/3\n")
+    url = pr.open_pr("octo", "genai-prices", "main", spec_.branch, "octo", spec_, fake)
+    assert url == "https://github.com/octo/genai-prices/pull/3"
+    (cmd, _cwd) = fake.calls[0]
+    assert cmd[cmd.index("--title") + 1] == spec_.title
+    assert cmd[cmd.index("--body") + 1] == spec_.body

@@ -15,8 +15,8 @@ FIXTURE = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing.html"
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="deepseek",
-        provider="deepseek",
-        namespace="deepseek",
+        yml="deepseek.yml",
+        or_prefix="deepseek",
         detector="deepseek_page",
         detector_url=PAGE_URL,
         scraper="deepseek_page",

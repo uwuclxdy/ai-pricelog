@@ -24,8 +24,8 @@ ALL_MODELS = [
 def _cfg() -> ProviderCfg:
     return ProviderCfg(
         key="volcengine",
-        provider="volcengine",
-        namespace="volcengine",
+        yml="volcengine.yml",
+        or_prefix="volcengine",
         detector="volcengine_page",
         detector_url=PAGE_URL,
         scraper="volcengine_page",

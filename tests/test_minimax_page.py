@@ -14,8 +14,8 @@ FIXTURES = Path(__file__).parent / "fixtures" / "minimax_page"
 def minimax_cfg() -> ProviderCfg:
     return ProviderCfg(
         key="minimax",
-        provider="minimax",
-        namespace="minimax",
+        yml="minimax.yml",
+        or_prefix="minimax",
         detector="minimax_page",
         detector_url="https://platform.minimax.io/docs/guides/models-intro.md",
         scraper="minimax_page",

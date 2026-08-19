@@ -25,8 +25,8 @@ EXPECTED_IDS = [
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
     return ProviderCfg(
         key="xai",
-        provider="xai",
-        namespace="xai",
+        yml="x_ai.yml",
+        or_prefix="x-ai",
         detector="xai_page",
         detector_url=url,
         scraper="xai_page",

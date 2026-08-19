@@ -1,114 +1,98 @@
-import json
-
 import pytest
 
-from autopr_genai_prices import litellm, validate
-from autopr_genai_prices.config import Config, ProviderCfg
+from autopr_genai_prices.pricing import Pricing
 from autopr_genai_prices.validate import ValidationError, validate_entry
 
 
-def make_live(providers=("deepseek",), modes=("chat", "completion")) -> litellm.LitellmFile:
-    return litellm.LitellmFile(entries={}, providers=frozenset(providers), modes=frozenset(modes))
-
-
-def make_cfg() -> Config:
-    return Config(
-        repo="https://github.com/octo/litellm",
-        providers=(
-            ProviderCfg(
-                key="deepseek",
-                provider="deepseek",
-                namespace="deepseek",
-                detector="d",
-                detector_url="https://example.com/d",
-                scraper="s",
-                scraper_url="https://example.com/s",
-            ),
-        ),
-        cap=3,
+def pricing(**overrides) -> Pricing:
+    values = dict(
+        input_cost_per_token=2.7e-07,
+        output_cost_per_token=1.1e-06,
+        mode="chat",
+        max_tokens=65536,
     )
-
-
-def good_entry() -> dict:
-    return {
-        "input_cost_per_token": 2.7e-07,
-        "output_cost_per_token": 1.1e-06,
-        "litellm_provider": "deepseek",
-        "mode": "chat",
-        "max_tokens": 65536,
-    }
+    values.update(overrides)
+    return Pricing(**values)
 
 
 def test_valid_entry_passes():
-    validate_entry("deepseek/deepseek-chat", good_entry(), make_live(), make_cfg())
+    validate_entry("deepseek-chat", pricing())
 
 
-def test_max_tokens_absent_is_valid():
-    entry = good_entry()
-    del entry["max_tokens"]
-    validate_entry("deepseek/deepseek-chat", entry, make_live(), make_cfg())
+def test_valid_peak_entry_passes():
+    validate_entry(
+        "deepseek-v4-flash",
+        pricing(
+            input_cost_per_token=0.22 / 1e6,
+            output_cost_per_token=0.66 / 1e6,
+            peak_input_cost_per_token=0.44 / 1e6,
+            peak_output_cost_per_token=1.32 / 1e6,
+            peak_windows=(("01:00:00Z", "04:00:00Z"), ("06:00:00Z", "10:00:00Z")),
+        ),
+    )
 
 
-@pytest.mark.parametrize("key", ["unknown/x", "deepseek/", "deepseek", "deepseek-x/x"])
-def test_key_outside_configured_namespaces(key):
-    with pytest.raises(ValidationError, match="namespace"):
-        validate_entry(key, good_entry(), make_live(), make_cfg())
+def test_max_tokens_zero_is_unset_and_valid():
+    validate_entry("deepseek-chat", pricing(max_tokens=0))
 
 
-def test_provider_not_in_live_vocabulary():
-    entry = good_entry()
-    live = make_live(providers=("zai",))
-    with pytest.raises(ValidationError, match="vocabulary"):
-        validate_entry("deepseek/deepseek-chat", entry, live, make_cfg())
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "deepseek-chat",
+        "deepseek-v4-pro",
+        "MiniMax-M1",
+        "grok-4.20",
+        "x-ai/grok-4.5",
+        "devstral-small:free",
+    ],
+)
+def test_id_charset_accepted(model_id):
+    validate_entry(model_id, pricing())
 
 
-def test_provider_mismatches_configured_value():
-    entry = good_entry()
-    entry["litellm_provider"] = "zai"
-    live = make_live(providers=("deepseek", "zai"))
-    with pytest.raises(ValidationError, match="litellm_provider"):
-        validate_entry("deepseek/deepseek-chat", entry, live, make_cfg())
-
-
-def test_mode_not_in_live_modes():
-    entry = good_entry()
-    entry["mode"] = "embedding"
-    with pytest.raises(ValidationError, match="mode"):
-        validate_entry("deepseek/deepseek-chat", entry, make_live(), make_cfg())
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "",
+        "bad id",
+        "bad\nid",
+        "-lead",
+        "a(b)",
+        "a[b]",
+        "a{b}",
+        "a*b",
+        "a?b",
+        "a|b",
+        "a" * 101,
+    ],
+)
+def test_id_charset_rejected(model_id):
+    with pytest.raises(ValidationError, match="model id"):
+        validate_entry(model_id, pricing())
 
 
 @pytest.mark.parametrize("field", ["input_cost_per_token", "output_cost_per_token"])
-@pytest.mark.parametrize("bad", [0, 0.0, -1.0, float("inf"), True, 5, None])
+@pytest.mark.parametrize("bad", [0, 0.0, -1.0, float("inf"), float("nan"), True, 5, None, "0.1"])
 def test_bad_cost_rejected(field, bad):
-    entry = good_entry()
-    entry[field] = bad
     with pytest.raises(ValidationError, match=field):
-        validate_entry("deepseek/deepseek-chat", entry, make_live(), make_cfg())
+        validate_entry("deepseek-chat", pricing(**{field: bad}))
 
 
-@pytest.mark.parametrize("bad", [True, 1.5, 0, -1])
+@pytest.mark.parametrize("field", ["peak_input_cost_per_token", "peak_output_cost_per_token"])
+@pytest.mark.parametrize("bad", [0, 0.0, -1.0, float("inf"), float("nan"), True, 5])
+def test_bad_peak_cost_rejected(field, bad):
+    with pytest.raises(ValidationError, match=field):
+        validate_entry("deepseek-chat", pricing(**{field: bad}))
+
+
+def test_peak_cost_none_is_valid():
+    validate_entry(
+        "deepseek-chat", pricing(peak_input_cost_per_token=None, peak_output_cost_per_token=None)
+    )
+
+
+@pytest.mark.parametrize("bad", [True, 1.5, 0.5, -1])
 def test_bad_max_tokens_rejected(bad):
-    entry = good_entry()
-    entry["max_tokens"] = bad
     with pytest.raises(ValidationError, match="max_tokens"):
-        validate_entry("deepseek/deepseek-chat", entry, make_live(), make_cfg())
-
-
-def test_validate_repo_file_ok(tmp_path):
-    path = tmp_path / "prices.json"
-    path.write_text(json.dumps({"a": {}}) + "\n")
-    assert validate.validate_repo_file(path) == {"a": {}}
-
-
-def test_validate_repo_file_bad_json(tmp_path):
-    path = tmp_path / "prices.json"
-    path.write_text("{nope")
-    with pytest.raises(ValidationError, match="prices.json"):
-        validate.validate_repo_file(path)
-
-
-def test_validate_repo_file_non_dict_root(tmp_path):
-    path = tmp_path / "prices.json"
-    path.write_text("[]")
-    with pytest.raises(ValidationError, match="root"):
-        validate.validate_repo_file(path)
+        validate_entry("deepseek-chat", pricing(max_tokens=bad))

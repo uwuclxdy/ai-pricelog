@@ -13,13 +13,12 @@ class ConfigError(Exception):
 @dataclass(frozen=True)
 class ProviderCfg:
     key: str
-    provider: str
-    namespace: str
+    yml: str
+    or_prefix: str
     detector: str
     detector_url: str
     scraper: str
     scraper_url: str
-    token_env: str | None = None
 
 
 @dataclass(frozen=True)
@@ -29,8 +28,8 @@ class Config:
     cap: int
 
 
-_REQUIRED_KEYS = ("provider", "namespace", "detector", "detector_url", "scraper", "scraper_url")
-_OPTIONAL_KEYS = ("token_env",)
+_REQUIRED_KEYS = ("yml", "or_prefix", "detector", "detector_url", "scraper", "scraper_url")
+_OPTIONAL_KEYS: tuple[str, ...] = ()
 _MODULE_KINDS = ("detectors", "scrapers")
 
 
@@ -56,13 +55,12 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         providers.append(
             ProviderCfg(
                 key=section,
-                provider=values["provider"],
-                namespace=values["namespace"],
+                yml=values["yml"],
+                or_prefix=values["or_prefix"],
                 detector=values["detector"],
                 detector_url=values["detector_url"],
                 scraper=values["scraper"],
                 scraper_url=values["scraper_url"],
-                token_env=values.get("token_env"),
             )
         )
     return tuple(providers)

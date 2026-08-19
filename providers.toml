@@ -1,70 +1,65 @@
-# one section per watched provider. provider = the litellm_provider value,
-# namespace = the key prefix in the prices file, detector/scraper = module
-# names under autopr_genai_prices.{detectors,scrapers}. sources pinned 2026-08-19.
+# one section per watched provider. yml = the target's prices/providers/<yml>
+# file, or_prefix = the openrouter slug prefix, detector/scraper = module names
+# under autopr_genai_prices.{detectors,scrapers}. sources pinned 2026-08-19.
 
 [settings]
 cap = 3
 
 [deepseek]
-provider = "deepseek"
-namespace = "deepseek"
+yml = "deepseek.yml"
+or_prefix = "deepseek"
 detector = "deepseek_page"
 detector_url = "https://api-docs.deepseek.com/quick_start/pricing"
 scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 
 [zai]
-provider = "zai"
-namespace = "zai"
+yml = "zai.yml"
+or_prefix = "z-ai"
 detector = "zai_page"
 detector_url = "https://docs.z.ai/guides/overview/pricing"
 scraper = "zai_page"
 scraper_url = "https://docs.z.ai/guides/overview/pricing"
 
 [moonshot]
-provider = "moonshot"
-namespace = "moonshot"
+yml = "moonshotai.yml"
+or_prefix = "moonshotai"
 detector = "moonshot_page"
 detector_url = "https://platform.kimi.ai/docs/models.md"
 scraper = "moonshot_page"
 scraper_url = "https://platform.kimi.ai/docs/llms.txt"
 
 [minimax]
-provider = "minimax"
-namespace = "minimax"
+yml = "minimax.yml"
+or_prefix = "minimax"
 detector = "minimax_page"
 detector_url = "https://platform.minimax.io/docs/guides/models-intro.md"
 scraper = "minimax_page"
 scraper_url = "https://platform.minimax.io/docs/guides/pricing-paygo.md"
 
-[dashscope]
-provider = "dashscope"
-namespace = "dashscope"
-detector = "dashscope_page"
-detector_url = "https://help.aliyun.com/zh/model-studio/text-generation-model/"
-scraper = "dashscope_page"
-scraper_url = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-
 [xai]
-provider = "xai"
-namespace = "xai"
+yml = "x_ai.yml"
+or_prefix = "x-ai"
 detector = "xai_page"
 detector_url = "https://docs.x.ai/docs/models"
 scraper = "xai_page"
 scraper_url = "https://docs.x.ai/docs/models"
 
 [mistral]
-provider = "mistral"
-namespace = "mistral"
+yml = "mistral.yml"
+or_prefix = "mistralai"
 detector = "mistral_page"
 detector_url = "https://docs.mistral.ai/models/model-cards/"
 scraper = "mistral_page"
 scraper_url = "https://docs.mistral.ai/inference/pricing"
 
 [perplexity]
-provider = "perplexity"
-namespace = "perplexity"
+yml = "perplexity.yml"
+or_prefix = "perplexity"
 detector = "perplexity_page"
 detector_url = "https://docs.perplexity.ai/guides/pricing"
 scraper = "perplexity_page"
 scraper_url = "https://docs.perplexity.ai/guides/pricing"
+
+# [dashscope] disabled: the target tracks no first-party qwen provider yml.
+# [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).

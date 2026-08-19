@@ -85,8 +85,8 @@ EXPECTED_IDS = [
 def make_cfg() -> ProviderCfg:
     return ProviderCfg(
         key="mistral",
-        provider="mistral",
-        namespace="mistral",
+        yml="mistral.yml",
+        or_prefix="mistralai",
         detector="mistral_page",
         detector_url=CARDS_URL,
         scraper="mistral_page",

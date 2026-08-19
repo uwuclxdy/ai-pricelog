@@ -1,12 +1,12 @@
-import json
 import re
-import shutil
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from autopr_genai_prices.config import Config
+from autopr_genai_prices.openrouter import OPENROUTER_MODELS_URL
 
-PRICES_FILE = Path("model_prices_and_context_window.json")
+UPSTREAM = "pydantic/genai-prices"
 
 
 class PrError(Exception):
@@ -26,6 +26,102 @@ class PrRunner:
                 f"command {cmd} failed: {_stderr_tail(result.stderr)}", stderr=result.stderr
             )
         return result.stdout
+
+
+@dataclass(frozen=True)
+class PrSpec:
+    """Everything one candidate PR needs: entries, table numbers, deferrals."""
+
+    key: str
+    model_id: str
+    vendor_yml: str
+    vendor_name: str
+    vendor_entry: str
+    vendor_input_mtok: float
+    vendor_output_mtok: float
+    vendor_peak_input_mtok: float | None
+    vendor_peak_output_mtok: float | None
+    vendor_peak_windows: tuple[tuple[str, str], ...]
+    skipped_latest: tuple[str, ...]
+    source_url: str
+    openrouter_entry: str | None
+    openrouter_slug: str
+    openrouter_input_mtok: float | None
+    openrouter_output_mtok: float | None
+    openrouter_cache_read_mtok: float | None
+    openrouter_note: str
+
+    @property
+    def branch(self) -> str:
+        return branch_name(f"{self.key}/{self.model_id}")
+
+    @property
+    def title(self) -> str:
+        if self.openrouter_entry is not None:
+            return f"Add {self.model_id} pricing for {self.vendor_name} and OpenRouter"
+        return f"Add {self.model_id} pricing for {self.vendor_name}"
+
+    @property
+    def body(self) -> str:
+        lines: list[str] = []
+        lines.append(f"Add `{self.model_id}` pricing for {self.vendor_name}.")
+        lines.append("")
+        lines.append(f"## {self.vendor_name}")
+        lines.append("")
+        lines.append("| model | input (/1M) | output (/1M) |")
+        lines.append("|---|---|---|")
+        if self.vendor_peak_input_mtok is not None:
+            windows = " and ".join(f"{start} - {end}" for start, end in self.vendor_peak_windows)
+            lines.append(
+                f"| `{self.model_id}` off-peak | {self.vendor_input_mtok:g} "
+                f"| {self.vendor_output_mtok:g} |"
+            )
+            lines.append(
+                f"| `{self.model_id}` peak {windows} | {self.vendor_peak_input_mtok:g} "
+                f"| {self.vendor_peak_output_mtok:g} |"
+            )
+        else:
+            lines.append(
+                f"| `{self.model_id}` | {self.vendor_input_mtok:g} | {self.vendor_output_mtok:g} |"
+            )
+        lines.append("")
+        lines.append(f"source: {self.source_url}")
+        lines.append("")
+        lines.append("## OpenRouter")
+        lines.append("")
+        if self.openrouter_entry is not None:
+            lines.append("| model | input (/1M) | cache read (/1M) | output (/1M) |")
+            lines.append("|---|---|---|---|")
+            if self.openrouter_input_mtok is None:
+                lines.append(f"| `{self.openrouter_slug}` | free | — | — |")
+            else:
+                row = " | ".join(
+                    f"{value:g}" if value is not None else "—"
+                    for value in (
+                        self.openrouter_input_mtok,
+                        self.openrouter_cache_read_mtok,
+                        self.openrouter_output_mtok,
+                    )
+                )
+                lines.append(f"| `{self.openrouter_slug}` | {row} |")
+            lines.append("")
+            lines.append(f"source: {OPENROUTER_MODELS_URL}")
+        else:
+            lines.append(self.openrouter_note)
+        lines.append("")
+        lines.append("## notes")
+        lines.append("")
+        lines.append(
+            "- no cache-read pricing on the vendor page: the vendor entry carries no "
+            "`cache_read_mtok`"
+        )
+        if self.skipped_latest:
+            aliases = ", ".join(f"`{value}`" for value in self.skipped_latest)
+            lines.append(
+                f"- `-latest` alias clauses skipped: {aliases} "
+                "(family/version aliases, not separately priced models)"
+            )
+        return "\n".join(lines) + "\n"
 
 
 def parse_github_url(repo: str) -> tuple[str, str]:
@@ -48,37 +144,33 @@ def branch_name(key: str) -> str:
     return "autopr/" + re.sub(r"[^A-Za-z0-9._/-]", "-", key)
 
 
-def prepare_branch(
-    workdir: Path,
-    repo_url: str,
-    base: str,
-    branch: str,
-    entry_key: str,
-    entry: dict,
-    file_path: Path,
-    runner: PrRunner,
-) -> Path | None:
-    workdir.mkdir(parents=True, exist_ok=True)
-    slot = workdir / branch
-    shutil.rmtree(slot, ignore_errors=True)
-    runner.run(["git", "clone", "--depth", "1", "--branch", base, repo_url, str(slot)], cwd=workdir)
-    target = slot / file_path
-    data = json.loads(target.read_text())
-    if data.get(entry_key) == entry:
-        return None
-    data[entry_key] = entry
-    target.write_text(json.dumps(data, indent=2, sort_keys=False) + "\n")
-    runner.run(["git", "checkout", "-b", branch], cwd=slot)
-    ensure_author(slot, runner)
-    runner.run(["git", "add", "--", str(file_path)], cwd=slot)
-    # the clone inherits the operator's global core.hooksPath; the commit runs
-    # in an ephemeral clone, so bypass external hooks (repo hooks in .git/hooks
-    # stay active, none exist in the target repo's layout)
-    runner.run(
-        ["git", "-c", "core.hooksPath=/dev/null", "commit", "-m", f"add {entry_key} pricing"],
-        cwd=slot,
-    )
-    return slot
+def pending_pr(model_id: str, runner: PrRunner) -> str | None:
+    """The url of an open PR on the real upstream naming model_id, or None.
+
+    The upstream repo is hardcoded: this is the one place that ignores REPO, so
+    a fork or a test clone never shadows the real pending-work scan. A hit is a
+    plain skip in the pipeline: no state change, the id re-candidates when the
+    PR closes.
+    """
+    out = runner.run(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--repo",
+            UPSTREAM,
+            "--state",
+            "open",
+            "--search",
+            f'"{model_id} in:title,body"',
+            "--json",
+            "url",
+            "--jq",
+            ".[0].url",
+        ],
+        cwd=Path.cwd(),
+    ).strip()
+    return out or None
 
 
 def open_pr(
@@ -87,12 +179,9 @@ def open_pr(
     base: str,
     branch: str,
     head_owner: str,
-    entry_key: str,
-    source_url: str,
+    spec: PrSpec,
     runner: PrRunner,
 ) -> str:
-    title = f"add {entry_key} pricing"
-    body = f"add `{entry_key}` pricing\n\nsource: `{source_url}`"
     return runner.run(
         [
             "gh",
@@ -106,9 +195,9 @@ def open_pr(
             "--head",
             f"{head_owner}:{branch}",
             "--title",
-            title,
+            spec.title,
             "--body",
-            body,
+            spec.body,
         ],
         cwd=Path.cwd(),
     ).strip()
@@ -161,25 +250,16 @@ def push_or_fork(repo_url: str, branch: str, slot: Path, runner: PrRunner) -> st
     return owner
 
 
-def open_draft_pr(
-    cfg: Config,
-    entry_key: str,
-    entry: dict,
-    source_url: str,
-    workdir: Path,
-    runner: PrRunner,
-) -> str:
+def open_draft_pr(cfg: Config, base: str, slot: Path, spec: PrSpec, runner: PrRunner) -> str:
     owner, name = parse_github_url(cfg.repo)
-    base = default_branch(owner, name, runner)
-    branch = branch_name(entry_key)
-    found = existing_pr(owner, name, branch, runner)
+    found = existing_pr(owner, name, spec.branch, runner)
     if found:
         return found
-    slot = prepare_branch(workdir, cfg.repo, base, branch, entry_key, entry, PRICES_FILE, runner)
-    if slot is None:
-        return ""
-    head_owner = push_or_fork(cfg.repo, branch, slot, runner)
-    return open_pr(owner, name, base, branch, head_owner, entry_key, source_url, runner)
+    from autopr_genai_prices import build
+
+    build.prepare(slot, base, spec, runner)
+    head_owner = push_or_fork(cfg.repo, spec.branch, slot, runner)
+    return open_pr(owner, name, base, spec.branch, head_owner, spec, runner)
 
 
 _PERMISSION_MARKERS = ("403", "denied", "permission")

@@ -39,8 +39,8 @@ EXPECTED_IDS = [
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="moonshot",
-        provider="moonshot",
-        namespace="moonshot",
+        yml="moonshotai.yml",
+        or_prefix="moonshotai",
         detector="moonshot_page",
         detector_url=MODELS_URL,
         scraper="moonshot_page",
