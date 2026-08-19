@@ -26,12 +26,16 @@ _STAGE_PATHS = frozenset(
         "prices/providers/openrouter.yml",
         "prices/new_data/v2/data.json",
         "prices/new_data/v2/data_slim.json",
+        "prices/providers/.schema.json",
+        "prices/new_data/v2/data.schema.json",
+        "prices/new_data/v2/data_slim.schema.json",
         "packages/python/genai_prices/data.py",
+        "packages/python/genai_prices/data_units.py",
         "packages/js/src/data.ts",
+        "packages/js/src/dataUnits.ts",
         "README.md",
         "tests/test_price_calc.py",
         "tests/dataset/usages.json",
-        "data_units/dataUnits/schemas/.schema.json",
     }
 )
 
@@ -93,6 +97,10 @@ class _CalcResult:
 def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
     """Build and commit one candidate PR inside the shared clone slot."""
     runner.run(["git", "checkout", "-B", spec.branch, base], cwd=slot)
+    # a failed candidate leaves uncommitted edits in the shared slot, and
+    # checkout -B keeps them when HEAD already equals base: reset to base so
+    # the next candidate never inherits a previous one's yml edits
+    runner.run(["git", "reset", "--hard"], cwd=slot)
     ensure_clone_author(slot, runner)
     _insert_entries(slot, spec)
     runner.run(["uv", "sync", "--frozen", "--all-packages", "--all-extras"], cwd=slot)

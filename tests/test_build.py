@@ -172,9 +172,42 @@ def test_prepare_commits_entries_on_branch(tmp_path):
     openrouter = git(slot, "show", "HEAD:prices/providers/openrouter.yml")
     assert "  - id: deepseek/deepseek-v4-pro" in openrouter
     assert git(slot, "status", "--porcelain").strip() == ""
+
+
+def test_stage_paths_cover_the_targets_generated_files():
+    assert {
+        "prices/providers/openrouter.yml",
+        "prices/new_data/v2/data.json",
+        "prices/new_data/v2/data_slim.json",
+        "prices/providers/.schema.json",
+        "prices/new_data/v2/data.schema.json",
+        "prices/new_data/v2/data_slim.schema.json",
+        "packages/python/genai_prices/data.py",
+        "packages/python/genai_prices/data_units.py",
+        "packages/js/src/data.ts",
+        "packages/js/src/dataUnits.ts",
+        "README.md",
+        "tests/test_price_calc.py",
+        "tests/dataset/usages.json",
+    } == build._STAGE_PATHS
+
+
+def test_prepare_resets_a_dirty_tree_left_by_a_failed_candidate(tmp_path):
+    slot = seed_slot(tmp_path)
+    failing = quiet_runner().on("make build", failure=build.BuildError("make build failed"))
+    with pytest.raises(build.BuildError):
+        build.prepare(slot, "main", spec(), runner=failing)
+    # the failed candidate's own edits stay uncommitted in the shared slot;
+    # the next candidate's prepare must start from a clean base, not inherit
+    second = quiet_runner()
+    build.prepare(slot, "main", spec(), runner=second)
+    vendor = git(slot, "show", "HEAD:prices/providers/deepseek.yml")
+    assert vendor.count("  - id: deepseek-v4-pro") == 1
+    openrouter = git(slot, "show", "HEAD:prices/providers/openrouter.yml")
+    assert openrouter.count("  - id: deepseek/deepseek-v4-pro") == 1
     assert not (tmp_path / ".autopr_calc.py").exists()
 
-    cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
+    cmds = [" ".join(cmd) for cmd, _cwd in second.calls]
     assert any(c.startswith("uv sync --frozen --all-packages --all-extras") for c in cmds)
     assert "make build" in cmds
     assert "make test" in cmds
@@ -185,10 +218,10 @@ def test_prepare_commits_entries_on_branch(tmp_path):
         "prices/providers/openrouter.yml",
         "tests/test_price_calc.py",
     }
-    add = next(cmd for cmd, _cwd in runner.calls if cmd[:2] == ["git", "add"])
+    add = next(cmd for cmd, _cwd in second.calls if cmd[:2] == ["git", "add"])
     assert add[:2] == ["git", "add"] and add[2] == "--"
     assert set(add[3:]) == changed
-    precommit = next(cmd for cmd, _cwd in runner.calls if cmd[0] == "uvx")
+    precommit = next(cmd for cmd, _cwd in second.calls if cmd[0] == "uvx")
     assert precommit[:4] == ["uvx", "pre-commit", "run", "--files"]
     assert set(precommit[4:]) == changed
 
@@ -262,10 +295,13 @@ def test_calc_wrong_provider_retries_with_api_url(tmp_path):
 
 def test_wrong_provider_without_api_pattern_ships_without_test(tmp_path):
     slot = seed_slot(tmp_path)
-    (slot / "prices" / "providers" / "deepseek.yml").write_text(
+    vendor_path = slot / "prices" / "providers" / "deepseek.yml"
+    vendor_path.write_text(
         "id: deepseek\nname: Deepseek\nmodels:\n  - id: deepseek-chat\n    match:\n"
         "      starts_with: deepseek-chat\n"
     )
+    git(slot, "add", "prices/providers/deepseek.yml")
+    git(slot, "commit", "-m", "drop api pattern")
     runner = quiet_runner().on(
         "uv run python",
         output='{"ok": true, "provider_id": "zhipuai", "model_id": "glm-5.2", '
