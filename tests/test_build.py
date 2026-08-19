@@ -153,7 +153,7 @@ def quiet_runner() -> BuildRunner:
     return (
         BuildRunner()
         .on("uv sync", output="")
-        .on("npm install", output="")
+        .on("npm ci", output="")
         .on("make build", output="")
         .on("uv run python", output=CALC_OK)
         .on("uv run pytest", output="")
@@ -199,14 +199,30 @@ def test_stage_paths_cover_the_targets_generated_files():
     } == build._STAGE_PATHS
 
 
-def test_prepare_runs_npm_install_before_make_build(tmp_path):
+def test_prepare_runs_npm_ci_before_make_build(tmp_path):
     slot = seed_slot(tmp_path)
     runner = quiet_runner()
     build.prepare(slot, "main", spec(), runner)
 
     cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
-    assert "npm install" in cmds
-    assert cmds.index("npm install") < cmds.index("make build")
+    assert "npm ci" in cmds
+    assert cmds.index("npm ci") < cmds.index("make build")
+
+
+def test_prepare_removes_the_bun_shim_lock(tmp_path):
+    slot = seed_slot(tmp_path)
+
+    def npm_effect(_key: str) -> str:
+        # a bun-shimmed npm leaves its own lock behind; it must never reach
+        # the commit
+        (slot / "bun.lock").write_text("lock\n")
+        return ""
+
+    runner = quiet_runner().on("npm ci", effect=npm_effect)
+    build.prepare(slot, "main", spec(), runner)
+
+    assert not (slot / "bun.lock").exists()
+    assert git(slot, "status", "--porcelain").strip() == ""
 
 
 def test_make_test_failure_fixes_cli_snapshot_then_reruns(tmp_path):

@@ -115,8 +115,10 @@ def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
     runner.run(["uv", "sync", "--frozen", "--all-packages", "--all-extras"], cwd=slot)
     # the target's js hooks and make build both call npx; without node_modules
     # npx would fetch the latest unpinned toolchain (same reason the target's
-    # own CI runs npm install before pre-commit)
-    runner.run(["npm", "install"], cwd=slot)
+    # own CI installs before pre-commit). npm ci never rewrites the committed
+    # lock; on boxes where npm is a bun shim it also leaves a bun.lock behind
+    runner.run(["npm", "ci"], cwd=slot)
+    (slot / "bun.lock").unlink(missing_ok=True)
     _run_make(slot, "build", runner)
     _generate_test(slot, spec, runner)
     _run_make_test(slot, runner)
