@@ -447,10 +447,11 @@ def test_state_push_uses_github_ref_name(
 
 
 def test_state_push_uses_current_branch_without_env(
-    tmp_path, fake_modules, upstream, repo_root, wire
+    tmp_path, fake_modules, upstream, repo_root, wire, monkeypatch
 ):
     from litellm_autopr import pipeline
 
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
