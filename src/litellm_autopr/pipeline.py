@@ -74,6 +74,14 @@ def run(
                 continue
             try:
                 scraper = config.resolve_provider_module("scrapers", pcfg.scraper)
+                dedup_keys = getattr(scraper, "dedup_keys", None)
+                if dedup_keys and any(
+                    key in repo_entries for key in dedup_keys(pcfg.namespace, model_id)
+                ):
+                    # a provider-specific key spelling already tracks this model
+                    append_unique(provider_state.last_seen, model_id)
+                    state_changed = True
+                    continue
                 pricing = scraper.scrape(pcfg, model_id)
             except Exception as exc:
                 log.exception("scraper %s failed for %s", pcfg.key, model_id)
@@ -138,6 +146,7 @@ def run(
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", help="working dir for clones (default: $AUTOPR_WORKDIR)")
     args = parser.parse_args()

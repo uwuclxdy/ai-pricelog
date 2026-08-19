@@ -396,3 +396,31 @@ def test_noop_state_commit_logs_info_not_error(caplog, tmp_path, fake_modules, u
     assert "state commit skipped" in caplog.text
     skip_records = [r for r in caplog.records if "state commit skipped" in r.getMessage()]
     assert skip_records and all(r.levelno == logging.INFO for r in skip_records)
+
+
+def test_dedup_keys_settle_without_scrape(tmp_path, upstream, repo_root, fake_modules, live, monkeypatch):
+    # a provider whose key spelling differs from its detected id (mistral slugs)
+    # settles through the scraper's dedup_keys hook without scraping or opening
+    from litellm_autopr import pipeline
+
+    repo = upstream({"mistral/mistral-medium-2604": {"input_cost_per_token": 1e-6}})
+    detect, scrape = fake_modules
+    detect["mistral"] = ["mistral-medium-3-5-26-04"]
+    scrape["mistral"] = {}
+    scr = sys.modules["litellm_autopr.scrapers.fake_scr"]
+    scr.dedup_keys = lambda namespace, model_id: [f"{namespace}/mistral-medium-2604"]
+    monkeypatch.setattr(litellm, "fetch_live", lambda: live)
+    cfg = make_cfg(repo, 3, ("mistral",))
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, runner)
+
+    provider_report = report.providers["mistral"]
+    assert provider_report.prs == []
+    assert provider_report.error is None
+    assert provider_report.skipped_no_pricing == []
+    saved = load_state(repo_root / "state.json")
+    assert saved.providers["mistral"].last_seen == ["mistral-medium-3-5-26-04"]
+    assert saved.providers["mistral"].handled == []
+    create_calls = [c for c in runner.calls if c[0][1] == "pr" and c[0][2] == "create"]
+    assert create_calls == []

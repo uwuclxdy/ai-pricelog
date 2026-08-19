@@ -230,3 +230,21 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
     assert mistral_scraper.scrape(cfg, "aaa") is None
     # unit-priced row inside a token section: the cell regex must reject it
     assert mistral_scraper.scrape(cfg, "ccc") is None
+
+
+def test_dedup_keys_compaction():
+    from litellm_autopr.scrapers.mistral_page import dedup_keys
+
+    cases = {
+        # slug -> key litellm's file actually uses
+        "mistral-medium-3-5-26-04": "mistral/mistral-medium-2604",
+        "mistral-small-4-0-26-03": "mistral/mistral-small-2603",
+        "mistral-moderation-2603": "mistral/mistral-moderation-2603",
+        "ministral-3-3b-2512": "mistral/ministral-3-3b-2512",
+        "mistral-medium-3-5": "mistral/mistral-medium-3-5",
+        "codestral-2508": "mistral/codestral-2508",
+    }
+    for slug, key in cases.items():
+        assert key in dedup_keys("mistral", slug), slug
+    # ocr slugs get the mistral- prefix litellm uses
+    assert "mistral/mistral-ocr-4-0" in dedup_keys("mistral", "ocr-4-0")

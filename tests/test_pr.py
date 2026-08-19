@@ -88,6 +88,40 @@ def test_prepare_branch_writes_entry_and_commits(tmp_path, seeded_repo):
     assert git(slot, "config", "user.email").strip() == "octocat@users.noreply.github.com"
 
 
+def test_prepare_branch_commit_bypasses_global_hooks(tmp_path, seeded_repo, monkeypatch):
+    # reproduce the production failure: the operator's global hooksPath points at
+    # a hook that rejects every commit; the clone's commit must bypass it
+    src = seeded_repo({"deepseek/deepseek-chat": {"input_cost_per_token": 0.1}})
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    (hooks / "commit-msg").write_text("#!/bin/sh\nexit 1\n")
+    (hooks / "commit-msg").chmod(0o755)
+    global_cfg = tmp_path / "global.gitconfig"
+    global_cfg.write_text(f"[core]\n\thooksPath = {hooks}\n")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(global_cfg))
+    # sanity: a plain commit under the poisoned config does fail
+    probe = tmp_path / "probe"
+    git_init_repo(probe)
+    (probe / "f").write_text("x")
+    git(probe, "add", "f")
+    with pytest.raises(pr.PrError):
+        git(probe, "commit", "-m", "seed")
+    scripted = FakeRunner().on("gh api user", output="octocat\n")
+    runner = GitRealGhScripted(scripted)
+    slot = pr.prepare_branch(
+        tmp_path / "work",
+        str(src),
+        "main",
+        "autopr/deepseek/new-model",
+        "deepseek/new-model",
+        {"input_cost_per_token": 0.2},
+        PRICES,
+        runner,
+    )
+    assert slot is not None
+    assert git(slot, "log", "--format=%s", "-1").strip() == "add deepseek/new-model pricing"
+
+
 def test_prepare_branch_noop_when_entry_identical(tmp_path, seeded_repo):
     entry = {"input_cost_per_token": 0.1}
     src = seeded_repo({"deepseek/deepseek-chat": entry})

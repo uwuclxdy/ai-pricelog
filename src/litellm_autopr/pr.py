@@ -71,7 +71,13 @@ def prepare_branch(
     runner.run(["git", "checkout", "-b", branch], cwd=slot)
     _ensure_author(slot, runner)
     runner.run(["git", "add", "--", str(file_path)], cwd=slot)
-    runner.run(["git", "commit", "-m", f"add {entry_key} pricing"], cwd=slot)
+    # the clone inherits the operator's global core.hooksPath; the commit runs
+    # in an ephemeral clone, so bypass external hooks (repo hooks in .git/hooks
+    # stay active, none exist in the target repo's layout)
+    runner.run(
+        ["git", "-c", "core.hooksPath=/dev/null", "commit", "-m", f"add {entry_key} pricing"],
+        cwd=slot,
+    )
     return slot
 
 

@@ -11,7 +11,9 @@ pricing -> None. the page carries no context window -> max_tokens 0. mode is cha
 
 note: entry keys use the slug verbatim (``mistral/mistral-medium-3-5-26-04``);
 litellm's own newest keys compact the slug (``mistral-medium-2604``) - the human
-verifier may rename; no compaction is invented here.
+verifier may rename; no compaction is invented here. the pipeline's in-file
+dedup consults ``dedup_keys``, which lists the compacted spellings litellm has
+used, so a model already tracked under a compacted key settles without a PR.
 """
 
 import re
@@ -24,6 +26,37 @@ from litellm_autopr.web import FetchError, fetch_soup
 _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"
 _DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
+
+# slug tail like -4-0-26-03 (one to three version segments, then yy-mm) compacts
+# to -2603, the form litellm's keys use for dated models. slugs without a dated
+# tail stay verbatim. best-effort: upstream is inconsistent (mistral-medium-3-1-2508
+# keeps its version), the raw slug is always checked first.
+_DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){1,3}-(\d{2})-(\d{2})$")
+_MISTRAL_FAMILIES = (
+    "mistral",
+    "ministral",
+    "pixtral",
+    "codestral",
+    "devstral",
+    "magistral",
+    "labs",
+)
+
+
+def _compact(slug: str) -> str:
+    match = _DATED_TAIL.match(slug)
+    if match is None:
+        return slug
+    return f"{match.group(1)}-{match.group(2)}{match.group(3)}"
+
+
+def dedup_keys(namespace: str, model_id: str) -> list[str]:
+    """Spellings of this model's key that litellm may already track it under."""
+    compacted = _compact(model_id)
+    keys = [f"{namespace}/{compacted}"]
+    if not compacted.startswith(_MISTRAL_FAMILIES):
+        keys.append(f"{namespace}/mistral-{compacted}")
+    return keys
 
 
 def _price(cell: str) -> float | None:
