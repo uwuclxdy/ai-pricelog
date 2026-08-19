@@ -135,12 +135,25 @@ def run(
                 log.warning("state commit failed: %s", _describe(exc))
             else:
                 log.info("state commit skipped: nothing staged (%s)", _describe(exc))
+        # the actions checkout is a detached head; GITHUB_REF_NAME names the
+        # branch it came from. locally the current branch is the target.
         try:
-            runner.run(["git", "push", "origin"], cwd=repo_root)
-        except pr.PrError:
-            log.warning(
-                "state push failed; pr urls are recorded locally, next run re-checks open prs"
+            branch = (
+                os.environ.get("GITHUB_REF_NAME")
+                or runner.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root).strip()
             )
+        except pr.PrError as exc:
+            log.warning("state push skipped: %s", _describe(exc))
+            branch = ""
+        if branch == "HEAD" or not branch:
+            log.warning("state push skipped: no branch resolved")
+        else:
+            try:
+                runner.run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], cwd=repo_root)
+            except pr.PrError:
+                log.warning(
+                    "state push failed; pr urls are recorded locally, next run re-checks open prs"
+                )
     return report
 
 

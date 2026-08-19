@@ -426,3 +426,38 @@ def test_dedup_keys_settle_without_scrape(
     assert saved.providers["mistral"].handled == []
     create_calls = [c for c in runner.calls if c[0][1] == "pr" and c[0][2] == "create"]
     assert create_calls == []
+
+
+def test_state_push_uses_github_ref_name(
+    tmp_path, fake_modules, upstream, repo_root, wire, monkeypatch
+):
+    from litellm_autopr import pipeline
+
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(upstream({}), 3, ("deepseek",))
+    monkeypatch.setenv("GITHUB_REF_NAME", "mommy")
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, runner)
+    assert report.providers["deepseek"].prs
+    push_cmds = [c for c in runner.calls if c[0][0] == "git" and c[0][1] == "push"]
+    assert push_cmds and push_cmds[-1][0] == ["git", "push", "origin", "HEAD:refs/heads/mommy"]
+
+
+def test_state_push_uses_current_branch_without_env(
+    tmp_path, fake_modules, upstream, repo_root, wire
+):
+    from litellm_autopr import pipeline
+
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(upstream({}), 3, ("deepseek",))
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, runner)
+    assert report.providers["deepseek"].prs
+    push_cmds = [c for c in runner.calls if c[0][0] == "git" and c[0][1] == "push"]
+    assert push_cmds and push_cmds[-1][0] == ["git", "push", "origin", "HEAD:refs/heads/main"]
