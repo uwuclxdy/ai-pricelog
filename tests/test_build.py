@@ -35,9 +35,12 @@ CALC_OK = (
 )
 
 GENERATED_TEST = """def test_deepseek_deepseek_v4_pro_price() -> None:
+    from datetime import datetime, timezone
+
     price = calc_price(
         Usage(input_tokens=1_000, output_tokens=100),
         model_ref='deepseek-v4-pro',
+        genai_request_timestamp=datetime(2025, 6, 1, 12, tzinfo=timezone.utc),
     )
 
     assert price.provider.id == 'deepseek'
@@ -108,6 +111,7 @@ def seed_slot(tmp_path: Path) -> Path:
         ("packages/python/genai_prices/data.py", "# data\n"),
         ("packages/js/src/data.ts", "// data\n"),
         ("tests/test_price_calc.py", TEST_CALC_HEAD),
+        ("tests/test_cli.py", "# cli\n"),
         ("tests/dataset/usages.json", "{}\n"),
         ("README.md", "# readme\n"),
     ]:
@@ -123,6 +127,7 @@ def spec(**overrides) -> pr.PrSpec:
     values = dict(
         key="deepseek",
         model_id="deepseek-v4-pro",
+        entry_id="deepseek-v4-pro",
         vendor_yml="deepseek.yml",
         vendor_name="Deepseek",
         vendor_entry=VENDOR_ENTRY,
@@ -148,6 +153,7 @@ def quiet_runner() -> BuildRunner:
     return (
         BuildRunner()
         .on("uv sync", output="")
+        .on("npm install", output="")
         .on("make build", output="")
         .on("uv run python", output=CALC_OK)
         .on("uv run pytest", output="")
@@ -188,8 +194,58 @@ def test_stage_paths_cover_the_targets_generated_files():
         "packages/js/src/dataUnits.ts",
         "README.md",
         "tests/test_price_calc.py",
+        "tests/test_cli.py",
         "tests/dataset/usages.json",
     } == build._STAGE_PATHS
+
+
+def test_prepare_runs_npm_install_before_make_build(tmp_path):
+    slot = seed_slot(tmp_path)
+    runner = quiet_runner()
+    build.prepare(slot, "main", spec(), runner)
+
+    cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
+    assert "npm install" in cmds
+    assert cmds.index("npm install") < cmds.index("make build")
+
+
+def test_make_test_failure_fixes_cli_snapshot_then_reruns(tmp_path):
+    slot = seed_slot(tmp_path)
+    calls = {"make_test": 0}
+
+    def make_effect(_key: str) -> str:
+        calls["make_test"] += 1
+        if calls["make_test"] == 1:
+            raise pr.PrError("make: boom", stderr="boom")
+        return ""
+
+    def fix_effect(_key: str) -> str:
+        # the fix pass rewrites the drifted snapshot; real git then sees it dirty
+        path = slot / "tests" / "test_cli.py"
+        path.write_text(path.read_text() + "# snapshot fixed\n")
+        return ""
+
+    runner = (
+        quiet_runner()
+        .on("make test", effect=make_effect)
+        .on("uv run pytest tests/test_cli.py", effect=fix_effect)
+    )
+    build.prepare(slot, "main", spec(), runner)
+
+    cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
+    first = cmds.index("make test")
+    fix = cmds.index("uv run pytest tests/test_cli.py --inline-snapshot=fix")
+    rerun = [i for i, c in enumerate(cmds) if c == "make test" and i > first][0]
+    assert first < fix < rerun
+    committed = git(slot, "show", "HEAD:tests/test_cli.py")
+    assert "# snapshot fixed" in committed
+
+
+def test_offpeak_hour_skips_peak_windows():
+    windows = (("01:00:00Z", "04:00:00Z"), ("06:00:00Z", "10:00:00Z"))
+    assert build._offpeak_hour(windows) == 0
+    assert build._offpeak_hour(()) == 12
+    assert build._offpeak_hour((("16:30:00Z", "00:30:00Z"),)) == 1
 
 
 def test_prepare_resets_a_dirty_tree_left_by_a_failed_candidate(tmp_path):
