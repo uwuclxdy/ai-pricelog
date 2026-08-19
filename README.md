@@ -2,7 +2,7 @@
 
 # autopr-genai-prices
 
-**watch model releases, open draft PRs to a genai-prices-layout repo**
+**watch model releases, open draft PRs to `pydantic/genai-prices`**
 
 detectors scrape each provider's own docs and pricing pages daily, one draft PR per new model, a human verifies prices and marks it ready
 
@@ -12,7 +12,7 @@ detectors scrape each provider's own docs and pricing pages daily, one draft PR 
 
 ## What it does
 
-a daily GitHub Actions run watches model companies for new releases and opens draft PRs adding pricing entries to a LiteLLM-layout repo's `model_prices_and_context_window.json`. nothing merges without a human reading the prices.
+a daily GitHub Actions run watches model companies for new releases and opens draft PRs adding entries to the target repo's `prices/providers/*.yml` and `openrouter.yml`. each PR runs the target's own `make build`, `make test` and pre-commit in a clone before opening, and pins a generated `calc_price` test with the real computed values. nothing merges without a human reading the prices.
 
 ## How it works
 
@@ -20,36 +20,36 @@ a daily GitHub Actions run watches model companies for new releases and opens dr
 |---|---|
 | detect | each provider's page is parsed for its current model list (no API keys, all sources are static pages) |
 | diff | new ids vs the git-backed state file's `last_seen` and `handled` |
-| dedup | ids already in the target repo's file are dropped (upstream beat us), plus provider-specific key spellings |
-| scrape | input/output price per token from the provider's pricing page; missing price = retry next run |
-| validate | provider vocab, mode, costs and max_tokens checked against LiteLLM's live file |
-| pr | branch pushed, draft PR opened, max 3 open drafts per run |
+| pending | ids named in an open PR on the real `pydantic/genai-prices` are skipped for this run (no state change) |
+| dedup | ids already matched by the provider yml's match clauses are settled, plus provider-specific spelling hooks (mistral's compacted dates, xai's dated snapshots) |
+| scrape | input/output price per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
+| build | vendor + openrouter entries inserted in a fresh clone, `make build`, a generated + self-verified `calc_price` test, `make test`, pre-commit, then commit |
+| pr | branch pushed (fork when the token cannot push), draft PR opened, max 3 open drafts per run |
 | state | PR'd ids recorded in `handled` (never re-fires), state committed and pushed |
 
 ## Watched providers
 
-| provider | namespace | detection + pricing source |
-|---|---|---|
-| deepseek | `deepseek/` | api-docs.deepseek.com pricing page |
-| zai | `zai/` | docs.z.ai pricing page |
-| moonshot | `moonshot/` | platform.kimi.ai models + pricing pages |
-| minimax | `minimax/` | platform.minimax.io models + pricing pages |
-| dashscope | `dashscope/` | aliyun CN model tables + alibabacloud intl pricing |
-| xai | `xai/` | docs.x.ai models blob |
-| mistral | `mistral/` | docs.mistral.ai model cards + pricing |
-| perplexity | `perplexity/` | docs.perplexity.ai pricing |
+| provider | yml | openrouter prefix | detection + pricing source |
+|---|---|---|---|
+| deepseek | `deepseek.yml` | `deepseek/` | api-docs.deepseek.com pricing page |
+| zai | `zai.yml` | `z-ai/` | docs.z.ai pricing page |
+| moonshot | `moonshotai.yml` | `moonshotai/` | platform.kimi.ai models + pricing pages |
+| minimax | `minimax.yml` | `minimax/` | platform.minimax.io models + pricing pages |
+| xai | `x_ai.yml` | `x-ai/` | docs.x.ai models blob |
+| mistral | `mistral.yml` | `mistralai/` | docs.mistral.ai model cards + pricing |
+| perplexity | `perplexity.yml` | `perplexity/` | docs.perplexity.ai pricing |
 
-volcengine (doubao) ships as dormant code: static pricing exists only in CNY on the CN plaza, so the config skips it until a USD source appears. dropped at the mapping gate: baidu, tencent, 01.AI, inflection, nous (no official litellm namespace), meta_llama, nvidia_nim, amazon_nova, cohere (no static pricing), stability (images-only, per-image credits).
+dormant, commented out in `providers.toml`: dashscope (the target tracks no first-party qwen yml), volcengine (doubao pricing is CNY-only on the CN plaza). dropped at the mapping gate: baidu, tencent, 01.AI, inflection, nous, meta_llama, nvidia_nim, amazon_nova, cohere, stability.
 
 ## Setup
 
 ```sh
 uv sync --frozen
-export REPO=https://github.com/<owner>/<litellm-layout-repo>
+export REPO=https://github.com/pydantic/genai-prices
 uv run autopr-genai-prices
 ```
 
-`REPO` is the only required input. clone source, base branch, push target and PR target all derive from it. push permission decides the flow: the token can push to `REPO` and the PR opens in-repo, or it cannot and the run forks first. no fork detection, one code path.
+`REPO` is the only required input. clone source, base branch, push target and PR target all derive from it. push permission decides the flow: the token can push to `REPO` and the PR opens in-repo, or it cannot and the run forks first. no fork detection, one code path. one exception: the pending-PR check always scans the real `pydantic/genai-prices`, never `REPO`.
 
 in Actions the run uses the `REPO` and `GH_TOKEN` repo secrets; `GH_TOKEN` is a PAT with `repo` scope (GITHUB_TOKEN only reaches the autopr repo itself). schedule: daily 05:17 utc, or `workflow_dispatch`.
 
@@ -62,15 +62,15 @@ in Actions the run uses the `REPO` and `GH_TOKEN` repo secrets; `GH_TOKEN` is a 
 cap = 3 # max open drafts per run
 
 [deepseek]
-provider = "deepseek"   # the litellm_provider value
-namespace = "deepseek"  # the key prefix in the prices file
+yml = "deepseek.yml"     # the target's prices/providers/<yml>
+or_prefix = "deepseek"   # the openrouter slug prefix
 detector = "deepseek_page"
 detector_url = "https://api-docs.deepseek.com/quick_start/pricing"
 scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 ```
 
-`detector`/`scraper` name modules under `autopr_genai_prices.{detectors,scrapers}`; adding a provider is a config section plus a module pair. `LITELLM_FILE_URL` overrides the live-file fetch (default: the litellm main-branch raw url).
+`detector`/`scraper` name modules under `autopr_genai_prices.{detectors,scrapers}`; adding a provider is a config section plus a module pair.
 
 ## Development
 
