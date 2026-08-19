@@ -5,7 +5,7 @@ name: ci
 
 on:
   push:
-    branches: [main]  # customize per project (e.g. main / master / mommy), or drop this section
+    branches: [mommy]
   pull_request:
 
 jobs:
