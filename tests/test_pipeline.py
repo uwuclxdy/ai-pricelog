@@ -462,3 +462,22 @@ def test_state_push_uses_current_branch_without_env(
     assert report.providers["deepseek"].prs
     push_cmds = [c for c in runner.calls if c[0][0] == "git" and c[0][1] == "push"]
     assert push_cmds and push_cmds[-1][0] == ["git", "push", "origin", "HEAD:refs/heads/main"]
+
+
+def test_state_commit_sets_identity_when_missing(tmp_path, fake_modules, upstream, repo_root, wire):
+    from litellm_autopr import pipeline
+
+    git(repo_root, "config", "--unset", "user.name")
+    git(repo_root, "config", "--unset", "user.email")
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(upstream({}), 3, ("deepseek",))
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, runner)
+    assert report.providers["deepseek"].prs
+    assert (
+        git(repo_root, "log", "--format=%an <%ae>", "-1").strip()
+        == "octocat <octocat@users.noreply.github.com>"
+    )

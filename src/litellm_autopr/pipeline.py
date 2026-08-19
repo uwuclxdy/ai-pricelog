@@ -123,6 +123,7 @@ def run(
     save_state(state, repo_root / "state.json")
     if state_changed:
         try:
+            pr.ensure_author(repo_root, runner)
             runner.run(["git", "add", "state.json"], cwd=repo_root)
             runner.run(["git", "commit", "-m", "chore: advance watchdog state"], cwd=repo_root)
         except pr.PrError as exc:

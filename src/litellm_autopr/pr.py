@@ -69,7 +69,7 @@ def prepare_branch(
     data[entry_key] = entry
     target.write_text(json.dumps(data, indent=2, sort_keys=False) + "\n")
     runner.run(["git", "checkout", "-b", branch], cwd=slot)
-    _ensure_author(slot, runner)
+    ensure_author(slot, runner)
     runner.run(["git", "add", "--", str(file_path)], cwd=slot)
     # the clone inherits the operator's global core.hooksPath; the commit runs
     # in an ephemeral clone, so bypass external hooks (repo hooks in .git/hooks
@@ -190,7 +190,8 @@ def _is_permission_denied(exc: PrError) -> bool:
     return any(marker in text for marker in _PERMISSION_MARKERS)
 
 
-def _ensure_author(slot: Path, runner: PrRunner) -> None:
+def ensure_author(slot: Path, runner: PrRunner) -> None:
+    """set repo-local user.name/email from gh when git has no identity."""
     try:
         email = runner.run(["git", "config", "user.email"], cwd=slot).strip()
     except PrError as exc:
