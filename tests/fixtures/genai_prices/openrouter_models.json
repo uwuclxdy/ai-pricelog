@@ -1,0 +1,172 @@
+{
+  "data": [
+    {
+      "id": "~z-ai/glm-latest",
+      "name": "Z.ai: GLM Latest",
+      "pricing": {
+        "prompt": "0.0000014",
+        "completion": "0.0000044",
+        "input_cache_read": "0.00000026"
+      },
+      "alias_target": {
+        "name": "Z.ai: GLM 5.3",
+        "slug": "z-ai/glm-5.3"
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "name": "Z.ai: GLM 5.3",
+      "pricing": {
+        "prompt": "0.0000014",
+        "completion": "0.0000044",
+        "input_cache_read": "0.00000026"
+      },
+      "canonical_slug": "z-ai/glm-5.3-20260816"
+    },
+    {
+      "id": "z-ai/glm-5.2",
+      "name": "Z.ai: GLM 5.2",
+      "pricing": {
+        "prompt": "0.000000966",
+        "completion": "0.000003036",
+        "input_cache_read": "0.0000001932"
+      },
+      "canonical_slug": "z-ai/glm-5.2-20260616"
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro",
+      "name": "DeepSeek: DeepSeek V4 Pro 0423",
+      "pricing": {
+        "prompt": "0.00000144",
+        "completion": "0.00000288",
+        "input_cache_read": "0.0000001215"
+      },
+      "canonical_slug": "deepseek/deepseek-v4-pro-20260423"
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek: DeepSeek V4 Flash 0423",
+      "pricing": {
+        "prompt": "0.0000000826",
+        "completion": "0.0000001652",
+        "input_cache_read": "0.00000001652"
+      },
+      "canonical_slug": "deepseek/deepseek-v4-flash-20260423"
+    },
+    {
+      "id": "minimax/minimax-m3",
+      "name": "MiniMax: MiniMax M3",
+      "pricing": {
+        "prompt": "0.0000003",
+        "completion": "0.0000012",
+        "input_cache_read": "0.00000006"
+      },
+      "canonical_slug": "minimax/minimax-m3-20260531"
+    },
+    {
+      "id": "minimax/minimax-m1",
+      "name": "MiniMax: MiniMax M1",
+      "pricing": {
+        "prompt": "0.00000055",
+        "completion": "0.0000022"
+      }
+    },
+    {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "canonical_slug": "dots-studio/dots-3-note-preview-20260813"
+    },
+    {
+      "id": "bytedance-seed/seed-2-1-turbo",
+      "name": "ByteDance Seed: Seed 2.1 Turbo",
+      "pricing": {
+        "prompt": "0.0000005",
+        "completion": "0.0000025"
+      },
+      "canonical_slug": "bytedance-seed/seed-2-1-turbo-20260810"
+    },
+    {
+      "id": "x-ai/grok-4.5",
+      "name": "SpaceXAI: Grok 4.5",
+      "pricing": {
+        "prompt": "0.000002",
+        "completion": "0.000006",
+        "web_search": "0.005",
+        "input_cache_read": "0.0000003",
+        "overrides": [
+          {
+            "min_prompt_tokens": 200000,
+            "prompt": "0.000004",
+            "completion": "0.000012",
+            "input_cache_read": "0.0000006"
+          }
+        ]
+      },
+      "canonical_slug": "x-ai/grok-4.5-20260708"
+    },
+    {
+      "id": "x-ai/grok-4.3",
+      "name": "SpaceXAI: Grok 4.3",
+      "pricing": {
+        "prompt": "0.00000125",
+        "completion": "0.0000025",
+        "web_search": "0.005",
+        "input_cache_read": "0.0000002",
+        "overrides": [
+          {
+            "min_prompt_tokens": 200000,
+            "prompt": "0.0000025",
+            "completion": "0.000005",
+            "input_cache_read": "0.0000004"
+          }
+        ]
+      },
+      "canonical_slug": "x-ai/grok-4.3-20260430"
+    },
+    {
+      "id": "moonshotai/kimi-k3",
+      "name": "MoonshotAI: Kimi K3",
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "input_cache_read": "0.0000003"
+      },
+      "canonical_slug": "moonshotai/kimi-k3-20260715"
+    },
+    {
+      "id": "perplexity/sonar-pro",
+      "name": "Perplexity: Sonar Pro",
+      "pricing": {
+        "prompt": "0.000003",
+        "completion": "0.000015",
+        "web_search": "0.005"
+      }
+    },
+    {
+      "id": "mistralai/codestral-2508",
+      "name": "Mistral: Codestral 2508",
+      "pricing": {
+        "prompt": "0.0000003",
+        "completion": "0.0000009",
+        "input_cache_read": "0.00000003"
+      }
+    },
+    {
+      "id": "mistralai/mistral-small-3.2-24b-instruct",
+      "name": "Mistral: Mistral Small 3.2 24B",
+      "pricing": {
+        "prompt": "0.00000009375",
+        "completion": "0.00000025"
+      },
+      "canonical_slug": "mistralai/mistral-small-3.2-24b-instruct-2506"
+    }
+  ],
+  "total_count": 416,
+  "links": {
+    "next": null
+  }
+}

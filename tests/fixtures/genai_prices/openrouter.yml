@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=.schema.json
+name: OpenRouter
+id: openrouter
+pricing_urls:
+  - https://openrouter.ai/models
+api_pattern: 'https://(api\.)?openrouter\.ai'
+# we don't include description here since there are so many models, you can see descriptions at
+# https://openrouter.ai/api/v1/models which this data is based on
+extractors:
+  # https://openrouter.ai/docs/api-reference/overview#response-usage
+  - api_flavor: chat
+    root: usage
+    mappings:
+      - path: prompt_tokens
+        dest: input_tokens
+      - path: [prompt_tokens_details, cached_tokens]
+        dest: cache_read_tokens
+        required: false
+      - path: [prompt_tokens_details, cache_write_tokens]
+        dest: cache_write_tokens
+        required: false
+      - path: [prompt_tokens_details, audio_tokens]
+        dest: input_audio_tokens
+        required: false
+      - path: [completion_tokens_details, audio_tokens]
+        dest: output_audio_tokens
+        required: false
+      - path: [completion_tokens_details, reasoning_tokens]
+        dest: output_reasoning_tokens
+        required: false
+      - path: completion_tokens
+        dest: output_tokens
+
+models:
+  - id: "agentica-org/deepcoder-14b-preview:free"
+    match:
+      equals: "agentica-org/deepcoder-14b-preview:free"
+    prices: {}
+
+  - id: deepseek/deepseek-v4-pro
+    name: DeepSeek V4 Pro
+    match:
+      equals: deepseek/deepseek-v4-pro
+    prices:
+      input_mtok: 0.435
+      cache_read_mtok: 0.003625
+      output_mtok: 0.87
+
+  - id: minimax/minimax-m3
+    name: MiniMax M3
+    match:
+      or:
+        - equals: minimax/minimax-m3
+        - equals: minimax/minimax-m3-20260531
+    prices:
+      input_mtok: 0.3
+      cache_read_mtok: 0.06
+      output_mtok: 1.2
+
+  - id: perplexity/sonar-pro
+    match:
+      equals: perplexity/sonar-pro
+    prices:
+      input_mtok: 3
+      output_mtok: 15
+
+  - id: x-ai/grok-4.3
+    name: Grok 4.3
+    match:
+      or:
+        - equals: x-ai/grok-4.3
+        - regex: ^x-ai/grok-4\.3-\d{8}$
+    prices:
+      input_mtok: 1.25
+      cache_read_mtok: 0.2
+      output_mtok: 2.5
+
+  - id: z-ai/glm-5.2
+    name: GLM 5.2
+    match:
+      or:
+        - equals: z-ai/glm-5.2
+        - equals: z-ai/glm-5.2-20260616
+    prices:
+      input_mtok: 1.4
+      cache_read_mtok: 0.26
+      output_mtok: 4.4
+    context_window: 1048576
+
