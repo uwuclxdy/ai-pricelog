@@ -1,7 +1,3 @@
-# one section per watched provider. provider = the litellm_provider value,
-# namespace = the key prefix in the prices file, detector/scraper = module
-# names under litellm_autopr.{detectors,scrapers}. sources pinned 2026-08-19.
-
 [settings]
 cap = 3
 
@@ -12,67 +8,3 @@ detector = "deepseek_page"
 detector_url = "https://api-docs.deepseek.com/quick_start/pricing"
 scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
-
-[zai]
-provider = "zai"
-namespace = "zai"
-detector = "zai_page"
-detector_url = "https://docs.z.ai/guides/overview/pricing"
-scraper = "zai_page"
-scraper_url = "https://docs.z.ai/guides/overview/pricing"
-
-[moonshot]
-provider = "moonshot"
-namespace = "moonshot"
-detector = "moonshot_page"
-detector_url = "https://platform.kimi.ai/docs/models.md"
-scraper = "moonshot_page"
-scraper_url = "https://platform.kimi.ai/docs/llms.txt"
-
-[minimax]
-provider = "minimax"
-namespace = "minimax"
-detector = "minimax_page"
-detector_url = "https://platform.minimax.io/docs/guides/models-intro.md"
-scraper = "minimax_page"
-scraper_url = "https://platform.minimax.io/docs/guides/pricing-paygo.md"
-
-[dashscope]
-provider = "dashscope"
-namespace = "dashscope"
-detector = "dashscope_page"
-detector_url = "https://help.aliyun.com/zh/model-studio/text-generation-model/"
-scraper = "dashscope_page"
-scraper_url = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-
-[xai]
-provider = "xai"
-namespace = "xai"
-detector = "xai_page"
-detector_url = "https://docs.x.ai/docs/models"
-scraper = "xai_page"
-scraper_url = "https://docs.x.ai/docs/models"
-
-[mistral]
-provider = "mistral"
-namespace = "mistral"
-detector = "mistral_page"
-detector_url = "https://docs.mistral.ai/models/model-cards/"
-scraper = "mistral_page"
-scraper_url = "https://docs.mistral.ai/inference/pricing"
-
-[volcengine]
-provider = "volcengine"
-namespace = "volcengine"
-detector = "volcengine_page"
-detector_url = "https://ai.volcengine.com/model"
-scraper = "volcengine_page"
-scraper_url = "https://ai.volcengine.com/model"
-
-[perplexity]
-provider = "perplexity"
-namespace = "perplexity"
-detector = "perplexity_page"
-detector_url = "https://docs.perplexity.ai/guides/pricing"
-scraper = "perplexity_page"
-scraper_url = "https://docs.perplexity.ai/guides/pricing"
