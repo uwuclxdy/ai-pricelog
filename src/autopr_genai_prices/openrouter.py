@@ -57,13 +57,20 @@ def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
         models.append(
             OpenrouterModel(
                 id=entry["id"],
-                name=entry.get("name") or entry["id"],
+                name=_display_name(entry),
                 input_mtok=_price(pricing.get("prompt"), entry["id"]),
                 output_mtok=_price(pricing.get("completion"), entry["id"]),
                 cache_read_mtok=_price(pricing.get("input_cache_read"), entry["id"]),
             )
         )
     return models
+
+
+def _display_name(entry: dict) -> str:
+    name = entry.get("name") or entry["id"]
+    # API names carry a vendor prefix ("SpaceXAI: Grok 4.6"); the target's
+    # openrouter.yml entries use the bare model name
+    return name.split(": ", 1)[1] if ": " in name else name
 
 
 def _price(value: object, model_id: str) -> float | None:

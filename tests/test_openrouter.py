@@ -24,7 +24,7 @@ def test_fetch_models_parses_fixture(fake_fetch: list[str]) -> None:
     models = fetch_models()
     by_id = {m.id: m for m in models}
     glm53 = by_id["z-ai/glm-5.3"]
-    assert glm53 == OpenrouterModel("z-ai/glm-5.3", "Z.ai: GLM 5.3", 1.4, 4.4, 0.26)
+    assert glm53 == OpenrouterModel("z-ai/glm-5.3", "GLM 5.3", 1.4, 4.4, 0.26)
     v4pro = by_id["deepseek/deepseek-v4-pro"]
     assert v4pro.input_mtok == 1.44
     assert v4pro.cache_read_mtok == 0.1215
@@ -122,3 +122,10 @@ def test_openrouter_fixture_is_valid_json() -> None:
     data = json.loads(FIXTURE.read_text())
     assert isinstance(data, dict)
     assert isinstance(data["data"], list)
+
+
+def test_fetch_models_strips_vendor_name_prefix(fake_fetch: list[str]) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    assert by_id["x-ai/grok-4.5"].name == "Grok 4.5"
+    assert by_id["deepseek/deepseek-v4-pro"].name == "DeepSeek V4 Pro 0423"
+    assert by_id["dots-studio/dots-3-note-preview:free"].name == "Dots3-Note Preview (free)"

@@ -397,7 +397,7 @@ def test_insert_entry_appends_at_end() -> None:
 
 def test_insert_entry_into_openrouter_fixture_preserves_bytes() -> None:
     text = (FIXTURES / "openrouter.yml").read_text()
-    entry = build_openrouter_entry("minimax/minimax-m1", "MiniMax M1", 0.4e-6, 2.2e-6, 0.04e-6)
+    entry = build_openrouter_entry("minimax/minimax-m1", "MiniMax M1", 0.4, 2.2, 0.04)
     pos = text.index("  - id: minimax/minimax-m3\n")
     assert insert_entry(text, "minimax/minimax-m1", entry) == text[:pos] + entry + "\n" + text[pos:]
 
@@ -405,7 +405,7 @@ def test_insert_entry_into_openrouter_fixture_preserves_bytes() -> None:
 def test_insert_entry_before_quoted_first_entry() -> None:
     text = (FIXTURES / "openrouter.yml").read_text()
     entry = build_openrouter_entry(
-        "agentica-org/deepcoder-14b-preview:beta", "Beta", 0.1e-6, 0.2e-6, None
+        "agentica-org/deepcoder-14b-preview:beta", "Beta", 0.1, 0.2, None
     )
     pos = text.index('  - id: "agentica-org/deepcoder-14b-preview:free"\n')
     expected = text[:pos] + entry + "\n" + text[pos:]
@@ -413,7 +413,7 @@ def test_insert_entry_before_quoted_first_entry() -> None:
 
 
 OPENROUTER_ENTRY = """  - id: deepseek/deepseek-v4-pro
-    name: DeepSeek V4 Pro
+    name: "DeepSeek V4 Pro"
     match:
       equals: deepseek/deepseek-v4-pro
     prices:
@@ -425,13 +425,13 @@ OPENROUTER_ENTRY = """  - id: deepseek/deepseek-v4-pro
 
 def test_build_openrouter_entry_full() -> None:
     entry = build_openrouter_entry(
-        "deepseek/deepseek-v4-pro", "DeepSeek V4 Pro", 0.435e-6, 0.87e-6, 0.003625e-6
+        "deepseek/deepseek-v4-pro", "DeepSeek V4 Pro", 0.435, 0.87, 0.003625
     )
     assert entry == OPENROUTER_ENTRY
 
 
 def test_build_openrouter_entry_without_cache_read() -> None:
-    entry = build_openrouter_entry("a/b", "B", 0.435e-6, 0.87e-6, None)
+    entry = build_openrouter_entry("a/b", "B", 0.435, 0.87, None)
     assert "cache_read_mtok" not in entry
     assert "      input_mtok: 0.435\n      output_mtok: 0.87\n" in entry
 
@@ -439,12 +439,12 @@ def test_build_openrouter_entry_without_cache_read() -> None:
 def test_build_openrouter_entry_free_model() -> None:
     entry = build_openrouter_entry("a/b:free", "Free B", None, None, None)
     assert entry == (
-        "  - id: a/b:free\n    name: Free B\n    match:\n      equals: a/b:free\n    prices: {}\n"
+        '  - id: a/b:free\n    name: "Free B"\n    match:\n      equals: a/b:free\n    prices: {}\n'
     )
 
 
 def test_build_openrouter_entry_output_none_omits_line() -> None:
-    entry = build_openrouter_entry("a/b", "B", 0.4e-6, None, 0.04e-6)
+    entry = build_openrouter_entry("a/b", "B", 0.4, None, 0.04)
     assert "      input_mtok: 0.4\n      cache_read_mtok: 0.04\n" in entry
     assert "output_mtok" not in entry
 

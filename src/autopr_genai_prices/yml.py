@@ -307,15 +307,24 @@ def build_openrouter_entry(
     output_mtok: float | None,
     cache_read_mtok: float | None,
 ) -> str:
-    """Build one openrouter.yml models-list item; free models emit `prices: {}`."""
-    lines = [f"  - id: {slug}", f"    name: {name}", "    match:", f"      equals: {slug}"]
+    """Build one openrouter.yml models-list item; free models emit `prices: {}`.
+
+    All three price args are already per-megatoken values (the openrouter API
+    parse converts); the name is quoted because API names can carry `: `.
+    """
+    lines = [
+        f"  - id: {slug}",
+        f'    name: "{name}"',
+        "    match:",
+        f"      equals: {slug}",
+    ]
     if input_mtok is None:
         lines.append("    prices: {}")
     else:
         lines.append("    prices:")
-        lines.append(f"      input_mtok: {_fmt_mtok(input_mtok)}")
+        lines.append(f"      input_mtok: {input_mtok:g}")
         if cache_read_mtok is not None:
-            lines.append(f"      cache_read_mtok: {_fmt_mtok(cache_read_mtok)}")
+            lines.append(f"      cache_read_mtok: {cache_read_mtok:g}")
         if output_mtok is not None:
-            lines.append(f"      output_mtok: {_fmt_mtok(output_mtok)}")
+            lines.append(f"      output_mtok: {output_mtok:g}")
     return "\n".join(lines) + "\n"
