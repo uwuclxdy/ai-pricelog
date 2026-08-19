@@ -115,10 +115,15 @@ def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
     runner.run(["uv", "sync", "--frozen", "--all-packages", "--all-extras"], cwd=slot)
     # the target's js hooks and make build both call npx; without node_modules
     # npx would fetch the latest unpinned toolchain (same reason the target's
-    # own CI installs before pre-commit). --no-package-lock keeps the
-    # committed lock untouched; a bun-shimmed npm also leaves a bun.lock
-    # behind, which must never reach the commit
-    runner.run(["npm", "install", "--no-package-lock"], cwd=slot)
+    # own CI installs before pre-commit). npm ci installs exactly the
+    # committed lock (an unpinned prettier would rewrite the README provider
+    # markers and break inject-providers); a bun-shimmed npm maps ci to a
+    # frozen-lockfile install and refuses the npm lock, so the fallback
+    # install runs there and the shim's own lock must never reach the commit
+    try:
+        runner.run(["npm", "ci"], cwd=slot)
+    except PrError:
+        runner.run(["npm", "install", "--no-package-lock"], cwd=slot)
     (slot / "bun.lock").unlink(missing_ok=True)
     _run_make(slot, "build", runner)
     _generate_test(slot, spec, runner)
@@ -136,8 +141,10 @@ def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
 def _insert_entries(slot: Path, spec: PrSpec) -> None:
     providers = slot / "prices" / "providers"
     vendor_path = providers / spec.vendor_yml
+    # the entry id sorts the insert: the page spelling may diverge from the
+    # target's tracked spelling (mistral dashed vs compacted dates)
     vendor_path.write_text(
-        yml.insert_entry(vendor_path.read_text(), spec.model_id, spec.vendor_entry)
+        yml.insert_entry(vendor_path.read_text(), spec.entry_id, spec.vendor_entry)
     )
     if spec.openrouter_entry is not None:
         openrouter_path = providers / "openrouter.yml"
@@ -148,11 +155,16 @@ def _insert_entries(slot: Path, spec: PrSpec) -> None:
         )
 
 
+def _tail(exc: PrError) -> str:
+    """stderr tail, falling back to stdout: pre-commit reports on stdout."""
+    return _stderr_tail(exc.stderr) if exc.stderr.strip() else _stderr_tail(exc.stdout)
+
+
 def _run_make(slot: Path, target: str, runner: PrRunner) -> None:
     try:
         runner.run(["make", target], cwd=slot)
     except PrError as exc:
-        raise BuildError(f"make {target} failed in the clone: {_stderr_tail(exc.stderr)}") from exc
+        raise BuildError(f"make {target} failed in the clone: {_tail(exc)}") from exc
 
 
 def _generate_test(slot: Path, spec: PrSpec, runner: PrRunner) -> None:
@@ -163,12 +175,12 @@ def _generate_test(slot: Path, spec: PrSpec, runner: PrRunner) -> None:
     provider_id = provider_data["id"]
     api_url = _unescape(provider_data.get("api_pattern"))
     hour = _offpeak_hour(spec.vendor_peak_windows)
-    values = _calc_values(slot, spec.model_id, provider_id, api_url, hour, runner)
+    values = _calc_values(slot, spec.entry_id, provider_id, api_url, hour, runner)
     if values is None:
         return
-    test_name = _test_name(provider_id, spec.model_id)
+    test_name = _test_name(provider_id, spec.entry_id)
     test_path.write_text(
-        original.rstrip("\n") + "\n\n\n" + _render_test(test_name, spec.model_id, values) + "\n"
+        original.rstrip("\n") + "\n\n\n" + _render_test(test_name, spec.entry_id, values) + "\n"
     )
     try:
         runner.run(["uv", "run", "pytest", "tests/test_price_calc.py", "-k", test_name], cwd=slot)
@@ -322,7 +334,7 @@ def _run_make_test(slot: Path, runner: PrRunner) -> None:
             runner.run(["make", "test"], cwd=slot)
         except PrError as retry_exc:
             raise BuildError(
-                f"make test failed on the rerun in the clone: {_stderr_tail(retry_exc.stderr)}"
+                f"make test failed on the rerun in the clone: {_tail(retry_exc)}"
             ) from retry_exc
 
 
@@ -356,6 +368,4 @@ def _precommit(slot: Path, paths: list[str], runner: PrRunner) -> None:
         try:
             runner.run(["uvx", "pre-commit", "run", "--files", *paths], cwd=slot)
         except PrError as retry_exc:
-            raise BuildError(
-                f"pre-commit failed in the clone: {_stderr_tail(retry_exc.stderr)}"
-            ) from retry_exc
+            raise BuildError(f"pre-commit failed in the clone: {_tail(retry_exc)}") from retry_exc

@@ -10,9 +10,10 @@ UPSTREAM = "pydantic/genai-prices"
 
 
 class PrError(Exception):
-    def __init__(self, message: str, stderr: str = "") -> None:
+    def __init__(self, message: str, stderr: str = "", stdout: str = "") -> None:
         super().__init__(message)
         self.stderr = stderr
+        self.stdout = stdout
 
 
 class PrRunner:
@@ -23,7 +24,9 @@ class PrRunner:
             raise PrError(f"command {cmd} failed to start: {exc}") from exc
         if result.returncode != 0:
             raise PrError(
-                f"command {cmd} failed: {_stderr_tail(result.stderr)}", stderr=result.stderr
+                f"command {cmd} failed: {_stderr_tail(result.stderr)}",
+                stderr=result.stderr,
+                stdout=result.stdout,
             )
         return result.stdout
 

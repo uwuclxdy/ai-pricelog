@@ -1,4 +1,4 @@
-"""xAI pricing from the docs.x.ai models page blob.
+r"""xAI pricing from the docs.x.ai models page blob.
 
 prices live in the same embedded blob the detector reads. the blob price fields are
 USD per 1M tokens scaled by 1e4 (20000 -> $2.00/1M, measured 2026-08-19), so a

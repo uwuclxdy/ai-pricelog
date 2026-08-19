@@ -153,7 +153,7 @@ def quiet_runner() -> BuildRunner:
     return (
         BuildRunner()
         .on("uv sync", output="")
-        .on("npm install --no-package-lock", output="")
+        .on("npm ci", output="")
         .on("make build", output="")
         .on("uv run python", output=CALC_OK)
         .on("uv run pytest", output="")
@@ -199,14 +199,73 @@ def test_stage_paths_cover_the_targets_generated_files():
     } == build._STAGE_PATHS
 
 
-def test_prepare_runs_npm_install_before_make_build(tmp_path):
+def test_prepare_runs_npm_ci_before_make_build(tmp_path):
     slot = seed_slot(tmp_path)
     runner = quiet_runner()
     build.prepare(slot, "main", spec(), runner)
 
     cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
+    assert "npm ci" in cmds
+    assert cmds.index("npm ci") < cmds.index("make build")
+    assert "npm install --no-package-lock" not in cmds
+
+
+def test_prepare_falls_back_to_npm_install_when_ci_refuses(tmp_path):
+    slot = seed_slot(tmp_path)
+    runner = (
+        quiet_runner()
+        .on("npm ci", failure=pr.PrError("frozen lockfile", stderr="lockfile had changes"))
+        .on("npm install --no-package-lock", output="")
+    )
+    build.prepare(slot, "main", spec(), runner)
+
+    cmds = [" ".join(cmd) for cmd, _cwd in runner.calls]
+    assert "npm ci" in cmds
     assert "npm install --no-package-lock" in cmds
-    assert cmds.index("npm install --no-package-lock") < cmds.index("make build")
+    assert cmds.index("npm ci") < cmds.index("npm install --no-package-lock")
+
+
+def test_prepare_sorts_the_vendor_insert_by_entry_id(tmp_path):
+    slot = seed_slot(tmp_path)
+    build._insert_entries(
+        slot,
+        spec(
+            model_id="zzz-page",
+            entry_id="aaa-entry",
+            vendor_entry=VENDOR_ENTRY.replace("  - id: deepseek-v4-pro", "  - id: aaa-entry"),
+        ),
+    )
+    vendor = (slot / "prices" / "providers" / "deepseek.yml").read_text()
+    assert vendor.index("  - id: aaa-entry") < vendor.index("  - id: deepseek-chat")
+
+
+def test_generate_test_probes_the_entry_id(tmp_path):
+    slot = seed_slot(tmp_path)
+    build._insert_entries(
+        slot,
+        spec(
+            model_id="zzz-page",
+            entry_id="aaa-entry",
+            vendor_entry=VENDOR_ENTRY.replace("  - id: deepseek-v4-pro", "  - id: aaa-entry"),
+        ),
+    )
+    seen: list[str] = []
+
+    def calc_effect(key: str) -> str:
+        seen.append(key)
+        return CALC_OK
+
+    runner = quiet_runner().on("uv run python", effect=calc_effect)
+    build._generate_test(slot, spec(model_id="zzz-page", entry_id="aaa-entry"), runner)
+
+    (key,) = seen
+    assert "aaa-entry 12" in key
+    assert "zzz-page" not in key
+
+
+def test_build_error_tail_falls_back_to_stdout():
+    exc = pr.PrError("boom", stderr="", stdout="inject-providers failed")
+    assert "inject-providers failed" in build._tail(exc)
 
 
 def test_prepare_removes_the_bun_shim_lock(tmp_path):
@@ -218,7 +277,7 @@ def test_prepare_removes_the_bun_shim_lock(tmp_path):
         (slot / "bun.lock").write_text("lock\n")
         return ""
 
-    runner = quiet_runner().on("npm install --no-package-lock", effect=npm_effect)
+    runner = quiet_runner().on("npm ci", effect=npm_effect)
     build.prepare(slot, "main", spec(), runner)
 
     assert not (slot / "bun.lock").exists()
