@@ -31,6 +31,10 @@ _DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
 # tracks (codestral-2508 etc.). slugs without a dated tail stay verbatim.
 _DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){0,3}-(\d{2})-(\d{2})$")
 
+# a generation segment between family and size (ministral-3-14b): the target
+# tracks the spelling without it (ministral-14b-2512)
+_GENERATION_SEGMENT = re.compile(r"^(.+)-(\d+)-(\d+b(?:-.*)?)$")
+
 
 def _compact(slug: str) -> str:
     match = _DATED_TAIL.match(slug)
@@ -40,9 +44,22 @@ def _compact(slug: str) -> str:
 
 
 def dedup_keys(model_id: str) -> list[str]:
-    """The target's tracked spelling of this page slug, or [] when unchanged."""
+    """The target's tracked spellings of this page slug, or [] when unchanged.
+
+    most slugs compact a dated tail (codestral-25-08 -> codestral-2508).
+    ministral slugs also carry a generation segment the target drops
+    (ministral-3-14b-25-12 -> ministral-3-14b-2512 AND ministral-14b-2512).
+    the pipeline settles only when a returned spelling is actually tracked
+    (is_tracked), so an untracked candidate spelling is harmless.
+    """
     compacted = _compact(model_id)
-    return [] if compacted == model_id else [compacted]
+    keys = []
+    if compacted != model_id:
+        keys.append(compacted)
+    match = _GENERATION_SEGMENT.match(compacted)
+    if match:
+        keys.append(f"{match.group(1)}-{match.group(3)}")
+    return keys
 
 
 def _price(cell: str) -> float | None:

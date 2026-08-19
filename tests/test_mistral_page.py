@@ -235,22 +235,24 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
 def test_dedup_keys_compaction():
     from autopr_genai_prices.scrapers.mistral_page import dedup_keys
 
-    # page slug -> the target's tracked spelling, measured against
+    # page slug -> the target's tracked spellings, measured against
     # prices/providers/mistral.yml (codestral-2508 etc., 2026-08-19)
     cases = {
-        "codestral-25-08": "codestral-2508",
-        "codestral-25-01": "codestral-2501",
-        "mistral-medium-3-5-26-04": "mistral-medium-2604",
-        "mistral-small-4-0-26-03": "mistral-small-2603",
-        "mistral-large-3-25-12": "mistral-large-2512",
-        "mistral-large-2-1-24-11": "mistral-large-2411",
-        "mistral-large-2-0-24-07": "mistral-large-2407",
-        "pixtral-large-24-11": "pixtral-large-2411",
-        "devstral-2-25-12": "devstral-2512",
-        "magistral-medium-1-1-25-07": "magistral-medium-2507",
+        "codestral-25-08": ["codestral-2508"],
+        "codestral-25-01": ["codestral-2501"],
+        "mistral-medium-3-5-26-04": ["mistral-medium-2604"],
+        "mistral-small-4-0-26-03": ["mistral-small-2603"],
+        "mistral-large-3-25-12": ["mistral-large-2512"],
+        "mistral-large-2-1-24-11": ["mistral-large-2411"],
+        "mistral-large-2-0-24-07": ["mistral-large-2407"],
+        "pixtral-large-24-11": ["pixtral-large-2411"],
+        "devstral-2-25-12": ["devstral-2512"],
+        "magistral-medium-1-1-25-07": ["magistral-medium-2507"],
+        "ministral-3-14b-25-12": ["ministral-3-14b-2512", "ministral-14b-2512"],
+        "ministral-3-3b-25-12": ["ministral-3-3b-2512", "ministral-3b-2512"],
     }
     for slug, tracked in cases.items():
-        assert dedup_keys(slug) == [tracked], slug
+        assert dedup_keys(slug) == tracked, slug
 
 
 def test_dedup_keys_unchanged_spellings_return_nothing():
