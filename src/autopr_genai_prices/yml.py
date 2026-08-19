@@ -239,7 +239,7 @@ def _substitute(value: str, sibling_id: str, model_id: str) -> str:
 
 
 def _escape_id(model_id: str) -> str:
-    """Escape an id the way the target escapes ids inside regex patterns.
+    r"""Escape an id the way the target escapes ids inside regex patterns.
 
     The target escapes only periods (`^grok-4\.5-\d{8}$`); hyphens and slashes
     stay literal, so a full re.escape (which escapes hyphens too) never
