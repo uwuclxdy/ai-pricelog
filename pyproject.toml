@@ -1,7 +1,7 @@
 [project]
 name            = "autopr-genai-prices"
 version         = "0.1.0"
-description     = "watch model releases, open draft PRs to a genai-prices-layout repo"
+description     = "watch model releases and price changes, open draft PRs to a genai-prices-layout repo"
 requires-python = ">=3.12"
 license         = { text = "MIT" }
 dependencies = [

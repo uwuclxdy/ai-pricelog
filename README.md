@@ -2,9 +2,9 @@
 
 # autopr-genai-prices
 
-**watch model releases, open draft PRs to `pydantic/genai-prices`**
+**watch model releases and price changes, open draft PRs to `pydantic/genai-prices`**
 
-detectors scrape each provider's own docs and pricing pages daily, one draft PR per new model, a human verifies prices and marks it ready
+detectors scrape each provider's own docs and pricing pages daily, one draft PR per new model or drifted price, a human verifies prices and marks it ready
 
 ![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/autopr-genai-prices/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/autopr-genai-prices)
 
@@ -12,7 +12,7 @@ detectors scrape each provider's own docs and pricing pages daily, one draft PR 
 
 ## What it does
 
-a daily GitHub Actions run watches model companies for new releases and opens draft PRs adding entries to the target repo's `prices/providers/*.yml` and `openrouter.yml`. each PR runs the target's own `make build`, `make test` and pre-commit in a clone before opening, and pins a generated `calc_price` test with the real computed values. nothing merges without a human reading the prices.
+a daily GitHub Actions run watches model companies for new releases and price changes and opens draft PRs against the target repo's `prices/providers/*.yml` and `openrouter.yml`. new models get added entries; a tracked model whose live page drifts from the yml gets an update PR (a dated conditional entry for flat rate changes per the target's never-overwrite rule, a list-form conversion when the page turns split-priced, and a named deviation for list-form drift the schema cannot express). a follow-up pass fills deferred openrouter entries once the openrouter API lists them. each PR runs the target's own `make build`, `make test` and pre-commit in a clone before opening, and pins a generated `calc_price` test with the real computed values. nothing merges without a human reading the prices.
 
 ## How it works
 
@@ -23,9 +23,11 @@ a daily GitHub Actions run watches model companies for new releases and opens dr
 | pending | ids named in an open PR on the real `pydantic/genai-prices` are skipped for this run (no state change) |
 | dedup | ids already matched by the provider yml's match clauses are settled, plus provider-specific spelling hooks (mistral's compacted dates, xai's dated snapshots) |
 | scrape | input/output price per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
+| refresh | tracked models re-scrape each run; drift vs the yml opens an update PR (dated append, split conversion, or a replaced block with the deviation named), openrouter.yml mirrored when its API already lists the new rates |
+| follow-up | handled ids whose vendor entry landed but whose openrouter entry deferred get an openrouter-only PR once the API lists them |
 | build | vendor + openrouter entries inserted in a fresh clone, `make build`, a generated + self-verified `calc_price` test, `make test`, pre-commit, then commit |
 | pr | branch pushed (fork when the token cannot push), draft PR opened, max 3 open drafts per run |
-| state | PR'd ids recorded in `handled` (never re-fires), state committed and pushed |
+| state | PR'd ids recorded in `handled` (never re-fires), state committed and pushed; updates and follow-ups write no state |
 
 ## Watched providers
 
