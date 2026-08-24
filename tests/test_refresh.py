@@ -180,7 +180,29 @@ def test_future_dated_entries_fall_back_to_base() -> None:
     assert compare(dated_view, FLAT).action == "none"
 
 
-def test_tiered_entry_skips() -> None:
+def test_tiered_base_equal_is_none() -> None:
+    tiered = view(
+        "prices:\n"
+        "  input_mtok:\n"
+        "    base: 0.435\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 0.87\n"
+        "  cache_read_mtok:\n"
+        "    base: 0.06\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 0.12\n"
+        "  output_mtok:\n"
+        "    base: 0.87\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 1.74\n"
+    )
+    assert compare(tiered, FLAT).action == "none"
+
+
+def test_tiered_base_drift_is_tiered_append() -> None:
     tiered = view(
         "prices:\n"
         "  input_mtok:\n"
@@ -190,7 +212,121 @@ def test_tiered_entry_skips() -> None:
         "        price: 6\n"
         "  output_mtok: 15\n"
     )
+    assert compare(tiered, FLAT).action == "tiered_append"
+
+
+def test_tiered_with_split_live_skips() -> None:
+    tiered = view(
+        "prices:\n"
+        "  input_mtok:\n"
+        "    base: 0.435\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 0.87\n"
+        "  output_mtok:\n"
+        "    base: 0.87\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 1.74\n"
+    )
+    drift = compare(tiered, SPLIT)
+    assert drift.action == "none"
+    assert "uncomparable" in drift.note
+
+
+def test_tiered_malformed_skips() -> None:
+    tiered = view(
+        "prices:\n"
+        "  input_mtok:\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 0.87\n"
+        "  output_mtok:\n"
+        "    base: 0.87\n"
+        "    tiers:\n"
+        "      - start: 512000\n"
+        "        price: 1.74\n"
+    )
     assert compare(tiered, FLAT).action == "none"
+
+
+def test_old_values_tiered_returns_bases() -> None:
+    tiered = view(
+        "prices:\n"
+        "  input_mtok:\n"
+        "    base: 3\n"
+        "    tiers:\n"
+        "      - start: 200000\n"
+        "        price: 6\n"
+        "  output_mtok: 15\n"
+    )
+    assert old_values(tiered) == (3, 15)
+
+
+TIERED_VENDOR_TEXT = (
+    "id: minimax\n"
+    "name: MiniMax\n"
+    "models:\n"
+    "  - id: minimax-m3\n"
+    "    match:\n"
+    "      equals: minimax-m3\n"
+    '    prices_checked: "2026-07-01"\n'
+    "    prices:\n"
+    "      input_mtok:\n"
+    "        base: 0.3\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 0.6\n"
+    "      cache_read_mtok:\n"
+    "        base: 0.06\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 0.12\n"
+    "      output_mtok:\n"
+    "        base: 1.2\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 2.4\n"
+)
+
+TIERED_ENTRY = TrackedModel(
+    "minimax-m3",
+    ClauseEquals("minimax-m3"),
+    prices=pyyaml.safe_load(TIERED_VENDOR_TEXT)["models"][0]["prices"],
+)
+
+
+def test_build_update_spec_tiered_append_carries_tiers() -> None:
+    drift = compare(TIERED_ENTRY.prices, FLAT)
+    assert drift.action == "tiered_append"
+    spec = build_update_spec(
+        PCFG, TIERED_VENDOR_TEXT, TIERED_ENTRY, FLAT, drift, "2026-08-24", OR_TEXT, OR_YML, []
+    )
+    assert spec.case == "rate_change"
+    # the old mapping stays as the unconstrained first entry, byte-identical
+    assert "      - prices:\n          input_mtok:\n            base: 0.3\n" in spec.prices_section
+    # the new entry swaps the input/output bases and carries the tiers
+    assert (
+        "            base: 0.435\n            tiers:\n              - start: 512000\n"
+        in spec.prices_section
+    )
+    assert "                price: 0.6" in spec.prices_section
+    assert (
+        "            base: 0.87\n            tiers:\n              - start: 512000\n"
+        in spec.prices_section
+    )
+    assert "                price: 2.4" in spec.prices_section
+    # the cache tiers carry over unchanged
+    assert (
+        "            base: 0.06\n            tiers:\n              - start: 512000\n"
+        in spec.prices_section
+    )
+    assert "          start_date: 2026-08-24" in spec.prices_section
+    assert "tiered rate change" in spec.deviation
+    assert spec.old_input_mtok == 0.3
+    assert spec.old_output_mtok == 1.2
+    assert spec.input_mtok == 0.435
+    assert spec.output_mtok == 0.87
 
 
 def test_missing_prices_skips() -> None:

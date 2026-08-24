@@ -25,6 +25,7 @@ from autopr_genai_prices.yml import (
     prices_section,
     prices_section_text,
     rewrite_entry,
+    tiered_dated_append_section,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "genai_prices"
@@ -766,6 +767,92 @@ def test_dated_append_section_free_entry_base() -> None:
         "          input_mtok: 1\n"
         "          output_mtok: 2\n"
     )
+
+
+TIERED_SECTION = (
+    "    prices:\n"
+    "      input_mtok:\n"
+    "        base: 0.3\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 0.6\n"
+    "      cache_read_mtok:\n"
+    "        base: 0.06\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 0.12\n"
+    "      output_mtok:\n"
+    "        base: 1.2\n"
+    "        tiers:\n"
+    "          - start: 512000\n"
+    "            price: 2.4\n"
+)
+
+
+def test_tiered_dated_append_section_swaps_bases_keeps_tiers() -> None:
+    result = tiered_dated_append_section(
+        TIERED_SECTION, 0.435e-6, 0.87e-6, "2026-08-24", "rate change; effective date unknown"
+    )
+    assert result == (
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok:\n"
+        "            base: 0.3\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 0.6\n"
+        "          cache_read_mtok:\n"
+        "            base: 0.06\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 0.12\n"
+        "          output_mtok:\n"
+        "            base: 1.2\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 2.4\n"
+        "      - constraint:\n"
+        "          # rate change; effective date unknown\n"
+        "          start_date: 2026-08-24\n"
+        "        prices:\n"
+        "          input_mtok:\n"
+        "            base: 0.435\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 0.6\n"
+        "          cache_read_mtok:\n"
+        "            base: 0.06\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 0.12\n"
+        "          output_mtok:\n"
+        "            base: 0.87\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 2.4\n"
+    )
+
+
+def test_tiered_dated_append_section_flat_key_emits_live() -> None:
+    section = (
+        "    prices:\n"
+        "      input_mtok: 0.3\n"
+        "      output_mtok:\n"
+        "        base: 1.2\n"
+        "        tiers:\n"
+        "          - start: 512000\n"
+        "            price: 2.4\n"
+    )
+    result = tiered_dated_append_section(section, 0.435e-6, 0.87e-6, "2026-08-24", "rate change")
+    assert (
+        "        prices:\n"
+        "          input_mtok: 0.435\n"
+        "          output_mtok:\n"
+        "            base: 0.87\n"
+        "            tiers:\n"
+        "              - start: 512000\n"
+        "                price: 2.4\n"
+    ) in result
 
 
 def test_prices_section_split() -> None:

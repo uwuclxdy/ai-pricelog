@@ -52,6 +52,11 @@ class UpdateSpec:
     start_date: str
     or_prices_section: str | None
     or_note: str
+    # openrouter-only update (the follow-up pass's mirror-lag case): the
+    # vendor side is empty and the body renders the openrouter old/new table
+    or_only: bool = False
+    old_cache_read_mtok: float | None = None
+    cache_read_mtok: float | None = None
 
 
 @dataclass(frozen=True)
@@ -95,6 +100,8 @@ class PrSpec:
     @property
     def title(self) -> str:
         if self.update is not None:
+            if self.update.or_only:
+                return f"Update {self.entry_id} pricing for OpenRouter"
             if self.update.or_prices_section is not None:
                 return f"Update {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
             return f"Update {self.entry_id} pricing for {self.vendor_name}"
@@ -182,6 +189,37 @@ class PrSpec:
         update = self.update
         lines = [f"Update `{self.entry_id}` pricing for {self.vendor_name}.", ""]
         lines += [f"## {self.vendor_name}", ""]
+        if update.or_only:
+            if self.openrouter_input_mtok is None:
+                new_row = f"| `{self.entry_id}` new | free | — | — |"
+            else:
+                new_row = (
+                    f"| `{self.entry_id}` new | {update.input_mtok:g} "
+                    f"| {_fmt_price(update.cache_read_mtok)} "
+                    f"| {_fmt_price(update.output_mtok)} |"
+                )
+            lines += [
+                "| model | input (/1M) | cache read (/1M) | output (/1M) |",
+                "|---|---|---|---|",
+                f"| `{self.entry_id}` old | {_fmt_price(update.old_input_mtok)} "
+                f"| {_fmt_price(update.old_cache_read_mtok)} "
+                f"| {_fmt_price(update.old_output_mtok)} |",
+                new_row,
+            ]
+            lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
+            lines += ["## notes", ""]
+            lines.append(
+                f"- start_date is set to {update.start_date}, the day the watchdog verified "
+                "the api rates; the mirror's actual effective date is unknown to it. "
+                "correct it before marking ready."
+            )
+            lines.append(f"- {update.deviation}.")
+            lines.append(
+                "- the watchdog keeps no state for updates: after this pr merges, the "
+                "next run diffs against the landed rates and goes quiet. closing it "
+                "unmerged re-candidates the update."
+            )
+            return "\n".join(lines) + "\n"
         lines += ["| model | input (/1M) | output (/1M) |", "|---|---|---|"]
         if update.peak_input_mtok is not None:
             windows = " and ".join(f"{start} - {end}" for start, end in update.peak_windows)

@@ -175,7 +175,7 @@ def run(
                 open_drafts += drafts
 
     report.or_followups = _or_followups(
-        cfg, state, parsed, or_yml, or_models, base, repo_slot, open_drafts, runner
+        cfg, state, parsed, or_text, or_yml, or_models, base, repo_slot, open_drafts, runner
     )
 
     save_state(state, repo_root / "state.json")
@@ -343,6 +343,7 @@ def _or_followups(
     cfg: config.Config,
     state: object,
     parsed: dict[str, tuple[yml.ProviderYml, Any]],
+    or_text: str,
     or_yml: yml.ProviderYml,
     or_models: list[openrouter.OpenrouterModel],
     base: str,
@@ -355,12 +356,15 @@ def _or_followups(
     Derives the candidate set from the live clone, never from state, so a
     closed-unmerged vendor pr cannot trigger a follow-up for an entry that
     never landed, and a landed follow-up goes quiet by itself (the slug then
-    reads as tracked). Best-effort: a failure here skips the slug, it never
-    fails the run.
+    reads as tracked). A slug that landed gets drift-checked against the api
+    instead (the mirror lag case: the api caught up after the vendor pr
+    merged, so the entry carries the stale rates). Best-effort: a failure
+    here skips the slug, it never fails the run.
     """
     opened: list[tuple[str, str]] = []
     drafts = open_drafts
     seen_slugs: set[str] = set()
+    checked = date.today().isoformat()
     for pcfg in cfg.providers:
         provider_state = getattr(state, "providers", {}).get(pcfg.key)
         if provider_state is None or not provider_state.handled:
@@ -378,8 +382,6 @@ def _or_followups(
             if slug in seen_slugs:
                 continue  # two page ids dedup to one slug: one follow-up per run
             seen_slugs.add(slug)
-            if yml.is_tracked(or_yml, slug):
-                continue  # landed
             try:
                 if pr.pending_pr(slug, runner):
                     log.info("or follow-up for %s skipped: pending pr", slug)
@@ -390,6 +392,25 @@ def _or_followups(
                 continue
             if or_model is None or drafts >= cfg.cap:
                 continue  # still deferred, or cap reached
+            tracked = next(
+                (model for model in or_yml.models if not model.removed and model.id == slug),
+                None,
+            )
+            if tracked is not None:
+                # landed: drift-check the mirror against the api
+                if refresh.or_rates_match(tracked, or_model):
+                    continue
+                spec = _or_update_spec(pcfg, slug, tracked, or_model, checked, or_text)
+                if spec is None:
+                    continue  # no prices section to rewrite
+                result = _open_followup_pr(cfg, base, repo_slot, spec, slug, runner)
+                if result is not None:
+                    opened.append(result)
+                    drafts += 1
+                    log.info("opened or drift pr for %s", slug)
+                continue
+            if yml.is_tracked(or_yml, slug):
+                continue  # matched by clause, no literal entry: nothing to rewrite
             spec = pr.PrSpec(
                 key=pcfg.key,
                 model_id=model_id,
@@ -417,18 +438,95 @@ def _or_followups(
                 openrouter_cache_read_mtok=or_model.cache_read_mtok,
                 openrouter_note="",
             )
-            try:
-                url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
-            except build.BuildError as exc:
-                log.warning("or follow-up build failed for %s: %s", slug, exc)
+            result = _open_followup_pr(cfg, base, repo_slot, spec, slug, runner)
+            if result is None:
                 continue
-            except Exception as exc:
-                log.warning("or follow-up pr failed for %s: %s", slug, exc)
-                continue
-            opened.append((slug, url))
+            opened.append(result)
             drafts += 1
-            log.info("opened or follow-up pr for %s: %s", slug, url)
+            log.info("opened or follow-up pr for %s: %s", slug, result[1])
     return opened
+
+
+def _or_update_spec(
+    pcfg: config.ProviderCfg,
+    slug: str,
+    tracked: yml.TrackedModel,
+    or_model: openrouter.OpenrouterModel,
+    checked: str,
+    or_text: str,
+) -> pr.PrSpec | None:
+    """The spec for an openrouter entry that drifted after its vendor pr merged."""
+    section = refresh.or_drift_section(slug, checked, or_text, or_model)
+    if section is None:
+        return None
+    current = refresh.openrouter_current(tracked.prices)
+    update = pr.UpdateSpec(
+        model_id=slug,
+        case="rate_change",
+        prices_section=section,
+        deviation=(
+            "the openrouter mirror lag case: the api caught up with the tracked entry "
+            "after the vendor pr merged. this pr carries openrouter.yml to the api "
+            "rates (dated append, never-overwrite)"
+        ),
+        old_input_mtok=current.get("input_mtok"),
+        old_output_mtok=current.get("output_mtok"),
+        old_cache_read_mtok=current.get("cache_read_mtok"),
+        old_peak_input_mtok=None,
+        old_peak_output_mtok=None,
+        old_peak_windows=(),
+        input_mtok=or_model.input_mtok or 0.0,
+        output_mtok=or_model.output_mtok or 0.0,
+        peak_input_mtok=None,
+        peak_output_mtok=None,
+        peak_windows=(),
+        start_date=checked,
+        or_prices_section=None,
+        or_note="",
+        or_only=True,
+        cache_read_mtok=or_model.cache_read_mtok,
+    )
+    return pr.PrSpec(
+        key=pcfg.key,
+        model_id=slug,
+        entry_id=slug,
+        vendor_yml=OPENROUTER_YML,
+        vendor_name="OpenRouter",
+        vendor_entry=None,
+        vendor_input_mtok=0.0,
+        vendor_output_mtok=0.0,
+        vendor_peak_input_mtok=None,
+        vendor_peak_output_mtok=None,
+        vendor_peak_windows=(),
+        skipped_latest=(),
+        source_url=openrouter.OPENROUTER_MODELS_URL,
+        openrouter_entry=None,
+        openrouter_slug=slug,
+        openrouter_input_mtok=or_model.input_mtok,
+        openrouter_output_mtok=or_model.output_mtok,
+        openrouter_cache_read_mtok=or_model.cache_read_mtok,
+        openrouter_note="",
+        update=update,
+    )
+
+
+def _open_followup_pr(
+    cfg: config.Config,
+    base: str,
+    repo_slot: Path,
+    spec: pr.PrSpec,
+    slug: str,
+    runner: pr.PrRunner,
+) -> tuple[str, str] | None:
+    try:
+        url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
+    except build.BuildError as exc:
+        log.warning("or follow-up build failed for %s: %s", slug, exc)
+        return None
+    except Exception as exc:
+        log.warning("or follow-up pr failed for %s: %s", slug, exc)
+        return None
+    return slug, url
 
 
 def _pr_spec(

@@ -12,9 +12,14 @@ rates against the target yml. A drift becomes a draft PR:
   is a strict XOR of start_date and time-window, so a dated rate-change entry
   cannot express a split schedule, and the deviation is named in the PR body
   (todo #6/#7 decision)
+- tiered mapping, flat live, base rate changed -> dated append whose new
+  entry carries the live base with the old tier steps unchanged; the
+  scraper cannot see tier prices, so the PR body names the carry-over
+  risk (todo #4 decision)
 
-Entries whose shape cannot be compared (tiered prices, missing prices) skip
-drift rather than guessing.
+Entries whose shape cannot be compared (malformed tier objects, missing
+prices, a tiered entry with a split-priced live page) skip drift rather than
+guessing.
 """
 
 from __future__ import annotations
@@ -33,7 +38,7 @@ RATE_COMMENT = "rate change; effective date unknown, set to the day the watchdog
 
 @dataclass(frozen=True)
 class Drift:
-    action: str  # "none" | "dated_append" | "conversion" | "replace"
+    action: str  # "none" | "dated_append" | "conversion" | "replace" | "tiered_append"
     note: str
 
 
@@ -50,7 +55,14 @@ def compare(prices_view: object, pricing: Pricing) -> Drift:
     if isinstance(prices_view, dict):
         old = _flat(prices_view)
         if old is None:
-            return Drift("none", "entry prices are tiered or unparseable")
+            tiered = _tiered(prices_view)
+            if tiered is None:
+                return Drift("none", "entry prices are tiered or unparseable")
+            if live_split:
+                return Drift("none", "tiered entry, live page is split-priced; uncomparable")
+            if _same(tiered, pricing):
+                return Drift("none", "rates match the tiered base")
+            return Drift("tiered_append", "tiered base rate changed")
         if live_split:
             return Drift("conversion", "flat entry, live page is split-priced")
         if _same(old, pricing):
@@ -83,6 +95,34 @@ def _flat(prices: dict) -> EntryValues | None:
     for value in (input_mtok, output_mtok):
         if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
             return None  # tiered or malformed: cannot compare
+    return EntryValues(input_mtok, output_mtok, None)
+
+
+def _tier_base(value: object) -> float | None:
+    """A price key's flat rate, or a tier object's base rate.
+
+    Both spellings answer the same question for the compare: what a request
+    inside the base tier pays. Anything else (a malformed tier object, a
+    non-numeric value) returns None.
+    """
+    if isinstance(value, dict):
+        value = value.get("base")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value
+
+
+def _tiered(prices: dict) -> EntryValues | None:
+    """The base rates of a tiered mapping, or None when one side is unreadable.
+
+    Only input and output drive the verdict: tier steps and other keys
+    (cache_read_mtok, requests_kcount, ...) carry over by text in the append
+    and never participate in the compare.
+    """
+    input_mtok = _tier_base(prices.get("input_mtok"))
+    output_mtok = _tier_base(prices.get("output_mtok"))
+    if input_mtok is None or output_mtok is None:
+        return None
     return EntryValues(input_mtok, output_mtok, None)
 
 
@@ -180,9 +220,9 @@ def _current(dated: list[EntryValues], entries: list[EntryValues]) -> EntryValue
 
 
 def old_values(prices_view: object) -> tuple[float | None, float | None]:
-    """The entry's base (flat or unconstrained) rates, for the PR body table."""
+    """The entry's base rates (flat, unconstrained, or tiered), for the PR body table."""
     if isinstance(prices_view, dict):
-        flat = _flat(prices_view)
+        flat = _flat(prices_view) or _tiered(prices_view)
         return (flat.input_mtok, flat.output_mtok) if flat else (None, None)
     if isinstance(prices_view, list):
         for item in prices_view:
@@ -264,12 +304,27 @@ def build_update_spec(
             pricing.output_cost_per_token,
             checked,
             RATE_COMMENT,
-            cache_read_mtok=_openrouter_current(entry.prices).get("cache_read_mtok"),
+            cache_read_mtok=openrouter_current(entry.prices).get("cache_read_mtok"),
         )
         deviation = (
             "the target's never-overwrite rule is followed: the old rates stay as the "
             "unconstrained first entry, the new rates land in a dated entry at the end. "
             "the tracked cache-read rate is carried into the new entry unchanged"
+        )
+        case = "rate_change"
+    elif drift.action == "tiered_append":
+        prices_section = yml.tiered_dated_append_section(
+            old_section,
+            pricing.input_cost_per_token,
+            pricing.output_cost_per_token,
+            checked,
+            RATE_COMMENT,
+        )
+        deviation = (
+            "tiered rate change: the new base rates land in a dated entry that carries "
+            "the old tier steps unchanged. the scraper sees only flat base rates, so "
+            "tier prices may have moved with the base; verify the tiers before marking "
+            "ready"
         )
         case = "rate_change"
     elif drift.action == "conversion":
@@ -361,21 +416,40 @@ def _mirror(
             None,
             f"`{slug}` is not tracked in openrouter.yml; the follow-up pass handles it",
         )
-    current = _openrouter_current(tracked.prices)
-    same = (
-        _num(current.get("input_mtok")) == _num(or_model.input_mtok)
-        and _num(current.get("output_mtok")) == _num(or_model.output_mtok)
-        and _num(current.get("cache_read_mtok")) == _num(or_model.cache_read_mtok)
-    )
-    if same:
+    if or_rates_match(tracked, or_model):
         return (
             None,
             f"`{slug}` in openrouter.yml already matches the API rates; no openrouter change",
         )
+    section = or_drift_section(slug, checked, or_text, or_model)
+    if section is None:
+        return None, f"`{slug}` in openrouter.yml has no prices section to rewrite"
+    return section, f"`{slug}` in openrouter.yml updated from the OpenRouter models API"
+
+
+def or_rates_match(tracked: yml.TrackedModel, or_model: OpenrouterModel) -> bool:
+    """Whether the tracked openrouter entry matches the api's current rates."""
+    current = openrouter_current(tracked.prices)
+    return (
+        _num(current.get("input_mtok")) == _num(or_model.input_mtok)
+        and _num(current.get("output_mtok")) == _num(or_model.output_mtok)
+        and _num(current.get("cache_read_mtok")) == _num(or_model.cache_read_mtok)
+    )
+
+
+def or_drift_section(
+    slug: str, checked: str, or_text: str, or_model: OpenrouterModel
+) -> str | None:
+    """The dated-append section for a tracked openrouter entry that drifted.
+
+    The same emission as the vendor-pr mirror, for the follow-up pass's lag
+    case: the api caught up with the tracked entry after the vendor pr
+    merged. Returns None when the entry carries no prices section to rewrite.
+    """
     old_section = yml.prices_section_text(or_text, slug)
     if old_section is None:
-        return None, f"`{slug}` in openrouter.yml has no prices section to rewrite"
-    section = yml.dated_append_section(
+        return None
+    return yml.dated_append_section(
         old_section,
         (or_model.input_mtok or 0.0) / 1e6,
         (or_model.output_mtok or 0.0) / 1e6,
@@ -387,10 +461,9 @@ def _mirror(
         # would fail every run forever
         free=or_model.input_mtok is None,
     )
-    return section, f"`{slug}` in openrouter.yml updated from the OpenRouter models API"
 
 
-def _openrouter_current(prices_view: object) -> dict[str, float | None]:
+def openrouter_current(prices_view: object) -> dict[str, float | None]:
     """The openrouter entry's effective rates: flat mapping or last active dated entry.
 
     Both engines resolve a list backwards, so the last dated entry with a

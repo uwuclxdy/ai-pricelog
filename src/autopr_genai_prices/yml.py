@@ -515,6 +515,88 @@ def dated_append_section(
     return "\n".join(lines) + "\n"
 
 
+def tiered_dated_append_section(
+    old_section: str,
+    input_cost_per_token: float,
+    output_cost_per_token: float,
+    start_date: str,
+    comment: str,
+) -> str:
+    """The `    prices:` section after appending a dated entry to a tiered mapping.
+
+    The old mapping stays as the unconstrained first entry, byte-identical.
+    The new entry carries the same keys with the input/output base rates
+    swapped for the live figures; tier lists and other keys (cache_read_mtok,
+    requests_kcount, ...) carry over unchanged, so future requests keep the
+    tier structure and pay the scraper's flat base rates. A base line missing
+    (a flat key inside a tiered mapping) emits that key flat from the live
+    pricing instead.
+    """
+    remainder = old_section[len("    prices:") :]
+    body = [line for line in remainder.strip("\n").splitlines() if line.strip()]
+    assert body and not body[0].lstrip().startswith("- "), (
+        "tiered append expects a flat mapping section"
+    )
+    blocks = _top_level_blocks(body)
+    swaps = {
+        "input_mtok": _fmt_mtok(input_cost_per_token),
+        "output_mtok": _fmt_mtok(output_cost_per_token),
+    }
+    new_body: list[str] = []
+    for key, block in blocks.items():
+        value = swaps.pop(key, None)
+        new_body.extend(_swap_base(block, value) if value is not None else block)
+    for key, value in swaps.items():
+        new_body.extend([f"      {key}:", f"        {value}"])
+    lines = ["    prices:", "      - prices:"]
+    lines.extend(f"    {line}" for line in body)
+    lines.extend(
+        [
+            "      - constraint:",
+            f"          # {comment}",
+            f"          start_date: {start_date}",
+            "        prices:",
+        ]
+    )
+    lines.extend(f"    {line}" for line in new_body)
+    return "\n".join(lines) + "\n"
+
+
+def _top_level_blocks(body: list[str]) -> dict[str, list[str]]:
+    """The mapping body split into per-key blocks at depth 6, in file order.
+
+    Only depth-6 key lines open a block; nested keys (tier objects at depth
+    8+, list items deeper) belong to the block above them.
+    """
+    blocks: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in body:
+        if _KEY_LINE.match(line):
+            current = line.split(":", 1)[0].strip()
+            blocks[current] = [line]
+        elif current is not None:
+            blocks[current].append(line)
+    return blocks
+
+
+def _swap_base(block: list[str], value: str) -> list[str]:
+    """Replace a tiered key block's base line value, in place.
+
+    Only the depth-8 `base:` line is swapped; tier-step `price:` lines sit
+    deeper and carry over. A block without a base line (a flat key, inline or
+    bare) collapses to the key plus the flat live value.
+    """
+    base = "        base: "
+    for index, line in enumerate(block):
+        if line.startswith(base):
+            block[index] = base + value
+            return block
+    return [f"{block[0].split(':', 1)[0]}: {value}"]
+
+
+_KEY_LINE = re.compile(r"^      [A-Za-z_][A-Za-z0-9_]*:")
+
+
 def build_openrouter_entry(
     slug: str,
     name: str,
