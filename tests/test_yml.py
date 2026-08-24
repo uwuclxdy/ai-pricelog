@@ -17,9 +17,14 @@ from autopr_genai_prices.yml import (
     TrackedModel,
     build_openrouter_entry,
     build_vendor_entry,
+    dated_append_section,
+    entry_span,
     insert_entry,
     is_tracked,
     parse,
+    prices_section,
+    prices_section_text,
+    rewrite_entry,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "genai_prices"
@@ -509,3 +514,280 @@ def test_parse_models_not_a_list_raises(tmp_path: Path) -> None:
     path.write_text("name: Test\nid: test\nmodels: nope\n")
     with pytest.raises(ValueError, match="models"):
         parse(path)
+
+
+def test_parse_captures_prices(tmp_path: Path) -> None:
+    path = tmp_path / "prices.yml"
+    path.write_text(
+        """name: Test
+id: test
+models:
+  - id: flat
+    match:
+      equals: flat
+    prices:
+      input_mtok: 1
+      output_mtok: 2
+  - id: split
+    match:
+      equals: split
+    prices:
+      - prices:
+          input_mtok: 0.5
+      - constraint:
+          start_time: 01:00:00Z
+          end_time: 04:00:00Z
+        prices:
+          input_mtok: 1
+"""
+    )
+    yml = parse(path)
+    assert yml.models[0].prices == {"input_mtok": 1, "output_mtok": 2}
+    assert yml.models[1].prices == [
+        {"prices": {"input_mtok": 0.5}},
+        {
+            "constraint": {"start_time": "01:00:00Z", "end_time": "04:00:00Z"},
+            "prices": {"input_mtok": 1},
+        },
+    ]
+
+
+def test_parse_entry_without_prices_leaves_none(tmp_path: Path) -> None:
+    path = tmp_path / "noprices.yml"
+    path.write_text("name: Test\nid: test\nmodels:\n  - id: x\n    match:\n      equals: x\n")
+    assert parse(path).models[0].prices is None
+
+
+TWO_ENTRIES = """models:
+  - id: a
+    match:
+      equals: a
+    prices:
+      input_mtok: 1
+
+  - id: b
+    match:
+      equals: b
+    prices:
+      input_mtok: 2
+"""
+
+
+def test_entry_span_finds_block() -> None:
+    assert entry_span(TWO_ENTRIES, "a") == (1, 7)
+    assert entry_span(TWO_ENTRIES, "b") == (7, 12)
+    assert entry_span(TWO_ENTRIES, "z") is None
+
+
+def test_entry_span_tolerates_quoted_id() -> None:
+    text = 'models:\n  - id: "a:b"\n    match:\n      equals: "a:b"\n'
+    assert entry_span(text, "a:b") == (1, 4)
+
+
+def test_prices_section_text_flat_and_list() -> None:
+    assert prices_section_text(TWO_ENTRIES, "a") == "    prices:\n      input_mtok: 1\n"
+    text = (
+        "  - id: s\n"
+        "    match:\n"
+        "      equals: s\n"
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok: 0.5\n"
+        "      - constraint:\n"
+        "          start_time: 01:00:00Z\n"
+        "          end_time: 04:00:00Z\n"
+        "        prices:\n"
+        "          input_mtok: 1\n"
+        "  - id: t\n"
+        "    match:\n"
+        "      equals: t\n"
+    )
+    assert prices_section_text(text, "s") == (
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok: 0.5\n"
+        "      - constraint:\n"
+        "          start_time: 01:00:00Z\n"
+        "          end_time: 04:00:00Z\n"
+        "        prices:\n"
+        "          input_mtok: 1\n"
+    )
+
+
+def test_prices_section_text_missing_returns_none() -> None:
+    assert prices_section_text(TWO_ENTRIES, "z") is None
+
+
+def test_rewrite_entry_replaces_section_and_updates_quoted_checked() -> None:
+    text = (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        '    prices_checked: "2026-08-19"\n'
+        "    prices:\n"
+        "      input_mtok: 0.435\n"
+        "      output_mtok: 0.87\n"
+    )
+    result = rewrite_entry(text, "m", "    prices:\n      input_mtok: 1\n", checked="2026-08-24")
+    assert result == (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        '    prices_checked: "2026-08-24"\n'
+        "    prices:\n"
+        "      input_mtok: 1\n"
+    )
+
+
+def test_rewrite_entry_keeps_unquoted_checked_style() -> None:
+    text = (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        "    prices_checked: 2026-08-19\n"
+        "    prices:\n"
+        "      input_mtok: 1\n"
+    )
+    result = rewrite_entry(text, "m", "    prices:\n      input_mtok: 2\n", checked="2026-08-24")
+    assert "    prices_checked: 2026-08-24\n" in result
+    assert '"' not in result.splitlines()[3]
+
+
+def test_rewrite_entry_inserts_missing_checked_before_prices() -> None:
+    text = "  - id: m\n    match:\n      equals: m\n    prices:\n      input_mtok: 1\n"
+    result = rewrite_entry(text, "m", "    prices:\n      input_mtok: 2\n", checked="2026-08-24")
+    assert result == (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        '    prices_checked: "2026-08-24"\n'
+        "    prices:\n"
+        "      input_mtok: 2\n"
+    )
+
+
+def test_rewrite_entry_updates_checked_after_prices() -> None:
+    # anthropic-style field order: prices first, prices_checked after
+    text = (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        "    prices:\n"
+        "      input_mtok: 1\n"
+        '    prices_checked: "2026-08-19"\n'
+    )
+    result = rewrite_entry(text, "m", "    prices:\n      input_mtok: 2\n", checked="2026-08-24")
+    assert result == (
+        "  - id: m\n"
+        "    match:\n"
+        "      equals: m\n"
+        "    prices:\n"
+        "      input_mtok: 2\n"
+        '    prices_checked: "2026-08-24"\n'
+    )
+
+
+def test_rewrite_entry_leaves_neighbours_untouched() -> None:
+    result = rewrite_entry(
+        TWO_ENTRIES, "a", "    prices:\n      input_mtok: 9\n", checked="2026-08-24"
+    )
+    assert "  - id: b\n" in result
+    assert "      input_mtok: 2\n" in result
+    assert "prices_checked" not in result.split("  - id: b")[1]
+
+
+def test_rewrite_entry_missing_model_raises() -> None:
+    with pytest.raises(ValueError, match="no entry"):
+        rewrite_entry(TWO_ENTRIES, "z", "    prices:\n")
+
+
+def test_rewrite_entry_section_start_asserts() -> None:
+    with pytest.raises(AssertionError):
+        rewrite_entry(TWO_ENTRIES, "a", "      input_mtok: 1\n")
+
+
+FLAT_SECTION = "    prices:\n      input_mtok: 0.435\n      output_mtok: 0.87\n"
+
+
+def test_dated_append_section_mapping_becomes_list() -> None:
+    result = dated_append_section(
+        FLAT_SECTION, 0.54e-6, 1.08e-6, "2026-08-24", "rate change; effective date unknown"
+    )
+    assert result == (
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok: 0.435\n"
+        "          output_mtok: 0.87\n"
+        "      - constraint:\n"
+        "          # rate change; effective date unknown\n"
+        "          start_date: 2026-08-24\n"
+        "        prices:\n"
+        "          input_mtok: 0.54\n"
+        "          output_mtok: 1.08\n"
+    )
+
+
+LIST_SECTION = (
+    "    prices:\n"
+    "      - prices:\n"
+    "          input_mtok: 0.435\n"
+    "          output_mtok: 0.87\n"
+    "      - constraint:\n"
+    "          start_time: 01:00:00Z\n"
+    "          end_time: 04:00:00Z\n"
+    "        prices:\n"
+    "          input_mtok: 0.87\n"
+    "          output_mtok: 1.74\n"
+)
+
+
+def test_dated_append_section_on_list_appends_last() -> None:
+    result = dated_append_section(LIST_SECTION, 0.54e-6, 1.08e-6, "2026-08-24", "rate change")
+    assert result == LIST_SECTION + (
+        "      - constraint:\n"
+        "          # rate change\n"
+        "          start_date: 2026-08-24\n"
+        "        prices:\n"
+        "          input_mtok: 0.54\n"
+        "          output_mtok: 1.08\n"
+    )
+    assert result.index("01:00:00Z") < result.index("start_date: 2026-08-24")
+
+
+def test_dated_append_section_free_entry_base() -> None:
+    result = dated_append_section("    prices: {}\n", 1e-6, 2e-6, "2026-08-24", "went paid")
+    assert result == (
+        "    prices:\n"
+        "      - prices: {}\n"
+        "      - constraint:\n"
+        "          # went paid\n"
+        "          start_date: 2026-08-24\n"
+        "        prices:\n"
+        "          input_mtok: 1\n"
+        "          output_mtok: 2\n"
+    )
+
+
+def test_prices_section_split() -> None:
+    section = prices_section(
+        Pricing(
+            0.435e-6,
+            0.87e-6,
+            "chat",
+            peak_input_cost_per_token=0.87e-6,
+            peak_output_cost_per_token=1.74e-6,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        )
+    )
+    assert section == (
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok: 0.435\n"
+        "          output_mtok: 0.87\n"
+        "      - constraint:\n"
+        "          start_time: 01:00:00Z\n"
+        "          end_time: 04:00:00Z\n"
+        "        prices:\n"
+        "          input_mtok: 0.87\n"
+        "          output_mtok: 1.74\n"
+    )

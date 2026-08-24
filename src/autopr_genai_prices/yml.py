@@ -34,6 +34,10 @@ class TrackedModel:
     id: str
     match: MatchLogic
     removed: bool = False
+    # the yaml-parsed `prices` value: mapping, list of conditional entries, or
+    # None. unvalidated here: the refresh pass re-checks the shape and skips
+    # drift for shapes it cannot compare, so a weird entry never breaks parse
+    prices: object = None
 
 
 @dataclass(frozen=True)
@@ -72,7 +76,12 @@ def _parse_model(path: Path, index: int, entry: object) -> TrackedModel:
     model_id = entry["id"]
     if not isinstance(model_id, str):
         raise ValueError(f"file '{path}': model {index} id must be a string")
-    return TrackedModel(model_id, parse_match(entry["match"]), bool(entry.get("removed", False)))
+    return TrackedModel(
+        model_id,
+        parse_match(entry["match"]),
+        bool(entry.get("removed", False)),
+        entry.get("prices"),
+    )
 
 
 def is_tracked(yml: ProviderYml, model_id: str) -> bool:
@@ -87,6 +96,36 @@ def to_mtok(per_token: float) -> float:
 
 def _fmt_mtok(per_token: float) -> str:
     return f"{to_mtok(per_token):g}"
+
+
+def prices_section(pricing: Pricing) -> str:
+    """The `    prices:` block for a Pricing: flat mapping or split list.
+
+    Split-priced models become off-peak-default + one constrained entry per
+    peak window. Shared by the entry builder and the refresh pass, so a
+    tracked entry's conversion uses the same emission as a new entry.
+    """
+    has_peak = (
+        pricing.peak_input_cost_per_token is not None
+        or pricing.peak_output_cost_per_token is not None
+    )
+    assert not has_peak or pricing.peak_windows, "peak prices set but peak_windows is empty"
+    lines = ["    prices:"]
+    if has_peak:
+        lines.append("      - prices:")
+        lines.append(f"          input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
+        lines.append(f"          output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
+        for start, end in pricing.peak_windows:
+            lines.append("      - constraint:")
+            lines.append(f"          start_time: {start}")
+            lines.append(f"          end_time: {end}")
+            lines.append("        prices:")
+            lines.append(f"          input_mtok: {_fmt_mtok(pricing.peak_input_cost_per_token)}")
+            lines.append(f"          output_mtok: {_fmt_mtok(pricing.peak_output_cost_per_token)}")
+    else:
+        lines.append(f"      input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
+        lines.append(f"      output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
+    return "\n".join(lines) + "\n"
 
 
 def build_vendor_entry(
@@ -124,22 +163,7 @@ def build_vendor_entry(
             f"Peak hours are {windows} UTC (all other hours are off-peak)"
         )
     lines.append(f'    price_comments: "{comment}"')
-    lines.append("    prices:")
-    if has_peak:
-        lines.append("      - prices:")
-        lines.append(f"          input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
-        lines.append(f"          output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
-        for start, end in pricing.peak_windows:
-            lines.append("      - constraint:")
-            lines.append(f"          start_time: {start}")
-            lines.append(f"          end_time: {end}")
-            lines.append("        prices:")
-            lines.append(f"          input_mtok: {_fmt_mtok(pricing.peak_input_cost_per_token)}")
-            lines.append(f"          output_mtok: {_fmt_mtok(pricing.peak_output_cost_per_token)}")
-    else:
-        lines.append(f"      input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
-        lines.append(f"      output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
-    return "\n".join(lines) + "\n", tuple(skipped)
+    return "\n".join(lines) + "\n" + prices_section(pricing), tuple(skipped)
 
 
 def _sibling(yml: ProviderYml, model_id: str) -> TrackedModel:
@@ -298,6 +322,167 @@ def insert_entry(text: str, model_id: str, entry: str) -> str:
         return text + "\n" + entry
     pos = sum(len(line) for line in lines[:anchor])
     return text[:pos] + entry + "\n" + text[pos:]
+
+
+def entry_span(text: str, model_id: str) -> tuple[int, int] | None:
+    """Line indices [start, end) of the model's models-list block, or None.
+
+    A block runs from its `  - id:` line to the next `  - id:` line (or end
+    of file). Quoted ids are tolerated the same way insert_entry tolerates
+    them.
+    """
+    lines = text.splitlines(keepends=True)
+    start: int | None = None
+    for index, line in enumerate(lines):
+        if not line.startswith("  - id: "):
+            continue
+        rest = line[len("  - id: ") :].rstrip("\n")
+        if rest.startswith('"') and rest.endswith('"'):
+            rest = rest[1:-1]
+        if rest == model_id:
+            start = index
+            break
+    if start is None:
+        return None
+    for index in range(start + 1, len(lines)):
+        if lines[index].startswith("  - id: "):
+            return start, index
+    return start, len(lines)
+
+
+_SECTION_END = re.compile(r"^    [A-Za-z_][A-Za-z0-9_]*:")
+
+
+def _prices_section_span(
+    lines: list[str], block_start: int, block_end: int
+) -> tuple[int, int] | None:
+    """[start, end) of the `    prices:` section within a model block.
+
+    The section ends at the next depth-4 key line (any value: an anchored
+    key regex would miss quoted values like `prices_checked: "…"`). List
+    items and price keys sit at depth 6+ in the target's convention, so they
+    stay inside. Trailing blank lines are entry separators, not section
+    content: they stay out so a rewrite never eats the spacing between
+    entries.
+    """
+    for index in range(block_start, block_end):
+        if not lines[index].startswith("    prices:"):
+            continue
+        end = block_end
+        for candidate in range(index + 1, block_end):
+            if _SECTION_END.match(lines[candidate]):
+                end = candidate
+                break
+        while end > index + 1 and not lines[end - 1].strip():
+            end -= 1
+        return index, end
+    return None
+
+
+def prices_section_text(text: str, model_id: str) -> str | None:
+    """The raw `    prices:` section text of a model's entry, or None."""
+    span = entry_span(text, model_id)
+    if span is None:
+        return None
+    lines = text.splitlines(keepends=True)
+    section = _prices_section_span(lines, *span)
+    if section is None:
+        return None
+    return "".join(lines[section[0] : section[1]])
+
+
+def rewrite_entry(text: str, model_id: str, new_section: str, checked: str | None = None) -> str:
+    """Replace a tracked model's `    prices:` section in place.
+
+    Text surgery keeps every other byte of the hand-formatted file. `checked`
+    updates the entry's `prices_checked` line (preserving its quote style) and
+    inserts one before `prices:` when the entry lacks it: the target's rule is
+    to always update prices_checked when prices change.
+    """
+    assert new_section.startswith("    prices:")
+    span = entry_span(text, model_id)
+    if span is None:
+        raise ValueError(f"model '{model_id}': no entry to rewrite")
+    lines = text.splitlines(keepends=True)
+    block_start, block_end = span
+    section = _prices_section_span(lines, block_start, block_end)
+    if section is None:
+        raise ValueError(f"model '{model_id}': entry has no `prices:` section")
+    sec_start, sec_end = section
+    head = lines[:sec_start]
+    tail = lines[sec_end:]
+    if checked is not None:
+        _set_prices_checked(head, tail, block_start, checked)
+    return "".join(head + [new_section] + tail)
+
+
+def _set_prices_checked(head: list[str], tail: list[str], block_start: int, checked: str) -> None:
+    """Replace or insert the `prices_checked` line around the section span.
+
+    The replacement keeps the entry's quote style (moonshotai quotes the
+    date, deepseek does not). When the entry lacks the line, one is inserted
+    right before the prices section. `head` is everything before the section,
+    `tail` everything after, so an existing line in either spot is replaced
+    in place; the block_start floor keeps other blocks' lines untouched.
+    """
+    value = f'    prices_checked: "{checked}"\n'
+    for index, line in enumerate(head):
+        if index < block_start or not line.startswith("    prices_checked:"):
+            continue
+        head[index] = value if '"' in line else f"    prices_checked: {checked}\n"
+        return
+    for index, line in enumerate(tail):
+        if not line.startswith("    prices_checked:"):
+            continue
+        tail[index] = value if '"' in line else f"    prices_checked: {checked}\n"
+        return
+    head.append(value)
+
+
+def dated_append_section(
+    old_section: str,
+    input_cost_per_token: float,
+    output_cost_per_token: float,
+    start_date: str,
+    comment: str,
+) -> str:
+    """The `    prices:` section after appending a dated rate-change entry.
+
+    A flat mapping becomes a list with the old rates as the unconstrained
+    first entry; a list gets the new entry appended after its existing items.
+    The old entries stay byte-identical, so past requests keep resolving the
+    old rates. The new entry goes last: both engines scan backwards, so an
+    unconstrained entry placed last would always win. The comment sits beside
+    start_date, the spot the target's own procedure uses for the changelog
+    citation.
+    """
+    remainder = old_section[len("    prices:") :]
+    if remainder.strip() == "{}":  # a free entry's one-line `prices: {}`
+        body: list[str] = []
+    else:
+        # keep each line's own indentation: list items sit at depth 6 and are
+        # re-emitted verbatim, mapping keys get one extra indent level below
+        body = [line for line in remainder.strip("\n").splitlines() if line.strip()]
+    is_list = bool(body) and body[0].lstrip().startswith("- ")
+    lines = ["    prices:"]
+    if is_list:
+        lines.extend(body)
+    elif body:
+        lines.append("      - prices:")
+        lines.extend(f"    {line}" for line in body)
+    else:
+        lines.append("      - prices: {}")
+    lines.extend(
+        [
+            "      - constraint:",
+            f"          # {comment}",
+            f"          start_date: {start_date}",
+            "        prices:",
+            f"          input_mtok: {_fmt_mtok(input_cost_per_token)}",
+            f"          output_mtok: {_fmt_mtok(output_cost_per_token)}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def build_openrouter_entry(
