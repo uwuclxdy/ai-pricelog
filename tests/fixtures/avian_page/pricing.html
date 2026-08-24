@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>Avian - Pricing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Avian - Pricing" />
+    <meta
+      property="og:description"
+      name="description"
+      content="Avian.io is home of the worlds fastest inference for open source LLMs like Llama. Try our AI cloud platform and API now with no rate limits."
+    />
+    <meta property="og:url" content="https://avian.io/" />
+    <meta property="og:site_name" content="Avian" />
+    <meta property="og:title" content="Avian.io" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Avian.io" />
+    <meta
+      name="twitter:description"
+      content="Avian.io is home of the worlds fastest inference for open source LLMs like Llama. Try our AI cloud platform and API now with no rate limits."
+    />
+    <meta
+      property="og:image"
+      content="https://i.imgur.com/tttuyis.png"
+    />
+    <meta name="author" content="Avian" />
+    <link rel="icon" href="/favicon.ico" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+
+  <style>
+    /* ---- Reset / Base ---- */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 1rem; }
+
+    .rounded-4 {
+      border-radius: 0.75rem !important;
+    }
+    .underline-hover:hover {
+      border-bottom: 1px solid;
+    }
+
+    /* ---- Announcement Banner ---- */
+    .av-announce-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      background: #0F172A;
+      color: #fff;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.875rem;
+      padding: 0.625rem 1.5rem;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .av-announce-bar a {
+      color: #60A5FA;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .av-announce-bar a:hover {
+      color: #93C5FD;
+      text-decoration: underline;
+    }
+    .av-announce-bar button {
+      background: none;
+      border: none;
+      color: #94A3B8;
+      font-size: 1.125rem;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .av-announce-bar button:hover {
+      color: #fff;
+    }
+
+    /* ---- Cookie Consent ---- */
+    .av-cookie-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1rem 2rem;
+      background: #fff;
+      border-top: 1px solid #E2E8F0;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.875rem;
+      color: #475569;
+    }
+    .av-cookie-bar p { margin: 0; line-height: 1.5; }
+    .av-cookie-bar a { color: #0172FC; text-decoration: none; font-weight: 500; }
+    .av-cookie-bar a:hover { text-decoration: underline; }
+    .av-cookie-bar__actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .av-cookie-decline {
+      background: none;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 0.5rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #64748B;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .av-cookie-decline:hover { border-color: #CBD5E1; }
+    .av-cookie-accept {
+      background: #0172FC;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .av-cookie-accept:hover { background: #0157C2; }
+
+    @media (max-width: 600px) {
+      .av-announce-bar { font-size: 0.8125rem; padding: 0.5rem 1rem; gap: 0.5rem; }
+      .av-cookie-bar { flex-direction: column; text-align: center; padding: 1rem; gap: 0.75rem; }
+    }
+
+
+    /* ---- Footer ---- */
+    .av-footer {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 4rem 0 2rem;
+      border-top: 1px solid #E2E8F0;
+    }
+    .av-footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr repeat(4, 1fr);
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+    .av-footer-heading {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94A3B8;
+      margin-bottom: 1rem;
+    }
+    .av-footer ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .av-footer ul li { margin-bottom: 0.5rem; }
+    .av-footer ul li a {
+      color: #475569;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 400;
+      transition: color 0.15s;
+    }
+    .av-footer ul li a:hover { color: #0172FC; }
+    .av-footer-bottom {
+      padding-top: 1.5rem;
+      border-top: 1px solid #F1F5F9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .av-footer-bottom p {
+      font-size: 0.8125rem;
+      color: #94A3B8;
+      margin: 0;
+    }
+    @media (max-width: 768px) {
+      .av-footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .av-footer-logo-col { grid-column: 1 / -1; }
+    }
+    @media (max-width: 480px) {
+      .av-footer-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ==================== PRICING PAGE STYLES ==================== */
+
+    .av-pricing *,
+    .av-pricing *::before,
+    .av-pricing *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .av-pricing {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: #FFFFFF;
+      color: #1a1a2e;
+    }
+
+    .av-wrap { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ---- HERO ---- */
+    .av-hero {
+      text-align: center;
+      padding: 5rem 1.5rem 3rem;
+      position: relative;
+      background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%);
+      overflow: hidden;
+    }
+
+    .av-hero::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      top: -350px; left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(1,114,252,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .av-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 1rem;
+      background: #F0F4FF;
+      border: 1px solid #D6E0FF;
+      border-radius: 9999px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #0172FC;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.01em;
+    }
+
+    .av-eyebrow code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(1,114,252,0.08);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      color: #0157C2;
+    }
+
+    .av-hero h1 {
+      font-size: 3.25rem;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      color: #0F172A;
+      margin-bottom: 1rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .av-hero h1 span {
+      color: #0172FC;
+    }
+
+    .av-hero-sub {
+      font-size: 1.0625rem;
+      color: #64748B;
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.65;
+    }
+
+    .av-hero-cta {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: #0172FC;
+      color: white;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+      margin-top: 2rem;
+    }
+
+    .av-hero-cta:hover {
+      background: #0157C2;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* ---- API PRICING ---- */
+    .av-api-section {
+      padding: 4.5rem 0;
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .av-sec-head {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .av-sec-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #0172FC;
+      background: #EFF6FF;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.02em;
+    }
+
+    .av-sec-head h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #0F172A;
+      margin-bottom: 0.5rem;
+    }
+
+    .av-sec-head p {
+      font-size: 1rem;
+      color: #64748B;
+    }
+
+    /* ---- Filter Tabs ---- */
+    .av-filter-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .av-filter-tab {
+      display: inline-block;
+      padding: 0.375rem 1rem;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #64748B;
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .av-filter-tab:hover {
+      border-color: #CBD5E1;
+      color: #0F172A;
+    }
+    .av-filter-tab.active {
+      background: #0172FC;
+      color: #fff;
+      border-color: #0172FC;
+    }
+
+    .av-model-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .av-model-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .av-model-card:hover {
+      border-color: #CBD5E1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    .av-model-label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 0.75rem;
+    }
+
+    .av-model-prices {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .av-mp { flex: 1; min-width: 0; }
+
+    .av-mp-label {
+      font-size: 0.625rem;
+      font-weight: 500;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+    }
+
+    .av-mp-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #0F172A;
+      white-space: nowrap;
+    }
+
+    .av-model-meta {
+      font-size: 0.75rem;
+      color: #94A3B8;
+      padding-top: 0.625rem;
+      border-top: 1px solid #F1F5F9;
+    }
+
+    /* ---- Callout ---- */
+    .av-note {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      gap: 0.875rem;
+      align-items: flex-start;
+    }
+
+    .av-note-dot {
+      width: 8px; height: 8px; min-width: 8px;
+      border-radius: 50%;
+      background: #0172FC;
+      margin-top: 0.375rem;
+    }
+
+    .av-note p { font-size: 0.875rem; color: #475569; line-height: 1.65; }
+    .av-note strong { font-weight: 600; color: #1E293B; }
+
+    /* ---- CODING SECTION ---- */
+    .av-coding-section {
+      padding: 5rem 0;
+      background: #fff;
+    }
+    .av-coding-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .av-coding-content h2 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #0F172A;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      line-height: 1.15;
+    }
+    .av-coding-content h2 span { color: #0172FC; }
+    .av-coding-content > p {
+      font-size: 1.0625rem;
+      color: #64748B;
+      line-height: 1.65;
+      margin-bottom: 1.75rem;
+    }
+    .av-coding-stats {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    .av-coding-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .av-coding-stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #0172FC;
+    }
+    .av-coding-stat-label {
+      font-size: 0.8125rem;
+      color: #64748B;
+      font-weight: 500;
+    }
+    .av-coding-tools-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+    .av-coding-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .av-coding-tool {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #334155;
+    }
+    .av-coding-tool svg { width: 16px; height: 16px; color: #64748B; }
+    .av-coding-card {
+      background: #0F172A;
+      border-radius: 16px;
+      padding: 2rem;
+      color: #fff;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.12);
+    }
+    .av-coding-card-header {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+    }
+    .av-coding-compare { margin-bottom: 2rem; }
+    .av-coding-compare-row { margin-bottom: 1rem; }
+    .av-coding-compare-row:last-child { margin-bottom: 0; }
+    .av-coding-compare-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.375rem;
+    }
+    .av-coding-compare-label span:first-child { font-size: 0.875rem; color: #CBD5E1; }
+    .av-coding-compare-label span:last-child { font-family: 'JetBrains Mono', monospace; font-size: 0.9375rem; font-weight: 600; color: #fff; }
+    .av-coding-bar-track { height: 8px; background: #1E293B; border-radius: 4px; overflow: hidden; }
+    .av-coding-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #0172FC, #38BDF8); }
+    .av-coding-bar-fill--dim { background: #475569; }
+    .av-coding-card-divider { height: 1px; background: #1E293B; margin: 1.5rem 0; }
+    .av-coding-cost-row { display: flex; justify-content: space-between; align-items: center; }
+    .av-coding-cost-row span:first-child { font-size: 0.875rem; color: #94A3B8; }
+    .av-cost-val { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 600; }
+    .av-cost-val--avian { color: #34D399; }
+    .av-cost-val--other { color: #64748B; }
+    .av-coding-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      margin-top: 2rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #0172FC;
+      text-decoration: none;
+    }
+    .av-coding-cta:hover { color: #38BDF8; }
+    .av-coding-cta svg { width: 16px; height: 16px; }
+
+    @media (max-width: 900px) {
+      .av-coding-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    }
+    @media (max-width: 768px) {
+      .av-coding-content h2 { font-size: 1.75rem; }
+      .av-coding-stats { flex-direction: column; gap: 0.75rem; }
+    }
+
+    /* ---- CREDIT TOP-UP ---- */
+    .av-credits-section {
+      padding: 4.5rem 0;
+      background: #FFFFFF;
+    }
+
+    .av-credit-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .av-credit-card {
+      background: #FFFFFF;
+      border: 2px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .av-credit-card:hover {
+      border-color: #0172FC;
+      box-shadow: 0 4px 16px rgba(1,114,252,0.1);
+      transform: translateY(-2px);
+    }
+
+    .av-credit-amt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #0F172A;
+      margin-bottom: 0.5rem;
+    }
+
+    .av-credit-label {
+      font-size: 0.8125rem;
+      color: #64748B;
+    }
+
+    /* ---- FAQ ---- */
+    .av-faq-section {
+      padding: 4.5rem 0 5rem;
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .av-faq-list {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .av-faq-item { border-bottom: 1px solid #F1F5F9; }
+    .av-faq-item:last-child { border-bottom: none; }
+
+    .av-faq-q {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.125rem 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #0F172A;
+      transition: color 0.2s;
+      font-family: inherit;
+      gap: 1rem;
+    }
+
+    .av-faq-q:hover { color: #0172FC; }
+
+    .av-faq-chevron {
+      flex-shrink: 0;
+      width: 1.25rem; height: 1.25rem;
+      color: #94A3B8;
+      transition: transform 0.3s ease;
+    }
+
+    .av-faq-item.open .av-faq-chevron { transform: rotate(45deg); }
+
+    .av-faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .av-faq-item.open .av-faq-a { max-height: 600px; }
+
+    .av-faq-a p {
+      padding-bottom: 1.125rem;
+      font-size: 0.875rem;
+      color: #64748B;
+      line-height: 1.7;
+    }
+
+    /* ---- CTA BANNER ---- */
+    .av-cta-banner {
+      padding: 4rem 0;
+      background: #0F172A;
+      text-align: center;
+    }
+
+    .av-cta-banner h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .av-cta-banner p {
+      font-size: 1rem;
+      color: #94A3B8;
+      margin-bottom: 1.5rem;
+    }
+
+    .av-cta-banner a {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: #0172FC;
+      color: white;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .av-cta-banner a:hover {
+      background: #0157C2;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 900px) {
+      .av-model-grid { grid-template-columns: repeat(2, 1fr); }
+      .av-credit-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .av-hero { padding: 3.5rem 1rem 2rem; }
+      .av-hero h1 { font-size: 2.25rem; }
+      .av-model-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto 2rem; }
+      .av-credit-grid { grid-template-columns: repeat(2, 1fr); max-width: 400px; }
+    }
+
+    @media (max-width: 480px) {
+      .av-hero h1 { font-size: 1.75rem; }
+      .av-wrap { padding: 0 1rem; }
+      .av-credit-grid { grid-template-columns: 1fr; max-width: 280px; }
+    }
+  </style>
+
+  <body>
+
+    <!-- Shared navbar component — include via: components/navbar.html -->
+<style>
+  #mainNav {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    border-bottom: 1px solid #E2E8F0;
+    background: white;
+  }
+  #mainNav .nav-link {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #334155;
+    padding: 0.5rem 1rem;
+    transition: color 0.15s;
+  }
+  #mainNav .nav-link:hover { color: #0172FC; }
+  #mainNav .av-nav-signup {
+    background: #0172FC;
+    color: white;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  #mainNav .av-nav-signup:hover { background: #0157C2; color: white; }
+  #mainNav .av-nav-login {
+    color: #334155;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #mainNav .av-nav-login:hover { border-color: #94A3B8; color: #0F172A; }
+</style>
+
+<nav id="mainNav" class="navbar navbar-expand-lg navbar-light" style="z-index: 99">
+  <div class="container">
+    <a href="/" class="navbar-brand">
+      <span class="d-none">Logo</span>
+      <svg width="100px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 160 45">
+        <path fill="#000"
+          d="M66.7609 34.4243c-1.4833 0-2.8295-.2794-4.0385-.8381-1.209-.569-2.1691-1.3868-2.8802-2.4536-.7112-1.0769-1.0668-2.3774-1.0668-3.9013 0-1.3411.2641-2.4282.7924-3.2612.5283-.8433 1.2344-1.5037 2.1183-1.9812.8839-.4775 1.8593-.8331 2.926-1.0667 1.0769-.2439 2.1589-.4369 3.246-.5791 1.4224-.1829 2.5755-.3201 3.4594-.4115.894-.1016 1.5443-.2692 1.9506-.5029.4166-.2337.6249-.6401.6249-1.2192v-.1219c0-1.5036-.4115-2.672-1.2344-3.5051-.8128-.8331-2.0472-1.2496-3.7032-1.2496-1.717 0-3.0632.3759-4.0385 1.1277-.9753.7518-1.6611 1.5544-2.0573 2.4079l-3.4137-1.2192c.6096-1.4224 1.4224-2.5298 2.4383-3.3222 1.0262-.8026 2.1437-1.3614 3.3527-1.6764 1.2192-.3251 2.418-.4876 3.5966-.4876.7518 0 1.6153.0914 2.5907.2743.9855.1727 1.9354.5334 2.8497 1.082.9246.5486 1.6916 1.3766 2.3012 2.484.6096 1.1074.9144 2.5907.9144 4.45v15.4223H73.893v-3.1698h-.1829c-.2438.508-.6502 1.0515-1.2192 1.6306-.5689.5791-1.3258 1.0719-2.2707 1.4783-.9448.4063-2.0979.6095-3.4593.6095Zm.5486-3.2307c1.4224 0 2.6212-.2794 3.5965-.8382.9855-.5588 1.7272-1.2801 2.225-2.164.508-.8839.762-1.8135.762-2.7888v-3.2918c-.1524.1829-.4877.3505-1.0058.5029-.508.1423-1.0973.2693-1.7678.381-.6604.1016-1.3055.1931-1.9354.2743-.6198.0712-1.1227.1321-1.5087.1829-.9347.1219-1.8085.32-2.6212.5943-.8027.2642-1.4529.6655-1.9507 1.204-.4877.5283-.7315 1.2496-.7315 2.164 0 1.2496.4623 2.1945 1.3868 2.8345.9347.6299 2.1183.9449 3.5508.9449Zm35.0475-20.7257-8.6565 23.4078H90.043l-8.656-23.4078h3.9013l6.4615 18.6531h.2439l6.4615-18.6531h3.9018Zm4.747 23.4078V10.4679h3.596v23.4078h-3.596Zm17.072.5486c-1.484 0-2.83-.2794-4.039-.8381-1.209-.569-2.169-1.3868-2.88-2.4536-.711-1.0769-1.067-2.3774-1.067-3.9013 0-1.3411.264-2.4282.793-3.2612.528-.8433 1.234-1.5037 2.118-1.9812.884-.4775 1.859-.8331 2.926-1.0667 1.077-.2439 2.159-.4369 3.246-.5791 1.422-.1829 2.575-.3201 3.459-.4115.894-.1016 1.545-.2692 1.951-.5029.416-.2337.625-.6401.625-1.2192v-.1219c0-1.5036-.412-2.672-1.235-3.5051-.812-.8331-2.047-1.2496-3.703-1.2496-1.717 0-3.063.3759-4.038 1.1277-.976.7518-1.661 1.5544-2.058 2.4079l-3.413-1.2192c.609-1.4224 1.422-2.5298 2.438-3.3222 1.026-.8026 2.144-1.3614 3.353-1.6764 1.219-.3251 2.418-.4876 3.596-.4876.752 0 1.616.0914 2.591.2743.985.1727 1.935.5334 2.85 1.082.924.5486 1.691 1.3766 2.301 2.484.609 1.1074.914 2.5907.914 4.45v15.4223h-3.596v-3.1698h-.183c-.244.508-.65 1.0515-1.219 1.6306-.569.5791-1.326 1.0719-2.271 1.4783-.945.4063-2.098.6095-3.459.6095Zm.548-3.2307c1.423 0 2.621-.2794 3.597-.8382.985-.5588 1.727-1.2801 2.225-2.164.508-.8839.762-1.8135.762-2.7888v-3.2918c-.153.1829-.488.3505-1.006.5029-.508.1423-1.097.2693-1.768.381-.66.1016-1.305.1931-1.935.2743-.62.0712-1.123.1321-1.509.1829-.935.1219-1.808.32-2.621.5943-.803.2642-1.453.6655-1.951 1.204-.487.5283-.731 1.2496-.731 2.164 0 1.2496.462 2.1945 1.386 2.8345.935.6299 2.119.9449 3.551.9449Zm20.341-11.3992v14.0813h-3.596V10.4679h3.474v3.6574h.305c.549-1.1886 1.382-2.1436 2.499-2.865 1.118-.7315 2.561-1.0972 4.328-1.0972 1.585 0 2.972.3251 4.161.9753 1.188.6401 2.113 1.6154 2.773 2.926.661 1.3004.991 2.9463.991 4.9376v14.8737h-3.597V19.2458c0-1.8389-.477-3.2714-1.432-4.2975-.955-1.0363-2.266-1.5544-3.932-1.5544-1.148 0-2.174.2489-3.078.7467-.894.4978-1.6 1.2242-2.119 2.1792-.518.955-.777 2.1132-.777 3.4746Z" />
+        <rect width="44.6831" height="44.6831" fill="#fff" rx="20" />
+        <path fill="url(#a)"
+          d="M3.43716 0C1.53887 0 0 1.53887 0 3.43716V27.6253l3.9708-5.6709c.67987-.9709 1.6715-1.5939 2.74491-1.8283 1.803-.508 3.80729.143 4.94259 1.7642L20.1866 34.07c.6842.9772 2.1313.9772 2.8155 0l9.5009-13.5687c1.4359-2.0506 4.2623-2.549 6.3129-1.1131 2.0507 1.4359 2.5491 4.2623 1.1132 6.3129l-13.2914 18.982H41.246c1.8983 0 3.4371-1.5388 3.4371-3.4371V3.43716C44.6831 1.53887 43.1443 0 41.246 0H3.43716Z" />
+        <path fill="url(#b)"
+          d="M16.551 44.6831 9.24475 34.2488c-.68419-.9772-2.13137-.9772-2.81556 0L.400792 42.8582c.577697 1.0857 1.720708 1.8249 3.036368 1.8249H16.551Z" />
+        <defs>
+          <linearGradient id="a" x1="44.6831" x2="-3.02294" y1="48.7538" y2="6.03623" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#0172FC" />
+            <stop offset="1" stop-color="#01FFD1" />
+          </linearGradient>
+          <linearGradient id="b" x1="44.6831" x2="-3.02294" y1="48.7538" y2="6.03623" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#0172FC" />
+            <stop offset="1" stop-color="#01FFD1" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </a>
+
+    <!-- Right side: auth buttons (desktop) + hamburger (mobile) -->
+    <ul class="navbar-nav navbar-nav-secondary order-lg-3 flex-row align-items-center">
+      <li class="nav-item d-lg-none">
+        <a class="nav-link nav-icon px-0" href="" role="button" data-bs-toggle="collapse" data-bs-target="#navbar"
+          aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+          <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="feather feather-menu">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </a>
+      </li>
+      <li class="nav-item d-none d-lg-block">
+        <a href="/accounts/login/" class="av-nav-login ms-2" id="login_btn">Log In</a>
+      </li>
+      <li class="nav-item d-none d-lg-block">
+        <a href="/accounts/signup/" class="av-nav-signup ms-1" id="signup_btn">Sign Up</a>
+      </li>
+    </ul>
+
+    <!-- Primary nav links + mobile auth buttons -->
+    <div class="collapse navbar-collapse" id="navbar" data-bs-parent="#mainNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="/models/">Models</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/pricing/">Pricing</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/docs/">Docs</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/about/">About</a>
+        </li>
+
+        <!-- Mobile-only auth buttons -->
+        <li class="nav-item d-lg-none mt-2">
+          <a href="/accounts/signup/" class="navbar-btn btn btn-primary text-white btn-block btn-sm">Sign Up</a>
+        </li>
+        <li class="nav-item d-lg-none">
+          <a href="/accounts/login/" class="navbar-btn btn btn-outline-dark btn-block btn-sm mt-1">Log In</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+    <!-- ==================== ANNOUNCEMENT BAR ==================== -->
+    <div class="av-announce-bar" id="avAnnounce" style="display:none;">
+      <div><strong>DeepSeek V4 Pro 0813</strong> is now live on Avian. <a href="/models/">Try it today &rarr;</a></div>
+      <button onclick="document.getElementById('avAnnounce').style.display='none';localStorage.setItem('av_announce_dismissed','1');" aria-label="Dismiss">&times;</button>
+    </div>
+
+    <!-- ==================== PAGE CONTENT ==================== -->
+    <div class="">
+
+<div class="av-pricing">
+
+  <!-- ==================== HERO ==================== -->
+  <section class="av-hero">
+    <div class="av-wrap">
+      <div class="av-eyebrow">
+        <code>for developers</code>
+        LLM inference API
+      </div>
+      <h1>Pay only for <span>what you use</span></h1>
+      <p class="av-hero-sub">Simple per-token pricing with prepaid credits. No subscriptions, no commitments. OpenAI-compatible API for Kimi K2.5, DeepSeek V3.2, and more.</p>
+      <a href="/accounts/signup/" class="av-hero-cta">Get Started Free</a>
+    </div>
+  </section>
+
+  <!-- ==================== API PRICING ==================== -->
+  <section class="av-api-section">
+    <div class="av-wrap">
+      <div class="av-sec-head">
+        <span class="av-sec-tag">per-token pricing</span>
+        <h2>Transparent model pricing</h2>
+        <p>Pay per token from your prepaid balance &mdash; no minimum spend</p>
+      </div>
+
+      <div class="av-filter-tabs" id="avFilterTabs">
+        <button class="av-filter-tab active" data-filter="all">All</button>
+        <button class="av-filter-tab" data-filter="deepseek">DeepSeek</button>
+        <button class="av-filter-tab" data-filter="moonshot">Moonshot</button>
+        <button class="av-filter-tab" data-filter="zhipu">Zhipu</button>
+        <button class="av-filter-tab" data-filter="minimax">MiniMax</button>
+        <button class="av-filter-tab" data-filter="xiaomi">Xiaomi</button>
+      </div>
+
+      <div class="av-model-grid" id="avModelGrid">
+
+        
+        <div class="av-model-card" data-family="deepseek">
+          <div class="av-model-label">DeepSeek V4 Flash</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.0805</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$0.161</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.0165</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 384K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="deepseek">
+          <div class="av-model-label">DeepSeek V4 Pro</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$1.305</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$2.61</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.10875</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 384K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="deepseek">
+          <div class="av-model-label">DeepSeek V4 Pro 0813</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.594</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$1.782</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.0198</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 384K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="deepseek">
+          <div class="av-model-label">DeepSeek V3.2 (Legacy)</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.23</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$0.33</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.012</div>
+            </div>
+          </div>
+          <div class="av-model-meta">163K context &middot; 65K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="minimax">
+          <div class="av-model-label">MiniMax M2.5</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.27</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$1.08</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.15</div>
+            </div>
+          </div>
+          <div class="av-model-meta">196K context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="zhipu">
+          <div class="av-model-label">GLM-4.7</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.388</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$1.806</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.097</div>
+            </div>
+          </div>
+          <div class="av-model-meta">202K context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="zhipu">
+          <div class="av-model-label">GLM-5</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.516</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$2.322</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.129</div>
+            </div>
+          </div>
+          <div class="av-model-meta">205K context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="zhipu">
+          <div class="av-model-label">GLM-5.1</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.743</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$2.971</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.186</div>
+            </div>
+          </div>
+          <div class="av-model-meta">202K context &middot; 202K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="zhipu">
+          <div class="av-model-label">GLM-5.2</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.495</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$1.733</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.124</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="moonshot">
+          <div class="av-model-label">Kimi K2.5</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.45</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$2.2</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.225</div>
+            </div>
+          </div>
+          <div class="av-model-meta">262K context &middot; 262K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="moonshot">
+          <div class="av-model-label">Kimi K2.6</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.95</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$4</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.16</div>
+            </div>
+          </div>
+          <div class="av-model-meta">262K context &middot; 262K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="xiaomi">
+          <div class="av-model-label">MiMo-V2.5 Small</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.2</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$0.4</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.05</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+        <div class="av-model-card" data-family="xiaomi">
+          <div class="av-model-label">MiMo-V2.5 Pro</div>
+          <div class="av-model-prices">
+            <div class="av-mp">
+              <div class="av-mp-label">Input</div>
+              <div class="av-mp-val">$0.435</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Output</div>
+              <div class="av-mp-val">$0.87</div>
+            </div>
+            <div class="av-mp">
+              <div class="av-mp-label">Cache</div>
+              <div class="av-mp-val">$0.0036</div>
+            </div>
+          </div>
+          <div class="av-model-meta">1M context &middot; 131K max output &middot; per M tokens</div>
+        </div>
+        
+
+      </div>
+
+      <!-- Dedicated Deployments -->
+      <div class="av-note" style="margin-bottom: 1.5rem;">
+        <div class="av-note-dot"></div>
+        <div>
+          <p style="margin-bottom: 0.5rem;"><strong>Dedicated Deployments</strong></p>
+          <p>Need guaranteed capacity? Deploy models on dedicated NVIDIA H200 or H100 GPUs with reserved throughput and custom configurations. <a href="mailto:support@avian.io" style="color: #0172FC; text-decoration: none; font-weight: 500;">Contact sales</a> for pricing.</p>
+        </div>
+      </div>
+
+      <div class="av-note">
+        <div class="av-note-dot"></div>
+        <p>All models run on <strong>NVIDIA B200 GPUs</strong> with speculative decoding for industry-leading speeds. Pay only for the tokens you use with <strong>prepaid credits</strong>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CODING SECTION ==================== -->
+  <section class="av-coding-section">
+    <div class="av-wrap">
+      <div class="av-coding-grid">
+        <div class="av-coding-content">
+          <h2>Built for <span>AI-powered coding</span></h2>
+          <p>489 tokens/sec means your AI assistant thinks faster. Cursor autocomplete feels instant, Claude Code edits land quicker, and coding agents iterate in seconds instead of minutes.</p>
+          <div class="av-coding-stats">
+            <div class="av-coding-stat">
+              <span class="av-coding-stat-num">4x</span>
+              <span class="av-coding-stat-label">faster than OpenAI</span>
+            </div>
+            <div class="av-coding-stat">
+              <span class="av-coding-stat-num">~90%</span>
+              <span class="av-coding-stat-label">cheaper than GPT-4o</span>
+            </div>
+          </div>
+          <div class="av-coding-tools-label">Works with</div>
+          <div class="av-coding-tools">
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3M3.75 3.75h16.5v16.5H3.75z"/></svg>Cursor</span>
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"/></svg>Claude Code</span>
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>Cline</span>
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>Windsurf</span>
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714a2.25 2.25 0 0 0 .659 1.591L19 14.5m-4.75-11.396c.251.023.501.05.75.082"/></svg>Kilo Code</span>
+            <span class="av-coding-tool"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>20+ more</span>
+          </div>
+        </div>
+        <div class="av-coding-card">
+          <div class="av-coding-card-header">Output speed comparison</div>
+          <div class="av-coding-compare">
+            <div class="av-coding-compare-row"><div class="av-coding-compare-label"><span>Avian (DeepSeek V3.2)</span><span>489 tok/s</span></div><div class="av-coding-bar-track"><div class="av-coding-bar-fill" style="width:100%"></div></div></div>
+            <div class="av-coding-compare-row"><div class="av-coding-compare-label"><span>OpenAI (GPT-4o)</span><span>120 tok/s</span></div><div class="av-coding-bar-track"><div class="av-coding-bar-fill av-coding-bar-fill--dim" style="width:25%"></div></div></div>
+            <div class="av-coding-compare-row"><div class="av-coding-compare-label"><span>Anthropic (Claude 3.5)</span><span>90 tok/s</span></div><div class="av-coding-bar-track"><div class="av-coding-bar-fill av-coding-bar-fill--dim" style="width:18%"></div></div></div>
+          </div>
+          <div class="av-coding-card-divider"></div>
+          <div class="av-coding-card-header">Cost per 1M output tokens</div>
+          <div class="av-coding-cost-row" style="margin-bottom:0.625rem;"><span>Avian (DeepSeek V3.2)</span><span class="av-cost-val av-cost-val--avian">$0.33</span></div>
+          <div class="av-coding-cost-row" style="margin-bottom:0.625rem;"><span>OpenAI (GPT-4o)</span><span class="av-cost-val av-cost-val--other">$10.00</span></div>
+          <div class="av-coding-cost-row"><span>Anthropic (Claude 3.5)</span><span class="av-cost-val av-cost-val--other">$15.00</span></div>
+          <a href="/accounts/signup/" class="av-coding-cta">Set up in 60 seconds <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CREDIT TOP-UP ==================== -->
+  <section class="av-credits-section">
+    <div class="av-wrap">
+      <div class="av-sec-head">
+        <span class="av-sec-tag">prepaid credits</span>
+        <h2>Add credits to get started</h2>
+        <p>Top up your balance and start making API calls immediately</p>
+      </div>
+
+      <div class="av-credit-grid">
+        <div class="av-credit-card" data-amount="50">
+          <div class="av-credit-amt">$50</div>
+          <div class="av-credit-label">API Credits</div>
+        </div>
+        <div class="av-credit-card" data-amount="100">
+          <div class="av-credit-amt">$100</div>
+          <div class="av-credit-label">API Credits</div>
+        </div>
+        <div class="av-credit-card" data-amount="150">
+          <div class="av-credit-amt">$150</div>
+          <div class="av-credit-label">API Credits</div>
+        </div>
+        <div class="av-credit-card" data-amount="250">
+          <div class="av-credit-amt">$250</div>
+          <div class="av-credit-label">API Credits</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FAQ ==================== -->
+  <section class="av-faq-section">
+    <div class="av-wrap">
+      <div class="av-sec-head">
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about Avian pricing</p>
+      </div>
+
+      <div class="av-faq-list">
+        <div class="av-faq-item">
+          <button class="av-faq-q">
+            What models are available?
+            <svg class="av-faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <div class="av-faq-a">
+            <p>Avian offers access to Kimi K2.5, DeepSeek V3.2, MiniMax M2.5, and the full GLM lineup &mdash; GLM-4.7, GLM-5, GLM-5.1, and GLM-5.2. All models are available to every user &mdash; just add credits and start making requests.</p>
+          </div>
+        </div>
+
+        <div class="av-faq-item">
+          <button class="av-faq-q">
+            How does billing work?
+            <svg class="av-faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <div class="av-faq-a">
+            <p>Avian uses a simple prepaid credit system. Add credits to your account, then each API request deducts the token cost from your balance. No subscriptions, no monthly fees &mdash; you only pay for the tokens you use.</p>
+          </div>
+        </div>
+
+        <div class="av-faq-item">
+          <button class="av-faq-q">
+            Is the API OpenAI-compatible?
+            <svg class="av-faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <div class="av-faq-a">
+            <p>Yes. The Avian API follows the OpenAI Chat Completions format. Just change the base URL to <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.8125rem;">https://api.avian.io/v1</code> in any OpenAI SDK and it works out of the box.</p>
+          </div>
+        </div>
+
+        <div class="av-faq-item">
+          <button class="av-faq-q">
+            Do credits expire?
+            <svg class="av-faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <div class="av-faq-a">
+            <p>No. Credits never expire. Use them whenever you need &mdash; there's no time limit on your prepaid balance.</p>
+          </div>
+        </div>
+
+        <div class="av-faq-item">
+          <button class="av-faq-q">
+            Are there any rate limits?
+            <svg class="av-faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          </button>
+          <div class="av-faq-a">
+            <p>No. As long as you have credits in your account, you can make as many API requests as you need. Your balance is the only limit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CTA BANNER ==================== -->
+  <section class="av-cta-banner">
+    <div class="av-wrap">
+      <h2>Start building with the Avian API</h2>
+      <p>Get your API key in under a minute. Pay only for what you use.</p>
+      <a href="/accounts/signup/">Get Started Free</a>
+    </div>
+  </section>
+
+</div>
+
+    </div>
+    <!-- /container -->
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="av-footer">
+      <div class="container">
+        <div class="av-footer-grid">
+          <div class="av-footer-logo-col">
+            <a href="/" style="text-decoration:none">
+              <svg width="100px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 160 45">
+                <path fill="#000"
+                  d="M66.7609 34.4243c-1.4833 0-2.8295-.2794-4.0385-.8381-1.209-.569-2.1691-1.3868-2.8802-2.4536-.7112-1.0769-1.0668-2.3774-1.0668-3.9013 0-1.3411.2641-2.4282.7924-3.2612.5283-.8433 1.2344-1.5037 2.1183-1.9812.8839-.4775 1.8593-.8331 2.926-1.0667 1.0769-.2439 2.1589-.4369 3.246-.5791 1.4224-.1829 2.5755-.3201 3.4594-.4115.894-.1016 1.5443-.2692 1.9506-.5029.4166-.2337.6249-.6401.6249-1.2192v-.1219c0-1.5036-.4115-2.672-1.2344-3.5051-.8128-.8331-2.0472-1.2496-3.7032-1.2496-1.717 0-3.0632.3759-4.0385 1.1277-.9753.7518-1.6611 1.5544-2.0573 2.4079l-3.4137-1.2192c.6096-1.4224 1.4224-2.5298 2.4383-3.3222 1.0262-.8026 2.1437-1.3614 3.3527-1.6764 1.2192-.3251 2.418-.4876 3.5966-.4876.7518 0 1.6153.0914 2.5907.2743.9855.1727 1.9354.5334 2.8497 1.082.9246.5486 1.6916 1.3766 2.3012 2.484.6096 1.1074.9144 2.5907.9144 4.45v15.4223H73.893v-3.1698h-.1829c-.2438.508-.6502 1.0515-1.2192 1.6306-.5689.5791-1.3258 1.0719-2.2707 1.4783-.9448.4063-2.0979.6095-3.4593.6095Zm.5486-3.2307c1.4224 0 2.6212-.2794 3.5965-.8382.9855-.5588 1.7272-1.2801 2.225-2.164.508-.8839.762-1.8135.762-2.7888v-3.2918c-.1524.1829-.4877.3505-1.0058.5029-.508.1423-1.0973.2693-1.7678.381-.6604.1016-1.3055.1931-1.9354.2743-.6198.0712-1.1227.1321-1.5087.1829-.9347.1219-1.8085.32-2.6212.5943-.8027.2642-1.4529.6655-1.9507 1.204-.4877.5283-.7315 1.2496-.7315 2.164 0 1.2496.4623 2.1945 1.3868 2.8345.9347.6299 2.1183.9449 3.5508.9449Zm35.0475-20.7257-8.6565 23.4078H90.043l-8.656-23.4078h3.9013l6.4615 18.6531h.2439l6.4615-18.6531h3.9018Zm4.747 23.4078V10.4679h3.596v23.4078h-3.596Zm17.072.5486c-1.484 0-2.83-.2794-4.039-.8381-1.209-.569-2.169-1.3868-2.88-2.4536-.711-1.0769-1.067-2.3774-1.067-3.9013 0-1.3411.264-2.4282.793-3.2612.528-.8433 1.234-1.5037 2.118-1.9812.884-.4775 1.859-.8331 2.926-1.0667 1.077-.2439 2.159-.4369 3.246-.5791 1.422-.1829 2.575-.3201 3.459-.4115.894-.1016 1.545-.2692 1.951-.5029.416-.2337.625-.6401.625-1.2192v-.1219c0-1.5036-.412-2.672-1.235-3.5051-.812-.8331-2.047-1.2496-3.703-1.2496-1.717 0-3.063.3759-4.038 1.1277-.976.7518-1.661 1.5544-2.058 2.4079l-3.413-1.2192c.609-1.4224 1.422-2.5298 2.438-3.3222 1.026-.8026 2.144-1.3614 3.353-1.6764 1.219-.3251 2.418-.4876 3.596-.4876.752 0 1.616.0914 2.591.2743.985.1727 1.935.5334 2.85 1.082.924.5486 1.691 1.3766 2.301 2.484.609 1.1074.914 2.5907.914 4.45v15.4223h-3.596v-3.1698h-.183c-.244.508-.65 1.0515-1.219 1.6306-.569.5791-1.326 1.0719-2.271 1.4783-.945.4063-2.098.6095-3.459.6095Zm.548-3.2307c1.423 0 2.621-.2794 3.597-.8382.985-.5588 1.727-1.2801 2.225-2.164.508-.8839.762-1.8135.762-2.7888v-3.2918c-.153.1829-.488.3505-1.006.5029-.508.1423-1.097.2693-1.768.381-.66.1016-1.305.1931-1.935.2743-.62.0712-1.123.1321-1.509.1829-.935.1219-1.808.32-2.621.5943-.803.2642-1.453.6655-1.951 1.204-.487.5283-.731 1.2496-.731 2.164 0 1.2496.462 2.1945 1.386 2.8345.935.6299 2.119.9449 3.551.9449Zm20.341-11.3992v14.0813h-3.596V10.4679h3.474v3.6574h.305c.549-1.1886 1.382-2.1436 2.499-2.865 1.118-.7315 2.561-1.0972 4.328-1.0972 1.585 0 2.972.3251 4.161.9753 1.188.6401 2.113 1.6154 2.773 2.926.661 1.3004.991 2.9463.991 4.9376v14.8737h-3.597V19.2458c0-1.8389-.477-3.2714-1.432-4.2975-.955-1.0363-2.266-1.5544-3.932-1.5544-1.148 0-2.174.2489-3.078.7467-.894.4978-1.6 1.2242-2.119 2.1792-.518.955-.777 2.1132-.777 3.4746Z" />
+                <rect width="44.6831" height="44.6831" fill="#fff" rx="20" />
+                <path fill="url(#fa)"
+                  d="M3.43716 0C1.53887 0 0 1.53887 0 3.43716V27.6253l3.9708-5.6709c.67987-.9709 1.6715-1.5939 2.74491-1.8283 1.803-.508 3.80729.143 4.94259 1.7642L20.1866 34.07c.6842.9772 2.1313.9772 2.8155 0l9.5009-13.5687c1.4359-2.0506 4.2623-2.549 6.3129-1.1131 2.0507 1.4359 2.5491 4.2623 1.1132 6.3129l-13.2914 18.982H41.246c1.8983 0 3.4371-1.5388 3.4371-3.4371V3.43716C44.6831 1.53887 43.1443 0 41.246 0H3.43716Z" />
+                <path fill="url(#fb)"
+                  d="M16.551 44.6831 9.24475 34.2488c-.68419-.9772-2.13137-.9772-2.81556 0L.400792 42.8582c.577697 1.0857 1.720708 1.8249 3.036368 1.8249H16.551Z" />
+                <defs>
+                  <linearGradient id="fa" x1="44.6831" x2="-3.02294" y1="48.7538" y2="6.03623" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#0172FC" />
+                    <stop offset="1" stop-color="#01FFD1" />
+                  </linearGradient>
+                  <linearGradient id="fb" x1="44.6831" x2="-3.02294" y1="48.7538" y2="6.03623" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#0172FC" />
+                    <stop offset="1" stop-color="#01FFD1" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </a>
+          </div>
+
+          <div>
+            <div class="av-footer-heading">Product</div>
+            <ul>
+              <li><a href="/docs/">API</a></li>
+              <li><a href="/models/">Models</a></li>
+              <li><a href="/docs/">Docs</a></li>
+              <li><a href="/pricing">Pricing</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="av-footer-heading">Resources</div>
+            <ul>
+              <li><a href="/about/">About</a></li>
+              <li><a href="/contact/">Contact</a></li>
+              <li><a href="mailto:info@avian.io">Support</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="av-footer-heading">Legal</div>
+            <ul>
+              <li><a href="/terms/">Terms</a></li>
+              <li><a href="/privacy/">Privacy</a></li>
+              <li><a href="/security/">Security</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="av-footer-heading">Connect</div>
+            <ul>
+              <li><a href="https://www.linkedin.com/company/avianio/" target="_blank">LinkedIn</a></li>
+              <li><a href="https://twitter.com/avian_io" target="_blank">X / Twitter</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="av-footer-bottom">
+          <p>&copy;<span id="footer-year">2025</span> Avian Data Inc. All rights reserved.</p>
+        </div>
+      </div>
+      <script>document.getElementById('footer-year').textContent=new Date().getFullYear();</script>
+    </footer>
+
+    <!-- ==================== COOKIE CONSENT ==================== -->
+    <div class="av-cookie-bar" id="avCookieBar" style="display:none;">
+      <p>We use cookies to improve your experience. <a href="/privacy/">Privacy Policy</a></p>
+      <div class="av-cookie-bar__actions">
+        <button class="av-cookie-decline" onclick="localStorage.setItem('av_cookie_consent','declined');document.getElementById('avCookieBar').style.display='none';">Decline</button>
+        <button class="av-cookie-accept" onclick="localStorage.setItem('av_cookie_consent','accepted');document.getElementById('avCookieBar').style.display='none';">Accept</button>
+      </div>
+    </div>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+      (function(){
+        /* Announcement bar + cookie consent */
+        if(!localStorage.getItem('av_announce_dismissed')){document.getElementById('avAnnounce').style.display='';}
+        if(!localStorage.getItem('av_cookie_consent')){document.getElementById('avCookieBar').style.display='';}
+
+        /* Mobile nav toggle */
+        var toggle = document.getElementById('navToggle');
+        var navbar = document.getElementById('navbar');
+        if (toggle && navbar) {
+          toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            navbar.classList.toggle('show');
+          });
+        }
+      })();
+    </script>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+
+        /* ---- Filter Tabs ---- */
+        document.querySelectorAll('.av-filter-tab').forEach(function(tab) {
+          tab.addEventListener('click', function() {
+            document.querySelectorAll('.av-filter-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+            var filter = tab.getAttribute('data-filter');
+            document.querySelectorAll('#avModelGrid .av-model-card').forEach(function(card) {
+              if (filter === 'all' || card.getAttribute('data-family') === filter) {
+                card.style.display = '';
+              } else {
+                card.style.display = 'none';
+              }
+            });
+          });
+        });
+
+        /* ---- FAQ ---- */
+        document.querySelectorAll('.av-faq-q').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var item = btn.closest('.av-faq-item');
+            document.querySelectorAll('.av-faq-item').forEach(function(o) {
+              if (o !== item) o.classList.remove('open');
+            });
+            item.classList.toggle('open');
+          });
+        });
+
+        /* ---- fromCheckout ---- */
+        var url = new URL(window.location.href);
+        if (url.searchParams.get('fromCheckout') !== null) {
+          var nav = document.getElementById('mainNav');
+          if (nav) nav.style.display = 'none';
+        }
+
+      });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

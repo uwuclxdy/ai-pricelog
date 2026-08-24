@@ -61,5 +61,50 @@ detector_url = "https://docs.perplexity.ai/guides/pricing"
 scraper = "perplexity_page"
 scraper_url = "https://docs.perplexity.ai/guides/pricing"
 
+# re-probed 2026-08-24 (todo #3): static pages re-added below. the rest stay
+# out: anthropic/aws/azure/groq/fireworks/cerebras/modal/doubleword/ovhcloud
+# serve prices client-side only, openai blocks bots, voyage 404s/403s,
+# zhipuai is unreachable from here and CNY-only like volcengine.
+
+[together]
+yml = "together.yml"
+or_prefix = "together"
+detector = "together_page"
+detector_url = "https://www.together.ai/pricing"
+scraper = "together_page"
+scraper_url = "https://www.together.ai/pricing"
+
+[novita]
+yml = "novita.yml"
+or_prefix = "novita"
+detector = "novita_page"
+detector_url = "https://novita.ai/pricing"
+scraper = "novita_page"
+scraper_url = "https://novita.ai/pricing"
+
+[cohere]
+yml = "cohere.yml"
+or_prefix = "cohere"
+detector = "cohere_page"
+detector_url = "https://cohere.com/pricing"
+scraper = "cohere_page"
+scraper_url = "https://cohere.com/pricing"
+
+[google]
+yml = "google.yml"
+or_prefix = "google"
+detector = "google_page"
+detector_url = "https://ai.google.dev/gemini-api/docs/pricing"
+scraper = "google_page"
+scraper_url = "https://ai.google.dev/gemini-api/docs/pricing"
+
+[avian]
+yml = "avian.yml"
+or_prefix = "avian"
+detector = "avian_page"
+detector_url = "https://www.avian.io/pricing"
+scraper = "avian_page"
+scraper_url = "https://www.avian.io/pricing"
+
 # [dashscope] disabled: the target tracks no first-party qwen provider yml.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
