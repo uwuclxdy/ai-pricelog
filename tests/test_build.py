@@ -608,6 +608,9 @@ def update_spec(**overrides) -> pr.UpdateSpec:
         deviation="the target's never-overwrite rule is followed",
         old_input_mtok=0.2,
         old_output_mtok=0.4,
+        old_peak_input_mtok=None,
+        old_peak_output_mtok=None,
+        old_peak_windows=(),
         input_mtok=0.27,
         output_mtok=1.1,
         peak_input_mtok=None,
@@ -783,3 +786,25 @@ def test_prepare_update_mirrors_openrouter_entry(tmp_path):
     assert "          start_date: 2026-08-24" in openrouter
     assert "          input_mtok: 0.27" in openrouter
     assert '    prices_checked: "2026-08-24"' in openrouter
+
+
+def test_offpeak_hour_excludes_partial_hour_end():
+    # 16:00-16:30 is inside the window: hour 16 must not be picked
+    assert build._offpeak_hour((("00:30:00Z", "16:30:00Z"),)) == 17
+
+
+def test_replace_test_function_keeps_neighbour_decorators():
+    text = (
+        TEST_CALC_HEAD
+        + "\n"
+        + OLD_TEST
+        + "\n"
+        + "@pytest.mark.parametrize('x', [1])\n"
+        + "def test_next() -> None:\n"
+        + "    assert True\n"
+    )
+    rendered = "def test_deepseek_deepseek_chat_price() -> None:\n    ...\n"
+    result = build._replace_test_function(text, "deepseek-chat", rendered)
+    assert result is not None
+    assert "@pytest.mark.parametrize('x', [1])" in result
+    assert "def test_next() -> None:" in result

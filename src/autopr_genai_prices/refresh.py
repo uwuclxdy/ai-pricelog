@@ -158,7 +158,13 @@ def _split_matches(entries: list[EntryValues], pricing: Pricing) -> bool:
 
 
 def _current(dated: list[EntryValues], entries: list[EntryValues]) -> EntryValues | None:
-    """The entry that prices a request today: last active dated entry, else the base."""
+    """The entry that prices a request today: last active dated entry, else the base.
+
+    Time-window entries are ignored: a list mixing timed and dated entries
+    resolves per request hour, so no single entry prices "today". no watched
+    yml mixes the two shapes, so the approximation only ever sees dated-only
+    lists (where it matches the resolver's reversed scan exactly).
+    """
     today = date.today().isoformat()
     active = [
         entry
@@ -186,6 +192,55 @@ def old_values(prices_view: object) -> tuple[float | None, float | None]:
     return None, None
 
 
+def _tracked_cache_reads(prices_view: object) -> tuple[float | None, float | None]:
+    """The tracked entry's cache-read rates: (base, peak).
+
+    A rewrite re-emits the prices block, so every key the old block carried
+    must survive: the base rate comes from the unconstrained entry (or the
+    flat mapping), the peak rate from the last timed entry.
+    """
+    if isinstance(prices_view, dict):
+        return _mapping_values(prices_view).get("cache_read_mtok"), None
+    if not isinstance(prices_view, list):
+        return None, None
+    base: float | None = None
+    peak: float | None = None
+    for item in prices_view:
+        entry = _entry(item)
+        if entry is None:
+            continue
+        cache_read = _cache_read(item)
+        if entry.constraint is None:
+            base = cache_read
+        elif entry.constraint.startswith("time:"):
+            peak = cache_read
+    return base, peak
+
+
+def _tracked_peak(
+    prices_view: object,
+) -> tuple[float | None, float | None, tuple[tuple[str, str], ...]]:
+    """The tracked entry's peak schedule: last timed entry's rates and all windows.
+
+    Surfaces a window change in the PR body: a replace with unchanged rates
+    but a moved schedule would otherwise show identical old/new numbers.
+    """
+    if not isinstance(prices_view, list):
+        return None, None, ()
+    timed: list[tuple[str, str, float | None, float | None]] = []
+    for item in prices_view:
+        entry = _entry(item)
+        if entry is None or not entry.constraint or not entry.constraint.startswith("time:"):
+            continue
+        start, end = entry.constraint.removeprefix("time:").split("-", 1)
+        timed.append((start, end, entry.input_mtok, entry.output_mtok))
+    if not timed:
+        return None, None, ()
+    windows = tuple((start, end) for start, end, _inp, _out in timed)
+    _start, _end, peak_input, peak_output = timed[-1]
+    return peak_input, peak_output, windows
+
+
 def build_update_spec(
     pcfg: ProviderCfg,
     vendor_text: str,
@@ -201,6 +256,7 @@ def build_update_spec(
     old_section = yml.prices_section_text(vendor_text, entry.id)
     if old_section is None:
         raise ValueError(f"model '{entry.id}': entry has no `prices:` section text")
+    base_cache, peak_cache = _tracked_cache_reads(entry.prices)
     if drift.action == "dated_append":
         prices_section = yml.dated_append_section(
             old_section,
@@ -208,31 +264,40 @@ def build_update_spec(
             pricing.output_cost_per_token,
             checked,
             RATE_COMMENT,
+            cache_read_mtok=_openrouter_current(entry.prices).get("cache_read_mtok"),
         )
         deviation = (
             "the target's never-overwrite rule is followed: the old rates stay as the "
-            "unconstrained first entry, the new rates land in a dated entry at the end"
+            "unconstrained first entry, the new rates land in a dated entry at the end. "
+            "the tracked cache-read rate is carried into the new entry unchanged"
         )
         case = "rate_change"
     elif drift.action == "conversion":
-        prices_section = yml.prices_section(pricing)
+        prices_section = yml.prices_section(
+            pricing, cache_read_mtok=base_cache, peak_cache_read_mtok=peak_cache
+        )
         deviation = (
-            "structural conversion: the flat block is replaced by the split list form. "
-            "the XOR constraint schema cannot express a dated split transition; if the "
-            "split predates this entry the old block was wrong at write (the target's "
-            "correction case), otherwise this deviates from never-overwrite, named here"
+            "structural conversion: the flat block is replaced by the split list form, "
+            "the schedule coming from the page footnote. the XOR constraint schema "
+            "cannot express a dated split transition; if the split predates this entry "
+            "the old block was wrong at write (the target's correction case), otherwise "
+            "this deviates from never-overwrite, named here"
         )
         case = "conversion"
     else:  # replace
-        prices_section = yml.prices_section(pricing)
+        prices_section = yml.prices_section(
+            pricing, cache_read_mtok=base_cache, peak_cache_read_mtok=peak_cache
+        )
         deviation = (
             "the block is replaced in place: the target's constraint schema is a strict "
             "XOR of start_date and time-window, so a dated rate-change entry cannot "
-            "express a split schedule. this deviates from the never-overwrite rule, "
-            "named here"
+            "express a split schedule. the schedule is re-emitted from the page "
+            "footnote, so the peak windows themselves can change beyond the rates; "
+            "this deviates from the never-overwrite rule, named here"
         )
         case = "replace"
     old_input, old_output = old_values(entry.prices)
+    old_peak_input, old_peak_output, old_peak_windows = _tracked_peak(entry.prices)
     slug = f"{pcfg.or_prefix}/{entry.id.lower()}"
     or_prices_section, or_note = _mirror(slug, checked, or_text, or_yml, or_models)
     return UpdateSpec(
@@ -242,6 +307,9 @@ def build_update_spec(
         deviation=deviation,
         old_input_mtok=old_input,
         old_output_mtok=old_output,
+        old_peak_input_mtok=old_peak_input,
+        old_peak_output_mtok=old_peak_output,
+        old_peak_windows=old_peak_windows,
         input_mtok=yml.to_mtok(pricing.input_cost_per_token),
         output_mtok=yml.to_mtok(pricing.output_cost_per_token),
         peak_input_mtok=(
@@ -314,6 +382,10 @@ def _mirror(
         checked,
         RATE_COMMENT,
         cache_read_mtok=or_model.cache_read_mtok,
+        # the API lists no rates -> the entry turns free from this date. a
+        # zero figure would violate the target's Gt(0) schema and the build
+        # would fail every run forever
+        free=or_model.input_mtok is None,
     )
     return section, f"`{slug}` in openrouter.yml updated from the OpenRouter models API"
 

@@ -327,3 +327,169 @@ def test_build_update_spec_missing_entry_raises() -> None:
         build_update_spec(
             PCFG, "models: []\n", ENTRY, FLAT, drift, "2026-08-24", OR_TEXT, OR_YML, [OR_MODEL]
         )
+
+
+def test_conversion_carries_tracked_cache_read() -> None:
+    entry = TrackedModel(
+        "deepseek-chat",
+        ClauseEquals("deepseek-chat"),
+        prices={"input_mtok": 0.2, "output_mtok": 0.4, "cache_read_mtok": 0.035},
+    )
+    drift = compare(entry.prices, SPLIT)
+    spec = build_update_spec(
+        PCFG, VENDOR_TEXT, entry, SPLIT, drift, "2026-08-24", OR_TEXT, OR_YML, [OR_MODEL]
+    )
+    assert spec.case == "conversion"
+    assert "          input_mtok: 0.435\n          cache_read_mtok: 0.035\n" in spec.prices_section
+
+
+def test_replace_carries_split_cache_reads() -> None:
+    entry = TrackedModel(
+        "deepseek-chat",
+        ClauseEquals("deepseek-chat"),
+        prices=pyyaml.safe_load(
+            "prices:\n"
+            "  - prices:\n"
+            "      input_mtok: 0.2\n"
+            "      cache_read_mtok: 0.035\n"
+            "      output_mtok: 0.4\n"
+            "  - constraint:\n"
+            "      start_time: 01:00:00Z\n"
+            "      end_time: 04:00:00Z\n"
+            "    prices:\n"
+            "      input_mtok: 0.4\n"
+            "      cache_read_mtok: 0.07\n"
+            "      output_mtok: 0.8\n"
+        )["prices"],
+    )
+    drift = compare(entry.prices, SPLIT)
+    spec = build_update_spec(
+        PCFG, VENDOR_TEXT, entry, SPLIT, drift, "2026-08-24", OR_TEXT, OR_YML, [OR_MODEL]
+    )
+    assert spec.case == "replace"
+    assert "cache_read_mtok: 0.035" in spec.prices_section
+    assert "cache_read_mtok: 0.07" in spec.prices_section
+
+
+def test_replace_spec_carries_old_peak_schedule() -> None:
+    entry = TrackedModel(
+        "deepseek-chat",
+        ClauseEquals("deepseek-chat"),
+        prices=pyyaml.safe_load(
+            "prices:\n"
+            "  - prices:\n"
+            "      input_mtok: 0.2\n"
+            "      output_mtok: 0.4\n"
+            "  - constraint:\n"
+            "      start_time: 01:00:00Z\n"
+            "      end_time: 04:00:00Z\n"
+            "    prices:\n"
+            "      input_mtok: 0.4\n"
+            "      output_mtok: 0.8\n"
+        )["prices"],
+    )
+    drift = compare(entry.prices, SPLIT)
+    spec = build_update_spec(
+        PCFG, VENDOR_TEXT, entry, SPLIT, drift, "2026-08-24", OR_TEXT, OR_YML, [OR_MODEL]
+    )
+    assert spec.old_peak_windows == (("01:00:00Z", "04:00:00Z"),)
+    assert spec.old_peak_input_mtok == 0.4
+    assert spec.old_peak_output_mtok == 0.8
+
+
+def test_mirror_free_api_emits_free_dated_entry() -> None:
+    drift = compare(ENTRY.prices, FLAT)
+    free_model = OpenrouterModel(
+        id="deepseek/deepseek-chat",
+        name="DeepSeek Chat",
+        input_mtok=None,
+        output_mtok=None,
+        cache_read_mtok=None,
+    )
+    spec = build_update_spec(
+        PCFG, VENDOR_TEXT, ENTRY, FLAT, drift, "2026-08-24", OR_TEXT, OR_YML, [free_model]
+    )
+    assert spec.or_prices_section is not None
+    assert "        prices: {}\n" in spec.or_prices_section
+    assert "input_mtok: 0\n" not in spec.or_prices_section
+
+
+def test_multi_dated_list_last_active_wins() -> None:
+    dated_view = view(
+        "prices:\n"
+        "  - prices:\n"
+        "      input_mtok: 0.2\n"
+        "      output_mtok: 0.4\n"
+        "  - constraint:\n"
+        "      start_date: 2020-01-01\n"
+        "    prices:\n"
+        "      input_mtok: 0.5\n"
+        "      output_mtok: 1.0\n"
+        "  - constraint:\n"
+        "      start_date: 2021-01-01\n"
+        "    prices:\n"
+        "      input_mtok: 0.435\n"
+        "      output_mtok: 0.87\n"
+    )
+    assert compare(dated_view, FLAT).action == "none"
+    drifted = view(
+        "prices:\n"
+        "  - prices:\n"
+        "      input_mtok: 0.2\n"
+        "      output_mtok: 0.4\n"
+        "  - constraint:\n"
+        "      start_date: 2020-01-01\n"
+        "    prices:\n"
+        "      input_mtok: 0.5\n"
+        "      output_mtok: 1.0\n"
+        "  - constraint:\n"
+        "      start_date: 2021-01-01\n"
+        "    prices:\n"
+        "      input_mtok: 0.6\n"
+        "      output_mtok: 1.2\n"
+    )
+    assert compare(drifted, FLAT).action == "dated_append"
+
+
+def test_mirror_uses_the_dated_or_entry_as_current() -> None:
+    or_yml = ProviderYml(
+        "openrouter",
+        "OpenRouter",
+        (
+            TrackedModel(
+                "deepseek/deepseek-chat",
+                ClauseEquals("deepseek/deepseek-chat"),
+                prices=pyyaml.safe_load(
+                    "prices:\n"
+                    "  - prices:\n"
+                    "      input_mtok: 0.2\n"
+                    "      cache_read_mtok: 0.02\n"
+                    "      output_mtok: 0.4\n"
+                    "  - constraint:\n"
+                    "      start_date: 2020-01-01\n"
+                    "    prices:\n"
+                    "      input_mtok: 0.435\n"
+                    "      cache_read_mtok: 0.003625\n"
+                    "      output_mtok: 0.87\n"
+                )["prices"],
+            ),
+        ),
+    )
+    drift = compare(ENTRY.prices, FLAT)
+    matched = build_update_spec(
+        PCFG, VENDOR_TEXT, ENTRY, FLAT, drift, "2026-08-24", OR_TEXT, or_yml, [OR_MODEL]
+    )
+    assert matched.or_prices_section is None
+    assert "already matches the API rates" in matched.or_note
+    changed_api = OpenrouterModel(
+        id="deepseek/deepseek-chat",
+        name="DeepSeek Chat",
+        input_mtok=0.5,
+        output_mtok=1.0,
+        cache_read_mtok=0.004,
+    )
+    drifted_spec = build_update_spec(
+        PCFG, VENDOR_TEXT, ENTRY, FLAT, drift, "2026-08-24", OR_TEXT, or_yml, [changed_api]
+    )
+    assert drifted_spec.or_prices_section is not None
+    assert "          cache_read_mtok: 0.004" in drifted_spec.or_prices_section

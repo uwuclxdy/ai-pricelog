@@ -301,8 +301,18 @@ def _replace_test_function(text: str, model_id: str, rendered: str) -> str | Non
     end = target + 1
     while end < len(lines) and not lines[end].startswith("def "):
         end += 1
-    while end > start and not lines[end - 1].strip():
-        end -= 1
+    if end < len(lines):
+        # a neighbour def follows: everything from the blank separator up to
+        # it belongs to that def's decorator block, and replacing it would
+        # silently delete the neighbour's marks. stop the span at our own
+        # last body line instead
+        while end > start and lines[end - 1].strip():
+            end -= 1
+        while end > start and not lines[end - 1].strip():
+            end -= 1
+    else:
+        while end > start and not lines[end - 1].strip():
+            end -= 1
     lines[start:end] = [rendered]
     return "".join(lines)
 
@@ -327,6 +337,10 @@ def _offpeak_hour(windows: tuple[tuple[str, str], ...]) -> int:
                 covered.add(end_h)
         else:
             covered.update(range(start_h, end_h))
+            # a 16:30 end keeps 16:00-16:30 in-window: an on-the-hour pick of
+            # 16 would pin peak rates under an off-peak label
+            if not end.endswith(":00:00Z"):
+                covered.add(end_h)
     for hour in range(24):
         if hour not in covered:
             return hour

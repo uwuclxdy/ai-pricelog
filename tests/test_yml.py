@@ -791,3 +791,115 @@ def test_prices_section_split() -> None:
         "          input_mtok: 0.87\n"
         "          output_mtok: 1.74\n"
     )
+
+
+def test_rewrite_entry_never_touches_later_blocks_checked_line() -> None:
+    # the first entry lacks prices_checked, the second has one: inserting the
+    # first entry's line must not overwrite the second entry's date
+    text = (
+        "  - id: a\n"
+        "    match:\n"
+        "      equals: a\n"
+        "    prices:\n"
+        "      input_mtok: 1\n"
+        "\n"
+        "  - id: b\n"
+        "    match:\n"
+        "      equals: b\n"
+        "    prices_checked: 2026-07-03\n"
+        "    prices:\n"
+        "      input_mtok: 2\n"
+    )
+    result = rewrite_entry(text, "a", "    prices:\n      input_mtok: 9\n", checked="2026-08-24")
+    assert result == (
+        "  - id: a\n"
+        "    match:\n"
+        "      equals: a\n"
+        '    prices_checked: "2026-08-24"\n'
+        "    prices:\n"
+        "      input_mtok: 9\n"
+        "\n"
+        "  - id: b\n"
+        "    match:\n"
+        "      equals: b\n"
+        "    prices_checked: 2026-07-03\n"
+        "    prices:\n"
+        "      input_mtok: 2\n"
+    )
+
+
+def test_rewrite_entry_updates_own_checked_line_after_prices_only() -> None:
+    # the rewritten entry's own checked line sits after its prices section
+    # and before the next block: it is replaced, the next block stays
+    text = (
+        "  - id: a\n"
+        "    match:\n"
+        "      equals: a\n"
+        "    prices:\n"
+        "      input_mtok: 1\n"
+        '    prices_checked: "2026-07-03"\n'
+        "\n"
+        "  - id: b\n"
+        "    match:\n"
+        "      equals: b\n"
+        '    prices_checked: "2026-07-04"\n'
+    )
+    result = rewrite_entry(text, "a", "    prices:\n      input_mtok: 9\n", checked="2026-08-24")
+    assert '    prices_checked: "2026-08-24"\n' in result.split("  - id: b")[0]
+    assert '    prices_checked: "2026-07-04"\n' in result
+
+
+def test_prices_section_carries_cache_read_through_conversion() -> None:
+    flat = prices_section(Pricing(0.435e-6, 0.87e-6, "chat"), cache_read_mtok=0.035)
+    assert flat == (
+        "    prices:\n"
+        "      input_mtok: 0.435\n"
+        "      cache_read_mtok: 0.035\n"
+        "      output_mtok: 0.87\n"
+    )
+    split = prices_section(
+        Pricing(
+            0.435e-6,
+            0.87e-6,
+            "chat",
+            peak_input_cost_per_token=0.87e-6,
+            peak_output_cost_per_token=1.74e-6,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        ),
+        cache_read_mtok=0.035,
+        peak_cache_read_mtok=0.07,
+    )
+    assert split == (
+        "    prices:\n"
+        "      - prices:\n"
+        "          input_mtok: 0.435\n"
+        "          cache_read_mtok: 0.035\n"
+        "          output_mtok: 0.87\n"
+        "      - constraint:\n"
+        "          start_time: 01:00:00Z\n"
+        "          end_time: 04:00:00Z\n"
+        "        prices:\n"
+        "          input_mtok: 0.87\n"
+        "          cache_read_mtok: 0.07\n"
+        "          output_mtok: 1.74\n"
+    )
+
+
+def test_dated_append_section_carries_cache_read_in_new_entry() -> None:
+    result = dated_append_section(
+        FLAT_SECTION, 0.54e-6, 1.08e-6, "2026-08-24", "rate change", cache_read_mtok=0.035
+    )
+    assert "          cache_read_mtok: 0.035\n          output_mtok: 1.08\n" in result
+
+
+def test_dated_append_section_free_new_entry() -> None:
+    result = dated_append_section(
+        FLAT_SECTION, 0.0, 0.0, "2026-08-24", "the api lists no rates", free=True
+    )
+    assert result.endswith(
+        "      - constraint:\n"
+        "          # the api lists no rates\n"
+        "          start_date: 2026-08-24\n"
+        "        prices: {}\n"
+    )
+    assert "input_mtok: 0\n" not in result

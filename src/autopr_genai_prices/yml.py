@@ -98,12 +98,19 @@ def _fmt_mtok(per_token: float) -> str:
     return f"{to_mtok(per_token):g}"
 
 
-def prices_section(pricing: Pricing) -> str:
+def prices_section(
+    pricing: Pricing,
+    cache_read_mtok: float | None = None,
+    peak_cache_read_mtok: float | None = None,
+) -> str:
     """The `    prices:` block for a Pricing: flat mapping or split list.
 
     Split-priced models become off-peak-default + one constrained entry per
     peak window. Shared by the entry builder and the refresh pass, so a
-    tracked entry's conversion uses the same emission as a new entry.
+    tracked entry's conversion uses the same emission as a new entry. The
+    cache-read kwargs are per-Mtok and only a conversion passes them: the
+    scrapers carry no cache-hit rates, and a rewrite that dropped the
+    tracked entry's cache keys would silently unpin cache reads.
     """
     has_peak = (
         pricing.peak_input_cost_per_token is not None
@@ -114,6 +121,8 @@ def prices_section(pricing: Pricing) -> str:
     if has_peak:
         lines.append("      - prices:")
         lines.append(f"          input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
+        if cache_read_mtok is not None:
+            lines.append(f"          cache_read_mtok: {cache_read_mtok:g}")
         lines.append(f"          output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
         for start, end in pricing.peak_windows:
             lines.append("      - constraint:")
@@ -121,9 +130,13 @@ def prices_section(pricing: Pricing) -> str:
             lines.append(f"          end_time: {end}")
             lines.append("        prices:")
             lines.append(f"          input_mtok: {_fmt_mtok(pricing.peak_input_cost_per_token)}")
+            if peak_cache_read_mtok is not None:
+                lines.append(f"          cache_read_mtok: {peak_cache_read_mtok:g}")
             lines.append(f"          output_mtok: {_fmt_mtok(pricing.peak_output_cost_per_token)}")
     else:
         lines.append(f"      input_mtok: {_fmt_mtok(pricing.input_cost_per_token)}")
+        if cache_read_mtok is not None:
+            lines.append(f"      cache_read_mtok: {cache_read_mtok:g}")
         lines.append(f"      output_mtok: {_fmt_mtok(pricing.output_cost_per_token)}")
     return "\n".join(lines) + "\n"
 
@@ -419,11 +432,13 @@ def rewrite_entry(text: str, model_id: str, new_section: str, checked: str | Non
 def _set_prices_checked(head: list[str], tail: list[str], block_start: int, checked: str) -> None:
     """Replace or insert the `prices_checked` line around the section span.
 
-    The replacement keeps the entry's quote style (moonshotai quotes the
-    date, deepseek does not). When the entry lacks the line, one is inserted
-    right before the prices section. `head` is everything before the section,
-    `tail` everything after, so an existing line in either spot is replaced
-    in place; the block_start floor keeps other blocks' lines untouched.
+    The replacement keeps the entry's own quote style, whichever it is. When
+    the entry lacks the line, one is inserted right before the prices
+    section. `head` is everything before the section, `tail` everything
+    after, so an existing line in either spot is replaced in place. Both
+    scans are floored to the entry's block: the head scan by block_start,
+    the tail scan by the next block's `  - id:` line, so a later block's
+    checked line is never overwritten when this entry lacks its own.
     """
     value = f'    prices_checked: "{checked}"\n'
     for index, line in enumerate(head):
@@ -432,6 +447,8 @@ def _set_prices_checked(head: list[str], tail: list[str], block_start: int, chec
         head[index] = value if '"' in line else f"    prices_checked: {checked}\n"
         return
     for index, line in enumerate(tail):
+        if line.startswith("  - id: "):
+            break  # the next block starts: nothing below is this entry's
         if not line.startswith("    prices_checked:"):
             continue
         tail[index] = value if '"' in line else f"    prices_checked: {checked}\n"
@@ -446,6 +463,7 @@ def dated_append_section(
     start_date: str,
     comment: str,
     cache_read_mtok: float | None = None,
+    free: bool = False,
 ) -> str:
     """The `    prices:` section after appending a dated rate-change entry.
 
@@ -455,8 +473,11 @@ def dated_append_section(
     old rates. The new entry goes last: both engines scan backwards, so an
     unconstrained entry placed last would always win. The comment sits beside
     start_date, the spot the target's own procedure uses for the changelog
-    citation. `cache_read_mtok` is per-Mtok and only the openrouter mirror
-    passes it (vendor scrapers carry no cache-read rate).
+    citation. `cache_read_mtok` is per-Mtok: the mirror passes the API's
+    rate, the vendor path carries the tracked entry's rate so a rewrite
+    never drops the key. `free` emits `prices: {}` for the new entry (the
+    mirror's shape when the API lists no rates; a zero figure would violate
+    the target's Gt(0) schema).
     """
     remainder = old_section[len("    prices:") :]
     if remainder.strip() == "{}":  # a free entry's one-line `prices: {}`
@@ -479,13 +500,18 @@ def dated_append_section(
             "      - constraint:",
             f"          # {comment}",
             f"          start_date: {start_date}",
-            "        prices:",
-            f"          input_mtok: {_fmt_mtok(input_cost_per_token)}",
-            f"          output_mtok: {_fmt_mtok(output_cost_per_token)}",
+            "        prices: {}" if free else "        prices:",
         ]
     )
-    if cache_read_mtok is not None:
-        lines.insert(-1, f"          cache_read_mtok: {cache_read_mtok:g}")
+    if not free:
+        lines.extend(
+            [
+                f"          input_mtok: {_fmt_mtok(input_cost_per_token)}",
+                f"          output_mtok: {_fmt_mtok(output_cost_per_token)}",
+            ]
+        )
+        if cache_read_mtok is not None:
+            lines.insert(-1, f"          cache_read_mtok: {cache_read_mtok:g}")
     return "\n".join(lines) + "\n"
 
 

@@ -313,6 +313,9 @@ def update(**overrides) -> pr.UpdateSpec:
         deviation="the target's never-overwrite rule is followed",
         old_input_mtok=0.2,
         old_output_mtok=0.4,
+        old_peak_input_mtok=None,
+        old_peak_output_mtok=None,
+        old_peak_windows=(),
         input_mtok=0.27,
         output_mtok=1.1,
         peak_input_mtok=None,
@@ -382,3 +385,21 @@ def test_or_only_spec_branch_title_body():
     assert "only fills the openrouter entry" in body
     assert "## notes" in body
     assert "| `deepseek/deepseek-chat` | 0.22 | 0.003625 | 0.66 |" in body
+
+
+def test_update_body_old_peak_row_surfaces_window_change():
+    s = spec(
+        entry_id="deepseek-chat",
+        update=update(
+            case="replace",
+            old_peak_input_mtok=0.4,
+            old_peak_output_mtok=0.8,
+            old_peak_windows=(("00:30:00Z", "16:30:00Z"),),
+            peak_input_mtok=0.4,
+            peak_output_mtok=0.8,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        ),
+    )
+    body = s.body
+    assert "| `deepseek-chat` old peak 00:30:00Z - 16:30:00Z | 0.4 | 0.8 |" in body
+    assert "| `deepseek-chat` new peak 01:00:00Z - 04:00:00Z | 0.4 | 0.8 |" in body

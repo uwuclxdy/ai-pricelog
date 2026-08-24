@@ -41,6 +41,9 @@ class UpdateSpec:
     deviation: str
     old_input_mtok: float | None
     old_output_mtok: float | None
+    old_peak_input_mtok: float | None
+    old_peak_output_mtok: float | None
+    old_peak_windows: tuple[tuple[str, str], ...]
     input_mtok: float
     output_mtok: float
     peak_input_mtok: float | None
@@ -190,6 +193,15 @@ class PrSpec:
                 f"| `{self.entry_id}` new off-peak | {update.input_mtok:g} "
                 f"| {update.output_mtok:g} |"
             )
+            if update.old_peak_windows:
+                old_windows = " and ".join(
+                    f"{start} - {end}" for start, end in update.old_peak_windows
+                )
+                lines.append(
+                    f"| `{self.entry_id}` old peak {old_windows} "
+                    f"| {_fmt_price(update.old_peak_input_mtok)} "
+                    f"| {_fmt_price(update.old_peak_output_mtok)} |"
+                )
             lines.append(
                 f"| `{self.entry_id}` new peak {windows} | {update.peak_input_mtok:g} "
                 f"| {update.peak_output_mtok:g} |"

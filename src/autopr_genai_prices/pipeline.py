@@ -250,10 +250,19 @@ def _refresh_provider(
         if entry is None or entry.id in seen or entry.prices is None:
             continue
         seen.add(entry.id)
-        if pr.pending_pr(entry.id, runner):
+        try:
+            pending = pr.pending_pr(entry.id, runner)
+        except Exception:
+            log.exception("refresh pending check failed for %s", entry.id)
+            continue
+        if pending:
             log.info("refresh for %s skipped: pending pr", entry.id)
             continue
-        pricing = scraper.scrape(pcfg, page_id)
+        try:
+            pricing = scraper.scrape(pcfg, page_id)
+        except Exception:
+            log.exception("refresh scrape failed for %s", entry.id)
+            continue
         if pricing is None:
             log.debug("refresh for %s skipped: no pricing on the page", entry.id)
             continue
@@ -351,6 +360,7 @@ def _or_followups(
     """
     opened: list[tuple[str, str]] = []
     drafts = open_drafts
+    seen_slugs: set[str] = set()
     for pcfg in cfg.providers:
         provider_state = getattr(state, "providers", {}).get(pcfg.key)
         if provider_state is None or not provider_state.handled:
@@ -365,6 +375,9 @@ def _or_followups(
             if not yml.is_tracked(vendor_yml, entry_id):
                 continue  # the vendor pr never landed: no openrouter entry to fill
             slug = f"{pcfg.or_prefix}/{entry_id.lower()}"
+            if slug in seen_slugs:
+                continue  # two page ids dedup to one slug: one follow-up per run
+            seen_slugs.add(slug)
             if yml.is_tracked(or_yml, slug):
                 continue  # landed
             try:
