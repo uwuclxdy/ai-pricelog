@@ -153,12 +153,15 @@ def _insert_entries(slot: Path, spec: PrSpec) -> None:
         # split conversion), never inserts: the model already has an entry
         update = spec.update
         vendor_path = providers / spec.vendor_yml
+        # openrouter.yml entries carry no prices_checked upstream; only the
+        # vendor side gets the checked update
+        checked = None if spec.vendor_yml == "openrouter.yml" else update.start_date
         vendor_path.write_text(
             yml.rewrite_entry(
                 vendor_path.read_text(),
                 update.model_id,
                 update.prices_section,
-                checked=update.start_date,
+                checked=checked,
             )
         )
         if update.or_prices_section is not None:
@@ -168,7 +171,7 @@ def _insert_entries(slot: Path, spec: PrSpec) -> None:
                     openrouter_path.read_text(),
                     spec.openrouter_slug,
                     update.or_prices_section,
-                    checked=update.start_date,
+                    checked=None,
                 )
             )
         return

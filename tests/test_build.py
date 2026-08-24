@@ -785,7 +785,52 @@ def test_prepare_update_mirrors_openrouter_entry(tmp_path):
     assert "      - prices:\n          input_mtok: 0.2" in openrouter
     assert "          start_date: 2026-08-24" in openrouter
     assert "          input_mtok: 0.27" in openrouter
-    assert '    prices_checked: "2026-08-24"' in openrouter
+    assert "prices_checked" not in openrouter  # openrouter entries carry none upstream
+
+
+def test_prepare_or_only_update_rewrites_openrouter_only(tmp_path):
+    slot = seed_slot_priced(tmp_path)
+    or_update = update_spec(
+        model_id="deepseek/deepseek-chat",
+        or_only=True,
+        prices_section=(
+            "    prices:\n"
+            "      - prices:\n"
+            "          input_mtok: 0.2\n"
+            "          cache_read_mtok: 0.02\n"
+            "          output_mtok: 0.4\n"
+            "      - constraint:\n"
+            "          # rate change\n"
+            "          start_date: 2026-08-24\n"
+            "        prices:\n"
+            "          input_mtok: 0.27\n"
+            "          cache_read_mtok: 0.04\n"
+            "          output_mtok: 1.1\n"
+        ),
+    )
+    runner = quiet_runner()
+    build.prepare(
+        slot,
+        "main",
+        spec(
+            update=or_update,
+            model_id="deepseek/deepseek-chat",
+            entry_id="deepseek/deepseek-chat",
+            vendor_yml="openrouter.yml",
+            vendor_name="OpenRouter",
+            vendor_entry=None,
+            openrouter_entry=None,
+            openrouter_slug="deepseek/deepseek-chat",
+        ),
+        runner,
+    )
+
+    openrouter = git(slot, "show", "HEAD:prices/providers/openrouter.yml")
+    assert "          input_mtok: 0.27" in openrouter
+    assert "          start_date: 2026-08-24" in openrouter
+    assert "prices_checked" not in openrouter
+    vendor = git(slot, "show", "HEAD:prices/providers/deepseek.yml")
+    assert "start_date" not in vendor  # the vendor entry is untouched
 
 
 def test_offpeak_hour_excludes_partial_hour_end():

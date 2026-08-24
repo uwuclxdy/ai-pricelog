@@ -452,13 +452,13 @@ def or_drift_section(
     return yml.dated_append_section(
         old_section,
         (or_model.input_mtok or 0.0) / 1e6,
-        (or_model.output_mtok or 0.0) / 1e6,
+        or_model.output_mtok / 1e6 if or_model.output_mtok is not None else None,
         checked,
         RATE_COMMENT,
         cache_read_mtok=or_model.cache_read_mtok,
-        # the API lists no rates -> the entry turns free from this date. a
-        # zero figure would violate the target's Gt(0) schema and the build
-        # would fail every run forever
+        # the API lists no input rates -> the entry turns free from this
+        # date. a zero figure would violate the target's Gt(0) schema and
+        # the build would fail every run forever
         free=or_model.input_mtok is None,
     )
 

@@ -108,9 +108,10 @@ def prices_section(
     Split-priced models become off-peak-default + one constrained entry per
     peak window. Shared by the entry builder and the refresh pass, so a
     tracked entry's conversion uses the same emission as a new entry. The
-    cache-read kwargs are per-Mtok and only a conversion passes them: the
-    scrapers carry no cache-hit rates, and a rewrite that dropped the
-    tracked entry's cache keys would silently unpin cache reads.
+    cache-read kwargs are per-Mtok: new entries pass the scraper's rate
+    (Pricing.cache_read_cost_per_token), conversions and replacements pass
+    the tracked entry's values, and a rewrite that dropped the tracked
+    entry's cache keys would silently unpin cache reads.
     """
     has_peak = (
         pricing.peak_input_cost_per_token is not None
@@ -176,13 +177,16 @@ def build_vendor_entry(
             f"Peak hours are {windows} UTC (all other hours are off-peak)"
         )
     lines.append(f'    price_comments: "{comment}"')
+    cache_read = (
+        to_mtok(pricing.cache_read_cost_per_token)
+        if pricing.cache_read_cost_per_token is not None
+        else None
+    )
+    # one scraped cache rate serves both entries of a split schedule: the
+    # page publishes no peak-hour cache figure, and an unpriced peak cache
+    # read would undercharge
     section = prices_section(
-        pricing,
-        cache_read_mtok=(
-            to_mtok(pricing.cache_read_cost_per_token)
-            if pricing.cache_read_cost_per_token is not None
-            else None
-        ),
+        pricing, cache_read_mtok=cache_read, peak_cache_read_mtok=cache_read if has_peak else None
     )
     return "\n".join(lines) + "\n" + section, tuple(skipped)
 
@@ -467,7 +471,7 @@ def _set_prices_checked(head: list[str], tail: list[str], block_start: int, chec
 def dated_append_section(
     old_section: str,
     input_cost_per_token: float,
-    output_cost_per_token: float,
+    output_cost_per_token: float | None,
     start_date: str,
     comment: str,
     cache_read_mtok: float | None = None,
@@ -483,9 +487,10 @@ def dated_append_section(
     start_date, the spot the target's own procedure uses for the changelog
     citation. `cache_read_mtok` is per-Mtok: the mirror passes the API's
     rate, the vendor path carries the tracked entry's rate so a rewrite
-    never drops the key. `free` emits `prices: {}` for the new entry (the
-    mirror's shape when the API lists no rates; a zero figure would violate
-    the target's Gt(0) schema).
+    never drops the key. A None output rate omits the output line (the
+    target's schema allows input-only entries; a zero figure would violate
+    its Gt(0) constraint). `free` emits `prices: {}` for the new entry (the
+    mirror's shape when the API lists no input rate).
     """
     remainder = old_section[len("    prices:") :]
     if remainder.strip() == "{}":  # a free entry's one-line `prices: {}`
@@ -512,14 +517,11 @@ def dated_append_section(
         ]
     )
     if not free:
-        lines.extend(
-            [
-                f"          input_mtok: {_fmt_mtok(input_cost_per_token)}",
-                f"          output_mtok: {_fmt_mtok(output_cost_per_token)}",
-            ]
-        )
+        lines.append(f"          input_mtok: {_fmt_mtok(input_cost_per_token)}")
         if cache_read_mtok is not None:
-            lines.insert(-1, f"          cache_read_mtok: {cache_read_mtok:g}")
+            lines.append(f"          cache_read_mtok: {cache_read_mtok:g}")
+        if output_cost_per_token is not None:
+            lines.append(f"          output_mtok: {_fmt_mtok(output_cost_per_token)}")
     return "\n".join(lines) + "\n"
 
 
@@ -532,13 +534,13 @@ def tiered_dated_append_section(
 ) -> str:
     """The `    prices:` section after appending a dated entry to a tiered mapping.
 
-    The old mapping stays as the unconstrained first entry, byte-identical.
-    The new entry carries the same keys with the input/output base rates
-    swapped for the live figures; tier lists and other keys (cache_read_mtok,
-    requests_kcount, ...) carry over unchanged, so future requests keep the
-    tier structure and pay the scraper's flat base rates. A base line missing
-    (a flat key inside a tiered mapping) emits that key flat from the live
-    pricing instead.
+    The old mapping stays as the unconstrained first entry, re-emitted
+    line-for-line (blank separator lines dropped). The new entry carries the
+    same keys with the input/output base rates swapped for the live figures;
+    tier lists and other keys (cache_read_mtok, requests_kcount, ...) carry
+    over unchanged, so future requests keep the tier structure and pay the
+    scraper's flat base rates. A base line missing (a flat key inside a
+    tiered mapping) emits that key flat from the live pricing instead.
     """
     remainder = old_section[len("    prices:") :]
     body = [line for line in remainder.strip("\n").splitlines() if line.strip()]
@@ -546,16 +548,15 @@ def tiered_dated_append_section(
         "tiered append expects a flat mapping section"
     )
     blocks = _top_level_blocks(body)
+    # every key present in the old mapping carries over: the compare only
+    # sends tiered mappings whose input and output both resolved
     swaps = {
         "input_mtok": _fmt_mtok(input_cost_per_token),
         "output_mtok": _fmt_mtok(output_cost_per_token),
     }
     new_body: list[str] = []
     for key, block in blocks.items():
-        value = swaps.pop(key, None)
-        new_body.extend(_swap_base(block, value) if value is not None else block)
-    for key, value in swaps.items():
-        new_body.extend([f"      {key}:", f"        {value}"])
+        new_body.extend(_swap_base(block, swaps[key]) if key in swaps else block)
     lines = ["    prices:", "      - prices:"]
     lines.extend(f"    {line}" for line in body)
     lines.extend(
@@ -588,17 +589,23 @@ def _top_level_blocks(body: list[str]) -> dict[str, list[str]]:
 
 
 def _swap_base(block: list[str], value: str) -> list[str]:
-    """Replace a tiered key block's base line value, in place.
+    """Replace a tiered key block's base value, in place.
 
-    Only the depth-8 `base:` line is swapped; tier-step `price:` lines sit
-    deeper and carry over. A block without a base line (a flat key, inline or
-    bare) collapses to the key plus the flat live value.
+    Block-form tier objects swap their depth-8 `base:` line; tier-step
+    `price:` lines sit deeper and carry over. A one-line flow-spelled tier
+    object (`input_mtok: {base: 0.3, tiers: [...]}`) swaps the `base:`
+    value inside the braces. A block with neither shape (a flat key)
+    collapses to the key plus the flat live value.
     """
     base = "        base: "
     for index, line in enumerate(block):
         if line.startswith(base):
             block[index] = base + value
             return block
+    if len(block) == 1 and "{base:" in block[0]:
+        swapped = re.sub(r"\{base:\s*[0-9.]+", "{base: " + value, block[0])
+        if swapped != block[0]:
+            return [swapped]
     return [f"{block[0].split(':', 1)[0]}: {value}"]
 
 

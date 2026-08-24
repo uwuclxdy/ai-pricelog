@@ -127,6 +127,27 @@ DEEPSEEK_ENTRY = """  - id: deepseek-v4.1
 """
 
 
+def test_build_vendor_entry_split_carries_cache_into_peak_entries() -> None:
+    yml = ProviderYml("t", "Test", (TrackedModel("foo", ClauseEquals("foo")),))
+    entry, skipped = build_vendor_entry(
+        yml,
+        "bar",
+        Pricing(
+            1e-6,
+            2e-6,
+            "chat",
+            cache_read_cost_per_token=0.1e-6,
+            peak_input_cost_per_token=2e-6,
+            peak_output_cost_per_token=4e-6,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        ),
+        "2026-08-19",
+        "https://example.com",
+    )
+    assert entry.count("cache_read_mtok: 0.1") == 2  # off-peak base + peak entry
+    assert skipped == ()
+
+
 def test_build_vendor_entry_emits_cache_read_when_scraped() -> None:
     yml = ProviderYml("t", "Test", (TrackedModel("foo", ClauseEquals("foo")),))
     entry, skipped = build_vendor_entry(
@@ -845,6 +866,26 @@ def test_tiered_dated_append_section_swaps_bases_keeps_tiers() -> None:
         "              - start: 512000\n"
         "                price: 2.4\n"
     )
+
+
+def test_tiered_dated_append_section_inline_flow_swaps_base() -> None:
+    section = (
+        "    prices:\n"
+        "      input_mtok: {base: 0.3, tiers: [{start: 512000, price: 0.6}]}\n"
+        "      output_mtok: {base: 1.2, tiers: [{start: 512000, price: 2.4}]}\n"
+    )
+    result = tiered_dated_append_section(section, 0.435e-6, 0.87e-6, "2026-08-24", "rate change")
+    assert "input_mtok: {base: 0.435, tiers: [{start: 512000, price: 0.6}]}" in result
+    assert "output_mtok: {base: 0.87, tiers: [{start: 512000, price: 2.4}]}" in result
+    assert result.count("start_date: 2026-08-24") == 1
+
+
+def test_dated_append_section_output_none_omits_line() -> None:
+    result = dated_append_section(FLAT_SECTION, 0.54e-6, None, "2026-08-24", "went input-only")
+    assert "          input_mtok: 0.54" in result
+    # the old entry keeps its output line, the new one omits it
+    assert result.count("output_mtok") == 1
+    assert "          start_date: 2026-08-24" in result
 
 
 def test_tiered_dated_append_section_flat_key_emits_live() -> None:
