@@ -176,7 +176,15 @@ def build_vendor_entry(
             f"Peak hours are {windows} UTC (all other hours are off-peak)"
         )
     lines.append(f'    price_comments: "{comment}"')
-    return "\n".join(lines) + "\n" + prices_section(pricing), tuple(skipped)
+    section = prices_section(
+        pricing,
+        cache_read_mtok=(
+            to_mtok(pricing.cache_read_cost_per_token)
+            if pricing.cache_read_cost_per_token is not None
+            else None
+        ),
+    )
+    return "\n".join(lines) + "\n" + section, tuple(skipped)
 
 
 def _sibling(yml: ProviderYml, model_id: str) -> TrackedModel:

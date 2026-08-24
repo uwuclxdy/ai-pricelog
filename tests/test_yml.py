@@ -127,6 +127,20 @@ DEEPSEEK_ENTRY = """  - id: deepseek-v4.1
 """
 
 
+def test_build_vendor_entry_emits_cache_read_when_scraped() -> None:
+    yml = ProviderYml("t", "Test", (TrackedModel("foo", ClauseEquals("foo")),))
+    entry, skipped = build_vendor_entry(
+        yml,
+        "bar",
+        Pricing(1e-6, 2e-6, "chat", cache_read_cost_per_token=0.1e-6),
+        "2026-08-19",
+        "https://example.com",
+    )
+    assert "      cache_read_mtok: 0.1" in entry
+    assert "input_mtok: 1" in entry
+    assert skipped == ()
+
+
 def test_build_vendor_entry_deepseek_copies_sibling_shape(
     provider_ymls: dict[str, ProviderYml],
 ) -> None:

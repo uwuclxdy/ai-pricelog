@@ -38,7 +38,11 @@ def validate_entry(model_id: str, pricing: Pricing) -> None:
             raise ValidationError(
                 f"pricing field '{field}' has bad value {value!r}; fix: use a finite float > 0"
             )
-    for field in ("peak_input_cost_per_token", "peak_output_cost_per_token"):
+    for field in (
+        "cache_read_cost_per_token",
+        "peak_input_cost_per_token",
+        "peak_output_cost_per_token",
+    ):
         value = getattr(pricing, field)
         if value is None:
             continue

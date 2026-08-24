@@ -7,6 +7,7 @@ class Pricing:
     output_cost_per_token: float
     mode: str
     max_tokens: int = 0
+    cache_read_cost_per_token: float | None = None
     peak_input_cost_per_token: float | None = None
     peak_output_cost_per_token: float | None = None
     peak_windows: tuple[tuple[str, str], ...] = ()
