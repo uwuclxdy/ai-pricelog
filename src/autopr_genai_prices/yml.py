@@ -445,6 +445,7 @@ def dated_append_section(
     output_cost_per_token: float,
     start_date: str,
     comment: str,
+    cache_read_mtok: float | None = None,
 ) -> str:
     """The `    prices:` section after appending a dated rate-change entry.
 
@@ -454,7 +455,8 @@ def dated_append_section(
     old rates. The new entry goes last: both engines scan backwards, so an
     unconstrained entry placed last would always win. The comment sits beside
     start_date, the spot the target's own procedure uses for the changelog
-    citation.
+    citation. `cache_read_mtok` is per-Mtok and only the openrouter mirror
+    passes it (vendor scrapers carry no cache-read rate).
     """
     remainder = old_section[len("    prices:") :]
     if remainder.strip() == "{}":  # a free entry's one-line `prices: {}`
@@ -482,6 +484,8 @@ def dated_append_section(
             f"          output_mtok: {_fmt_mtok(output_cost_per_token)}",
         ]
     )
+    if cache_read_mtok is not None:
+        lines.insert(-1, f"          cache_read_mtok: {cache_read_mtok:g}")
     return "\n".join(lines) + "\n"
 
 

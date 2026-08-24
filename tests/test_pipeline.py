@@ -128,6 +128,7 @@ def upstream(tmp_path):
     def make(
         ymls: dict[str, str] | None = None,
         or_tracked: tuple[str, ...] = (),
+        or_text: str | None = None,
     ) -> Path:
         src = tmp_path / "upstream-src"
         git_init_repo(src)
@@ -137,7 +138,9 @@ def upstream(tmp_path):
             ymls or {DEEPSEEK_YML: vendor_yml("Deepseek", "deepseek-legacy")}
         ).items():
             (providers / file_name).write_text(text)
-        (providers / OPENROUTER_YML).write_text(openrouter_yml(*or_tracked))
+        (providers / OPENROUTER_YML).write_text(
+            or_text if or_text is not None else openrouter_yml(*or_tracked)
+        )
         git(src, "add", ".")
         git(src, "commit", "-m", "seed")
         bare = tmp_path / "upstream.git"
@@ -667,6 +670,350 @@ def test_state_commit_sets_identity_when_missing(
         git(repo_root, "log", "--format=%an <%ae>", "-1").strip()
         == "octocat <octocat@users.noreply.github.com>"
     )
+
+
+def priced_vendor_yml(name: str, *models: tuple[str, float, float]) -> str:
+    blocks = "".join(
+        (
+            f"  - id: {model_id}\n"
+            "    match:\n"
+            f"      equals: {model_id}\n"
+            '    prices_checked: "2026-08-19"\n'
+            "    prices:\n"
+            f"      input_mtok: {inp}\n"
+            f"      output_mtok: {out}\n"
+            "\n"
+        )
+        for model_id, inp, out in models
+    )
+    return f"id: {name.lower()}\nname: {name}\nmodels: {'[]' if not blocks else ''}\n{blocks}"
+
+
+def priced_openrouter_yml(*models: tuple[str, float, float, float]) -> str:
+    blocks = "".join(
+        (
+            f"  - id: {slug}\n"
+            "    match:\n"
+            f"      equals: {slug}\n"
+            "    prices:\n"
+            f"      input_mtok: {inp}\n"
+            f"      cache_read_mtok: {cache}\n"
+            f"      output_mtok: {out}\n"
+            "\n"
+        )
+        for slug, inp, cache, out in models
+    )
+    return f"id: openrouter\nname: OpenRouter\nmodels: {'[]' if not blocks else ''}\n{blocks}"
+
+
+def test_refresh_detects_rate_change_and_opens_update_pr(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}  # 0.27/1.1 vs tracked 0.2/0.4
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, runner)
+
+    provider_report = report.providers["deepseek"]
+    assert provider_report.prs == []
+    assert [model_id for model_id, _url in provider_report.refreshes] == ["deepseek-chat"]
+    assert provider_report.error is None
+    (spec,) = fake_open_pr[0]
+    assert spec.update is not None
+    assert spec.update.case == "rate_change"
+    assert spec.branch == "autopr/update/deepseek/deepseek-chat"
+    assert spec.title == "Update deepseek-chat pricing for Deepseek"
+    section = spec.update.prices_section
+    assert "      - prices:\n          input_mtok: 0.2\n          output_mtok: 0.4\n" in section
+    assert "          start_date: " in section
+    assert "          input_mtok: 0.27" in section
+    assert "          output_mtok: 1.1" in section
+    assert "never-overwrite rule is followed" in spec.body
+    assert "actual effective date is unknown" in spec.body
+    # no state write for updates: the pending check and the landed yml settle it
+    saved = load_state(repo_root / "state.json")
+    assert saved.providers["deepseek"].last_seen == ["deepseek-chat"]
+    assert saved.providers["deepseek"].handled == []
+    # second run against the same untouched upstream: the open update pr
+    # carries the id, so the pending check skips it, no second pr
+    second = pipeline.run(
+        cfg,
+        tmp_path / "work",
+        repo_root,
+        PipelineRunner(
+            pending_prs={"deepseek-chat": "https://github.com/pydantic/genai-prices/pull/600"}
+        ),
+    )
+    assert second.providers["deepseek"].refreshes == []
+    assert len(fake_open_pr[0]) == 1
+
+
+def test_refresh_unchanged_price_opens_nothing(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": Pricing(0.2e-6, 0.4e-6, "chat")}
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    provider_report = report.providers["deepseek"]
+    assert provider_report.refreshes == []
+    assert provider_report.error is None
+    assert fake_open_pr[0] == []
+
+
+def test_refresh_converts_flat_entry_when_page_turns_split(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {
+        "deepseek-chat": Pricing(
+            0.2e-6,
+            0.4e-6,
+            "chat",
+            peak_input_cost_per_token=0.4e-6,
+            peak_output_cost_per_token=0.8e-6,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        )
+    }
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    provider_report = report.providers["deepseek"]
+    assert [model_id for model_id, _url in provider_report.refreshes] == ["deepseek-chat"]
+    (spec,) = fake_open_pr[0]
+    assert spec.update.case == "conversion"
+    section = spec.update.prices_section
+    assert "      - prices:\n          input_mtok: 0.2\n          output_mtok: 0.4\n" in section
+    assert (
+        "      - constraint:\n          start_time: 01:00:00Z\n          end_time: 04:00:00Z\n"
+        in section
+    )
+    assert "          input_mtok: 0.4\n          output_mtok: 0.8\n" in section
+    assert "XOR constraint schema" in spec.body
+
+
+def test_refresh_replaces_list_entry_on_drift_and_names_deviation(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    split_pricing = Pricing(
+        0.2e-6,
+        0.4e-6,
+        "chat",
+        peak_input_cost_per_token=0.5e-6,
+        peak_output_cost_per_token=1.0e-6,
+        peak_windows=(("01:00:00Z", "04:00:00Z"),),
+    )
+    scrape["deepseek"] = {"deepseek-chat": split_pricing}
+    ymls = {
+        DEEPSEEK_YML: (
+            "id: deepseek\nname: Deepseek\nmodels:\n"
+            "  - id: deepseek-chat\n"
+            "    match:\n"
+            "      equals: deepseek-chat\n"
+            "    prices:\n"
+            "      - prices:\n"
+            "          input_mtok: 0.2\n"
+            "          output_mtok: 0.4\n"
+            "      - constraint:\n"
+            "          start_time: 01:00:00Z\n"
+            "          end_time: 04:00:00Z\n"
+            "        prices:\n"
+            "          input_mtok: 0.4\n"
+            "          output_mtok: 0.8\n"
+        )
+    }
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    provider_report = report.providers["deepseek"]
+    assert [model_id for model_id, _url in provider_report.refreshes] == ["deepseek-chat"]
+    (spec,) = fake_open_pr[0]
+    assert spec.update.case == "replace"
+    assert "          input_mtok: 0.5" in spec.update.prices_section
+    assert "deviates from the never-overwrite rule" in spec.body
+
+
+def test_refresh_mirrors_openrouter_when_api_caught_up(
+    tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="deepseek/deepseek-chat",
+            name="DeepSeek Chat",
+            input_mtok=0.27,
+            output_mtok=1.1,
+            cache_read_mtok=0.02,
+        )
+    )
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(
+        upstream(
+            ymls=ymls, or_text=priced_openrouter_yml(("deepseek/deepseek-chat", 0.2, 0.02, 0.4))
+        ),
+        3,
+        ("deepseek",),
+    )
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    (spec,) = fake_open_pr[0]
+    assert spec.update is not None
+    assert spec.update.or_prices_section is not None
+    assert "          input_mtok: 0.27" in spec.update.or_prices_section
+    assert "          cache_read_mtok: 0.02" in spec.update.or_prices_section
+    assert "and OpenRouter" in spec.title
+    assert report.providers["deepseek"].refreshes
+
+
+def test_refresh_cap_is_shared_with_additions(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat", "deepseek-reasoner"]
+    scrape["deepseek"] = {
+        "deepseek-chat": pricing(),
+        "deepseek-reasoner": pricing(),
+    }
+    ymls = {
+        DEEPSEEK_YML: priced_vendor_yml(
+            "Deepseek", ("deepseek-chat", 0.2, 0.4), ("deepseek-reasoner", 0.1, 0.3)
+        )
+    }
+    cfg = make_cfg(upstream(ymls=ymls), 1, ("deepseek",))
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    provider_report = report.providers["deepseek"]
+    assert len(provider_report.refreshes) == 1
+    assert provider_report.refreshes[0][0] == "deepseek-chat"
+    assert len(fake_open_pr[0]) == 1
+
+
+def test_refresh_skips_untracked_ids_and_missing_pricing(
+    tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat", "deepseek-new", "deepseek-unpriced"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-unpriced": None}
+    ymls = {
+        DEEPSEEK_YML: priced_vendor_yml(
+            "Deepseek", ("deepseek-chat", 0.2, 0.4), ("deepseek-unpriced", 0.1, 0.3)
+        )
+    }
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+    # deepseek-new is settled, so only the drift phase can touch it
+    (repo_root / "state.json").write_text(
+        json.dumps({"providers": {"deepseek": {"last_seen": ["deepseek-new"], "handled": []}}})
+        + "\n"
+    )
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    # the untracked id never reaches the scraper (an unscripted scrape would
+    # raise and set the provider error); the unpriced tracked id is scraped
+    # and skipped without a pr
+    provider_report = report.providers["deepseek"]
+    assert provider_report.error is None
+    assert [model_id for model_id, _url in provider_report.refreshes] == ["deepseek-chat"]
+
+
+def test_or_followup_opens_pr_when_api_lists_deferred_model(
+    tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": Pricing(0.2e-6, 0.4e-6, "chat")}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="deepseek/deepseek-chat",
+            name="DeepSeek Chat",
+            input_mtok=0.2,
+            output_mtok=0.4,
+            cache_read_mtok=0.02,
+        )
+    )
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+    (repo_root / "state.json").write_text(
+        json.dumps(
+            {
+                "providers": {
+                    "deepseek": {"last_seen": ["deepseek-chat"], "handled": ["deepseek-chat"]}
+                }
+            }
+        )
+        + "\n"
+    )
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    assert [slug for slug, _url in report.or_followups] == ["deepseek/deepseek-chat"]
+    (spec,) = fake_open_pr[0]
+    assert spec.vendor_entry is None
+    assert spec.title == "Add deepseek/deepseek-chat pricing for OpenRouter"
+    assert spec.branch == "autopr/or/deepseek/deepseek-chat"
+    assert "  - id: deepseek/deepseek-chat" in spec.openrouter_entry
+    assert "only fills the openrouter entry" in spec.body
+    # the vendor pr never landed: no follow-up even though the api lists it
+    (repo_root / "state.json").write_text(
+        json.dumps({"providers": {"deepseek": {"last_seen": [], "handled": ["deepseek-chat"]}}})
+        + "\n"
+    )
+    ymls = {DEEPSEEK_YML: vendor_yml("Deepseek", "deepseek-other")}
+    cfg = make_cfg(upstream(ymls=ymls), 3, ("deepseek",))
+    second = pipeline.run(cfg, tmp_path / "work2", repo_root, PipelineRunner())
+    assert second.or_followups == []
+
+
+def test_or_followup_quiet_when_slug_tracked(
+    tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": Pricing(0.2e-6, 0.4e-6, "chat")}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="deepseek/deepseek-chat",
+            name="DeepSeek Chat",
+            input_mtok=0.2,
+            output_mtok=0.4,
+            cache_read_mtok=0.02,
+        )
+    )
+    ymls = {DEEPSEEK_YML: priced_vendor_yml("Deepseek", ("deepseek-chat", 0.2, 0.4))}
+    cfg = make_cfg(upstream(ymls=ymls, or_tracked=("deepseek/deepseek-chat",)), 3, ("deepseek",))
+    (repo_root / "state.json").write_text(
+        json.dumps(
+            {
+                "providers": {
+                    "deepseek": {"last_seen": ["deepseek-chat"], "handled": ["deepseek-chat"]}
+                }
+            }
+        )
+        + "\n"
+    )
+
+    report = pipeline.run(cfg, tmp_path / "work", repo_root, PipelineRunner())
+
+    assert report.or_followups == []
+    assert fake_open_pr[0] == []
 
 
 def test_pr_spec_uses_target_spelling_for_mistral():

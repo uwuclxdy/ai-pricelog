@@ -388,7 +388,8 @@ def test_calc_unresolved_ships_without_test(tmp_path):
     assert git(slot, "show", "HEAD:tests/test_price_calc.py") == TEST_CALC_HEAD
     calc_calls = [cmd for cmd, _cwd in runner.calls if cmd[0:3] == ["uv", "run", "python"]]
     assert len(calc_calls) == 2  # bare ref, then the api url retry
-    assert calc_calls[1][-1] == "https://api.deepseek.com"
+    assert calc_calls[1][-2] == "https://api.deepseek.com"
+    assert calc_calls[1][-1] == "2025-06-01"
 
 
 def test_calc_other_error_skips_retry(tmp_path):
@@ -419,7 +420,10 @@ def test_calc_wrong_provider_retries_with_api_url(tmp_path):
 
     calc_cmds = [cmd for cmd, _cwd in runner.calls if cmd[0:3] == ["uv", "run", "python"]]
     assert len(calc_cmds) == 2
-    assert calc_cmds[1][-1] == "https://api.deepseek.com"
+    # tail args: api_url (empty on the bare first attempt) and the pin day
+    assert calc_cmds[0][-2] == ""
+    assert calc_cmds[1][-2] == "https://api.deepseek.com"
+    assert calc_cmds[1][-1] == "2025-06-01"
     content = git(slot, "show", "HEAD:tests/test_price_calc.py")
     assert "provider_api_url='https://api.deepseek.com'," in content
 
@@ -583,3 +587,199 @@ def test_commit_bypasses_global_hooks(tmp_path, monkeypatch):
     assert git(slot, "log", "--format=%s", "-1").strip() == (
         "Add deepseek-v4-pro pricing for Deepseek and OpenRouter"
     )
+
+
+def update_spec(**overrides) -> pr.UpdateSpec:
+    values = dict(
+        model_id="deepseek-chat",
+        case="rate_change",
+        prices_section=(
+            "    prices:\n"
+            "      - prices:\n"
+            "          input_mtok: 0.2\n"
+            "          output_mtok: 0.4\n"
+            "      - constraint:\n"
+            "          # rate change\n"
+            "          start_date: 2026-08-24\n"
+            "        prices:\n"
+            "          input_mtok: 0.27\n"
+            "          output_mtok: 1.1\n"
+        ),
+        deviation="the target's never-overwrite rule is followed",
+        old_input_mtok=0.2,
+        old_output_mtok=0.4,
+        input_mtok=0.27,
+        output_mtok=1.1,
+        peak_input_mtok=None,
+        peak_output_mtok=None,
+        peak_windows=(),
+        start_date="2026-08-24",
+        or_prices_section=None,
+        or_note="not listed on the api",
+    )
+    values.update(overrides)
+    return pr.UpdateSpec(**values)
+
+
+OLD_TEST = """def test_deepseek_deepseek_chat_price() -> None:
+    from datetime import datetime, timezone
+
+    price = calc_price(
+        Usage(input_tokens=1_000, output_tokens=100),
+        model_ref='deepseek-chat',
+        genai_request_timestamp=datetime(2025, 6, 1, 12, tzinfo=timezone.utc),
+    )
+
+    assert price.provider.id == 'deepseek'
+    assert price.model.id == 'deepseek-chat'
+    assert price.input_price == Decimal('0.002')
+    assert price.output_price == Decimal('0.004')
+    assert price.total_price == Decimal('0.0024')
+"""
+
+OLD_CALC = (
+    '{"ok": true, "provider_id": "deepseek", "model_id": "deepseek-chat", '
+    '"input_price": "0.002", "output_price": "0.004", "total_price": "0.0024"}'
+)
+NEW_CALC = (
+    '{"ok": true, "provider_id": "deepseek", "model_id": "deepseek-chat", '
+    '"input_price": "0.0027", "output_price": "0.011", "total_price": "0.00281"}'
+)
+
+
+def seed_slot_priced(tmp_path: Path) -> Path:
+    slot = seed_slot(tmp_path)
+    providers = slot / "prices" / "providers"
+    (providers / "deepseek.yml").write_text(
+        "id: deepseek\n"
+        "name: Deepseek\n"
+        "api_pattern: 'https://api\\.deepseek\\.com'\n"
+        "models:\n"
+        "  - id: deepseek-chat\n"
+        "    match:\n"
+        "      starts_with: deepseek-chat\n"
+        '    prices_checked: "2026-08-19"\n'
+        "    prices:\n"
+        "      input_mtok: 0.2\n"
+        "      output_mtok: 0.4\n"
+    )
+    (providers / "openrouter.yml").write_text(
+        "id: openrouter\n"
+        "name: OpenRouter\n"
+        "models:\n"
+        "  - id: deepseek/deepseek-chat\n"
+        "    match:\n"
+        "      equals: deepseek/deepseek-chat\n"
+        "    prices:\n"
+        "      input_mtok: 0.2\n"
+        "      cache_read_mtok: 0.02\n"
+        "      output_mtok: 0.4\n"
+    )
+    tests = slot / "tests" / "test_price_calc.py"
+    tests.write_text(TEST_CALC_HEAD + "\n" + OLD_TEST)
+    git(slot, "add", "prices/providers/deepseek.yml", "prices/providers/openrouter.yml")
+    git(slot, "add", "tests/test_price_calc.py")
+    git(slot, "commit", "-m", "priced seed")
+    return slot
+
+
+def test_replace_test_function_swaps_the_whole_function():
+    text = TEST_CALC_HEAD + "\n" + OLD_TEST + "\n" + "def test_other() -> None:\n    assert True\n"
+    rendered = "def test_deepseek_deepseek_chat_price() -> None:\n    ...\n"
+    result = build._replace_test_function(text, "deepseek-chat", rendered)
+    assert result is not None
+    assert "    from datetime import datetime, timezone" not in result
+    assert "test_other" in result
+    assert result.endswith("def test_other() -> None:\n    assert True\n")
+
+
+def test_replace_test_function_handles_double_quoted_model_ref():
+    text = (
+        TEST_CALC_HEAD
+        + "\ndef test_x() -> None:\n"
+        + '    price = calc_price(Usage(), model_ref="deepseek-chat", '
+        + "genai_request_timestamp=None)\n"
+    )
+    result = build._replace_test_function(text, "deepseek-chat", "def test_x() -> None:\n    ...\n")
+    assert result == TEST_CALC_HEAD + "\ndef test_x() -> None:\n    ...\n"
+
+
+def test_replace_test_function_missing_returns_none():
+    assert (
+        build._replace_test_function(TEST_CALC_HEAD + "\n" + OLD_TEST, "other-model", "x") is None
+    )
+
+
+def test_prepare_update_rate_change_pins_both_sides(tmp_path):
+    slot = seed_slot_priced(tmp_path)
+
+    def calc_effect(key: str) -> str:
+        return OLD_CALC if "2026-08-23" in key else NEW_CALC
+
+    runner = quiet_runner().on("uv run python", effect=calc_effect)
+    build.prepare(slot, "main", spec(update=update_spec(), entry_id="deepseek-chat"), runner)
+
+    content = git(slot, "show", "HEAD:tests/test_price_calc.py")
+    assert content.count("def ") == 1
+    assert "price_before = calc_price(" in content
+    assert "datetime(2026, 8, 23, 12, tzinfo=timezone.utc)" in content
+    assert "price_after = calc_price(" in content
+    assert "datetime(2026, 8, 24, 12, tzinfo=timezone.utc)" in content
+    assert "Decimal('0.002')" in content  # the day before: old rates
+    assert "Decimal('0.0027')" in content  # the day of: new rates
+    assert "2025, 6, 1" not in content  # the old pin is gone
+    vendor = git(slot, "show", "HEAD:prices/providers/deepseek.yml")
+    assert "      - prices:\n          input_mtok: 0.2" in vendor
+    assert "          start_date: 2026-08-24" in vendor
+    assert '    prices_checked: "2026-08-24"' in vendor
+
+
+def test_prepare_update_conversion_pins_offpeak_hour(tmp_path):
+    slot = seed_slot_priced(tmp_path)
+    converted = update_spec(
+        case="conversion",
+        peak_input_mtok=0.4,
+        peak_output_mtok=0.8,
+        peak_windows=(("01:00:00Z", "04:00:00Z"),),
+    )
+    runner = quiet_runner()
+    build.prepare(slot, "main", spec(update=converted, entry_id="deepseek-chat"), runner)
+
+    content = git(slot, "show", "HEAD:tests/test_price_calc.py")
+    assert content.count("def ") == 1
+    assert "price_before" not in content
+    # hour 0 is the first off-peak hour outside the 01:00-04:00 window
+    assert "datetime(2025, 6, 1, 0, tzinfo=timezone.utc)" in content
+
+
+def test_prepare_update_mirrors_openrouter_entry(tmp_path):
+    slot = seed_slot_priced(tmp_path)
+    mirrored = update_spec(
+        or_prices_section=(
+            "    prices:\n"
+            "      - prices:\n"
+            "          input_mtok: 0.2\n"
+            "          cache_read_mtok: 0.02\n"
+            "          output_mtok: 0.4\n"
+            "      - constraint:\n"
+            "          # rate change\n"
+            "          start_date: 2026-08-24\n"
+            "        prices:\n"
+            "          input_mtok: 0.27\n"
+            "          cache_read_mtok: 0.02\n"
+            "          output_mtok: 1.1\n"
+        )
+    )
+    runner = quiet_runner()
+    build.prepare(
+        slot,
+        "main",
+        spec(update=mirrored, entry_id="deepseek-chat", openrouter_slug="deepseek/deepseek-chat"),
+        runner,
+    )
+
+    openrouter = git(slot, "show", "HEAD:prices/providers/openrouter.yml")
+    assert "      - prices:\n          input_mtok: 0.2" in openrouter
+    assert "          start_date: 2026-08-24" in openrouter
+    assert "          input_mtok: 0.27" in openrouter
+    assert '    prices_checked: "2026-08-24"' in openrouter

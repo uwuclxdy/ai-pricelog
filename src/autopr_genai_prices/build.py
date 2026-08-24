@@ -14,6 +14,7 @@ import contextlib
 import json
 import re
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 
 import yaml
@@ -50,8 +51,14 @@ from genai_prices import Usage, calc_price
 
 model_ref = sys.argv[1]
 hour = int(sys.argv[2])
-kwargs = {"provider_api_url": sys.argv[3]} if len(sys.argv) > 3 else {}
-timestamp = datetime(2025, 6, 1, hour, tzinfo=timezone.utc)
+api_url = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else None
+kwargs = {"provider_api_url": api_url} if api_url is not None else {}
+day = (
+    datetime.fromisoformat(sys.argv[4])
+    if len(sys.argv) > 4 and sys.argv[4]
+    else datetime(2025, 6, 1)
+)
+timestamp = datetime(day.year, day.month, day.day, hour, tzinfo=timezone.utc)
 try:
     price = calc_price(
         Usage(input_tokens=1_000, output_tokens=100),
@@ -101,6 +108,7 @@ class _CalcResult:
     total_price: str
     api_url: str | None
     hour: int
+    day: str = "2025-06-01"
 
 
 def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
@@ -140,12 +148,37 @@ def prepare(slot: Path, base: str, spec: PrSpec, runner: PrRunner) -> None:
 
 def _insert_entries(slot: Path, spec: PrSpec) -> None:
     providers = slot / "prices" / "providers"
-    vendor_path = providers / spec.vendor_yml
-    # the entry id sorts the insert: the page spelling may diverge from the
-    # target's tracked spelling (mistral dashed vs compacted dates)
-    vendor_path.write_text(
-        yml.insert_entry(vendor_path.read_text(), spec.entry_id, spec.vendor_entry)
-    )
+    if spec.update is not None:
+        # a drift spec rewrites a tracked block in place (dated append or
+        # split conversion), never inserts: the model already has an entry
+        update = spec.update
+        vendor_path = providers / spec.vendor_yml
+        vendor_path.write_text(
+            yml.rewrite_entry(
+                vendor_path.read_text(),
+                update.model_id,
+                update.prices_section,
+                checked=update.start_date,
+            )
+        )
+        if update.or_prices_section is not None:
+            openrouter_path = providers / "openrouter.yml"
+            openrouter_path.write_text(
+                yml.rewrite_entry(
+                    openrouter_path.read_text(),
+                    spec.openrouter_slug,
+                    update.or_prices_section,
+                    checked=update.start_date,
+                )
+            )
+        return
+    if spec.vendor_entry is not None:
+        # the entry id sorts the insert: the page spelling may diverge from
+        # the target's tracked spelling (mistral dashed vs compacted dates)
+        vendor_path = providers / spec.vendor_yml
+        vendor_path.write_text(
+            yml.insert_entry(vendor_path.read_text(), spec.entry_id, spec.vendor_entry)
+        )
     if spec.openrouter_entry is not None:
         openrouter_path = providers / "openrouter.yml"
         openrouter_path.write_text(
@@ -168,24 +201,110 @@ def _run_make(slot: Path, target: str, runner: PrRunner) -> None:
 
 
 def _generate_test(slot: Path, spec: PrSpec, runner: PrRunner) -> None:
-    """Append the calc_price pin, self-verified; red or unresolved -> no test."""
+    """Pin the calc_price resolution, self-verified; red or unresolved -> no test.
+
+    Additions append a new test. Updates regenerate the model's existing
+    test: a rate change pins both sides of the start_date boundary (a
+    one-sided pin passes against an overwritten history too), a structural
+    conversion pins the off-peak hour of the new split schedule.
+    """
     test_path = slot / "tests" / "test_price_calc.py"
     original = test_path.read_text()
     provider_data = yaml.safe_load((slot / "prices" / "providers" / spec.vendor_yml).read_text())
     provider_id = provider_data["id"]
     api_url = _unescape(provider_data.get("api_pattern"))
-    hour = _offpeak_hour(spec.vendor_peak_windows)
-    values = _calc_values(slot, spec.entry_id, provider_id, api_url, hour, runner)
-    if values is None:
-        return
     test_name = _test_name(provider_id, spec.entry_id)
-    test_path.write_text(
-        original.rstrip("\n") + "\n\n\n" + _render_test(test_name, spec.entry_id, values) + "\n"
-    )
+    if spec.update is None:
+        hour = _offpeak_hour(spec.vendor_peak_windows)
+        values = _calc_values(slot, spec.entry_id, provider_id, api_url, hour, runner)
+        if values is None:
+            return
+        rendered = _render_test(test_name, spec.entry_id, values)
+        new_text = original.rstrip("\n") + "\n\n\n" + rendered + "\n"
+    else:
+        new_text = _regenerate_test(slot, spec, provider_id, api_url, original, runner)
+        if new_text is None:
+            return
+    test_path.write_text(new_text)
     try:
         runner.run(["uv", "run", "pytest", "tests/test_price_calc.py", "-k", test_name], cwd=slot)
     except PrError:
         test_path.write_text(original)
+
+
+def _regenerate_test(
+    slot: Path,
+    spec: PrSpec,
+    provider_id: str,
+    api_url: str | None,
+    original: str,
+    runner: PrRunner,
+) -> str | None:
+    """The test file with the model's pin replaced, or None when it cannot be pinned."""
+    assert spec.update is not None
+    update = spec.update
+    hour = _offpeak_hour(update.peak_windows)
+    if update.case == "rate_change":
+        before = _calc_values(
+            slot,
+            spec.entry_id,
+            provider_id,
+            api_url,
+            hour,
+            runner,
+            day=_day_before(update.start_date),
+        )
+        on = _calc_values(
+            slot, spec.entry_id, provider_id, api_url, hour, runner, day=update.start_date
+        )
+        if before is None or on is None:
+            return None
+        rendered = _render_two_side_test(
+            _test_name(provider_id, spec.entry_id), spec.entry_id, before, on
+        )
+    else:
+        values = _calc_values(slot, spec.entry_id, provider_id, api_url, hour, runner)
+        if values is None:
+            return None
+        rendered = _render_test(_test_name(provider_id, spec.entry_id), spec.entry_id, values)
+    replaced = _replace_test_function(original, spec.entry_id, rendered)
+    if replaced is None:
+        replaced = original.rstrip("\n") + "\n\n\n" + rendered + "\n"
+    return replaced
+
+
+def _day_before(start_date: str) -> str:
+    return (date.fromisoformat(start_date) - timedelta(days=1)).isoformat()
+
+
+def _replace_test_function(text: str, model_id: str, rendered: str) -> str | None:
+    """Swap the test function pinning model_id for `rendered`, or None.
+
+    The function is found by its model_ref argument (either quote style),
+    then replaced from its def line to the next top-level def. Tests
+    hand-edited since our own add pr keep working: whatever the function's
+    name, its span is what gets swapped.
+    """
+    lines = text.splitlines(keepends=True)
+    target = None
+    for index, line in enumerate(lines):
+        if f"model_ref='{model_id}'" in line or f'model_ref="{model_id}"' in line:
+            target = index
+            break
+    if target is None:
+        return None
+    start = target
+    while start > 0 and not lines[start].startswith("def "):
+        start -= 1
+    if not lines[start].startswith("def "):
+        return None
+    end = target + 1
+    while end < len(lines) and not lines[end].startswith("def "):
+        end += 1
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+    lines[start:end] = [rendered]
+    return "".join(lines)
 
 
 def _offpeak_hour(windows: tuple[tuple[str, str], ...]) -> int:
@@ -221,21 +340,22 @@ def _calc_values(
     api_url: str | None,
     hour: int,
     runner: PrRunner,
+    day: str = "2025-06-01",
 ) -> _CalcResult | None:
     script = slot.parent / ".autopr_calc.py"
     script.write_text(_CALC_SCRIPT)
     try:
-        first = _run_calc(script, slot, [model_id, str(hour)], runner)
+        first = _run_calc(script, slot, [model_id, str(hour), "", day], runner)
         if first.ok and first.provider_id == provider_id:
-            return _to_result(first, hour)
+            return _to_result(first, hour, day=day)
         # LookupError (bare ref resolves nothing) and wrong-provider (a shared
         # id resolving to another vendor) both retry scoped by the api url
         retriable = first.ok or "LookupError" in (first.error or "")
         if not retriable or api_url is None:
             return None
-        second = _run_calc(script, slot, [model_id, str(hour), api_url], runner)
+        second = _run_calc(script, slot, [model_id, str(hour), api_url, day], runner)
         if second.ok and second.provider_id == provider_id:
-            return _to_result(second, api_url=api_url, hour=hour)
+            return _to_result(second, hour, api_url=api_url, day=day)
         return None
     finally:
         script.unlink(missing_ok=True)
@@ -259,7 +379,9 @@ def _run_calc(script: Path, slot: Path, args: list[str], runner: PrRunner) -> _C
     )
 
 
-def _to_result(outcome: _CalcOutcome, hour: int, api_url: str | None = None) -> _CalcResult:
+def _to_result(
+    outcome: _CalcOutcome, hour: int, api_url: str | None = None, day: str = "2025-06-01"
+) -> _CalcResult:
     assert outcome.provider_id is not None
     return _CalcResult(
         provider_id=outcome.provider_id,
@@ -269,6 +391,7 @@ def _to_result(outcome: _CalcOutcome, hour: int, api_url: str | None = None) -> 
         total_price=outcome.total_price or "",
         api_url=api_url,
         hour=hour,
+        day=day,
     )
 
 
@@ -287,30 +410,66 @@ def _test_name(provider_id: str, model_id: str) -> str:
 
 
 def _render_test(test_name: str, model_ref: str, values: _CalcResult) -> str:
-    call_lines = [
-        "    price = calc_price(",
-        "        Usage(input_tokens=1_000, output_tokens=100),",
-        f"        model_ref={model_ref!r},",
-        (
-            "        genai_request_timestamp=datetime(2025, 6, 1, "
-            f"{values.hour}, tzinfo=timezone.utc),"
-        ),
-    ]
-    if values.api_url is not None:
-        call_lines.append(f"        provider_api_url={values.api_url!r},")
-    call_lines.append("    )")
     return "\n".join(
         [
             f"def {test_name}() -> None:",
             "    from datetime import datetime, timezone",
             "",
-            *call_lines,
+            *_render_call(model_ref, values, "price"),
             "",
-            f"    assert price.provider.id == {values.provider_id!r}",
-            f"    assert price.model.id == {values.model_id!r}",
-            f"    assert price.input_price == Decimal({values.input_price!r})",
-            f"    assert price.output_price == Decimal({values.output_price!r})",
-            f"    assert price.total_price == Decimal({values.total_price!r})",
+            *_render_asserts(values, "price"),
+        ]
+    )
+
+
+def _render_call(model_ref: str, values: _CalcResult, var: str) -> list[str]:
+    year, month, day = (int(part) for part in values.day.split("-"))
+    call_lines = [
+        f"    {var} = calc_price(",
+        "        Usage(input_tokens=1_000, output_tokens=100),",
+        f"        model_ref={model_ref!r},",
+        (
+            "        genai_request_timestamp=datetime("
+            f"{year}, {month}, {day}, {values.hour}, tzinfo=timezone.utc),"
+        ),
+    ]
+    if values.api_url is not None:
+        call_lines.append(f"        provider_api_url={values.api_url!r},")
+    call_lines.append("    )")
+    return call_lines
+
+
+def _render_asserts(values: _CalcResult, var: str) -> list[str]:
+    return [
+        f"    assert {var}.provider.id == {values.provider_id!r}",
+        f"    assert {var}.model.id == {values.model_id!r}",
+        f"    assert {var}.input_price == Decimal({values.input_price!r})",
+        f"    assert {var}.output_price == Decimal({values.output_price!r})",
+        f"    assert {var}.total_price == Decimal({values.total_price!r})",
+    ]
+
+
+def _render_two_side_test(
+    test_name: str, model_ref: str, before: _CalcResult, on: _CalcResult
+) -> str:
+    """A test pinning both sides of a rate-change boundary.
+
+    The day before the start_date resolves the old unconstrained entry, the
+    start_date itself the new dated one. A one-sided pin passes against an
+    overwritten history too, the failure mode the target's #531 fixed.
+    """
+    return "\n".join(
+        [
+            f"def {test_name}() -> None:",
+            "    from datetime import datetime, timezone",
+            "",
+            *_render_call(model_ref, before, "price_before"),
+            "",
+            *_render_asserts(before, "price_before"),
+            "",
+            *_render_call(model_ref, on, "price_after"),
+            "",
+            *_render_asserts(on, "price_after"),
         ]
     )
 

@@ -32,15 +32,40 @@ class PrRunner:
 
 
 @dataclass(frozen=True)
+class UpdateSpec:
+    """One price-update PR: the block rewrite, the mirror plan, the body notes."""
+
+    model_id: str
+    case: str  # "rate_change" | "conversion" | "replace"
+    prices_section: str
+    deviation: str
+    old_input_mtok: float | None
+    old_output_mtok: float | None
+    input_mtok: float
+    output_mtok: float
+    peak_input_mtok: float | None
+    peak_output_mtok: float | None
+    peak_windows: tuple[tuple[str, str], ...]
+    start_date: str
+    or_prices_section: str | None
+    or_note: str
+
+
+@dataclass(frozen=True)
 class PrSpec:
-    """Everything one candidate PR needs: entries, table numbers, deferrals."""
+    """Everything one candidate PR needs: entries, table numbers, deferrals.
+
+    `vendor_entry` is None for the openrouter-only follow-up spec; `update` is
+    set for price-update (drift) specs, whose entries are rewrites of tracked
+    blocks rather than insertions.
+    """
 
     key: str
     model_id: str
     entry_id: str
     vendor_yml: str
     vendor_name: str
-    vendor_entry: str
+    vendor_entry: str | None
     vendor_input_mtok: float
     vendor_output_mtok: float
     vendor_peak_input_mtok: float | None
@@ -54,19 +79,34 @@ class PrSpec:
     openrouter_output_mtok: float | None
     openrouter_cache_read_mtok: float | None
     openrouter_note: str
+    update: UpdateSpec | None = None
 
     @property
     def branch(self) -> str:
+        if self.update is not None:
+            return branch_name(f"update/{self.key}/{self.update.model_id}")
+        if self.vendor_entry is None:
+            return branch_name(f"or/{self.key}/{self.model_id}")
         return branch_name(f"{self.key}/{self.model_id}")
 
     @property
     def title(self) -> str:
+        if self.update is not None:
+            if self.update.or_prices_section is not None:
+                return f"Update {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
+            return f"Update {self.entry_id} pricing for {self.vendor_name}"
+        if self.vendor_entry is None:
+            return f"Add {self.entry_id} pricing for OpenRouter"
         if self.openrouter_entry is not None:
             return f"Add {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
         return f"Add {self.entry_id} pricing for {self.vendor_name}"
 
     @property
     def body(self) -> str:
+        if self.update is not None:
+            return self._update_body()
+        if self.vendor_entry is None:
+            return self._or_only_body()
         lines: list[str] = []
         lines.append(f"Add `{self.entry_id}` pricing for {self.vendor_name}.")
         lines.append("")
@@ -94,20 +134,7 @@ class PrSpec:
         lines.append("## OpenRouter")
         lines.append("")
         if self.openrouter_entry is not None:
-            lines.append("| model | input (/1M) | cache read (/1M) | output (/1M) |")
-            lines.append("|---|---|---|---|")
-            if self.openrouter_input_mtok is None:
-                lines.append(f"| `{self.openrouter_slug}` | free | — | — |")
-            else:
-                row = " | ".join(
-                    f"{value:g}" if value is not None else "—"
-                    for value in (
-                        self.openrouter_input_mtok,
-                        self.openrouter_cache_read_mtok,
-                        self.openrouter_output_mtok,
-                    )
-                )
-                lines.append(f"| `{self.openrouter_slug}` | {row} |")
+            lines.extend(self._openrouter_table())
             lines.append("")
             lines.append(f"source: {OPENROUTER_MODELS_URL}")
         else:
@@ -130,6 +157,90 @@ class PrSpec:
                 "(family/version aliases, not separately priced models)"
             )
         return "\n".join(lines) + "\n"
+
+    def _openrouter_table(self) -> list[str]:
+        lines = ["| model | input (/1M) | cache read (/1M) | output (/1M) |", "|---|---|---|---|"]
+        if self.openrouter_input_mtok is None:
+            lines.append(f"| `{self.openrouter_slug}` | free | — | — |")
+        else:
+            row = " | ".join(
+                f"{value:g}" if value is not None else "—"
+                for value in (
+                    self.openrouter_input_mtok,
+                    self.openrouter_cache_read_mtok,
+                    self.openrouter_output_mtok,
+                )
+            )
+            lines.append(f"| `{self.openrouter_slug}` | {row} |")
+        return lines
+
+    def _update_body(self) -> str:
+        assert self.update is not None
+        update = self.update
+        lines = [f"Update `{self.entry_id}` pricing for {self.vendor_name}.", ""]
+        lines += [f"## {self.vendor_name}", ""]
+        lines += ["| model | input (/1M) | output (/1M) |", "|---|---|---|"]
+        if update.peak_input_mtok is not None:
+            windows = " and ".join(f"{start} - {end}" for start, end in update.peak_windows)
+            lines.append(
+                f"| `{self.entry_id}` old off-peak | {_fmt_price(update.old_input_mtok)} "
+                f"| {_fmt_price(update.old_output_mtok)} |"
+            )
+            lines.append(
+                f"| `{self.entry_id}` new off-peak | {update.input_mtok:g} "
+                f"| {update.output_mtok:g} |"
+            )
+            lines.append(
+                f"| `{self.entry_id}` new peak {windows} | {update.peak_input_mtok:g} "
+                f"| {update.peak_output_mtok:g} |"
+            )
+        else:
+            lines.append(
+                f"| `{self.entry_id}` old | {_fmt_price(update.old_input_mtok)} "
+                f"| {_fmt_price(update.old_output_mtok)} |"
+            )
+            lines.append(
+                f"| `{self.entry_id}` new | {update.input_mtok:g} | {update.output_mtok:g} |"
+            )
+        lines += ["", f"source: {self.source_url}", ""]
+        lines += ["## OpenRouter", ""]
+        if update.or_prices_section is not None:
+            lines.append(f"`{self.openrouter_slug}` updated from the OpenRouter models API.")
+        else:
+            lines.append(update.or_note)
+        lines += ["", "## notes", ""]
+        lines.append(
+            f"- start_date is set to {update.start_date}, the day the watchdog verified "
+            "the change; the provider's actual effective date is unknown to it. correct "
+            "it and cite the changelog beside start_date before marking ready."
+        )
+        lines.append(f"- {update.deviation}.")
+        lines.append(
+            "- the watchdog keeps no state for updates: after this pr merges, the next "
+            "run diffs against the landed rates and goes quiet. closing it unmerged "
+            "re-candidates the update."
+        )
+        return "\n".join(lines) + "\n"
+
+    def _or_only_body(self) -> str:
+        lines = [f"Add `{self.entry_id}` to openrouter.yml.", ""]
+        lines += ["## OpenRouter", ""]
+        lines.extend(self._openrouter_table())
+        lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
+        lines += ["## notes", ""]
+        lines.append(
+            "- the vendor entry is already tracked; this pr only fills the openrouter "
+            "entry that the earlier add pr deferred"
+        )
+        lines.append(
+            "- closing this draft settles the follow-up by itself: the next run sees "
+            "the slug tracked in openrouter.yml"
+        )
+        return "\n".join(lines) + "\n"
+
+
+def _fmt_price(value: float | None) -> str:
+    return "—" if value is None else f"{value:g}"
 
 
 def parse_github_url(repo: str) -> tuple[str, str]:

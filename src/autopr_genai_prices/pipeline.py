@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from autopr_genai_prices import build, config, openrouter, pr, validate, yml
+from autopr_genai_prices import build, config, openrouter, pr, refresh, validate, yml
 from autopr_genai_prices.pricing import Pricing
 from autopr_genai_prices.state import ProviderState, append_unique
 from autopr_genai_prices.state import load as load_state
@@ -27,6 +27,7 @@ class ProviderReport:
     detected: list[str] = field(default_factory=list)
     candidates: list[str] = field(default_factory=list)
     prs: list[tuple[str, str]] = field(default_factory=list)
+    refreshes: list[tuple[str, str]] = field(default_factory=list)
     skipped_pending: list[str] = field(default_factory=list)
     skipped_no_pricing: list[str] = field(default_factory=list)
     skipped_cap: list[str] = field(default_factory=list)
@@ -37,6 +38,7 @@ class ProviderReport:
 @dataclass
 class RunReport:
     providers: dict[str, ProviderReport] = field(default_factory=dict)
+    or_followups: list[tuple[str, str]] = field(default_factory=list)
 
 
 def run(
@@ -56,11 +58,13 @@ def run(
     providers_dir = repo_slot / PROVIDERS_DIR
     or_yml = yml.parse(providers_dir / OPENROUTER_YML)
     or_models = openrouter.fetch_models()
+    or_text = (providers_dir / OPENROUTER_YML).read_text()
 
     state = load_state(repo_root / "state.json")
     report = RunReport()
     open_drafts = 0
     state_changed = False
+    parsed: dict[str, tuple[yml.ProviderYml, Any]] = {}
 
     for pcfg in cfg.providers:
         provider_report = report.providers[pcfg.key] = ProviderReport()
@@ -80,6 +84,7 @@ def run(
             log.exception("provider setup for %s failed", pcfg.key)
             provider_report.error = _describe(exc)
             continue
+        parsed[pcfg.key] = (vendor_yml, scraper)
         dedup_keys = getattr(scraper, "dedup_keys", None)
 
         created = pcfg.key not in state.providers
@@ -146,6 +151,33 @@ def run(
             open_drafts += 1
             log.info("opened pr for %s: %s", model_id, url)
 
+        if provider_report.error is None:
+            try:
+                refreshed, drafts = _refresh_provider(
+                    cfg,
+                    pcfg,
+                    vendor_yml,
+                    scraper,
+                    current,
+                    base,
+                    repo_slot,
+                    or_text,
+                    or_yml,
+                    or_models,
+                    open_drafts,
+                    runner,
+                )
+            except Exception as exc:
+                log.exception("refresh for %s failed", pcfg.key)
+                provider_report.error = _describe(exc)
+            else:
+                provider_report.refreshes.extend(refreshed)
+                open_drafts += drafts
+
+    report.or_followups = _or_followups(
+        cfg, state, parsed, or_yml, or_models, base, repo_slot, open_drafts, runner
+    )
+
     save_state(state, repo_root / "state.json")
     if state_changed:
         try:
@@ -182,6 +214,208 @@ def run(
                     "state push failed; pr urls are recorded locally, next run re-checks open prs"
                 )
     return report
+
+
+def _refresh_provider(
+    cfg: config.Config,
+    pcfg: config.ProviderCfg,
+    vendor_yml: yml.ProviderYml,
+    scraper: Any,
+    detected: list[str],
+    base: str,
+    repo_slot: Path,
+    or_text: str,
+    or_yml: yml.ProviderYml,
+    or_models: list[openrouter.OpenrouterModel],
+    open_drafts: int,
+    runner: pr.PrRunner,
+) -> tuple[list[tuple[str, str]], int]:
+    """Drift-check the tracked models; returns (opened prs, drafts used).
+
+    Iterates the detector's page ids, maps each through the scraper's
+    dedup_keys to the tracked entry spelling, scrapes with the page id (the
+    scrapers key their rows by page spelling), and opens an update pr on
+    drift. Stateless: a landed update settles by itself (the next run diffs
+    against it), an open one is skipped by the pending-pr check, and the
+    draft cap is shared with additions.
+    """
+    tracked = {model.id: model for model in vendor_yml.models if not model.removed}
+    dedup_keys = getattr(scraper, "dedup_keys", None)
+    opened: list[tuple[str, str]] = []
+    drafts = open_drafts
+    seen: set[str] = set()
+    for page_id in detected:
+        spellings = [page_id] + list(dedup_keys(page_id) if dedup_keys is not None else [])
+        entry = next((tracked[spelling] for spelling in spellings if spelling in tracked), None)
+        if entry is None or entry.id in seen or entry.prices is None:
+            continue
+        seen.add(entry.id)
+        if pr.pending_pr(entry.id, runner):
+            log.info("refresh for %s skipped: pending pr", entry.id)
+            continue
+        pricing = scraper.scrape(pcfg, page_id)
+        if pricing is None:
+            log.debug("refresh for %s skipped: no pricing on the page", entry.id)
+            continue
+        try:
+            validate.validate_entry(entry.id, pricing)
+        except validate.ValidationError as exc:
+            log.warning("refresh for %s skipped: %s", entry.id, exc)
+            continue
+        drift = refresh.compare(entry.prices, pricing)
+        if drift.action == "none":
+            log.debug("refresh for %s: %s", entry.id, drift.note)
+            continue
+        if drafts >= cfg.cap:
+            log.info("refresh for %s skipped: draft cap", entry.id)
+            continue
+        spec = _update_pr_spec(
+            pcfg, vendor_yml, entry, pricing, drift, repo_slot, or_text, or_yml, or_models
+        )
+        try:
+            url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
+        except build.BuildError as exc:
+            log.warning("refresh build failed for %s: %s", entry.id, exc)
+            continue
+        opened.append((entry.id, url))
+        drafts += 1
+        log.info("opened refresh pr for %s: %s", entry.id, url)
+    return opened, drafts - open_drafts
+
+
+def _update_pr_spec(
+    pcfg: config.ProviderCfg,
+    vendor_yml: yml.ProviderYml,
+    entry: yml.TrackedModel,
+    pricing: Pricing,
+    drift: refresh.Drift,
+    repo_slot: Path,
+    or_text: str,
+    or_yml: yml.ProviderYml,
+    or_models: list[openrouter.OpenrouterModel],
+) -> pr.PrSpec:
+    checked = date.today().isoformat()
+    update = refresh.build_update_spec(
+        pcfg,
+        (repo_slot / PROVIDERS_DIR / pcfg.yml).read_text(),
+        entry,
+        pricing,
+        drift,
+        checked,
+        or_text,
+        or_yml,
+        or_models,
+    )
+    return pr.PrSpec(
+        key=pcfg.key,
+        model_id=entry.id,
+        entry_id=entry.id,
+        vendor_yml=pcfg.yml,
+        vendor_name=vendor_yml.name,
+        vendor_entry=None,
+        vendor_input_mtok=update.input_mtok,
+        vendor_output_mtok=update.output_mtok,
+        vendor_peak_input_mtok=update.peak_input_mtok,
+        vendor_peak_output_mtok=update.peak_output_mtok,
+        vendor_peak_windows=update.peak_windows,
+        skipped_latest=(),
+        source_url=pcfg.scraper_url,
+        openrouter_entry=None,
+        openrouter_slug=f"{pcfg.or_prefix}/{entry.id.lower()}",
+        openrouter_input_mtok=None,
+        openrouter_output_mtok=None,
+        openrouter_cache_read_mtok=None,
+        openrouter_note="",
+        update=update,
+    )
+
+
+def _or_followups(
+    cfg: config.Config,
+    state: object,
+    parsed: dict[str, tuple[yml.ProviderYml, Any]],
+    or_yml: yml.ProviderYml,
+    or_models: list[openrouter.OpenrouterModel],
+    base: str,
+    repo_slot: Path,
+    open_drafts: int,
+    runner: pr.PrRunner,
+) -> list[tuple[str, str]]:
+    """Open the follow-up prs for vendor additions whose openrouter entry deferred.
+
+    Derives the candidate set from the live clone, never from state, so a
+    closed-unmerged vendor pr cannot trigger a follow-up for an entry that
+    never landed, and a landed follow-up goes quiet by itself (the slug then
+    reads as tracked). Best-effort: a failure here skips the slug, it never
+    fails the run.
+    """
+    opened: list[tuple[str, str]] = []
+    drafts = open_drafts
+    for pcfg in cfg.providers:
+        provider_state = getattr(state, "providers", {}).get(pcfg.key)
+        if provider_state is None or not provider_state.handled:
+            continue
+        pair = parsed.get(pcfg.key)
+        if pair is None:
+            continue
+        vendor_yml, scraper = pair
+        dedup_keys = getattr(scraper, "dedup_keys", None)
+        for model_id in provider_state.handled:
+            entry_id = (dedup_keys(model_id) or [model_id])[0] if dedup_keys else model_id
+            if not yml.is_tracked(vendor_yml, entry_id):
+                continue  # the vendor pr never landed: no openrouter entry to fill
+            slug = f"{pcfg.or_prefix}/{entry_id.lower()}"
+            if yml.is_tracked(or_yml, slug):
+                continue  # landed
+            try:
+                if pr.pending_pr(slug, runner):
+                    log.info("or follow-up for %s skipped: pending pr", slug)
+                    continue
+                or_model = openrouter.find(or_models, pcfg.or_prefix, entry_id)
+            except Exception as exc:
+                log.warning("or follow-up check failed for %s: %s", slug, exc)
+                continue
+            if or_model is None or drafts >= cfg.cap:
+                continue  # still deferred, or cap reached
+            spec = pr.PrSpec(
+                key=pcfg.key,
+                model_id=model_id,
+                entry_id=slug,
+                vendor_yml=OPENROUTER_YML,
+                vendor_name="OpenRouter",
+                vendor_entry=None,
+                vendor_input_mtok=0.0,
+                vendor_output_mtok=0.0,
+                vendor_peak_input_mtok=None,
+                vendor_peak_output_mtok=None,
+                vendor_peak_windows=(),
+                skipped_latest=(),
+                source_url=openrouter.OPENROUTER_MODELS_URL,
+                openrouter_entry=yml.build_openrouter_entry(
+                    slug,
+                    or_model.name,
+                    or_model.input_mtok,
+                    or_model.output_mtok,
+                    or_model.cache_read_mtok,
+                ),
+                openrouter_slug=slug,
+                openrouter_input_mtok=or_model.input_mtok,
+                openrouter_output_mtok=or_model.output_mtok,
+                openrouter_cache_read_mtok=or_model.cache_read_mtok,
+                openrouter_note="",
+            )
+            try:
+                url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
+            except build.BuildError as exc:
+                log.warning("or follow-up build failed for %s: %s", slug, exc)
+                continue
+            except Exception as exc:
+                log.warning("or follow-up pr failed for %s: %s", slug, exc)
+                continue
+            opened.append((slug, url))
+            drafts += 1
+            log.info("opened or follow-up pr for %s: %s", slug, url)
+    return opened
 
 
 def _pr_spec(

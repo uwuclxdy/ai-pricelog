@@ -303,3 +303,82 @@ def test_open_pr_uses_spec_title_and_body():
     (cmd, _cwd) = fake.calls[0]
     assert cmd[cmd.index("--title") + 1] == spec_.title
     assert cmd[cmd.index("--body") + 1] == spec_.body
+
+
+def update(**overrides) -> pr.UpdateSpec:
+    values = dict(
+        model_id="deepseek-chat",
+        case="rate_change",
+        prices_section="    prices:\n      - prices: {}\n",
+        deviation="the target's never-overwrite rule is followed",
+        old_input_mtok=0.2,
+        old_output_mtok=0.4,
+        input_mtok=0.27,
+        output_mtok=1.1,
+        peak_input_mtok=None,
+        peak_output_mtok=None,
+        peak_windows=(),
+        start_date="2026-08-24",
+        or_prices_section=None,
+        or_note="`deepseek/deepseek-chat` is not listed on the api",
+    )
+    values.update(overrides)
+    return pr.UpdateSpec(**values)
+
+
+def test_update_spec_branch_and_title():
+    s = spec(entry_id="deepseek-chat", update=update())
+    assert s.branch == "autopr/update/deepseek/deepseek-chat"
+    assert s.title == "Update deepseek-chat pricing for Deepseek"
+
+
+def test_update_spec_title_with_openrouter_mirror():
+    s = spec(entry_id="deepseek-chat", update=update(or_prices_section="    prices:\n"))
+    assert s.title == "Update deepseek-chat pricing for Deepseek and OpenRouter"
+
+
+def test_update_body_names_the_caveats():
+    s = spec(entry_id="deepseek-chat", update=update())
+    body = s.body
+    assert "Update `deepseek-chat` pricing for Deepseek." in body
+    assert "| `deepseek-chat` old | 0.2 | 0.4 |" in body
+    assert "| `deepseek-chat` new | 0.27 | 1.1 |" in body
+    assert "start_date is set to 2026-08-24" in body
+    assert "actual effective date is unknown" in body
+    assert "the target's never-overwrite rule is followed." in body
+    assert "`deepseek/deepseek-chat` is not listed on the api" in body
+    assert "re-candidates the update" in body
+
+
+def test_update_body_split_conversion_table():
+    s = spec(
+        entry_id="deepseek-chat",
+        update=update(
+            case="conversion",
+            peak_input_mtok=0.4,
+            peak_output_mtok=0.8,
+            peak_windows=(("01:00:00Z", "04:00:00Z"),),
+        ),
+    )
+    body = s.body
+    assert "| `deepseek-chat` old off-peak | 0.2 | 0.4 |" in body
+    assert "| `deepseek-chat` new off-peak | 0.27 | 1.1 |" in body
+    assert "| `deepseek-chat` new peak 01:00:00Z - 04:00:00Z | 0.4 | 0.8 |" in body
+
+
+def test_or_only_spec_branch_title_body():
+    s = spec(
+        model_id="deepseek-chat",
+        entry_id="deepseek/deepseek-chat",
+        vendor_yml="openrouter.yml",
+        vendor_name="OpenRouter",
+        vendor_entry=None,
+        openrouter_slug="deepseek/deepseek-chat",
+    )
+    assert s.branch == "autopr/or/deepseek/deepseek-chat"
+    assert s.title == "Add deepseek/deepseek-chat pricing for OpenRouter"
+    body = s.body
+    assert "Add `deepseek/deepseek-chat` to openrouter.yml." in body
+    assert "only fills the openrouter entry" in body
+    assert "## notes" in body
+    assert "| `deepseek/deepseek-chat` | 0.22 | 0.003625 | 0.66 |" in body
