@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -7,6 +8,17 @@ from autopr_genai_prices.config import Config
 from autopr_genai_prices.openrouter import OPENROUTER_MODELS_URL
 
 UPSTREAM = "pydantic/genai-prices"
+AUTOPR_REPO = "https://github.com/uwuclxdy/autopr-genai-prices"
+
+
+def run_url_from_env() -> str | None:
+    """The actions run url for the current run, or None outside a runner."""
+    server = os.environ.get("GITHUB_SERVER_URL")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not (server and repo and run_id):
+        return None
+    return f"{server.rstrip('/')}/{repo}/actions/runs/{run_id}"
 
 
 class PrError(Exception):
@@ -87,6 +99,7 @@ class PrSpec:
     openrouter_output_mtok: float | None
     openrouter_cache_read_mtok: float | None
     openrouter_note: str
+    run_url: str | None = None
     update: UpdateSpec | None = None
 
     @property
@@ -152,6 +165,7 @@ class PrSpec:
         lines.append("")
         lines.append("## notes")
         lines.append("")
+        lines.extend(self._disclaimer())
         lines.append(
             "- no cache-read pricing on the vendor page: the vendor entry carries no "
             "`cache_read_mtok`"
@@ -166,6 +180,11 @@ class PrSpec:
                 f"- `-latest` alias clauses skipped: {aliases} "
                 "(family/version aliases, not separately priced models)"
             )
+        lines.extend(
+            self._review_section(
+                ["rates verified against the pricing page", "provider name checked"]
+            )
+        )
         return "\n".join(lines) + "\n"
 
     def _openrouter_table(self) -> list[str]:
@@ -208,16 +227,24 @@ class PrSpec:
             ]
             lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
             lines += ["## notes", ""]
+            lines.extend(self._disclaimer())
             lines.append(
                 f"- start_date is set to {update.start_date}, the day the watchdog verified "
-                "the api rates; the mirror's actual effective date is unknown to it. "
-                "correct it before marking ready."
+                "the api rates; the mirror's actual effective date is unknown to it."
             )
             lines.append(f"- {update.deviation}.")
             lines.append(
                 "- the watchdog keeps no state for updates: after this pr merges, the "
                 "next run diffs against the landed rates and goes quiet. closing it "
                 "unmerged re-candidates the update."
+            )
+            lines.extend(
+                self._review_section(
+                    [
+                        "rates verified against the OpenRouter API",
+                        "start_date corrected to the mirror's actual effective date",
+                    ]
+                )
             )
             return "\n".join(lines) + "\n"
         lines += ["| model | input (/1M) | output (/1M) |", "|---|---|---|"]
@@ -259,16 +286,25 @@ class PrSpec:
         else:
             lines.append(update.or_note)
         lines += ["", "## notes", ""]
+        lines.extend(self._disclaimer())
         lines.append(
             f"- start_date is set to {update.start_date}, the day the watchdog verified "
-            "the change; the provider's actual effective date is unknown to it. correct "
-            "it and cite the changelog beside start_date before marking ready."
+            "the change; the provider's actual effective date is unknown to it."
         )
         lines.append(f"- {update.deviation}.")
         lines.append(
             "- the watchdog keeps no state for updates: after this pr merges, the next "
             "run diffs against the landed rates and goes quiet. closing it unmerged "
             "re-candidates the update."
+        )
+        lines.extend(
+            self._review_section(
+                [
+                    "rates verified against the pricing page",
+                    "start_date corrected to the provider's effective date",
+                    "changelog cited beside start_date",
+                ]
+            )
         )
         return "\n".join(lines) + "\n"
 
@@ -278,6 +314,7 @@ class PrSpec:
         lines.extend(self._openrouter_table())
         lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
         lines += ["## notes", ""]
+        lines.extend(self._disclaimer())
         lines.append(
             "- the vendor entry is already tracked; this pr only fills the openrouter "
             "entry that the earlier add pr deferred"
@@ -286,7 +323,21 @@ class PrSpec:
             "- closing this draft settles the follow-up by itself: the next run sees "
             "the slug tracked in openrouter.yml"
         )
+        lines.extend(self._review_section(["rates verified against the OpenRouter API"]))
         return "\n".join(lines) + "\n"
+
+    def _disclaimer(self) -> list[str]:
+        link = self.run_url or f"{AUTOPR_REPO}/actions"
+        return [
+            "- **opened automatically by the [GitHub Action]"
+            f"({link}) from {AUTOPR_REPO}.** i read replies and will "
+            "review the prices before marking it ready."
+        ]
+
+    def _review_section(self, items: list[str]) -> list[str]:
+        lines = ["", "## review checklist", ""]
+        lines.extend(f"- [ ] {item}" for item in items)
+        return lines
 
 
 def _fmt_price(value: float | None) -> str:

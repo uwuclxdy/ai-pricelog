@@ -48,6 +48,7 @@ def run(
     workdir.mkdir(parents=True, exist_ok=True)
     owner, name = pr.parse_github_url(cfg.repo)
     base = pr.default_branch(owner, name, runner)
+    run_url = pr.run_url_from_env()
 
     repo_slot = workdir / "repo"
     shutil.rmtree(repo_slot, ignore_errors=True)
@@ -133,7 +134,9 @@ def run(
             if open_drafts >= cfg.cap:
                 provider_report.skipped_cap.append(model_id)
                 continue
-            spec = _pr_spec(pcfg, vendor_yml, or_yml, or_models, model_id, pricing, scraper)
+            spec = _pr_spec(
+                pcfg, vendor_yml, or_yml, or_models, model_id, pricing, scraper, run_url=run_url
+            )
             try:
                 url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
             except build.BuildError as exc:
@@ -166,6 +169,7 @@ def run(
                     or_models,
                     open_drafts,
                     runner,
+                    run_url=run_url,
                 )
             except Exception as exc:
                 log.exception("refresh for %s failed", pcfg.key)
@@ -175,7 +179,17 @@ def run(
                 open_drafts += drafts
 
     report.or_followups = _or_followups(
-        cfg, state, parsed, or_text, or_yml, or_models, base, repo_slot, open_drafts, runner
+        cfg,
+        state,
+        parsed,
+        or_text,
+        or_yml,
+        or_models,
+        base,
+        repo_slot,
+        open_drafts,
+        runner,
+        run_url=run_url,
     )
 
     save_state(state, repo_root / "state.json")
@@ -229,6 +243,7 @@ def _refresh_provider(
     or_models: list[openrouter.OpenrouterModel],
     open_drafts: int,
     runner: pr.PrRunner,
+    run_url: str | None = None,
 ) -> tuple[list[tuple[str, str]], int]:
     """Drift-check the tracked models; returns (opened prs, drafts used).
 
@@ -279,7 +294,16 @@ def _refresh_provider(
             log.info("refresh for %s skipped: draft cap", entry.id)
             continue
         spec = _update_pr_spec(
-            pcfg, vendor_yml, entry, pricing, drift, repo_slot, or_text, or_yml, or_models
+            pcfg,
+            vendor_yml,
+            entry,
+            pricing,
+            drift,
+            repo_slot,
+            or_text,
+            or_yml,
+            or_models,
+            run_url=run_url,
         )
         try:
             url = pr.open_draft_pr(cfg, base, repo_slot, spec, runner)
@@ -302,6 +326,7 @@ def _update_pr_spec(
     or_text: str,
     or_yml: yml.ProviderYml,
     or_models: list[openrouter.OpenrouterModel],
+    run_url: str | None = None,
 ) -> pr.PrSpec:
     checked = date.today().isoformat()
     update = refresh.build_update_spec(
@@ -335,6 +360,7 @@ def _update_pr_spec(
         openrouter_output_mtok=None,
         openrouter_cache_read_mtok=None,
         openrouter_note="",
+        run_url=run_url,
         update=update,
     )
 
@@ -350,6 +376,7 @@ def _or_followups(
     repo_slot: Path,
     open_drafts: int,
     runner: pr.PrRunner,
+    run_url: str | None = None,
 ) -> list[tuple[str, str]]:
     """Open the follow-up prs for vendor additions whose openrouter entry deferred.
 
@@ -400,7 +427,7 @@ def _or_followups(
                 # landed: drift-check the mirror against the api
                 if refresh.or_rates_match(tracked, or_model):
                     continue
-                spec = _or_update_spec(pcfg, slug, tracked, or_model, checked, or_text)
+                spec = _or_update_spec(pcfg, slug, tracked, or_model, checked, or_text, run_url)
                 if spec is None:
                     continue  # no prices section to rewrite
                 result = _open_followup_pr(cfg, base, repo_slot, spec, slug, runner)
@@ -437,6 +464,7 @@ def _or_followups(
                 openrouter_output_mtok=or_model.output_mtok,
                 openrouter_cache_read_mtok=or_model.cache_read_mtok,
                 openrouter_note="",
+                run_url=run_url,
             )
             result = _open_followup_pr(cfg, base, repo_slot, spec, slug, runner)
             if result is None:
@@ -454,6 +482,7 @@ def _or_update_spec(
     or_model: openrouter.OpenrouterModel,
     checked: str,
     or_text: str,
+    run_url: str | None = None,
 ) -> pr.PrSpec | None:
     """The spec for an openrouter entry that drifted after its vendor pr merged."""
     section = refresh.or_drift_section(slug, checked, or_text, or_model)
@@ -506,6 +535,7 @@ def _or_update_spec(
         openrouter_output_mtok=or_model.output_mtok,
         openrouter_cache_read_mtok=or_model.cache_read_mtok,
         openrouter_note="",
+        run_url=run_url,
         update=update,
     )
 
@@ -537,6 +567,7 @@ def _pr_spec(
     model_id: str,
     pricing: Pricing,
     scraper: Any,
+    run_url: str | None = None,
 ) -> pr.PrSpec:
     checked = date.today().isoformat()
     # the page spelling may diverge from the target's tracked spelling
@@ -596,6 +627,7 @@ def _pr_spec(
         openrouter_output_mtok=or_values.output_mtok if or_values is not None else None,
         openrouter_cache_read_mtok=or_values.cache_read_mtok if or_values is not None else None,
         openrouter_note=or_note,
+        run_url=run_url,
     )
 
 

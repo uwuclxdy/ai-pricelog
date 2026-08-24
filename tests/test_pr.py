@@ -160,6 +160,43 @@ def test_spec_body_skipped_latest_note():
     assert "`-latest` alias clauses skipped" not in spec().body
 
 
+def test_spec_body_disclaimer():
+    body = spec(run_url="https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123").body
+    assert (
+        "- **opened automatically by the [GitHub Action](https://github.com/uwuclxdy/"
+        "autopr-genai-prices/actions/runs/123) from https://github.com/uwuclxdy/"
+        "autopr-genai-prices.** i read replies and will review the prices before "
+        "marking it ready." in body
+    )
+
+
+def test_spec_body_disclaimer_falls_back_to_actions_tab():
+    body = spec().body
+    assert "[GitHub Action](https://github.com/uwuclxdy/autopr-genai-prices/actions) from" in body
+
+
+def test_spec_body_review_checklist():
+    body = spec().body
+    assert "## review checklist" in body
+    assert "- [ ] rates verified against the pricing page" in body
+    assert "- [ ] provider name checked" in body
+
+
+def test_run_url_from_env(monkeypatch):
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    assert (
+        pr.run_url_from_env() == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
+    )
+
+
+def test_run_url_from_env_missing_env_is_none(monkeypatch):
+    for var in ("GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID"):
+        monkeypatch.delenv(var, raising=False)
+    assert pr.run_url_from_env() is None
+
+
 def test_existing_pr_parses_url():
     fake = FakeRunner().on("gh pr list", output="https://github.com/octo/genai-prices/pull/42\n")
     assert pr.existing_pr("octo", "genai-prices", "autopr/deepseek/x", fake) == (
@@ -353,6 +390,14 @@ def test_update_body_names_the_caveats():
     assert "re-candidates the update" in body
 
 
+def test_update_body_review_checklist():
+    body = spec(entry_id="deepseek-chat", update=update()).body
+    assert "- [ ] rates verified against the pricing page" in body
+    assert "- [ ] start_date corrected to the provider's effective date" in body
+    assert "- [ ] changelog cited beside start_date" in body
+    assert "correct it and cite the changelog" not in body
+
+
 def test_update_body_split_conversion_table():
     s = spec(
         entry_id="deepseek-chat",
@@ -385,6 +430,18 @@ def test_or_only_spec_branch_title_body():
     assert "only fills the openrouter entry" in body
     assert "## notes" in body
     assert "| `deepseek/deepseek-chat` | 0.22 | 0.003625 | 0.66 |" in body
+    assert "- [ ] rates verified against the OpenRouter API" in body
+
+
+def test_or_only_update_body_review_checklist():
+    s = spec(
+        entry_id="deepseek/deepseek-chat",
+        update=update(or_only=True, old_cache_read_mtok=0.02, cache_read_mtok=0.04),
+    )
+    body = s.body
+    assert "- [ ] rates verified against the OpenRouter API" in body
+    assert "- [ ] start_date corrected to the mirror's actual effective date" in body
+    assert "correct it before marking ready" not in body
 
 
 def test_update_body_old_peak_row_surfaces_window_change():
