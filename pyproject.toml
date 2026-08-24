@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 autopr-genai-prices = "autopr_genai_prices.pipeline:main"
+autopr-genai-prices-smoke = "autopr_genai_prices.smoke:main"
 
 [dependency-groups]
 dev = [

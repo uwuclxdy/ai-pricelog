@@ -1,0 +1,27 @@
+# weekly live smoke probe for the moonshot .md endpoints (models.md, llms.txt,
+# pricing pages). scheduled only, never part of push/PR ci: the checks hit
+# live upstream pages, and catching a breakage within a week is the point.
+
+name: smoke
+
+on:
+  schedule:
+    - cron: "17 5 * * 1" # weekly monday 05:17 utc
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      - name: run moonshot smoke probe
+        run: uv run autopr-genai-prices-smoke
