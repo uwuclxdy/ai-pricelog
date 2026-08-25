@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices import web
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import mistral_page
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.scrapers import mistral_page as mistral_scraper
+from ai_pricelog import web
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import mistral_page
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import mistral_page as mistral_scraper
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mistral_page"
 CARDS_URL = "https://docs.mistral.ai/models/model-cards/"
@@ -233,7 +233,7 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
 
 
 def test_dedup_keys_compaction():
-    from autopr_genai_prices.scrapers.mistral_page import dedup_keys
+    from ai_pricelog.scrapers.mistral_page import dedup_keys
 
     # page slug -> the target's tracked spellings, measured against
     # prices/providers/mistral.yml (codestral-2508 etc., 2026-08-19)
@@ -256,7 +256,7 @@ def test_dedup_keys_compaction():
 
 
 def test_dedup_keys_unchanged_spellings_return_nothing():
-    from autopr_genai_prices.scrapers.mistral_page import dedup_keys
+    from ai_pricelog.scrapers.mistral_page import dedup_keys
 
     for slug in ("codestral-2508", "mistral-medium-3-5", "mistral-7b-0-3", "ocr-4-0"):
         assert dedup_keys(slug) == [], slug

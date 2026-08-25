@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import dashscope_page as dashscope_detect
-from autopr_genai_prices.scrapers import dashscope_page as dashscope_scrape
-from autopr_genai_prices.web import FetchError
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import dashscope_page as dashscope_detect
+from ai_pricelog.scrapers import dashscope_page as dashscope_scrape
+from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "dashscope_page"
 

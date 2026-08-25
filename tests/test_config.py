@@ -2,7 +2,7 @@ import types
 
 import pytest
 
-from autopr_genai_prices import config
+from ai_pricelog import config
 from conftest import register_fake_module
 
 HAPPY_TOML = """

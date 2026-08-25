@@ -1,7 +1,7 @@
 import pytest
 
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.validate import ValidationError, validate_entry
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.validate import ValidationError, validate_entry
 
 
 def pricing(**overrides) -> Pricing:

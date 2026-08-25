@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices import build, config, openrouter, pipeline, pr
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.state import load as load_state
+from ai_pricelog import build, config, openrouter, pipeline, pr
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.state import load as load_state
 from conftest import git, git_init_repo, register_fake_module
 
 DEEPSEEK_YML = "deepseek.yml"
@@ -114,12 +114,12 @@ def fake_modules(monkeypatch):
 
     for kind in ("detectors", "scrapers"):
         register_fake_module(monkeypatch, kind, "placeholder")
-    det = types.ModuleType("autopr_genai_prices.detectors.fake_det")
+    det = types.ModuleType("ai_pricelog.detectors.fake_det")
     det.detect = detect
-    scr = types.ModuleType("autopr_genai_prices.scrapers.fake_scr")
+    scr = types.ModuleType("ai_pricelog.scrapers.fake_scr")
     scr.scrape = scrape
-    monkeypatch.setitem(sys.modules, "autopr_genai_prices.detectors.fake_det", det)
-    monkeypatch.setitem(sys.modules, "autopr_genai_prices.scrapers.fake_scr", scr)
+    monkeypatch.setitem(sys.modules, "ai_pricelog.detectors.fake_det", det)
+    monkeypatch.setitem(sys.modules, "ai_pricelog.scrapers.fake_scr", scr)
     return detect_controls, scrape_controls
 
 
@@ -249,7 +249,7 @@ def test_run_threads_the_actions_run_url_into_pr_bodies(
     tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr, monkeypatch
 ):
     monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "123")
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -261,11 +261,8 @@ def test_run_threads_the_actions_run_url_into_pr_bodies(
 
     assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-chat"]
     (spec,) = fake_open_pr[0]
-    assert spec.run_url == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
-    assert (
-        "[GitHub Action](https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123)"
-        in spec.body
-    )
+    assert spec.run_url == "https://github.com/uwuclxdy/ai-pricelog/actions/runs/123"
+    assert "[GitHub Action](https://github.com/uwuclxdy/ai-pricelog/actions/runs/123)" in spec.body
 
 
 def test_missing_pricing_stays_unsettled_and_retries(
@@ -363,7 +360,7 @@ def test_dedup_keys_settle_without_scrape(
     detect, scrape = fake_modules
     detect["mistral"] = ["codestral-25-08"]
     scrape["mistral"] = {}
-    scr = sys.modules["autopr_genai_prices.scrapers.fake_scr"]
+    scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
     scr.dedup_keys = lambda model_id: ["codestral-2508"]
     ymls = {"mistral.yml": vendor_yml("Mistral", "codestral-2508")}
     cfg = make_cfg(upstream(ymls=ymls), 3, ("mistral",))
@@ -633,7 +630,7 @@ def test_noop_state_commit_logs_info_not_error(
     workdir = tmp_path / "work"
     runner = PipelineRunner()
 
-    with caplog.at_level(logging.INFO, logger="autopr_genai_prices.pipeline"):
+    with caplog.at_level(logging.INFO, logger="ai_pricelog.pipeline"):
         report = pipeline.run(cfg, workdir, root, runner)
 
     provider_report = report.providers["deepseek"]
@@ -733,7 +730,7 @@ def test_refresh_detects_rate_change_and_opens_update_pr(
     tmp_path, fake_modules, upstream, repo_root, wire, fake_open_pr, monkeypatch
 ):
     monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "123")
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -749,7 +746,7 @@ def test_refresh_detects_rate_change_and_opens_update_pr(
     assert [model_id for model_id, _url in provider_report.refreshes] == ["deepseek-chat"]
     assert provider_report.error is None
     (spec,) = fake_open_pr[0]
-    assert spec.run_url == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
+    assert spec.run_url == "https://github.com/uwuclxdy/ai-pricelog/actions/runs/123"
     assert spec.update is not None
     assert spec.update.case == "rate_change"
     assert spec.branch == "autopr/update/deepseek/deepseek-chat"
@@ -965,7 +962,7 @@ def test_or_followup_opens_pr_when_api_lists_deferred_model(
     tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr, monkeypatch
 ):
     monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "123")
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -996,7 +993,7 @@ def test_or_followup_opens_pr_when_api_lists_deferred_model(
 
     assert [slug for slug, _url in report.or_followups] == ["deepseek/deepseek-chat"]
     (spec,) = fake_open_pr[0]
-    assert spec.run_url == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
+    assert spec.run_url == "https://github.com/uwuclxdy/ai-pricelog/actions/runs/123"
     assert spec.vendor_entry is None
     assert spec.title == "Add deepseek/deepseek-chat pricing for OpenRouter"
     assert spec.branch == "autopr/or/deepseek/deepseek-chat"
@@ -1051,7 +1048,7 @@ def test_or_followup_drift_pr_when_tracked_slug_differs_from_api(
     tmp_path, fake_modules, upstream, repo_root, wire, or_models, fake_open_pr, monkeypatch
 ):
     monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "123")
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -1089,7 +1086,7 @@ def test_or_followup_drift_pr_when_tracked_slug_differs_from_api(
 
     assert [slug for slug, _url in report.or_followups] == ["deepseek/deepseek-chat"]
     (spec,) = fake_open_pr[0]
-    assert spec.run_url == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
+    assert spec.run_url == "https://github.com/uwuclxdy/ai-pricelog/actions/runs/123"
     assert spec.update is not None
     assert spec.update.or_only is True
     assert spec.vendor_entry is None
@@ -1189,8 +1186,8 @@ def test_or_followup_drift_pr_free_api_row(
 
 
 def test_pr_spec_uses_target_spelling_for_mistral():
-    from autopr_genai_prices import yml
-    from autopr_genai_prices.scrapers import mistral_page
+    from ai_pricelog import yml
+    from ai_pricelog.scrapers import mistral_page
 
     pcfg = config.ProviderCfg(
         key="mistral",

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices import openrouter
-from autopr_genai_prices.openrouter import OpenrouterModel, fetch_models, find
+from ai_pricelog import openrouter
+from ai_pricelog.openrouter import OpenrouterModel, fetch_models, find
 
 FIXTURE = Path(__file__).parent / "fixtures" / "genai_prices" / "openrouter_models.json"
 

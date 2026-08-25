@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import minimax_page as minimax_detect
-from autopr_genai_prices.scrapers import minimax_page as minimax_scrape
-from autopr_genai_prices.web import FetchError
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import minimax_page as minimax_detect
+from ai_pricelog.scrapers import minimax_page as minimax_scrape
+from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "minimax_page"
 

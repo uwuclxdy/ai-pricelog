@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices.matcher import (
+from ai_pricelog.matcher import (
     ClauseAnd,
     ClauseEndsWith,
     ClauseEquals,
@@ -11,8 +11,8 @@ from autopr_genai_prices.matcher import (
     ClauseRegex,
     ClauseStartsWith,
 )
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.yml import (
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.yml import (
     ProviderYml,
     TrackedModel,
     build_openrouter_entry,

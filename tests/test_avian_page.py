@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import avian_page as detector
-from autopr_genai_prices.scrapers import avian_page as scraper
-from autopr_genai_prices.web import FetchError
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import avian_page as detector
+from ai_pricelog.scrapers import avian_page as scraper
+from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://www.avian.io/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "avian_page" / "pricing.html"

@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices import smoke
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.scrapers import moonshot_page as scraper
-from autopr_genai_prices.web import FetchError
+from ai_pricelog import smoke
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import moonshot_page as scraper
+from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 INDEX_URL = "https://platform.kimi.ai/docs/llms.txt"

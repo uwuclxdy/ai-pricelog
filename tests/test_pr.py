@@ -1,7 +1,7 @@
 import pytest
 
-from autopr_genai_prices import pr
-from autopr_genai_prices.config import Config
+from ai_pricelog import pr
+from ai_pricelog.config import Config
 from conftest import FakeRunner
 
 
@@ -161,18 +161,18 @@ def test_spec_body_skipped_latest_note():
 
 
 def test_spec_body_disclaimer():
-    body = spec(run_url="https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123").body
+    body = spec(run_url="https://github.com/uwuclxdy/ai-pricelog/actions/runs/123").body
     assert (
         "- **opened automatically by the [GitHub Action](https://github.com/uwuclxdy/"
-        "autopr-genai-prices/actions/runs/123) from https://github.com/uwuclxdy/"
-        "autopr-genai-prices.** i read replies and will review the prices before "
+        "ai-pricelog/actions/runs/123) from https://github.com/uwuclxdy/"
+        "ai-pricelog.** i read replies and will review the prices before "
         "marking it ready." in body
     )
 
 
 def test_spec_body_disclaimer_falls_back_to_actions_tab():
     body = spec().body
-    assert "[GitHub Action](https://github.com/uwuclxdy/autopr-genai-prices/actions) from" in body
+    assert "[GitHub Action](https://github.com/uwuclxdy/ai-pricelog/actions) from" in body
 
 
 def test_spec_body_review_checklist():
@@ -184,11 +184,9 @@ def test_spec_body_review_checklist():
 
 def test_run_url_from_env(monkeypatch):
     monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/autopr-genai-prices")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "123")
-    assert (
-        pr.run_url_from_env() == "https://github.com/uwuclxdy/autopr-genai-prices/actions/runs/123"
-    )
+    assert pr.run_url_from_env() == "https://github.com/uwuclxdy/ai-pricelog/actions/runs/123"
 
 
 def test_run_url_from_env_missing_env_is_none(monkeypatch):
@@ -300,7 +298,7 @@ def test_open_draft_pr_returns_existing_without_preparing(tmp_path, monkeypatch)
     fake = FakeRunner().on("gh pr list", output="https://github.com/octo/genai-prices/pull/7\n")
     cfg = Config(repo="https://github.com/octo/genai-prices", providers=(), cap=1)
     prepared = []
-    monkeypatch.setattr("autopr_genai_prices.build.prepare", lambda *args: prepared.append(args))
+    monkeypatch.setattr("ai_pricelog.build.prepare", lambda *args: prepared.append(args))
     url = pr.open_draft_pr(cfg, "main", tmp_path / "slot", spec(), fake)
     assert url == "https://github.com/octo/genai-prices/pull/7"
     assert prepared == []
@@ -316,7 +314,7 @@ def test_open_draft_pr_prepares_pushes_and_opens(tmp_path, monkeypatch):
     )
     cfg = Config(repo="https://github.com/octo/genai-prices", providers=(), cap=1)
     prepared = []
-    monkeypatch.setattr("autopr_genai_prices.build.prepare", lambda *args: prepared.append(args))
+    monkeypatch.setattr("ai_pricelog.build.prepare", lambda *args: prepared.append(args))
     monkeypatch.setattr(pr, "push_or_fork", lambda repo_url, branch, slot, runner: "octo")
     slot = tmp_path / "slot"
     url = pr.open_draft_pr(cfg, "main", slot, spec(), fake)

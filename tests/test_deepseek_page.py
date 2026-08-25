@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import deepseek_page as detector
-from autopr_genai_prices.scrapers import deepseek_page as scraper
-from autopr_genai_prices.web import FetchError
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import deepseek_page as detector
+from ai_pricelog.scrapers import deepseek_page as scraper
+from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://api-docs.deepseek.com/quick_start/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing.html"

@@ -1,6 +1,6 @@
 # one section per watched provider. yml = the target's prices/providers/<yml>
 # file, or_prefix = the openrouter slug prefix, detector/scraper = module names
-# under autopr_genai_prices.{detectors,scrapers}. sources pinned 2026-08-19.
+# under ai_pricelog.{detectors,scrapers}. sources pinned 2026-08-19.
 
 [settings]
 cap = 3

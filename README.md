@@ -1,12 +1,12 @@
 <div align="center">
 
-# autopr-genai-prices
+# ai-pricelog
 
 **watch model releases and price changes, open draft PRs to `pydantic/genai-prices`**
 
 detectors scrape each provider's own docs and pricing pages daily, one draft PR per new model or drifted price, a human verifies prices and marks it ready
 
-![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/autopr-genai-prices/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/autopr-genai-prices)
+![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/ai-pricelog/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/ai-pricelog)
 
 </div>
 
@@ -48,7 +48,7 @@ dormant, commented out in `providers.toml`: dashscope (the target tracks no firs
 ```sh
 uv sync --frozen
 export REPO=https://github.com/pydantic/genai-prices
-uv run autopr-genai-prices
+uv run ai-pricelog
 ```
 
 `REPO` is the only required input. clone source, base branch, push target and PR target all derive from it. push permission decides the flow: the token can push to `REPO` and the PR opens in-repo, or it cannot and the run forks first. no fork detection, one code path. one exception: the pending-PR check always scans the real `pydantic/genai-prices`, never `REPO`.
@@ -72,7 +72,7 @@ scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 ```
 
-`detector`/`scraper` name modules under `autopr_genai_prices.{detectors,scrapers}`; adding a provider is a config section plus a module pair.
+`detector`/`scraper` name modules under `ai_pricelog.{detectors,scrapers}`; adding a provider is a config section plus a module pair.
 
 ## Development
 

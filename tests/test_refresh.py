@@ -3,12 +3,12 @@
 import pytest
 import yaml as pyyaml
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.matcher import ClauseEquals
-from autopr_genai_prices.openrouter import OpenrouterModel
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.refresh import build_update_spec, compare, old_values
-from autopr_genai_prices.yml import ProviderYml, TrackedModel
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.matcher import ClauseEquals
+from ai_pricelog.openrouter import OpenrouterModel
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.refresh import build_update_spec, compare, old_values
+from ai_pricelog.yml import ProviderYml, TrackedModel
 
 PCFG = ProviderCfg(
     key="deepseek",

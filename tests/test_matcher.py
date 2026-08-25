@@ -3,7 +3,7 @@ import re
 import pytest
 import yaml
 
-from autopr_genai_prices.matcher import (
+from ai_pricelog.matcher import (
     ClauseAnd,
     ClauseContains,
     ClauseEndsWith,

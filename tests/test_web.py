@@ -2,7 +2,7 @@ import httpx
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices import web
+from ai_pricelog import web
 
 
 def test_fetch_text_rejects_non_http_scheme():

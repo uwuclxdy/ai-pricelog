@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices import web
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import xai_page
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.scrapers import xai_page as xai_scraper
+from ai_pricelog import web
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import xai_page
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import xai_page as xai_scraper
 
 FIXTURES = Path(__file__).parent / "fixtures" / "xai_page"
 PAGE_URL = "https://docs.x.ai/docs/models"

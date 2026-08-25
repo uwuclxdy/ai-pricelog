@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from autopr_genai_prices import build, pr
+from ai_pricelog import build, pr
 from conftest import git, git_init_repo
 
 TEST_CALC_HEAD = "from decimal import Decimal\n\nfrom genai_prices import Usage, calc_price\n"

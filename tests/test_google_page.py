@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import google_page as detector
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.scrapers import google_page as scraper
-from autopr_genai_prices.web import FetchError
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import google_page as detector
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import google_page as scraper
+from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://ai.google.dev/gemini-api/docs/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "google_page" / "pricing.html"

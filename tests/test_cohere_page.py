@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from autopr_genai_prices import web
-from autopr_genai_prices.config import ProviderCfg
-from autopr_genai_prices.detectors import cohere_page
-from autopr_genai_prices.pricing import Pricing
-from autopr_genai_prices.scrapers import cohere_page as cohere_scraper
+from ai_pricelog import web
+from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import cohere_page
+from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import cohere_page as cohere_scraper
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cohere_page"
 PAGE_URL = "https://cohere.com/pricing"

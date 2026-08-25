@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from autopr_genai_prices import state as state_mod
-from autopr_genai_prices.state import ProviderState, State, load, new_ids, save
+from ai_pricelog import state as state_mod
+from ai_pricelog.state import ProviderState, State, load, new_ids, save
 
 
 def test_roundtrip(tmp_path):
