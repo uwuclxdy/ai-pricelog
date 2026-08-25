@@ -1,3 +1,142 @@
 {
-  "providers": {}
+  "providers": {
+    "deepseek": {
+      "last_seen": [],
+      "handled": []
+    },
+    "zai": {
+      "last_seen": [
+        "glm-5.3",
+        "glm-5-turbo",
+        "glm-4.7-flashx"
+      ],
+      "handled": [
+        "glm-5.3",
+        "glm-5-turbo",
+        "glm-4.7-flashx"
+      ]
+    },
+    "moonshot": {
+      "last_seen": [
+        "moonshot-v1-8k",
+        "moonshot-v1-32k",
+        "moonshot-v1-128k",
+        "moonshot-v1-8k-vision-preview",
+        "moonshot-v1-32k-vision-preview",
+        "moonshot-v1-128k-vision-preview"
+      ],
+      "handled": []
+    },
+    "minimax": {
+      "last_seen": [
+        "MiniMax-M2.7",
+        "MiniMax-M2.7-highspeed",
+        "MiniMax-M2.5-highspeed",
+        "MiniMax-M2.1",
+        "MiniMax-M2.1-highspeed"
+      ],
+      "handled": []
+    },
+    "xai": {
+      "last_seen": [
+        "grok-4.20-multi-agent-0309",
+        "grok-4.20-0309-non-reasoning",
+        "grok-4.20-0309-reasoning"
+      ],
+      "handled": []
+    },
+    "mistral": {
+      "last_seen": [
+        "mistral-medium-3-5-26-04",
+        "mistral-small-4-0-26-03",
+        "mistral-large-3-25-12",
+        "ministral-3-14b-25-12",
+        "ministral-3-8b-25-12",
+        "ministral-3-3b-25-12",
+        "codestral-25-08",
+        "mistral-medium-3-1-25-08",
+        "devstral-2-25-12",
+        "magistral-medium-1-1-25-07",
+        "magistral-medium-1-2-25-09",
+        "magistral-small-1-2-25-09",
+        "magistral-small-1-1-25-07",
+        "magistral-medium-1-0-25-06",
+        "magistral-small-1-0-25-06",
+        "mistral-medium-3-25-05",
+        "codestral-25-01",
+        "mistral-large-2-1-24-11",
+        "pixtral-large-24-11",
+        "ministral-8b-24-1",
+        "mistral-large-2-0-24-07",
+        "mistral-medium-1-0-23-12",
+        "mixtral-8x7b-0-1"
+      ],
+      "handled": []
+    },
+    "perplexity": {
+      "last_seen": [
+        "sonar",
+        "sonar-pro",
+        "sonar-reasoning-pro",
+        "sonar-deep-research"
+      ],
+      "handled": []
+    },
+    "together": {
+      "last_seen": [
+        "llama-3-8b-instruct-lite"
+      ],
+      "handled": []
+    },
+    "novita": {
+      "last_seen": [
+        "deepseek/deepseek-v3-0324",
+        "deepseek/deepseek-r1-0528",
+        "deepseek/deepseek-r1-distill-llama-70b",
+        "qwen/qwen-2.5-72b-instruct",
+        "sao10k/l3-8b-lunaris",
+        "Sao10K/L3-8B-Stheno-v3.2",
+        "sao10k/l31-70b-euryale-v2.2",
+        "meta-llama/llama-3.1-8b-instruct",
+        "meta-llama/llama-3.3-70b-instruct",
+        "mistralai/mistral-nemo",
+        "microsoft/wizardlm-2-8x22b"
+      ],
+      "handled": []
+    },
+    "cohere": {
+      "last_seen": [
+        "command-r-03-2024",
+        "command-r-plus-08-2024",
+        "command-r-plus-04-2024"
+      ],
+      "handled": []
+    },
+    "google": {
+      "last_seen": [
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-omni-flash-preview",
+        "gemini-3.1-pro-preview",
+        "gemini-3.1-pro-preview-customtools",
+        "gemini-3.1-flash-live-preview",
+        "gemini-3.1-flash-image",
+        "gemini-3.1-flash-lite-image",
+        "gemini-3-flash-preview",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash-lite-preview-09-2025",
+        "gemini-2.5-flash-native-audio-preview-12-2025",
+        "gemini-2.5-flash-image",
+        "gemini-2.5-pro-preview-tts",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-embedding-001"
+      ],
+      "handled": []
+    },
+    "avian": {
+      "last_seen": [],
+      "handled": []
+    }
+  }
 }
