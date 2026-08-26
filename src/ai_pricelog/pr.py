@@ -236,18 +236,26 @@ def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner, cwd: Path) -
 
 
 def fetch_pending_rows(
-    runner: PrRunner, repo_root: Path, history_file: str
+    runner: PrRunner,
+    repo_root: Path,
+    history_file: str,
+    open_prs: Sequence[OpenPr],
 ) -> list[dict[str, object]]:
-    """The rows on unmerged pricelog branches of origin, under refs/remotes/pending.
+    """The rows on open PRs' pricelog branches of origin, under refs/remotes/pending.
 
-    Every pending branch carries a full store snapshot; its rows unique over
+    Every open PR branch carries a full store snapshot; its rows unique over
     the local store are what a new PR branch must union in, so sibling PRs
-    stop rewriting the same files. A run without an origin remote (local dev)
-    or a branch without the file just yields no pending rows.
+    stop rewriting the same files. A branch whose pr was closed keeps its
+    head ref out of open_prs and contributes no rows, so a rejected pr's rows
+    drop out of the union and its model re-candidates on the next run. The
+    fetch is forced and pruned: pending branches are force-pushed, and refs
+    of branches deleted upstream must not linger. A run without an origin
+    remote (local dev) or a branch without the file just yields no pending
+    rows.
     """
     try:
         runner.run(
-            ["git", "fetch", "origin", "refs/heads/pricelog/*:refs/remotes/pending/*"],
+            ["git", "fetch", "origin", "+refs/heads/pricelog/*:refs/remotes/pending/*", "--prune"],
             cwd=repo_root,
         )
     except PrError as exc:
@@ -261,8 +269,12 @@ def fetch_pending_rows(
     except PrError as exc:
         log.info("pending ref listing failed; continuing with no pending rows: %s", exc)
         return []
+    open_heads = {entry.head_ref for entry in open_prs}
     rows: list[dict[str, object]] = []
     for ref in refs:
+        if f"pricelog/{ref.removeprefix('refs/remotes/pending/')}" not in open_heads:
+            log.debug("pending ref %s has no open pr; skipping", ref)
+            continue
         try:
             text = runner.run(["git", "show", f"{ref}:{history_file}"], cwd=repo_root)
         except PrError as exc:

@@ -202,7 +202,7 @@ def test_open_pull_requests_rejects_invalid_json():
 
 def test_fetch_pending_rows_no_remote_returns_empty():
     fake = FakeRunner().on("git fetch", failure=pr.PrError("no such remote: origin"))
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson") == []
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", []) == []
 
 
 def test_fetch_pending_rows_reads_branch_histories():
@@ -216,7 +216,8 @@ def test_fetch_pending_rows_reads_branch_histories():
         .on("git for-each-ref", output="refs/remotes/pending/x-12345678\n")
         .on("git show", output=lines)
     )
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson") == [
+    open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == [
         json.loads(line) for line in lines.splitlines()
     ]
 
@@ -228,7 +229,42 @@ def test_fetch_pending_rows_skips_branch_without_history():
         .on("git for-each-ref", output="refs/remotes/pending/bad\n")
         .on("git show", failure=pr.PrError("path does not exist in the tree"))
     )
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson") == []
+    open_prs = [pr.OpenPr("Add bad pricing", "", "pricelog/bad")]
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == []
+
+
+def test_fetch_pending_rows_skips_branches_without_open_pr():
+    # a closed pr keeps its branch on origin; its head ref is no longer in
+    # the open-pr list, so its rows must not ride any future pr branch
+    open_lines = '{"source": "deepseek", "model_id": "x", "observed_at": "t", "url": "u"}\n'
+    closed_lines = '{"source": "deepseek", "model_id": "stale", "observed_at": "t", "url": "u"}\n'
+    fake = (
+        FakeRunner()
+        .on("git fetch")
+        .on(
+            "git for-each-ref",
+            output="refs/remotes/pending/open-12345678\nrefs/remotes/pending/closed-12345678\n",
+        )
+        .on("git show refs/remotes/pending/open", output=open_lines)
+        .on("git show refs/remotes/pending/closed", output=closed_lines)
+    )
+    open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/open-12345678")]
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == [
+        json.loads(open_lines)
+    ]
+
+
+def test_fetch_pending_rows_fetch_is_forced_and_pruned():
+    fake = FakeRunner().on("git fetch").on("git for-each-ref", output="")
+    pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", [])
+    (cmd, _cwd) = fake.calls[0]
+    assert cmd == [
+        "git",
+        "fetch",
+        "origin",
+        "+refs/heads/pricelog/*:refs/remotes/pending/*",
+        "--prune",
+    ]
 
 
 def test_open_pr_uses_spec_title_and_body():

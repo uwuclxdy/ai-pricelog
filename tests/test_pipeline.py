@@ -49,11 +49,11 @@ class PipelineRunner:
 
     def run(self, cmd: list[str], cwd: Path) -> str:
         self.calls.append((cmd, cwd))
+        key = " ".join(cmd)
+        for pattern, failure in self.failures.items():
+            if pattern in key:
+                raise failure
         if cmd[0] == "gh":
-            key = " ".join(cmd)
-            for pattern, failure in self.failures.items():
-                if pattern in key:
-                    raise failure
             if cmd[1] == "auth":
                 return ""
             if cmd[1] == "api" and cmd[2] == "user":
@@ -257,6 +257,33 @@ def test_cap_skips_extra_candidates(tmp_path, fake_modules, repo_root):
     assert [model_id for model_id, _url in provider_report.prs] == ["a"]
     assert provider_report.skipped_cap == ["b"]
     assert len(runner.pr_urls) == 1
+
+    # b got no pr, so neither its row nor its seen-state may ride a's branch
+    branch_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('a')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in branch_rows] == ["deepseek-legacy", "a"]
+    branch_state = json.loads(git(repo_root, "show", f"{pr.branch_name('a')}:state.json"))
+    assert branch_state["providers"]["deepseek"]["last_seen"] == ["a"]
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+    # next run: a is settled by its open pr, b re-candidates against the
+    # landed store and gets its own pr with its own row
+    runner.open_prs = [
+        {"title": runner.created[0][0], "body": "", "headRefName": pr.branch_name("a")}
+    ]
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    assert [model_id for model_id, _url in second.providers["deepseek"].prs] == ["b"]
+    branch_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('b')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in branch_rows] == ["deepseek-legacy", "a", "b"]
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -579,6 +606,35 @@ def test_push_uses_force_with_lease(tmp_path, fake_modules, repo_root):
     ]
 
 
+def test_push_failure_does_not_delete_remote_branch(tmp_path, fake_modules, repo_root):
+    # a rejected force-with-lease push may mean a peer run pushed the same
+    # branch first; deleting it would drop the peer's pr branch
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner(failures={"git push --force-with-lease": pr.PrError("push rejected")})
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert "pr open failed for deepseek-chat" in report.providers["deepseek"].errors[0]
+    branch = pr.branch_name("deepseek-chat")
+    pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
+    assert ["git", "push", "--force-with-lease", "origin", branch] in pushes
+    assert ["git", "push", "origin", "--delete", branch] not in pushes
+    assert branch not in git(repo_root, "ls-remote", "origin")
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
 def test_pr_create_failure_deletes_the_remote_branch(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -648,8 +704,8 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
         {"providers": {"deepseek": {"last_seen": ["deepseek-legacy", "deepseek-chat"]}}},
     )
 
-    # a sibling run already pushed the drift update for deepseek-chat but its
-    # pr never opened; the pending branch carries the full store snapshot
+    # a sibling run already opened the drift update pr for deepseek-chat; the
+    # pending branch carries the full store snapshot
     pending = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -665,13 +721,22 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
     git(repo_root, "commit", "-m", "sibling drift update")
     git(repo_root, "push", "origin", pending_branch)
     git(repo_root, "switch", "main")
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Update deepseek-chat pricing for Deepseek",
+                "body": "",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
 
-    # deepseek-chat is already pending with today's prices: the union diff
-    # stops a duplicate row, and only the genuinely new model gets a pr
+    # deepseek-chat is pending behind an open pr: the union diff stops a
+    # duplicate row, and only the genuinely new model gets a pr
     assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-new"]
-    assert report.providers["deepseek"].skipped_pending == []
+    assert report.providers["deepseek"].skipped_pending == ["deepseek-chat"]
     branch_rows = [
         json.loads(line)
         for line in git(
@@ -686,6 +751,85 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
     ]
     keys = [(row["source"], row["model_id"], row["observed_at"]) for row in branch_rows]
     assert len(keys) == len(set(keys))
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_closed_pr_branch_contributes_no_rows(tmp_path, fake_modules, repo_root):
+    # a closed pr keeps its branch on origin; without an open pr naming its
+    # head ref the rows must not ride any new branch, and the model
+    # re-candidates against the landed store with a fresh drift pr
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(
+        repo_root,
+        [legacy, prior],
+        {"providers": {"deepseek": {"last_seen": ["deepseek-legacy", "deepseek-chat"]}}},
+    )
+    stale = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+    )
+    stale_branch = pr.branch_name("deepseek-chat")
+    git(repo_root, "switch", "-C", stale_branch)
+    store.save([legacy, prior, stale], repo_root / "data" / "history.ndjson")
+    store.write_index([legacy, prior, stale], repo_root / "data" / "index.json")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "rejected drift update")
+    git(repo_root, "push", "origin", stale_branch)
+    git(repo_root, "switch", "main")
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+
+    # the rejected row dropped out of the union: deepseek-chat drifts against
+    # the landed store and re-opens its own pr, alongside the new model
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == [
+        "deepseek-new",
+        "deepseek-chat",
+    ]
+    assert report.providers["deepseek"].skipped_pending == []
+    new_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('deepseek-new')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in new_rows] == [
+        "deepseek-legacy",
+        "deepseek-chat",
+        "deepseek-new",
+    ]
+    chat_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in chat_rows] == [
+        "deepseek-legacy",
+        "deepseek-chat",
+        "deepseek-chat",
+    ]
+    # the rejected 2026-08-25 row appears on neither branch
+    assert all(row["observed_at"] != "2026-08-25" for row in new_rows + chat_rows)
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
