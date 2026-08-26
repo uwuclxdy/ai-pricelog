@@ -135,6 +135,8 @@ def seed_store(repo_root: Path, rows: list[dict]) -> None:
 
 
 def assert_default_branch_clean(repo_root: Path, tip: str = "init") -> None:
+    # the run marker is an untracked runtime artifact, not default-branch state
+    (repo_root / pipeline.MARKER_FILE).unlink(missing_ok=True)
     assert git(repo_root, "status", "--porcelain") == ""
     assert git(repo_root, "branch", "--show-current").strip() == "main"
     assert git(repo_root, "log", "--format=%s", "-1").strip() == tip
@@ -1052,3 +1054,313 @@ def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_
         git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/announce.json")
     )
     assert branch_snapshot["deepseek"]["https://example.com/updates"]["text"] == "one"
+
+
+def seed_absence(repo_root: Path, state: dict) -> None:
+    """Commit an absence.json snapshot on the default branch (a merged-PR end state)."""
+    (repo_root / "data" / "absence.json").write_text(json.dumps(state) + "\n")
+    git(repo_root, "add", "data/absence.json")
+    git(repo_root, "commit", "-m", "land absence state")
+
+
+def branch_absence(repo_root: Path, branch: str) -> dict:
+    return json.loads(git(repo_root, "show", f"{branch}:data/absence.json"))
+
+
+def branch_rows(repo_root: Path, branch: str) -> list[dict]:
+    return [
+        json.loads(line)
+        for line in git(repo_root, "show", f"{branch}:data/history.ndjson").splitlines()
+    ]
+
+
+def deepseek_prior() -> dict:
+    return store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+
+
+def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
+    # one landed absent observation: the counter rides a sibling pr at 1, and
+    # no removal row exists anywhere yet
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    detect["zai"] = ["zai-chat"]
+    scrape["deepseek"] = {}
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg(3, "deepseek", "zai")
+    seed_store(repo_root, [deepseek_prior()])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
+    assert runner.created[0][0] == "Add zai-chat pricing for Zai"
+    zai_branch = pr.branch_name("zai-chat")
+    state = branch_absence(repo_root, zai_branch)
+    assert state == {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": TODAY}}}
+    rows = branch_rows(repo_root, zai_branch)
+    assert [row["model_id"] for row in rows] == ["deepseek-chat", "zai-chat"]
+    assert all(row.get("removed") is not True for row in rows)
+    assert (repo_root / pipeline.MARKER_FILE).exists()
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, repo_root):
+    # the second landed absent observation appends the removal row, opens its
+    # pr, and deletes the counter entry
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    detect["zai"] = ["zai-chat"]
+    scrape["deepseek"] = {}
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg(3, "deepseek", "zai")
+    seed_store(repo_root, [deepseek_prior()])
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    # the human merges the first pr: the counter at 1 lands with it
+    git(repo_root, "merge", "--no-ff", pr.branch_name("zai-chat"), "-m", "merge zai pr")
+    runner.open_prs = []
+
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+
+    deepseek_report = second.providers["deepseek"]
+    assert [model_id for model_id, _url in deepseek_report.prs] == ["deepseek-chat"]
+    assert deepseek_report.skipped_cap == []
+    assert runner.created[1][0] == "Mark deepseek-chat delisted from Deepseek"
+    removal_branch = pr.branch_name("deepseek-chat")
+    rows = branch_rows(repo_root, removal_branch)
+    assert [row["model_id"] for row in rows] == ["deepseek-chat", "zai-chat", "deepseek-chat"]
+    removal = rows[-1]
+    assert removal["removed"] is True
+    assert removal["observed_at"] == "2026-08-27"
+    assert list(removal) == ["source", "model_id", "observed_at", "removed"]
+    assert branch_absence(repo_root, removal_branch) == {}
+    assert (repo_root / pipeline.MARKER_FILE).exists()
+    assert_default_branch_clean(repo_root, tip="merge zai pr")
+
+
+def test_flaky_absent_run_without_pr_leaves_no_trace(tmp_path, fake_modules, repo_root):
+    # a run with no pr opens nothing: the counter at 1 never lands, so the
+    # next run re-derives from the committed (empty) state
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    seed_store(repo_root, [deepseek_prior()])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert report.providers["deepseek"].prs == []
+    assert not (repo_root / "data" / "absence.json").exists()
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    assert second.providers["deepseek"].prs == []
+    assert not (repo_root / "data" / "absence.json").exists()
+
+
+def test_capped_removal_pr_keeps_entry_at_two(tmp_path, fake_modules, repo_root):
+    # a removal pr that cannot open (cap) keeps its entry at 2 so the next
+    # run re-derives it; removal prs consume the cap before price prs
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(1, "deepseek")
+    prior_a = store.build_row(
+        "deepseek", "a", pricing(), "2026-08-19", "https://example.com/pricing"
+    )
+    prior_b = store.build_row(
+        "deepseek", "b", pricing(), "2026-08-19", "https://example.com/pricing"
+    )
+    seed_store(repo_root, [prior_a, prior_b])
+    seed_absence(
+        repo_root,
+        {
+            "deepseek": {
+                "a": {"absent_runs": 1, "since": "2026-08-19"},
+                "b": {"absent_runs": 1, "since": "2026-08-19"},
+            }
+        },
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["a"]
+    assert report.providers["deepseek"].skipped_cap == ["b"]
+    assert runner.created[0][0] == "Mark a delisted from Deepseek"
+    branch = pr.branch_name("a")
+    rows = branch_rows(repo_root, branch)
+    assert [row["model_id"] for row in rows] == ["a", "b", "a"]
+    assert rows[-1]["removed"] is True
+    # a's entry is gone; b's stays at 2 for the next run
+    assert branch_absence(repo_root, branch) == {
+        "deepseek": {"b": {"absent_runs": 2, "since": "2026-08-19"}}
+    }
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_reappearance_appends_fresh_row_and_clears_counter(tmp_path, fake_modules, repo_root):
+    # a removed model reappears with unchanged prices: the run appends a fresh
+    # price row anyway (clearing removed_at in the index) and deletes the entry
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    removal = store.build_removal_row("deepseek", "deepseek-chat", "2026-08-20")
+    seed_store(repo_root, [prior, removal])
+    seed_absence(
+        repo_root,
+        {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    provider_report = report.providers["deepseek"]
+    assert [model_id for model_id, _url in provider_report.prs] == ["deepseek-chat"]
+    assert runner.created[0][0] == "Update deepseek-chat pricing for Deepseek"
+    branch = pr.branch_name("deepseek-chat")
+    rows = branch_rows(repo_root, branch)
+    assert [row["model_id"] for row in rows] == ["deepseek-chat", "deepseek-chat", "deepseek-chat"]
+    assert rows[-1]["observed_at"] == TODAY
+    assert "removed" not in rows[-1]
+    assert branch_absence(repo_root, branch) == {}
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_openrouter_absence_appends_removal_row(tmp_path, fake_modules, repo_root, or_models):
+    # the patched fetch lists no models: stored openrouter ids count absent
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    model = openrouter.OpenrouterModel(
+        id="deepseek/deepseek-chat",
+        name="DeepSeek Chat",
+        input_mtok=0.27,
+        output_mtok=1.1,
+        cache_read_mtok=None,
+        pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
+    )
+    prior = openrouter.build_row(model, "2026-08-19")
+    assert prior is not None
+    seed_store(repo_root, [prior])
+    seed_absence(
+        repo_root,
+        {"openrouter": {"deepseek/deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    or_report = report.providers["openrouter"]
+    assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
+    assert runner.created[0][0] == "Mark deepseek/deepseek-chat delisted from OpenRouter"
+    branch = pr.branch_name("deepseek/deepseek-chat")
+    rows = branch_rows(repo_root, branch)
+    assert len(rows) == 2
+    assert rows[-1]["removed"] is True
+    assert rows[-1]["source"] == "openrouter"
+    assert branch_absence(repo_root, branch) == {}
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, repo_root):
+    # the newest row is already a removal: a second absent cycle must never
+    # append another removal row (one per source/model ever)
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    removal = store.build_removal_row("deepseek", "deepseek-chat", "2026-08-20")
+    seed_store(repo_root, [prior, removal])
+    seed_absence(
+        repo_root,
+        {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-21"}}},
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert report.providers["deepseek"].prs == []
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
+    # a run that opens a row pr touches the marker; a quiet run clears it
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner()
+
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+    assert (repo_root / pipeline.MARKER_FILE).exists()
+
+    runner.open_prs = [{"title": runner.created[0][0], "body": ""}]
+    detect["deepseek"] = ["deepseek-chat", "deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-legacy": pricing()}
+    pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+
+
+def test_run_changed_marker_on_announce_only_change(tmp_path, fake_modules, repo_root, monkeypatch):
+    # a state-only change (no rows) still touches the marker
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-legacy": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    change = announce_change()
+    monkeypatch.setattr(
+        pipeline.announce,
+        "fetch_channels",
+        lambda *a: announce.FetchResult((change,), announce_snapshot(), ()),
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []  # unchanged prices open no pr
+    assert (repo_root / pipeline.MARKER_FILE).exists()
