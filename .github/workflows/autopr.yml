@@ -43,7 +43,7 @@ jobs:
         continue-on-error: true
         run: |
           [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
-          npm install -g @anthropic-ai/claude-code >/dev/null
+          npm install -g @anthropic-ai/claude-code@2 >/dev/null
           {
             cat .github/claude-pass/prompt.md
             echo

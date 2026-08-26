@@ -1,12 +1,12 @@
 # claude pass: review this watchdog run
 
-you review the draft PRs this run opened, on this repo. the run log below lists them (`opened pr for <model_id>: <url>`). work the list top to bottom.
+you review the draft PRs this run opened, on this repo. the run log below lists them as `opened pr for <model_id>: <url>` (price rows) or `opened removal pr for <model_id>: <url>` (delistings). work the list top to bottom.
 
 ## your job
 
 1. for each draft PR the run opened: diff `origin/mommy` against the PR branch.
-2. check every new row in `data/history.ndjson` on the branch against its source page (the row carries `url`; a first-party row names the provider page, an openrouter row names the openrouter api). re-read the rate on the page, then compare.
-3. for the announce diff: diff `origin/mommy..<branch>` on `data/announce.json` when the log lists channel changes. answer the rubric question for each changed channel.
+2. for a price PR: check every new row in `data/history.ndjson` on the branch against its source page (the row carries `url`; a first-party row names the provider page, an openrouter row names the openrouter api). re-read the rate on the page, then compare. for a removal PR: confirm the model is absent from its source (the PR body names the source and date).
+3. for the announce diff: the log lists channel changes as `announce change: <provider> <url> <old sha8> -> <new sha8>`. for each changed channel, diff `origin/mommy..<branch>` on `data/announce.json` and answer the rubric question.
 4. post findings as PR comments: one comment per PR, findings plus your verdict. comment only on PRs this run opened.
 5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. never push to mommy.
 
