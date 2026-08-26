@@ -73,6 +73,18 @@ def test_union_preserves_base_rows_and_order():
     assert union(base, []) == base
 
 
+def test_union_keeps_removal_row_sharing_a_landed_price_key():
+    # a same-day landed price row and a pending removal row share the
+    # (source, model_id, observed_at) key; the removal must survive the dedupe
+    base = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
+    ]
+    extra = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
+    ]
+    assert union(base, extra) == base + extra
+
+
 def test_last_returns_latest_row_per_source_and_model():
     rows = [
         {"source": "a", "model_id": "m1", "observed_at": "t1"},
