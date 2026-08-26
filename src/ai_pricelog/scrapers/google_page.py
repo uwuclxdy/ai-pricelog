@@ -15,9 +15,12 @@ tokens -> divided by 1e6. a first amount directly followed by "per " is a
 per-image/per-unit rate, not a per-token one (2.5 Flash Image output reads
 $0.039 per image) -> the model has no usable output rate. cells without a
 dollar amount (Free of charge, Not available) and sections without an output
-row (embedding models) are unpriced -> None. max_tokens_in comes from a "1M
-token context window" mention in the section's description paragraphs (only
-Gemini 2.5 Flash carries one), else 0. mode is chat.
+row (embedding models) are unpriced -> None. sections without an output row
+(embedding models) price with output 0: embeddings bill input tokens only
+(the litellm convention); their input label is "Input price" or "Text input
+price". max_tokens_in comes from a "1M token context window" mention in the
+section's description paragraphs (only Gemini 2.5 Flash carries one), else 0.
+mode is chat.
 
 dedup_keys maps page spellings the store holds under a different id:
 - gemini-3.1-flash-image / gemini-3-pro-image -> the stored -preview
@@ -139,8 +142,14 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         return None
     rows = _rows(_standard_table(h2, model_id, cfg.scraper_url), model_id, cfg.scraper_url)
     input_cost = _per_token(_cell_value(rows, "Input price"))
+    if input_cost is None:
+        input_cost = _per_token(_cell_value(rows, "Text input price"))
+    if input_cost is None:
+        return None
     output_cost = _per_token(_cell_value(rows, "Output price"))
-    if input_cost is None or output_cost is None:
+    if output_cost is None and not any(label.startswith("Output price") for label in rows):
+        output_cost = 0.0
+    if output_cost is None:
         return None
     cache_read = _per_token(rows.get("Context caching price"))
     return Pricing(

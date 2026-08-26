@@ -189,9 +189,17 @@ def test_scrape_cache_not_available_is_omitted(live_page):
     assert pricing.cache_read_cost_per_token is None
 
 
-def test_scrape_embedding_has_no_output_returns_none(live_page):
-    assert scraper.scrape(cfg(), "gemini-embedding-001") is None
-    assert scraper.scrape(cfg(), "gemini-embedding-2") is None
+def test_scrape_embedding_sections_price_input_only(live_page):
+    # embeddings bill input tokens only: output rate 0 (litellm convention)
+    pricing = scraper.scrape(cfg(), "gemini-embedding-001")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.15 / 1e6)
+    assert pricing.output_cost_per_token == 0.0
+    assert pricing.cache_read_cost_per_token is None
+    pricing = scraper.scrape(cfg(), "gemini-embedding-2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.20 / 1e6)
+    assert pricing.output_cost_per_token == 0.0
 
 
 def test_scrape_free_tier_returns_none(live_page):

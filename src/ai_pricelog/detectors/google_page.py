@@ -14,8 +14,8 @@ header holds "Paid Tier, per 1M tokens in USD" and that has an input-price
 row ("Input price", "Text input price", "Image input price"). that keeps
 out imagen/veo/lyria (per image/second/request) and the tools/agents
 tables. input-only sections (gemini-embedding-2) are detected; the scraper
-returns None for them (no output row). ids are emitted as written on the
-page, page order.
+prices them with output 0 (embeddings bill input tokens only). ids are
+emitted as written on the page, page order.
 """
 
 from collections.abc import Iterator
