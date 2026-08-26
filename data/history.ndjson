@@ -1133,3 +1133,4 @@
 {"source":"zai","model_id":"glm-4.5-x","observed_at":"2026-08-26","input_mtok":2.2,"output_mtok":8.9,"cache_read_mtok":0.45,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.5-air","observed_at":"2026-08-26","input_mtok":0.2,"output_mtok":1.1,"cache_read_mtok":0.03,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.5-airx","observed_at":"2026-08-26","input_mtok":1.1,"output_mtok":4.5,"cache_read_mtok":0.22,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"moonshot","model_id":"moonshot-v1-8k","observed_at":"2026-08-26","input_mtok":0.2,"output_mtok":2.0,"url":"https://platform.kimi.ai/docs/llms.txt","max_tokens_in":8192}
