@@ -131,22 +131,24 @@ The input materials used in the original 768P generation task will be billed aga
 
 ## Music
 
-[Recharge Now](https://platform.minimax.io/user-center/payment/balance)
+<Note title="Music API Service Adjustment Notice">
+  Starting August 20, 2026, the paid APIs (Music Generation and Lyrics Generation) will no longer be available to new users; existing paying users can continue to use the current API services. The free music generation APIs (Music-3.0-free, Music-2.6-free, music-cover-free) will be discontinued.
 
-| Model             | Description                          |             Price            |
-| :---------------- | :----------------------------------- | :--------------------------: |
-| Music-3.0-free    | RPM = 3                              |             Free             |
-| Music-3.0         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
-| Music-2.6-free    | RPM = 3                              |             Free             |
-| Music-2.6         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
-| Lyrics Generation | Lyrics generation/editing            |        \$0.01/per song       |
+  To experience or use music generation capabilities, please visit [MiniMax Audio](https://www.minimax.io/audio), or use the open-source [MiniMax Music 3 model on Hugging Face](https://huggingface.co/MiniMaxAI/MiniMax-Music3).
+</Note>
+
+| Model                            | Description                          |             Price            |
+| :------------------------------- | :----------------------------------- | :--------------------------: |
+| Music-3.0 (Discontinued)         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
+| Music-2.6 (Discontinued)         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
+| Lyrics Generation (Discontinued) | Lyrics generation/editing            |        \$0.01/per song       |
 
 <Accordion title="Legacy Models">
-  | Model      | Description                                           |             Price            |
-  | :--------- | :---------------------------------------------------- | :--------------------------: |
-  | Music-2.5+ | Instrumental unlocked, break through style boundaries | \$0.15/up-to-5 minutes music |
-  | Music-2.5  | Direct the detail, define the real                    | \$0.15/up-to-5 minutes music |
-  | Music-2.0  | Enhanced musical expression                           | \$0.03/up-to-5 minutes music |
+  | Model                     | Description                                           |             Price            |
+  | :------------------------ | :---------------------------------------------------- | :--------------------------: |
+  | Music-2.5+ (Discontinued) | Instrumental unlocked, break through style boundaries | \$0.15/up-to-5 minutes music |
+  | Music-2.5 (Discontinued)  | Direct the detail, define the real                    | \$0.15/up-to-5 minutes music |
+  | Music-2.0 (Discontinued)  | Enhanced musical expression                           | \$0.03/up-to-5 minutes music |
 </Accordion>
 
 ## Image

@@ -79,6 +79,37 @@ def test_scrape_audio_model_has_no_token_pricing(minimax_cfg, feed_fixtures):
     assert minimax_scrape.scrape(minimax_cfg, "speech-2.8-turbo") is None
 
 
+def test_scrape_m3_cache_read_takes_last_amount(minimax_cfg, feed_fixtures):
+    # strikethrough original first, current price last
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M3")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == 0.06 / 1e6
+
+
+def test_scrape_m27_cache_read(minimax_cfg, feed_fixtures):
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == 0.06 / 1e6
+
+
+def test_scrape_m21_cache_read(minimax_cfg, feed_fixtures):
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.1")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == 0.03 / 1e6
+
+
+def test_scrape_table_without_cache_column_leaves_cache_unset(minimax_cfg, monkeypatch):
+    page = (
+        "| Model | Input | Output |\n"
+        "|---|---|---|\n"
+        "| **MiniMax-M3** | $0.30 / M tokens | $1.20 / M tokens |\n"
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M3")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token is None
+
+
 def test_detect_malformed_page_raises_fetch_error(minimax_cfg, monkeypatch):
     monkeypatch.setattr(minimax_detect, "fetch_text", lambda url: "no tables here")
     with pytest.raises(FetchError):

@@ -56,6 +56,12 @@
 
 ### Music
 
+<Note title="Music API Service Adjustment Notice">
+  Starting August 20, 2026, the paid APIs (Music Generation and Lyrics Generation) will no longer be available to new users; existing paying users can continue to use the current API services. The free music generation APIs (Music-3.0-free, Music-2.6-free, music-cover-free) will be discontinued.
+
+  To experience or use music generation capabilities, please visit [MiniMax Audio](https://www.minimax.io/audio), or use the open-source [MiniMax Music 3 model on Hugging Face](https://huggingface.co/MiniMaxAI/MiniMax-Music3).
+</Note>
+
 | **Models**                                     | **Description**                                | **Features**                                                                                                                   |
 | :--------------------------------------------- | :--------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | [music-3.0](/docs/api-reference/music-generation)   | • New Music Generation Capabilities            | • Intent Understood<br />• Sound Elevated<br />• Vocals Humanized                                                              |
