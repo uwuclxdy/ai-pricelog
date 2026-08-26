@@ -1,8 +1,18 @@
 """detect cohere model ids on the cohere pricing page.
 
 reads https://cohere.com/pricing (static server-rendered html, snapshot
-2026-08-24). rate-bearing content comes in two shapes, both parsed:
+2026-08-26). rate-bearing content comes in three shapes, all parsed:
 
+- the model cards: ``pricingGroups`` model entries in the page's
+  embedded next.js flight state (``__next_f`` script payloads), one card
+  per current model. the card pricings items carry USD per 1M tokens
+  ("Input"/"Output" pairs: "Command R" -> command-r at 0.15/0.60,
+  "Command R7B" -> command-r7b at 0.0375/0.15; "Embed 4" carries a
+  per-token "Cost" plus a per-image "Image cost"). a card seeds only
+  when both prices are positive dollars: cards without a pricings list
+  (North, Compass, Transcribe), free cards (Command A+, North Mini
+  Code: API-key/model-download 0/0) and one-sided cards (Rerank 4
+  Fast/Pro: Cost per 1K searches, no output rate) stay excluded.
 - the Model Vault table: a css grid whose header row is ``Model |
   Performance Tier | Hourly rate per instance | Monthly rate per
   instance``, one row per model and tier. the id is the slug of
@@ -19,15 +29,12 @@ the R+ family; a bare "+" would fail the stored id charset), then every
 non-alphanumeric run (dots kept) collapses to "-", edges trimmed
 ("Rerank 3.5 Medium" -> "rerank-3.5-medium").
 
-pricing cards without dollar rates (North, Compass, Transcribe,
-Command A+, Command R, Command R7B, Embed 4, Rerank 4 Fast/Pro,
-North Mini Code) and the Aya research-model faq answer (not a
-"pricing is" sentence) are out of scope: an id with no rates would
-re-candidate forever without ever scraping.
+the Aya research-model faq answer (not a "pricing is" sentence) is out
+of scope.
 
-ids come back in page order: model vault rows first, then faq prose.
-dated release spellings of one base id emit newest first (see
-_newest_dated_first). a page with neither shape is a parse failure
+ids come back in page order: model cards, model vault rows, then faq
+prose. dated release spellings of one base id emit newest first (see
+_newest_dated_first). a page with none of the shapes is a parse failure
 (FetchError).
 """
 
@@ -38,6 +45,11 @@ from functools import cache
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_soup
 
+_CARD_MARKER = '\\"_type\\":\\"model\\"'
+_CARD_NAME_RE = re.compile(r'\\"modelName\\":\\"([^"\\]+)\\"')
+_CARD_PRICINGS_RE = re.compile(r'\\"pricings\\":\[([^\]]*)\]')
+_CARD_INPUT_RE = re.compile(r'\\"inputLabel\\":\\"([^"\\]*)\\",\\"inputPrice\\":([^,}]+)')
+_CARD_OUTPUT_RE = re.compile(r'\\"outputLabel\\":\\"([^"\\]*)\\",\\"outputPrice\\":([^,}]+)')
 _GRID_MARKER = "grid-template-columns:repeat(4,minmax(150px,1fr))"
 _TABLE_HEADER = [
     "Model",
@@ -76,6 +88,61 @@ def _grid_cells(div) -> list[str]:
 def _dollars(text: str) -> float | None:
     match = _AMOUNT_RE.fullmatch(text)
     return float(match.group(1).replace(",", "")) if match else None
+
+
+def _card_price(value: str) -> float | None:
+    try:
+        return float(value)
+    except ValueError:
+        return None  # "null" output on one-sided cards
+
+
+def _card_model(segment: str, url: str) -> _Model | None:
+    """the per-token model for one model-card segment, or None when the card
+    carries no usable dollar rates.
+
+    a card seeds only when both prices are positive dollar amounts; a card
+    whose output rate is not a token rate ("Embed 4"'s "Image cost" is per
+    image) prices with output 0, since embedding models bill no output
+    tokens (litellm stores cohere/embed-v4.0 as 0.12/1M input, 0 output,
+    measured 2026-08-26).
+    """
+    name_match = _CARD_NAME_RE.search(segment)
+    if name_match is None:
+        raise FetchError(f"malformed model card on {url}: no modelName")
+    model_id = _slug(name_match.group(1))
+    if not _ID_PATTERN.fullmatch(model_id):
+        return None
+    pricings = _CARD_PRICINGS_RE.search(segment)
+    if pricings is None:
+        return None  # no dollar rates on the card
+    input_match = _CARD_INPUT_RE.search(pricings.group(1))
+    if input_match is None:
+        raise FetchError(f"malformed pricings on model card {model_id} on {url}")
+    output_match = _CARD_OUTPUT_RE.search(pricings.group(1))
+    if output_match is None:
+        # one-sided cards (Rerank 4 Fast/Pro: Cost per 1K searches) carry no output rate
+        return None
+    input_cost = _card_price(input_match.group(2))
+    output_cost = _card_price(output_match.group(2))
+    if input_cost is None or output_cost is None or input_cost <= 0 or output_cost <= 0:
+        return None  # free cards (0/0) carry no dollar rate pair
+    per_token_output = output_cost if output_match.group(1) == "Output" else 0.0
+    return _Model(model_id, input_cost / 1e6, per_token_output / 1e6)
+
+
+def _model_cards(soup, url: str) -> list[_Model]:
+    """model cards with per-token rates from the flight state, page order."""
+    cards: list[_Model] = []
+    for script in soup.find_all("script"):
+        text = script.string
+        if not text or "__next_f" not in text or _CARD_MARKER not in text:
+            continue
+        for segment in text.split(_CARD_MARKER)[1:]:
+            card = _card_model(segment, url)
+            if card is not None:
+                cards.append(card)
+    return cards
 
 
 def _model_vault_rows(soup, url: str) -> list[_Model]:
@@ -159,13 +226,17 @@ def _newest_dated_first(models: list[_Model]) -> list[_Model]:
 
 @cache
 def _page(url: str) -> tuple[_Model, ...]:
-    """fetch and parse both rate shapes; cached per url so the scraper reuses this parse."""
+    """fetch and parse all three rate shapes; cached per url so the scraper reuses this parse."""
     soup = fetch_soup(url)
-    return tuple(_model_vault_rows(soup, url) + _newest_dated_first(_prose_models(soup)))
+    return tuple(
+        _model_cards(soup, url)
+        + _model_vault_rows(soup, url)
+        + _newest_dated_first(_prose_models(soup))
+    )
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
-    """current model ids on the page, model vault rows then faq prose."""
+    """current model ids on the page, model cards then vault rows then faq prose."""
     models = _page(cfg.detector_url)
     if not models:
         raise FetchError(f"no priced models found on {cfg.detector_url}")

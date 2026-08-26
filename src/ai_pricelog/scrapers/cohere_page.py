@@ -1,13 +1,21 @@
 """scrape cohere per-token pricing.
 
-same page as detection. the faq prose rates are per-token dollars:
-"Command pricing is $1.00/1M tokens for input and $2.00/1M tokens for
-output" -> 1e-6 / 2e-6. the Model Vault table rates are per instance
-(hourly or monthly), never per token, so those models scrape to None
-until the page publishes token rates. neither shape carries a context
-window or max output -> max_tokens stays 0. mode is chat; cohere lists
-no cache-read rates, so cache_read_cost_per_token stays None, and there
-are no peak fields.
+same page as detection. three rate shapes:
+
+- model cards: per-token dollars from the flight state, USD per 1M
+  tokens ("Command R" -> 0.15/0.60 -> 1.5e-7 / 6e-7). a card whose
+  output rate is not a token rate ("Embed 4"'s "Image cost" is per
+  image) prices with output 0: embedding models bill no output tokens
+  (litellm stores cohere/embed-v4.0 as 0.12/1M input, 0 output,
+  measured 2026-08-26).
+- faq prose: per-token dollars ("Command pricing is $1.00/1M tokens
+  for input and $2.00/1M tokens for output" -> 1e-6 / 2e-6).
+- Model Vault table: per instance (hourly or monthly), never per token,
+  so those models scrape to None until the page publishes token rates.
+
+none of the shapes carries a context window or max output -> max_tokens
+stays 0. mode is chat; cohere lists no cache-read rates, so
+cache_read_cost_per_token stays None, and there are no peak fields.
 
 None = the model id is not on the page, or the page has no per-token
 rate for it (model vault rows). FetchError = the fetch failed or the

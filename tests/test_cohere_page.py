@@ -13,6 +13,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cohere_page"
 PAGE_URL = "https://cohere.com/pricing"
 
 EXPECTED_IDS = [
+    "command-r",
+    "command-r7b",
+    "embed-4",
     "embed-4-small",
     "embed-4-medium",
     "rerank-3.5-medium",
@@ -55,6 +58,43 @@ PROSE_SNIPPET = (
     "</ul>"
 )
 
+# the model cards as they sit in the page's __next_f flight payload: one
+# json object per card, json-escaped inside the script string
+CARD_SNIPPET = (
+    '<script>self.__next_f.push([1,"'
+    r"{\"_type\":\"pricingGroup\",\"models\":["
+    r"{\"_key\":\"a\",\"_type\":\"model\",\"modelName\":\"Command R\",\"per\":\"1M tokens\","
+    r"\"pricings\":[{\"_key\":\"p\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+    r"\"inputPrice\":0.15,\"outputLabel\":\"Output\",\"outputPrice\":0.6}]},"
+    r"{\"_key\":\"b\",\"_type\":\"model\",\"modelName\":\"Command R7B\",\"per\":\"1M tokens\","
+    r"\"pricings\":[{\"_key\":\"q\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+    r"\"inputPrice\":0.0375,\"outputLabel\":\"Output\",\"outputPrice\":0.15}]},"
+    r"{\"_key\":\"c\",\"_type\":\"model\",\"modelName\":\"Embed 4\",\"per\":\"1M tokens\","
+    r"\"pricings\":[{\"_key\":\"r\",\"_type\":\"pricing\",\"inputLabel\":\"Cost\","
+    r"\"inputPrice\":0.12,\"outputLabel\":\"Image cost\",\"outputPrice\":0.47}]}"
+    r'"]}'
+    '"]);</script>'
+)
+
+# cards whose rates are not a positive dollar pair: no pricings list, a free
+# 0/0 card, a zero-output card, and a one-sided card billing per 1K searches
+UNPRICED_CARD_SNIPPET = (
+    '<script>self.__next_f.push([1,"'
+    r"{\"_type\":\"pricingGroup\",\"models\":["
+    r"{\"_key\":\"a\",\"_type\":\"model\",\"modelName\":\"North\",\"per\":\"1M tokens\"},"
+    r"{\"_key\":\"b\",\"_type\":\"model\",\"modelName\":\"Command A+\",\"per\":\"Free\","
+    r"\"pricings\":[{\"_key\":\"p\",\"_type\":\"pricing\",\"inputLabel\":\"API key\","
+    r"\"inputPrice\":0,\"outputLabel\":\"Model download\",\"outputPrice\":0}]},"
+    r"{\"_key\":\"c\",\"_type\":\"model\",\"modelName\":\"Some Model\",\"per\":\"1M tokens\","
+    r"\"pricings\":[{\"_key\":\"q\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+    r"\"inputPrice\":0.5,\"outputLabel\":\"Output\",\"outputPrice\":0}]},"
+    r"{\"_key\":\"d\",\"_type\":\"model\",\"modelName\":\"Rerank 4 Fast\",\"per\":\"1M tokens\","
+    r"\"pricings\":[{\"_key\":\"r\",\"_type\":\"pricing\",\"inputLabel\":\"Cost\","
+    r"\"inputPrice\":2,\"outputLabel\":\"Output\",\"overridePer\":\"1K searches\"}]}"
+    r'"]}'
+    '"]);</script>'
+)
+
 
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
     return ProviderCfg(
@@ -88,24 +128,65 @@ def live_page(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_detect_lists_models_in_page_order(live_page):
-    # model vault rows first, then the faq prose; the dated Command R+
-    # releases emit newest first so the refresh pass diffs the freshest rate
+    # model cards first, then vault rows, then the faq prose; the dated
+    # Command R+ releases emit newest first so the refresh pass diffs the
+    # freshest rate
     assert cohere_page.detect(make_cfg()) == EXPECTED_IDS
 
 
 def test_detect_excludes_unpriced_content(live_page):
-    # pricing cards carry no dollar rates, and the aya research faq answer is
-    # not a "pricing is" sentence: none of them may leak into detection
+    # cards without dollar rates, free cards, one-sided per-search cards, and
+    # the aya research faq answer (not a "pricing is" sentence): none of them
+    # may leak into detection
     ids = cohere_page.detect(make_cfg())
     for excluded in (
         "north",
         "compass",
         "transcribe",
         "command-a-plus",
-        "command-r7b",
+        "north-mini-code",
+        "rerank-4-fast",
+        "rerank-4-pro",
         "aya-expanse",
     ):
         assert excluded not in ids
+
+
+def test_detect_cards_only(monkeypatch):
+    serve_html(monkeypatch, CARD_SNIPPET)
+    assert cohere_page.detect(make_cfg()) == ["command-r", "command-r7b", "embed-4"]
+
+
+def test_detect_skips_cards_without_dollar_rates(monkeypatch):
+    # cards with no pricings list, a 0/0 free card, a zero-output card, and a
+    # one-sided per-search card are not priced: no ids, and the parse failure
+    # is loud
+    serve_html(monkeypatch, UNPRICED_CARD_SNIPPET)
+    with pytest.raises(web.FetchError, match="no priced models"):
+        cohere_page.detect(make_cfg())
+
+
+def test_detect_raises_on_malformed_card(monkeypatch):
+    serve_html(
+        monkeypatch,
+        '<script>self.__next_f.push([1,"'
+        r"{\"_type\":\"model\",\"highlightModel\":false}"
+        '"]);</script>',
+    )
+    with pytest.raises(web.FetchError, match="malformed model card"):
+        cohere_page.detect(make_cfg())
+
+
+def test_detect_raises_on_malformed_card_pricings(monkeypatch):
+    serve_html(
+        monkeypatch,
+        '<script>self.__next_f.push([1,"'
+        r"{\"_type\":\"model\",\"modelName\":\"Command R\","
+        r"\"pricings\":[{\"_type\":\"pricing\",\"outputLabel\":\"Output\",\"outputPrice\":0.6}]}"
+        '"]);</script>',
+    )
+    with pytest.raises(web.FetchError, match="malformed pricings"):
+        cohere_page.detect(make_cfg())
 
 
 def test_scrape_prose_model_command(live_page):
@@ -139,10 +220,25 @@ def test_scrape_table_models_return_none(live_page):
     assert cohere_scraper.scrape(cfg, "rerank-4-pro-large") is None
 
 
+def test_scrape_card_models(live_page):
+    # the current model cards carry per-token rates, USD per 1M tokens
+    cfg = make_cfg()
+    assert cohere_scraper.scrape(cfg, "command-r") == Pricing(0.15 / 1e6, 0.6 / 1e6, "chat")
+    assert cohere_scraper.scrape(cfg, "command-r7b") == Pricing(0.0375 / 1e6, 0.15 / 1e6, "chat")
+
+
+def test_scrape_card_image_cost_is_not_output(live_page):
+    # Embed 4's "Image cost" is a per-image rate, not an output token rate:
+    # embedding models bill no output tokens, so the output price is 0
+    pricing = cohere_scraper.scrape(make_cfg(), "embed-4")
+    assert pricing == Pricing(0.12 / 1e6, 0.0, "chat")
+
+
 def test_scrape_matches_page_spelling(live_page):
     # the page spells the id "Command"; the slug-normalized id must match too
     cfg = make_cfg()
     assert cohere_scraper.scrape(cfg, "Command") == Pricing(1e-6, 2e-6, "chat")
+    assert cohere_scraper.scrape(cfg, "Command R") == Pricing(0.15 / 1e6, 0.6 / 1e6, "chat")
     assert cohere_scraper.scrape(cfg, "Embed 4 Small") is None
 
 
