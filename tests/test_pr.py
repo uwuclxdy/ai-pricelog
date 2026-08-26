@@ -295,3 +295,28 @@ def test_open_pr_uses_spec_title_and_body():
     assert cmd[cmd.index("--head") + 1] == pr.branch_name("deepseek-chat")
     assert cmd[cmd.index("--title") + 1] == s.title
     assert cmd[cmd.index("--body") + 1] == s.body
+
+
+def removal_row():
+    return {
+        "source": "deepseek",
+        "model_id": "deepseek-chat",
+        "observed_at": "2026-08-26",
+        "removed": True,
+    }
+
+
+def test_removal_spec_title_and_branch():
+    s = spec(removed=True, rows=(removal_row(),))
+    assert s.title == "Mark deepseek-chat delisted from DeepSeek"
+    assert s.branch == pr.branch_name("deepseek-chat")
+
+
+def test_removal_spec_body_lists_the_removal_without_prices():
+    body = spec(removed=True, rows=(removal_row(),)).body
+    assert "## removal" in body
+    assert "`deepseek-chat` no longer listed by DeepSeek as of 2026-08-26." in body
+    assert "## new rows" not in body
+    assert "| input (/1M)" not in body
+    assert "- [ ] model no longer listed on the source page" in body
+    assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body

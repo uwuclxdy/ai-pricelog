@@ -54,7 +54,11 @@ class PrRunner:
 
 @dataclass(frozen=True)
 class PrSpec:
-    """One price-history PR: the new rows, the branch, the title and body."""
+    """One history PR: the new rows, the branch, the title and body.
+
+    Price rows render as a price table; a removal spec renders the
+    delisting with no price columns.
+    """
 
     source: str
     model_id: str
@@ -62,6 +66,7 @@ class PrSpec:
     source_url: str
     rows: tuple[dict[str, object], ...]
     update: bool = False
+    removed: bool = False
     seed: bool = False
     run_url: str | None = None
     announce: tuple[announce.ChannelChange, ...] = ()
@@ -74,6 +79,8 @@ class PrSpec:
     def title(self) -> str:
         if self.seed:
             return "Seed price history"
+        if self.removed:
+            return f"Mark {self.model_id} delisted from {self.provider}"
         verb = "Update" if self.update else "Add"
         return f"{verb} {self.model_id} pricing for {self.provider}"
 
@@ -86,15 +93,17 @@ class PrSpec:
                 f"across {len({row['source'] for row in self.rows})} sources.",
                 "",
             ]
-        lines += [
-            "## new rows",
-            "",
-            "| source | model | observed | input (/1M) | cache read (/1M) | output (/1M) |"
-            " peak (/1M) |",
-            "|---|---|---|---|---|---|---|",
-        ]
-        for row in self.rows:
-            lines.append(self._row_line(row))
+            lines += self._rows_table()
+        elif self.removed:
+            lines += ["## removal", ""]
+            for row in self.rows:
+                lines.append(
+                    f"`{row['model_id']}` no longer listed by {self.provider} "
+                    f"as of {row['observed_at']}."
+                )
+            lines += [""]
+        else:
+            lines += self._rows_table()
         if self.source_url:
             lines += ["", f"source: {self.source_url}"]
         if self.announce:
@@ -117,6 +126,17 @@ class PrSpec:
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 
+    def _rows_table(self) -> list[str]:
+        lines = [
+            "## new rows",
+            "",
+            "| source | model | observed | input (/1M) | cache read (/1M) | output (/1M) |"
+            " peak (/1M) |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        lines.extend(self._row_line(row) for row in self.rows)
+        return lines
+
     def _row_line(self, row: dict[str, object]) -> str:
         peak = "—"
         if "peak_windows" in row:
@@ -135,6 +155,17 @@ class PrSpec:
         return f"- **opened automatically by the [GitHub Action]({link}).**"
 
     def _review_section(self) -> list[str]:
+        if self.removed:
+            return [
+                "",
+                "## review checklist",
+                "",
+                "- [ ] model no longer listed on the source page",
+                "- [ ] provider name correct",
+                "- [ ] a sibling merge conflict: concatenate both histories, dedupe"
+                " exact lines only (a key-based union drops same-day updates);"
+                " index.json heals on the next push",
+            ]
         return [
             "",
             "## review checklist",
