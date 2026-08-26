@@ -27,6 +27,12 @@ EXPECTED_IDS = [
     "glm-4-32b-0414-128k",
     "glm-4.7-flash",
     "glm-4.5-flash",
+    "glm-5v-turbo",
+    "glm-4.6v",
+    "glm-ocr",
+    "glm-4.6v-flashx",
+    "glm-4.5v",
+    "glm-4.6v-flash",
 ]
 
 
@@ -45,10 +51,11 @@ def load_soup() -> BeautifulSoup:
     return BeautifulSoup(FIXTURE.read_text(), "html.parser")
 
 
-def test_detect_text_models(monkeypatch):
+def test_detect_token_priced_models(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: load_soup())
     assert detector.detect(cfg()) == EXPECTED_IDS
-    assert "glm-5v-turbo" not in detector.detect(cfg())
+    # single-rate tables (image, video, ASR) are not per-token priced
+    assert "glm-image" not in detector.detect(cfg())
 
 
 def test_scrape_glm53(monkeypatch):
@@ -61,6 +68,15 @@ def test_scrape_glm53(monkeypatch):
     assert pricing.max_tokens == 0
 
 
+def test_scrape_vision_model(monkeypatch):
+    # the vision table shares the text table's per-token columns
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "glm-5v-turbo")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.2 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(4.0 / 1e6)
+
+
 def test_scrape_matches_row_case_insensitively(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     pricing = scraper.scrape(cfg(), "GLM-5.3")
@@ -71,6 +87,7 @@ def test_scrape_matches_row_case_insensitively(monkeypatch):
 def test_scrape_free_model_returns_none(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     assert scraper.scrape(cfg(), "glm-4.7-flash") is None
+    assert scraper.scrape(cfg(), "glm-4.6v-flash") is None
 
 
 def test_scrape_unknown_model_returns_none(monkeypatch):
@@ -86,19 +103,20 @@ def test_malformed_page_raises(monkeypatch):
             "<h2>Vision Models</h2><table><tr><td>Model</td></tr></table>", "html.parser"
         ),
     )
-    with pytest.raises(FetchError, match="text-models"):
+    with pytest.raises(FetchError, match="model pricing tables"):
         scraper.scrape(cfg(), "glm-5.3")
 
 
-def test_detect_no_text_table_raises(monkeypatch):
+def test_detect_no_token_table_raises(monkeypatch):
     monkeypatch.setattr(
         detector,
         "fetch_soup",
         lambda url: BeautifulSoup(
-            "<h2>Vision Models</h2><table><tr><td>Model</td></tr></table>", "html.parser"
+            "<h2>Image Generation Models</h2><table><tr><td>Model</td><td>Price</td></tr></table>",
+            "html.parser",
         ),
     )
-    with pytest.raises(FetchError, match="text-models"):
+    with pytest.raises(FetchError, match="model pricing tables"):
         detector.detect(cfg())
 
 
