@@ -8,7 +8,7 @@
 # docs/research/announce-channels/.
 
 [settings]
-cap = 3
+cap = 10
 
 [deepseek]
 provider = "DeepSeek"

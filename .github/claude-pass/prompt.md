@@ -1,0 +1,82 @@
+# claude pass: review this watchdog run
+
+you review the draft PRs this run opened, on this repo. the run log below lists them (`opened pr for <model_id>: <url>`). work the list top to bottom.
+
+## your job
+
+1. for each draft PR the run opened: diff `origin/mommy` against the PR branch.
+2. check every new row in `data/history.ndjson` on the branch against its source page (the row carries `url`; a first-party row names the provider page, an openrouter row names the openrouter api). re-read the rate on the page, then compare.
+3. for the announce diff: diff `origin/mommy..<branch>` on `data/announce.json` when the log lists channel changes. answer the rubric question for each changed channel.
+4. post findings as PR comments: one comment per PR, findings plus your verdict. comment only on PRs this run opened.
+5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. never push to mommy.
+
+## row schema
+
+`data/history.ndjson` is append-only, one json object per line:
+
+```json
+{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-26","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.003625,"max_tokens":1000000,"peak_windows":[["01:00Z","04:00Z"],["06:00Z","10:00Z"]],"peak_input_mtok":0.87,"peak_output_mtok":1.74,"url":"https://api-docs.deepseek.com/quick_start/pricing/"}
+```
+
+- `input_mtok` / `output_mtok` derive from per-token strings x 1e6, rounded to 6 decimals.
+- a change = any present comparable field differs from the last row for `(source, model_id)`. `observed_at`, `url`, and `name` are provenance and excluded from the diff.
+- openrouter rows add `name` and keep unconsumed pricing keys verbatim under `extra`. alias entries and dated-canonical snapshots get no row.
+- a removal row carries `{"removed": true}` and no price fields; it means the source stopped listing the model. accept it as valid.
+- `data/index.json` regenerates each run: latest row per `(source, model_id)` plus `first_seen`. a removed model keeps its last prices and gains `removed_at`.
+- `data/billing-rules.json` is human-written billing-rule semantics per provider. a channel diff that confirms a rule change should be flagged for the human to land there; you do not write it.
+
+## source urls
+
+`providers.toml` carries one section per watched provider: `detector_url` / `scraper_url` (the pages), `announce_urls` (the watched channels). openrouter rows come from `https://openrouter.ai/api/v1/models`.
+
+## domain quirks
+
+verbatim copies of `docs/domain-knowledge.md` sections, 2026-08-26. drift-checked locally by `tests/test_claude_pass_prompt.py`.
+
+### provider page facts, 2026-08-24 re-probe additions
+
+measured 2026-08-24 against the pinned pricing-page snapshots (tests/fixtures/<provider>_page/pricing.html) and live target ymls.
+
+- together: stale HF-style ids. our page ids are lowercase-hyphen slugs from the two `Model | Input | output` tables (chat + vision, merged by slug, first table wins); the batch toggle carries no static rates. cached column -> cache_read. dedup: `llama-3.3-70b` -> `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `llama-3-8b-instruct-lite` -> `meta-llama/Meta-Llama-3-8B-Instruct-Lite` (same endpoints, together's api strings). openrouter lists no `together/` prefix.
+- novita: stale; ids come from the page's own card hrefs resolved through the embedded next.js flight state to canonical api ids (`deepseek/deepseek-v4-pro-0813`, `zai-org/glm-5.2`). rates from span title attrs, cache-read from the `data-pricing-key="cache-read"` wrapper, context -> max_tokens. tiered/omnimodal cards -> None. dedup: `deepseek/deepseek-r1-0528` -> `deepseek/deepseek-r1`, `deepseek/deepseek-v3-0324` -> `deepseek/deepseek_v3` (underscore spelling). no openrouter `novita/` prefix.
+- cohere: the page mixes prose rates ("Command pricing is $1.00/1M tokens for input and $2.00/1M tokens for output") with a per-instance model-vault table whose cells are not per-token (-> None). the current model cards (Command R 0.15/0.60, R7B 0.0375/0.15, Embed 4 0.12/1M with output 0) live only in the embedded `__next_f` flight payload, not the rendered html; rerank cards bill per 1K searches and stay excluded. slug rule: lowercase, `+` -> `plus`, non-alphanumeric runs collapse, dots kept (`rerank-3.5-medium`). pricing cards without dollar rates are excluded from detection. dated releases emit newest first. dedup: `command-r-03-2024` -> `command-r`, `command-r-plus-04-2024`/`-08-2024` -> `command-r-plus`. openrouter prefix `cohere/` (5 models).
+- google: section-per-model h2s in the pricing docs; canonical id from the heading's em slug (h2 id only as fallback, gemma-4). standard tier only; the first dollar amount in the paid column is the base rate, which handles promo cells ("$0.75 through ..., $1.50 starting ..."), tiered cells (<=200k first), and cache cells (read rate before the storage price). per-image output cells -> None; embedding rows without output -> None. dedup: `gemini-3.1-flash-image` -> `gemini-3.1-flash-image-preview`, `gemini-3-pro-image` -> `gemini-3-pro-image-preview`, the dated native-audio/lite preview spellings -> `gemini-live-2.5-flash` / `gemini-2.5-flash-lite`. openrouter prefix `google/` (41 models).
+- avian: 4 stale HF entries, no page overlap. card grid `#avModelGrid` only; slug lowercase-hyphen, dots kept (`mimo-v2.5-small`); context K/M -> max_tokens (page abbreviation, human reconciles); cache per card; the Dedicated Deployments block is excluded. no openrouter `avian/` prefix.
+
+### deepseek page move
+
+measured 2026-08-26: the slash-less pricing url serves a ~46KB JS shell, but the trailing-slash form `https://api-docs.deepseek.com/quick_start/pricing/` serves the static docusaurus html (23KB) with the full MODEL table, USD prices, and the peak footnote. the config urls carry the trailing slash; the slash-less path must not come back (the js shell carries no table markers). the footnote gained a "Monday through Friday" clause, which the scraper's non-end-anchored pattern tolerates. no `.md` twin, llms.txt, or public docs source repo exists; the zh-cn twin is CNY-only.
+
+### deepseek peak schedule
+
+the live pricing page (2026-08-19) carries v4 peak/off-peak subrows plus the footnote "Off-peak rates are half of the peak rates. Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC (all other hours are off-peak)". the scraper parses the split schedule into peak windows + peak rates; rows store it as flat `peak_*` fields.
+
+billing-rule change, effective 2026-08-23 00:00 beijing time (deepseek team email to cloudy, received 2026-08-22): weekdays (monday-friday, beijing time) keep the peak/off-peak split; weekends (saturday-sunday, beijing time) bill uniformly at the off-peak rate. the stored `peak_windows` are pure clock windows in UTC and cannot express this: consumers pricing weekend deepseek calls from the `peak_*` fields overcharge.
+
+### announce channels
+
+billing-rule announcement surfaces per provider, watched every run via `providers.toml` `announce_urls`. OBSERVED 2026-08-26 against the live pages (full probe evidence in `docs/research/announce-channels/`).
+
+- deepseek: `/updates/` is the live static changelog (the 2026-08-13 entry carries the "API Pricing Adjustment" peak/off-peak section). `/news` is a JS shell, individual `/news/news*` pages are static, and `sitemap.xml` lists them, so a new news page surfaces there first. no rss anywhere on api-docs.deepseek.com.
+- zai: release notes (`new-released.md`) carry model launches only; billing-class changes land on the devpack plan notice pages (`usage-revision`, `transition`) and the pricing page (in-place edits). `llms.txt` enumerates the docs, so a new notice page surfaces there.
+- moonshot: the only official changelog (`platform-changelog.md`) is stale (newest entry 2025-04-07); post-2025 announcements have no docs-side dated surface. `llms.txt` + the sitemap enumerate the whole docs tree.
+- minimax: models release notes are current but carry no pricing class; launch pricing appears inside blog posts on the blog index (no rss). no surface observed announcing a rate change.
+- xai: `/developers/release-notes` demonstrably carries the class (per-entry prices, a 50% agent-tool price-drop entry); `x.ai/news` is the static news index (no rss).
+- mistral: `resources/changelogs` carries price-reduction and free-tier entries (keys are day+month, no year labels); `mistral.ai/news/rss` is the live blog feed.
+- perplexity: docs changelog with a `.md` twin; entry labels are month-granularity only; no rss.
+- together: docs changelog with a `.md` twin (pricing-update entries Apr-Jun 2026); `blog/rss.xml` is marketing and launches, a change-detection complement only.
+- novita: no stable titled changelog index: `/docs/changelog` 307-redirects to the newest entry, whose sidebar links every entry.
+- cohere: `docs.cohere.com/changelog` page 1 is the feed (no working rss); deprecation/retirement entries are the highest-signal class.
+- google: the gemini-api changelog carries intro-price windows, deprecations, and free-tier notes; fetch with `?hl=en` pinned (a locale-less fetch returned Japanese from one vantage). the developers.googleblog feed spans all dev products (label feeds 404).
+- avian: no watchable surface: homepage banners only, x/linkedin gated. it carries no `announce_urls`; the pricing pages stay the only diffable artifact.
+
+## rubric question
+
+for each changed announce channel, answer: does this change billing semantics (rates, tiers, when-rates-apply, free-tier status)? name the semantics changed and cite the prose.
+
+## output contract
+
+- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`).
+- no PR comments when you find nothing: say so in your final message only.
+- never comment on PRs the run did not open. never push to mommy. never delete branches.
+- your final message summarizes findings per PR; the PR comments are the durable record.

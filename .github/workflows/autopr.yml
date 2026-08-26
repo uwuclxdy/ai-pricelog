@@ -1,13 +1,17 @@
-# watchdog run: watch provider pages and the openrouter api, append observed
-# price rows to data/history.ndjson, open one draft pr per change in this
-# repo. GH_TOKEN = PAT with repo scope (repo secret); falls back to
-# GITHUB_TOKEN.
+# the one scheduled workflow: every 6h the watchdog runs (watch provider pages
+# and the openrouter api, append observed rows, open draft PRs), followed by a
+# claude code review pass when the run changed something; weekly (monday 05:17
+# utc) a live smoke probe checks the moonshot .md endpoints. push/PR gates stay
+# in ci.yml + reindex.yml. GH_TOKEN = PAT with repo scope (repo secret); falls
+# back to GITHUB_TOKEN. the claude pass reads ANTHROPIC_API_KEY and optional
+# ANTHROPIC_BASE_URL / ANTHROPIC_MODEL overrides from repo secrets.
 
 name: autopr
 
 on:
   schedule:
-    - cron: "17 5 * * *" # daily 05:17 utc
+    - cron: "0 */6 * * *" # every 6h
+    - cron: "17 5 * * 1" # weekly monday 05:17 utc
   workflow_dispatch:
 
 permissions:
@@ -17,7 +21,49 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      - name: run watchdog
+        run: set -o pipefail; uv run ai-pricelog 2>&1 | tee /tmp/run.log
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: claude review pass
+        continue-on-error: true
+        run: |
+          [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
+          npm install -g @anthropic-ai/claude-code >/dev/null
+          {
+            cat .github/claude-pass/prompt.md
+            echo
+            echo "## this run's pipeline log"
+            cat /tmp/run.log
+          } > /tmp/prompt.md
+          export ANTHROPIC_API_KEY
+          [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
+          [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
+          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.schedule == '17 5 * * 1' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
@@ -28,7 +74,5 @@ jobs:
       - name: uv sync
         run: uv sync --frozen
 
-      - name: run watchdog
-        run: uv run ai-pricelog
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: run moonshot smoke probe
+        run: uv run ai-pricelog-smoke
