@@ -12,6 +12,16 @@
         "https://eu.36kr.com/en/p/3951308056099972",
         "deepseek team email to the maintainer, received 2026-08-22"
       ]
+    },
+    {
+      "id": "zai-glm-5.3-flash-promo",
+      "provider": "zai",
+      "effective": "2026-08-26",
+      "timezone": "Asia/Singapore",
+      "statement": "GLM-5.3-Flash bills at a 50% discount on its list prices until 2026-09-09 24:00 (UTC+8): input $0.075, cached input $0.015, output $0.25 per 1M tokens; the struck-through figures ($0.15 / $0.03 / $0.50) are list prices",
+      "citation": [
+        "https://docs.z.ai/guides/overview/pricing"
+      ]
     }
   ]
 }

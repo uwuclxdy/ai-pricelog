@@ -34,7 +34,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 1
+    assert len(rules) == 2
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -42,6 +42,10 @@ def test_committed_billing_rules_pass_schema():
     assert rule["timezone"] == "Asia/Shanghai"
     assert "weekend" in rule["statement"].lower()
     assert len(rule["citation"]) == 4
+    promo = rules[1]
+    assert promo["id"] == "zai-glm-5.3-flash-promo"
+    assert promo["provider"] == "zai"
+    assert promo["timezone"] == "Asia/Singapore"
 
 
 @pytest.mark.parametrize(
