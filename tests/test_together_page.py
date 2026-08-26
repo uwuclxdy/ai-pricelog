@@ -178,10 +178,23 @@ def test_scrape_chat_row_wins_over_vision_row(monkeypatch):
     assert pricing.cache_read_cost_per_token == 0.30 / 1e6
 
 
-def test_scrape_free_model_returns_none(monkeypatch):
-    # Ternary Bonsai 27B lists $0.00/$0.00: no usable rates, never a candidate
+def test_scrape_ternary_bonsai_prices_as_zero(monkeypatch):
+    # Ternary Bonsai 27B lists $0.00/$0.00: a real price of zero, never None
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
-    assert scraper.scrape(cfg(), "ternary-bonsai-27b") is None
+    pricing = scraper.scrape(cfg(), "ternary-bonsai-27b")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
+    assert pricing.cache_read_cost_per_token is None
+
+
+def test_scrape_llama_3_8b_instruct_lite(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "llama-3-8b-instruct-lite")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.14 / 1e6
+    assert pricing.output_cost_per_token == 0.14 / 1e6
+    assert pricing.cache_read_cost_per_token is None
 
 
 def test_scrape_unknown_model_returns_none(monkeypatch):
@@ -208,13 +221,16 @@ def test_scrape_unpriced_row_returns_none(monkeypatch):
     assert scraper.scrape(cfg(), "kimi-k3") is None
 
 
-def test_scrape_zero_prices_return_none(monkeypatch):
+def test_scrape_zero_prices_price_as_zero(monkeypatch):
     monkeypatch.setattr(
         scraper,
         "fetch_soup",
         lambda url: synthetic_soup(("Free Model", "$0.00", "$0.00")),
     )
-    assert scraper.scrape(cfg(), "free-model") is None
+    pricing = scraper.scrape(cfg(), "free-model")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
 
 
 def test_scrape_malformed_row_raises(monkeypatch):

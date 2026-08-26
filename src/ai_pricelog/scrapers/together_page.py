@@ -4,8 +4,9 @@ same per-token tables as detection. row shape: model | input | cached |
 output, the cached amount sitting inside the input cell after the standard
 amount ("$0.30 $0.06 (cached)"): first $ amount -> input_cost, second ->
 cache_read, both USD per 1M tokens -> /1e6. the page carries no context
-windows in these tables, so max_tokens stays 0. zero or missing amounts
-(free models) -> None.
+windows in these tables, so max_tokens stays 0. a row without dollar
+amounts -> None; $0.00 prices as 0.0, since first-party rows may carry it
+as a real price.
 
 dedup_keys maps page spellings to the stale HF-style ids the store
 holds (measured 2026-08-24): the page spells "Llama 3.3 70B" (href
@@ -67,8 +68,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             if not input_amounts or not output_amounts:
                 return None
             input_cost, output_cost = input_amounts[0], output_amounts[0]
-            if input_cost <= 0 or output_cost <= 0:
-                return None
             cached = input_amounts[1] if len(input_amounts) > 1 else None
             cache_read = cached / 1e6 if cached is not None and cached > 0 else None
             return Pricing(
