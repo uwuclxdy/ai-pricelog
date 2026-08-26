@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import pr
+from ai_pricelog import announce, pr
 from conftest import FakeRunner
 
 
@@ -96,6 +96,20 @@ def test_spec_body_peak_row():
     }
     body = spec(model_id="deepseek-v4-flash", rows=(row,)).body
     assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
+
+
+def test_spec_body_announcement_channels():
+    change = announce.ChannelChange(
+        "deepseek", "https://example.com/updates", "a" * 64, "b" * 64, "old prose", "new prose"
+    )
+    body = spec(announce=(change,)).body
+    assert "## announcement channels" in body
+    assert "| deepseek | https://example.com/updates | `aaaaaaaa` -> `bbbbbbbb` |" in body
+    assert "full old/new prose: the `data/announce.json` diff on this branch" in body
+
+
+def test_spec_body_without_announce_has_no_channel_section():
+    assert "## announcement channels" not in spec().body
 
 
 def test_spec_body_review_checklist():

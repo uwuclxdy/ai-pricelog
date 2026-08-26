@@ -1,5 +1,7 @@
 """git/gh plumbing for the pipeline: runners, specs, branch names, pending scans."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 import logging
@@ -10,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import store
+from ai_pricelog import announce, store
 
 log = logging.getLogger(__name__)
 
@@ -62,6 +64,7 @@ class PrSpec:
     update: bool = False
     seed: bool = False
     run_url: str | None = None
+    announce: tuple[announce.ChannelChange, ...] = ()
 
     @property
     def branch(self) -> str:
@@ -94,6 +97,23 @@ class PrSpec:
             lines.append(self._row_line(row))
         if self.source_url:
             lines += ["", f"source: {self.source_url}"]
+        if self.announce:
+            lines += [
+                "",
+                "## announcement channels",
+                "",
+                "| provider | channel | change |",
+                "|---|---|---|",
+            ]
+            for change in self.announce:
+                lines.append(
+                    f"| {change.provider} | {change.url} | "
+                    f"`{change.old_sha256[:8]}` -> `{change.new_sha256[:8]}` |"
+                )
+            lines += [
+                "",
+                "full old/new prose: the `data/announce.json` diff on this branch",
+            ]
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 

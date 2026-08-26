@@ -25,7 +25,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from ai_pricelog import config, openrouter, pr, store, validate
+from ai_pricelog import announce, config, openrouter, pr, store, validate
 from ai_pricelog.state import ProviderState, State, append_unique
 from ai_pricelog.state import load as load_state
 from ai_pricelog.state import new_ids as state_new_ids
@@ -53,6 +53,8 @@ class ProviderReport:
 @dataclass
 class RunReport:
     providers: dict[str, ProviderReport] = field(default_factory=dict)
+    announce: list[announce.ChannelChange] = field(default_factory=list)
+    announce_errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -97,6 +99,15 @@ def run(
         return report
 
     rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_FILE, open_prs))
+
+    snapshot = announce.load_snapshot(repo_root / announce.ANNOUNCE_FILE)
+    fetch = announce.fetch_channels(cfg, snapshot, today)
+    report.announce = list(fetch.changes)
+    report.announce_errors = list(fetch.errors)
+    # the fresh snapshot rides the next pr branch (skip-and-retry): with no pr
+    # opened it stays uncommitted, the changes re-surface, and the snapshot
+    # settles only under a human-reviewed pr
+    announce_updates = fetch.snapshot if announce.differs(snapshot, fetch.snapshot) else None
 
     plan: dict[tuple[str, str], _PrGroup] = {}
 
@@ -145,6 +156,7 @@ def run(
             rows=tuple(run_rows),
             seed=True,
             run_url=run_url,
+            announce=fetch.changes,
         )
         url = _open_group_pr(
             repo_root,
@@ -157,6 +169,7 @@ def run(
             updated_state,
             "feat: seed price history",
             runner,
+            announce_updates,
         )
         if url is None:
             for group in plan.values():
@@ -180,6 +193,7 @@ def run(
             rows=tuple(group.rows),
             update=group.update,
             run_url=run_url,
+            announce=fetch.changes,
         )
         # rows and seen-state land only under the pr that reviews them, so a
         # capped-out or failed group settles nothing and re-candidates next run
@@ -198,6 +212,7 @@ def run(
             group_state,
             f"feat: {verb} {group.model_id} price history",
             runner,
+            announce_updates,
         )
         if url is None:
             _record_error(report, group.source, f"pr open failed for {group.model_id}")
@@ -384,13 +399,14 @@ def _open_group_pr(
     updated_state: State,
     message: str,
     runner: pr.PrRunner,
+    announce_updates: dict[str, dict[str, dict[str, str]]] | None = None,
 ) -> str | None:
     """Write the PR branch, push it, open the draft, restore the tree.
 
-    The branch carries the landed store plus only the rows its own PR covers.
-    The default branch is never committed or pushed, and the tree is restored
-    to the pre-run head after every PR, so each branch starts from the same
-    base.
+    The branch carries the landed store plus only the rows its own PR covers,
+    plus the fresh announce snapshot when the channels changed this run. The
+    default branch is never committed or pushed, and the tree is restored to
+    the pre-run head after every PR, so each branch starts from the same base.
     """
     branch = spec.branch
     history_path = repo_root / HISTORY_FILE
@@ -404,6 +420,9 @@ def _open_group_pr(
         if updated_state is not state:
             save_state(updated_state, state_path)
             add_cmd.append(STATE_FILE)
+        if announce_updates is not None:
+            announce.save_snapshot(announce_updates, repo_root / announce.ANNOUNCE_FILE)
+            add_cmd.append(announce.ANNOUNCE_FILE)
         runner.run(add_cmd, cwd=repo_root)
         runner.run(["git", "commit", "-m", message], cwd=repo_root)
     except pr.PrError:

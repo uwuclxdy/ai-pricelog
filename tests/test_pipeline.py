@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import config, openrouter, pipeline, pr, store
+from ai_pricelog import announce, config, openrouter, pipeline, pr, store
 from ai_pricelog.pricing import Pricing
 from conftest import git, git_init_repo, register_fake_module
 
@@ -15,7 +15,9 @@ def pricing(input_cost: float = 2.7e-07, output_cost: float = 1.1e-06) -> Pricin
     return Pricing(input_cost, output_cost, "chat", 65536)
 
 
-def make_provider_cfg(key: str, provider: str | None = None) -> config.ProviderCfg:
+def make_provider_cfg(
+    key: str, provider: str | None = None, announce_urls: tuple[str, ...] = ()
+) -> config.ProviderCfg:
     return config.ProviderCfg(
         key=key,
         provider=provider or key.title(),
@@ -23,6 +25,7 @@ def make_provider_cfg(key: str, provider: str | None = None) -> config.ProviderC
         detector_url="https://example.com/models",
         scraper="fake_scr",
         scraper_url="https://example.com/pricing",
+        announce_urls=announce_urls,
     )
 
 
@@ -908,3 +911,150 @@ def test_open_pr_list_fetched_once_per_run(tmp_path, fake_modules, repo_root):
     assert report.providers["deepseek"].skipped_pending == ["deepseek-a"]
     assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-b"]
     assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def announce_change(provider: str = "deepseek", url: str = "https://example.com/updates"):
+    return announce.ChannelChange(provider, url, "a" * 64, "b" * 64, "old prose", "new prose")
+
+
+def announce_snapshot():
+    return {
+        "deepseek": {
+            "https://example.com/updates": {
+                "text": "new prose",
+                "sha256": "b" * 64,
+                "fetched": TODAY,
+            }
+        }
+    }
+
+
+def test_announce_change_rides_the_pr_branch_and_body(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    change = announce_change()
+    snapshot = announce_snapshot()
+    monkeypatch.setattr(
+        pipeline.announce,
+        "fetch_channels",
+        lambda *a: announce.FetchResult((change,), snapshot, ()),
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.announce == [change]
+    assert report.announce_errors == []
+    (_title, body) = runner.created[0]
+    assert "## announcement channels" in body
+    assert "| deepseek | https://example.com/updates | `aaaaaaaa` -> `bbbbbbbb` |" in body
+    branch_snapshot = json.loads(
+        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/announce.json")
+    )
+    assert branch_snapshot == snapshot
+    # the snapshot settled on the branch only; the default branch keeps none
+    assert not (repo_root / "data" / "announce.json").exists()
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_announce_change_without_pr_stays_stale(tmp_path, fake_modules, repo_root, monkeypatch):
+    # no rows changed: the run opens no pr, so nothing commits the snapshot
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    change = announce_change()
+    monkeypatch.setattr(
+        pipeline.announce,
+        "fetch_channels",
+        lambda *a: announce.FetchResult((change,), announce_snapshot(), ()),
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.announce == [change]
+    assert runner.pr_urls == []
+    assert not (repo_root / "data" / "announce.json").exists()
+    assert_default_branch_clean(repo_root)
+
+    # nothing settled the change, so it re-surfaces next run (skip-and-retry)
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    assert second.announce == [change]
+    assert runner.pr_urls == []
+
+
+def test_announce_fetch_error_does_not_block_rows(tmp_path, fake_modules, repo_root, monkeypatch):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    monkeypatch.setattr(
+        pipeline.announce,
+        "fetch_channels",
+        lambda *a: announce.FetchResult((), {}, ("deepseek https://x: FetchError: boom",)),
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.announce_errors == ["deepseek https://x: FetchError: boom"]
+    assert report.announce == []
+    assert report.providers["deepseek"].errors == []
+    assert len(runner.pr_urls) == 1
+    (_title, body) = runner.created[0]
+    assert "## announcement channels" not in body
+
+
+def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_root, monkeypatch):
+    # the real fetch_channels over a patched network: the configured url is
+    # fetched, and the first-fetch baseline rides the branch for later diffs
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    pcfg = make_provider_cfg("deepseek", announce_urls=("https://example.com/updates",))
+    cfg = config.Config(providers=(pcfg,), cap=3)
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    fetched: list[str] = []
+    monkeypatch.setattr(
+        announce.web,
+        "fetch_text",
+        lambda url: fetched.append(url) or "<html><body>one</body></html>",
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert fetched == ["https://example.com/updates"]
+    assert report.announce == []
+    branch_snapshot = json.loads(
+        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/announce.json")
+    )
+    assert branch_snapshot["deepseek"]["https://example.com/updates"]["text"] == "one"
