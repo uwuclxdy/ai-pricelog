@@ -31,7 +31,7 @@ you review the draft PRs this run opened, on this repo. the run log below lists 
 
 ## domain quirks
 
-verbatim copies of `docs/domain-knowledge.md` sections, 2026-08-26. drift-checked locally by `tests/test_claude_pass_prompt.py`.
+verbatim copies of the domain-knowledge quirks sections, 2026-08-26. drift-checked locally by `tests/test_claude_pass_prompt.py`.
 
 ### provider page facts, 2026-08-24 re-probe additions
 
