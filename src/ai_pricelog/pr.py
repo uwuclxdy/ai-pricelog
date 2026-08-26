@@ -112,10 +112,7 @@ class PrSpec:
 
     def _disclaimer(self) -> str:
         link = self.run_url or f"{AUTOPR_REPO}/actions"
-        return (
-            f"- **opened automatically by the [GitHub Action]({link}) from {AUTOPR_REPO}.** "
-            "i read replies and will review the prices before marking it ready."
-        )
+        return f"- **opened automatically by the [GitHub Action]({link}).**"
 
     def _review_section(self) -> list[str]:
         return [
