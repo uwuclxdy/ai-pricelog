@@ -93,6 +93,18 @@ def test_changed_detects_value_and_added_field_differences():
     assert changed(row, prev) is True
 
 
+def test_changed_ignores_url_only_difference():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "url": "v2"}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0, "url": "v1"}
+    assert changed(row, prev) is False
+
+
+def test_changed_ignores_name_only_difference():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "name": "n2"}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
+    assert changed(row, prev) is False
+
+
 def test_changed_detects_dropped_field():
     row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
     prev = {
@@ -226,3 +238,52 @@ def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
     assert list(m1) == ["source", "model_id", "observed_at", "input_mtok", "url", "first_seen"]
     assert sources["a"]["m2"]["first_seen"] == "2026-08-21"
     assert sources["z"]["m1"]["first_seen"] == "2026-08-20"
+
+
+def test_write_index_picks_max_observed_at_not_last_row(tmp_path):
+    rows = [
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "input_mtok": 5.0,
+            "url": "new",
+        },
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-19",
+            "input_mtok": 4.0,
+            "url": "old",
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["input_mtok"] == 5.0
+    assert entry["observed_at"] == "2026-08-23"
+    assert entry["first_seen"] == "2026-08-19"
+
+
+def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):
+    rows = [
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "input_mtok": 4.0,
+            "url": "first",
+        },
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "input_mtok": 5.0,
+            "url": "second",
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["input_mtok"] == 5.0
+    assert entry["url"] == "second"

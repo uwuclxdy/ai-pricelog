@@ -66,11 +66,16 @@ def last(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str,
     return None
 
 
+# provenance fields describe where a row came from, never what it costs; a
+# difference in them alone is not an observed price change
+_PROVENANCE_FIELDS = frozenset({"observed_at", "url", "name"})
+
+
 def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
     if last_row is None:
         return True
-    return {k: v for k, v in row.items() if k != "observed_at"} != {
-        k: v for k, v in last_row.items() if k != "observed_at"
+    return {k: v for k, v in row.items() if k not in _PROVENANCE_FIELDS} != {
+        k: v for k, v in last_row.items() if k not in _PROVENANCE_FIELDS
     }
 
 
@@ -84,7 +89,10 @@ def write_index(rows: list[dict[str, object]], path: Path) -> None:
         # older timestamp later; keep the earliest seen rather than the first
         if key not in first_seen or observed_at < first_seen[key]:
             first_seen[key] = observed_at
-        latest[key] = row
+        # pick the newest observed_at; ties resolve to the later row in the
+        # file, so the index never depends on the file's global sort
+        if key not in latest or observed_at >= latest[key]["observed_at"]:
+            latest[key] = row
     sources: dict[str, dict[str, dict[str, object]]] = {}
     for (source, model_id), row in sorted(latest.items()):
         entry = dict(row)
