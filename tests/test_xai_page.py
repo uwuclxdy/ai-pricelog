@@ -112,9 +112,14 @@ def test_detect_extracts_blob_from_html(snippet):
 
 def test_scrape_exact_prices(live_blob):
     cfg = make_cfg()
-    assert xai_scraper.scrape(cfg, "grok-4.5") == Pricing(2e-6, 6e-6, "chat", 0)
-    assert xai_scraper.scrape(cfg, "grok-4.3") == Pricing(1.25e-6, 2.5e-6, "chat", 0)
-    assert xai_scraper.scrape(cfg, "grok-build-0.1") == Pricing(1e-6, 2e-6, "chat", 0)
+    assert xai_scraper.scrape(cfg, "grok-4.5") == Pricing(2e-6, 6e-6, "chat", 500000, 0.3 / 1e6)
+    assert xai_scraper.scrape(cfg, "grok-4.6") == Pricing(2e-6, 6e-6, "chat", 500000, 0.5 / 1e6)
+    assert xai_scraper.scrape(cfg, "grok-4.3") == Pricing(
+        1.25e-6, 2.5e-6, "chat", 1000000, 0.2 / 1e6
+    )
+    assert xai_scraper.scrape(cfg, "grok-build-0.1") == Pricing(
+        1e-6, 2e-6, "chat", 256000, 0.2 / 1e6
+    )
 
 
 def test_dedup_keys_dated_snapshots():
@@ -146,8 +151,10 @@ def test_scrape_unpriced_entries_return_none(snippet):
     assert xai_scraper.scrape(cfg, "grok-imagine-mini") is None
 
 
-def test_scrape_max_output_tokens(snippet):
-    assert xai_scraper.scrape(make_cfg(), "grok-test") == Pricing(2e-6, 6e-6, "chat", 131072)
+def test_scrape_context_and_cache_read(snippet):
+    assert xai_scraper.scrape(make_cfg(), "grok-test") == Pricing(
+        2e-6, 6e-6, "chat", 500000, 0.3 / 1e6
+    )
 
 
 def test_blob_parsed_once_per_url(monkeypatch):
