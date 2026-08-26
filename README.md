@@ -16,13 +16,19 @@ one repo holds two files:
 
 | file | contents |
 |---|---|
-| `data/history.ndjson` | one dated row per observed price change, appended forever |
+| `data/history.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever |
 | `data/index.json` | the current price of every watched model, generated from the history |
 
 a row:
 
 ```json
 {"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-26","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.0036,"max_tokens":1000000,"peak_windows":[["01:00Z","04:00Z"],["06:00Z","10:00Z"]],"peak_input_mtok":0.87,"peak_output_mtok":1.74,"url":"https://api-docs.deepseek.com/quick_start/pricing"}
+```
+
+a removal row (one per source/model ever; the index stamps the entry `removed_at` until the model reappears):
+
+```json
+{"source":"deepseek","model_id":"deepseek-legacy","observed_at":"2026-08-26","removed":true}
 ```
 
 git history is the changelog. every price a model ever had stays in the history file.
@@ -35,6 +41,7 @@ git history is the changelog. every price a model ever had stays in the history 
 | diff | new ids vs the git-backed state file + the store |
 | scrape | input/output price per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
 | store | a row appends only when the price differs from the last stored row for that model |
+| delist | a stored model absent from its source twice, both observations merged, gets a removal row and a `Mark ... delisted` draft PR |
 | pr | one draft PR per changed model, max 3 open drafts per run; nothing merges without a human reading the prices |
 
 the openrouter source stores the full keyless model list the same way. the first run with an empty store opens one seed PR with the full snapshot.
