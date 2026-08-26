@@ -355,7 +355,7 @@
 {"source":"openrouter","model_id":"google/gemini-2.5-flash-image","observed_at":"2026-01-17","input_mtok":0.3,"output_mtok":2.5,"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=google/gemini-2.5-flash-image&shape=v4&range=all","cache_read_mtok":0.03}
 {"source":"openrouter","model_id":"openai/gpt-audio","observed_at":"2026-01-19","input_mtok":2.5,"output_mtok":10.0,"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=openai/gpt-audio&shape=v4&range=all"}
 {"source":"openrouter","model_id":"openai/gpt-audio-mini","observed_at":"2026-01-19","input_mtok":0.6,"output_mtok":2.4,"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=openai/gpt-audio-mini&shape=v4&range=all"}
-{"source":"zai","model_id":"glm-4.7-flash","observed_at":"2026-01-19","input_mtok":0.0,"output_mtok":0.0,"url":"https://docs.z.ai/release-notes/new-released"}
+{"source":"zai","model_id":"glm-4.7-flash","observed_at":"2026-01-19","input_mtok":0.0,"output_mtok":0.0,"url":"https://www.zhipuai.cn/zh/news/148"}
 {"source":"novita","model_id":"zai-org/glm-4.7-flash","observed_at":"2026-01-23","input_mtok":0.07,"output_mtok":0.4,"cache_read_mtok":0.01,"url":"https://blogs.novita.ai/access-glm-4-7-flash/"}
 {"source":"openrouter","model_id":"deepseek/deepseek-chat-v3-0324","observed_at":"2026-01-25","input_mtok":0.25,"output_mtok":1.0,"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=deepseek/deepseek-chat-v3-0324&shape=v4&range=all"}
 {"source":"openrouter","model_id":"deepseek/deepseek-r1","observed_at":"2026-01-25","input_mtok":0.7,"output_mtok":2.5,"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=deepseek/deepseek-r1&shape=v4&range=all"}
