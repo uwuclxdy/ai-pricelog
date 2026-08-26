@@ -83,6 +83,7 @@ def test_scrape_k3(monkeypatch):
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)  # cache miss, not hit
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.30 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(15.00 / 1e6)
     assert pricing.mode == "chat"
     assert pricing.max_tokens == 1_048_576
@@ -93,17 +94,27 @@ def test_scrape_highspeed_via_family_prefix(monkeypatch):
     pricing = scraper.scrape(cfg(), "kimi-k2.7-code-highspeed")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(1.90 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.38 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(8.00 / 1e6)
     assert pricing.max_tokens == 262_144
 
 
+def test_scrape_k27_code_cache_read(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k27-code"))
+    pricing = scraper.scrape(cfg(), "kimi-k2.7-code")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.19 / 1e6)
+
+
 def test_scrape_v1_plain_input_column(monkeypatch):
+    # the v1 page has no cache-hit column, so cache-read stays unset
     monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-v1"))
     pricing = scraper.scrape(cfg(), "moonshot-v1-8k")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.20 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(2.00 / 1e6)
     assert pricing.max_tokens == 8192
+    assert pricing.cache_read_cost_per_token is None
 
 
 def test_scrape_index_fetched_once(monkeypatch):
@@ -137,6 +148,7 @@ def test_title_id_drops_trailing_model_and_scrapes_k26(monkeypatch):
     pricing = scraper.scrape(cfg(), "kimi-k2.6")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.95 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.16 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
     assert pricing.max_tokens == 262_144
 
@@ -171,6 +183,7 @@ def test_pricing_tolerates_non_string_context_cell():
     pricing = scraper._pricing(doc, "kimi-k2.6")
     assert pricing is not None
     assert pricing.max_tokens == 262_144
+    assert pricing.cache_read_cost_per_token is None
 
 
 def test_scrape_page_without_doctable_raises(monkeypatch):
