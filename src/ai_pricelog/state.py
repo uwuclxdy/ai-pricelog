@@ -8,7 +8,6 @@ from pathlib import Path
 @dataclass
 class ProviderState:
     last_seen: list[str] = field(default_factory=list)
-    handled: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -32,29 +31,23 @@ def load(path: Path) -> State:
     for key, raw in providers_raw.items():
         if not isinstance(raw, dict):
             raise ValueError(f"state file '{path}': provider '{key}' must be an object")
-        provider_state = ProviderState()
-        for field_name in ("last_seen", "handled"):
-            values = raw.get(field_name, [])
-            if not isinstance(values, list):
-                raise ValueError(
-                    f"state file '{path}': provider '{key}' field '{field_name}' must be a list"
-                )
-            if not all(isinstance(value, str) for value in values):
-                raise ValueError(
-                    f"state file '{path}': provider '{key}' field '{field_name}' must hold strings"
-                )
-            setattr(provider_state, field_name, list(dict.fromkeys(values)))
-        state.providers[key] = provider_state
+        values = raw.get("last_seen", [])
+        if not isinstance(values, list):
+            raise ValueError(
+                f"state file '{path}': provider '{key}' field 'last_seen' must be a list"
+            )
+        if not all(isinstance(value, str) for value in values):
+            raise ValueError(
+                f"state file '{path}': provider '{key}' field 'last_seen' must hold strings"
+            )
+        state.providers[key] = ProviderState(list(dict.fromkeys(values)))
     return state
 
 
 def save(state: State, path: Path) -> None:
     data = {
         "providers": {
-            key: {
-                "last_seen": list(dict.fromkeys(provider_state.last_seen)),
-                "handled": list(dict.fromkeys(provider_state.handled)),
-            }
+            key: {"last_seen": list(dict.fromkeys(provider_state.last_seen))}
             for key, provider_state in state.providers.items()
         }
     }
@@ -78,7 +71,7 @@ def new_ids(state: State, key: str, current: list[str]) -> list[str]:
     provider_state = state.providers.get(key)
     if provider_state is None:
         return list(dict.fromkeys(current))
-    excluded = set(provider_state.last_seen) | set(provider_state.handled)
+    excluded = set(provider_state.last_seen)
     return [model_id for model_id in dict.fromkeys(current) if model_id not in excluded]
 
 

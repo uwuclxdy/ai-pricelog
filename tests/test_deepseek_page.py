@@ -15,8 +15,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing.html"
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="deepseek",
-        yml="deepseek.yml",
-        or_prefix="deepseek",
+        provider="DeepSeek",
         detector="deepseek_page",
         detector_url=PAGE_URL,
         scraper="deepseek_page",
@@ -172,7 +171,7 @@ def test_scrape_off_peak_only_is_flat_pricing(monkeypatch):
 
 
 def test_scrape_peak_rows_without_footnote_fail(monkeypatch):
-    # peak prices are mandatory with the peak windows (yml.py enforces it), so
+    # peak prices are mandatory with the peak windows (validate.py enforces it), so
     # peak subrows without the schedule footnote are a scrape failure
     patch_soup(
         monkeypatch,

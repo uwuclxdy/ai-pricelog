@@ -59,8 +59,7 @@ PROSE_SNIPPET = (
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
     return ProviderCfg(
         key="cohere",
-        yml="cohere.yml",
-        or_prefix="cohere",
+        provider="Cohere",
         detector="cohere_page",
         detector_url=url,
         scraper="cohere_page",

@@ -1,7 +1,7 @@
 [project]
 name            = "ai-pricelog"
 version         = "0.1.0"
-description     = "watch model releases and price changes, open draft PRs to a genai-prices-layout repo"
+description     = "the biggest auto-updated genai pricing index: complete dated price history per model, peak/off-peak rates"
 requires-python = ">=3.12"
 license         = { text = "MIT" }
 dependencies = [

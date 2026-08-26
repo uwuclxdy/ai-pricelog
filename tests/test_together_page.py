@@ -49,8 +49,7 @@ EXPECTED_IDS = [
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="together",
-        yml="together.yml",
-        or_prefix="together",
+        provider="Together AI",
         detector="together_page",
         detector_url=PAGE_URL,
         scraper="together_page",

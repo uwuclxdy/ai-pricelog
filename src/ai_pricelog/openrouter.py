@@ -1,7 +1,7 @@
 """OpenRouter public models API: fetch and parse model entries, map them to store rows.
 
 https://openrouter.ai/api/v1/models is keyless. Per-token price strings are
-converted to per-megatoken floats with the same rounding as yml.py.
+converted to per-megatoken floats with the same rounding as pricing.py.
 """
 
 from __future__ import annotations
@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
+from ai_pricelog.pricing import to_mtok
 from ai_pricelog.web import FetchError, fetch_text
-from ai_pricelog.yml import to_mtok
 
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 

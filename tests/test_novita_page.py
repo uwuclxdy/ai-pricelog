@@ -109,8 +109,7 @@ EXPECTED_IDS = [
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
     return ProviderCfg(
         key="novita",
-        yml="novita.yml",
-        or_prefix="novita",
+        provider="Novita",
         detector="novita_page",
         detector_url=url,
         scraper="novita_page",
