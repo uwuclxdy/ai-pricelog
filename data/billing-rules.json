@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "deepseek-weekend-off-peak",
+      "provider": "deepseek",
+      "effective": "2026-08-23",
+      "timezone": "Asia/Shanghai",
+      "statement": "weekdays (Monday-Friday, Beijing time) keep the peak/off-peak split; weekends (Saturday-Sunday, Beijing time) bill uniformly at the off-peak rate",
+      "citation": [
+        "https://www.stcn.com/article/detail/4103775.html",
+        "https://news.qq.com/rain/a/20260823A060T000",
+        "https://eu.36kr.com/en/p/3951308056099972",
+        "deepseek team email to the maintainer, received 2026-08-22"
+      ]
+    }
+  ]
+}
