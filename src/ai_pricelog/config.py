@@ -1,5 +1,4 @@
 import importlib
-import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,8 +12,7 @@ class ConfigError(Exception):
 @dataclass(frozen=True)
 class ProviderCfg:
     key: str
-    yml: str
-    or_prefix: str
+    provider: str
     detector: str
     detector_url: str
     scraper: str
@@ -23,13 +21,11 @@ class ProviderCfg:
 
 @dataclass(frozen=True)
 class Config:
-    repo: str
     providers: tuple[ProviderCfg, ...]
     cap: int
 
 
-_REQUIRED_KEYS = ("yml", "or_prefix", "detector", "detector_url", "scraper", "scraper_url")
-_OPTIONAL_KEYS: tuple[str, ...] = ()
+_REQUIRED_KEYS = ("provider", "detector", "detector_url", "scraper", "scraper_url")
 _MODULE_KINDS = ("detectors", "scrapers")
 
 
@@ -43,7 +39,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         if not isinstance(values, dict):
             raise ConfigError(f"providers file '{path}': section '{section}' must be a table")
         for key in values:
-            if key not in _REQUIRED_KEYS + _OPTIONAL_KEYS:
+            if key not in _REQUIRED_KEYS:
                 raise ConfigError(
                     f"providers file '{path}': provider '{section}' has unknown key '{key}'"
                 )
@@ -55,8 +51,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         providers.append(
             ProviderCfg(
                 key=section,
-                yml=values["yml"],
-                or_prefix=values["or_prefix"],
+                provider=values["provider"],
                 detector=values["detector"],
                 detector_url=values["detector_url"],
                 scraper=values["scraper"],
@@ -67,20 +62,11 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
 
 
 def load(
-    repo: str | None = None,
     providers: tuple[ProviderCfg, ...] | None = None,
     cap: int | None = None,
     providers_path: Path | None = None,
 ) -> Config:
     path = Path("providers.toml") if providers_path is None else providers_path
-    repo_url = repo if repo is not None else os.environ.get("REPO", "")
-    if not repo_url:
-        raise ConfigError(
-            "REPO env var missing or empty; pass repo= or set REPO to the target repo url"
-        )
-    repo_url = repo_url.rstrip("/")
-    if not repo_url.startswith("https://github.com/"):
-        raise ConfigError(f"repo must be a https://github.com/<owner>/<name> url: {repo_url!r}")
     resolved_providers = tuple(providers) if providers is not None else load_providers(path)
     if cap is not None:
         resolved_cap = cap
@@ -91,7 +77,7 @@ def load(
         resolved_cap = _settings_cap(_toml(path), path)
     if resolved_cap < 1:
         raise ConfigError(f"cap must be >= 1 (got {resolved_cap})")
-    return Config(repo=repo_url, providers=resolved_providers, cap=resolved_cap)
+    return Config(providers=resolved_providers, cap=resolved_cap)
 
 
 def resolve_provider_module(kind: str, name: str) -> Any:

@@ -50,8 +50,7 @@ EXPECTED_IDS = [
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="google",
-        yml="google.yml",
-        or_prefix="google",
+        provider="Google",
         detector="google_page",
         detector_url=PAGE_URL,
         scraper="google_page",

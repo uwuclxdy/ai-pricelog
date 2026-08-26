@@ -31,8 +31,7 @@ EXPECTED_IDS = [
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="avian",
-        yml="avian.yml",
-        or_prefix="avian",
+        provider="Avian",
         detector="avian_page",
         detector_url=PAGE_URL,
         scraper="avian_page",

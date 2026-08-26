@@ -17,8 +17,7 @@ EXPECTED_IDS = ["sonar", "sonar-pro", "sonar-reasoning-pro", "sonar-deep-researc
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="perplexity",
-        yml="perplexity.yml",
-        or_prefix="perplexity",
+        provider="Perplexity",
         detector="perplexity_page",
         detector_url=PAGE_URL,
         scraper="perplexity_page",

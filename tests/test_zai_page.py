@@ -33,8 +33,7 @@ EXPECTED_IDS = [
 def cfg() -> ProviderCfg:
     return ProviderCfg(
         key="zai",
-        yml="zai.yml",
-        or_prefix="z-ai",
+        provider="Z.AI",
         detector="zai_page",
         detector_url=PAGE_URL,
         scraper="zai_page",

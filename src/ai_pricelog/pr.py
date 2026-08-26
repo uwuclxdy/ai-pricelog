@@ -1,13 +1,10 @@
+import json
 import os
 import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog.config import Config
-from ai_pricelog.openrouter import OPENROUTER_MODELS_URL
-
-UPSTREAM = "pydantic/genai-prices"
 AUTOPR_REPO = "https://github.com/uwuclxdy/ai-pricelog"
 
 
@@ -44,376 +41,134 @@ class PrRunner:
 
 
 @dataclass(frozen=True)
-class UpdateSpec:
-    """One price-update PR: the block rewrite, the mirror plan, the body notes."""
-
-    model_id: str
-    case: str  # "rate_change" | "conversion" | "replace"
-    prices_section: str
-    deviation: str
-    old_input_mtok: float | None
-    old_output_mtok: float | None
-    old_peak_input_mtok: float | None
-    old_peak_output_mtok: float | None
-    old_peak_windows: tuple[tuple[str, str], ...]
-    input_mtok: float
-    output_mtok: float
-    peak_input_mtok: float | None
-    peak_output_mtok: float | None
-    peak_windows: tuple[tuple[str, str], ...]
-    start_date: str
-    or_prices_section: str | None
-    or_note: str
-    # openrouter-only update (the follow-up pass's mirror-lag case): the
-    # vendor side is empty and the body renders the openrouter old/new table
-    or_only: bool = False
-    old_cache_read_mtok: float | None = None
-    cache_read_mtok: float | None = None
-
-
-@dataclass(frozen=True)
 class PrSpec:
-    """Everything one candidate PR needs: entries, table numbers, deferrals.
+    """One price-history PR: the new rows, the branch, the title and body."""
 
-    `vendor_entry` is None for the openrouter-only follow-up spec; `update` is
-    set for price-update (drift) specs, whose entries are rewrites of tracked
-    blocks rather than insertions.
-    """
-
-    key: str
+    source: str
     model_id: str
-    entry_id: str
-    vendor_yml: str
-    vendor_name: str
-    vendor_entry: str | None
-    vendor_input_mtok: float
-    vendor_output_mtok: float
-    vendor_peak_input_mtok: float | None
-    vendor_peak_output_mtok: float | None
-    vendor_peak_windows: tuple[tuple[str, str], ...]
-    skipped_latest: tuple[str, ...]
+    provider: str
     source_url: str
-    openrouter_entry: str | None
-    openrouter_slug: str
-    openrouter_input_mtok: float | None
-    openrouter_output_mtok: float | None
-    openrouter_cache_read_mtok: float | None
-    openrouter_note: str
+    rows: tuple[dict[str, object], ...]
+    update: bool = False
+    seed: bool = False
     run_url: str | None = None
-    update: UpdateSpec | None = None
 
     @property
     def branch(self) -> str:
-        if self.update is not None:
-            return branch_name(f"update/{self.key}/{self.update.model_id}")
-        if self.vendor_entry is None:
-            return branch_name(f"or/{self.key}/{self.model_id}")
-        return branch_name(f"{self.key}/{self.model_id}")
+        return "pricelog/seed" if self.seed else branch_name(self.model_id)
 
     @property
     def title(self) -> str:
-        if self.update is not None:
-            if self.update.or_only:
-                return f"Update {self.entry_id} pricing for OpenRouter"
-            if self.update.or_prices_section is not None:
-                return f"Update {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
-            return f"Update {self.entry_id} pricing for {self.vendor_name}"
-        if self.vendor_entry is None:
-            return f"Add {self.entry_id} pricing for OpenRouter"
-        if self.openrouter_entry is not None:
-            return f"Add {self.entry_id} pricing for {self.vendor_name} and OpenRouter"
-        return f"Add {self.entry_id} pricing for {self.vendor_name}"
+        if self.seed:
+            return "Seed price history"
+        verb = "Update" if self.update else "Add"
+        return f"{verb} {self.model_id} pricing for {self.provider}"
 
     @property
     def body(self) -> str:
-        if self.update is not None:
-            return self._update_body()
-        if self.vendor_entry is None:
-            return self._or_only_body()
-        lines: list[str] = []
-        lines.append(f"Add `{self.entry_id}` pricing for {self.vendor_name}.")
-        lines.append("")
-        lines.append(f"## {self.vendor_name}")
-        lines.append("")
-        lines.append("| model | input (/1M) | output (/1M) |")
-        lines.append("|---|---|---|")
-        if self.vendor_peak_input_mtok is not None:
-            windows = " and ".join(f"{start} - {end}" for start, end in self.vendor_peak_windows)
-            lines.append(
-                f"| `{self.entry_id}` off-peak | {self.vendor_input_mtok:g} "
-                f"| {self.vendor_output_mtok:g} |"
-            )
-            lines.append(
-                f"| `{self.entry_id}` peak {windows} | {self.vendor_peak_input_mtok:g} "
-                f"| {self.vendor_peak_output_mtok:g} |"
-            )
-        else:
-            lines.append(
-                f"| `{self.entry_id}` | {self.vendor_input_mtok:g} | {self.vendor_output_mtok:g} |"
-            )
-        lines.append("")
-        lines.append(f"source: {self.source_url}")
-        lines.append("")
-        lines.append("## OpenRouter")
-        lines.append("")
-        if self.openrouter_entry is not None:
-            lines.extend(self._openrouter_table())
-            lines.append("")
-            lines.append(f"source: {OPENROUTER_MODELS_URL}")
-        else:
-            lines.append(self.openrouter_note)
-        lines.append("")
-        lines.append("## notes")
-        lines.append("")
-        lines.extend(self._disclaimer())
-        lines.append(
-            "- no cache-read pricing on the vendor page: the vendor entry carries no "
-            "`cache_read_mtok`"
-        )
-        lines.append(
-            "- closing this draft settles the model in the watchdog's state; it will "
-            "not re-candidate on its own"
-        )
-        if self.skipped_latest:
-            aliases = ", ".join(f"`{value}`" for value in self.skipped_latest)
-            lines.append(
-                f"- `-latest` alias clauses skipped: {aliases} "
-                "(family/version aliases, not separately priced models)"
-            )
-        lines.extend(
-            self._review_section(
-                ["rates verified against the pricing page", "provider name checked"]
-            )
-        )
-        return "\n".join(lines) + "\n"
-
-    def _openrouter_table(self) -> list[str]:
-        lines = ["| model | input (/1M) | cache read (/1M) | output (/1M) |", "|---|---|---|---|"]
-        if self.openrouter_input_mtok is None:
-            lines.append(f"| `{self.openrouter_slug}` | free | — | — |")
-        else:
-            row = " | ".join(
-                f"{value:g}" if value is not None else "—"
-                for value in (
-                    self.openrouter_input_mtok,
-                    self.openrouter_cache_read_mtok,
-                    self.openrouter_output_mtok,
-                )
-            )
-            lines.append(f"| `{self.openrouter_slug}` | {row} |")
-        return lines
-
-    def _update_body(self) -> str:
-        assert self.update is not None
-        update = self.update
-        lines = [f"Update `{self.entry_id}` pricing for {self.vendor_name}.", ""]
-        lines += [f"## {self.vendor_name}", ""]
-        if update.or_only:
-            if self.openrouter_input_mtok is None:
-                new_row = f"| `{self.entry_id}` new | free | — | — |"
-            else:
-                new_row = (
-                    f"| `{self.entry_id}` new | {update.input_mtok:g} "
-                    f"| {_fmt_price(update.cache_read_mtok)} "
-                    f"| {_fmt_price(update.output_mtok)} |"
-                )
+        lines = [self._disclaimer(), ""]
+        if self.seed:
             lines += [
-                "| model | input (/1M) | cache read (/1M) | output (/1M) |",
-                "|---|---|---|---|",
-                f"| `{self.entry_id}` old | {_fmt_price(update.old_input_mtok)} "
-                f"| {_fmt_price(update.old_cache_read_mtok)} "
-                f"| {_fmt_price(update.old_output_mtok)} |",
-                new_row,
+                f"first price-history snapshot: {len(self.rows)} rows "
+                f"across {len({row['source'] for row in self.rows})} sources.",
+                "",
             ]
-            lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
-            lines += ["## notes", ""]
-            lines.extend(self._disclaimer())
-            lines.append(
-                f"- start_date is set to {update.start_date}, the day the watchdog verified "
-                "the api rates; the mirror's actual effective date is unknown to it."
-            )
-            lines.append(f"- {update.deviation}.")
-            lines.append(
-                "- the watchdog keeps no state for updates: after this pr merges, the "
-                "next run diffs against the landed rates and goes quiet. closing it "
-                "unmerged re-candidates the update."
-            )
-            lines.extend(
-                self._review_section(
-                    [
-                        "rates verified against the OpenRouter API",
-                        "start_date corrected to the mirror's actual effective date",
-                    ]
-                )
-            )
-            return "\n".join(lines) + "\n"
-        lines += ["| model | input (/1M) | output (/1M) |", "|---|---|---|"]
-        if update.peak_input_mtok is not None:
-            windows = " and ".join(f"{start} - {end}" for start, end in update.peak_windows)
-            lines.append(
-                f"| `{self.entry_id}` old off-peak | {_fmt_price(update.old_input_mtok)} "
-                f"| {_fmt_price(update.old_output_mtok)} |"
-            )
-            lines.append(
-                f"| `{self.entry_id}` new off-peak | {update.input_mtok:g} "
-                f"| {update.output_mtok:g} |"
-            )
-            if update.old_peak_windows:
-                old_windows = " and ".join(
-                    f"{start} - {end}" for start, end in update.old_peak_windows
-                )
-                lines.append(
-                    f"| `{self.entry_id}` old peak {old_windows} "
-                    f"| {_fmt_price(update.old_peak_input_mtok)} "
-                    f"| {_fmt_price(update.old_peak_output_mtok)} |"
-                )
-            lines.append(
-                f"| `{self.entry_id}` new peak {windows} | {update.peak_input_mtok:g} "
-                f"| {update.peak_output_mtok:g} |"
-            )
-        else:
-            lines.append(
-                f"| `{self.entry_id}` old | {_fmt_price(update.old_input_mtok)} "
-                f"| {_fmt_price(update.old_output_mtok)} |"
-            )
-            lines.append(
-                f"| `{self.entry_id}` new | {update.input_mtok:g} | {update.output_mtok:g} |"
-            )
-        lines += ["", f"source: {self.source_url}", ""]
-        lines += ["## OpenRouter", ""]
-        if update.or_prices_section is not None:
-            lines.append(f"`{self.openrouter_slug}` updated from the OpenRouter models API.")
-        else:
-            lines.append(update.or_note)
-        lines += ["", "## notes", ""]
-        lines.extend(self._disclaimer())
-        lines.append(
-            f"- start_date is set to {update.start_date}, the day the watchdog verified "
-            "the change; the provider's actual effective date is unknown to it."
-        )
-        lines.append(f"- {update.deviation}.")
-        lines.append(
-            "- the watchdog keeps no state for updates: after this pr merges, the next "
-            "run diffs against the landed rates and goes quiet. closing it unmerged "
-            "re-candidates the update."
-        )
-        lines.extend(
-            self._review_section(
-                [
-                    "rates verified against the pricing page",
-                    "start_date corrected to the provider's effective date",
-                    "changelog cited beside start_date",
-                ]
-            )
-        )
+        lines += [
+            "## new rows",
+            "",
+            "| source | model | observed | input (/1M) | cache read (/1M) | output (/1M) |"
+            " peak (/1M) |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for row in self.rows:
+            lines.append(self._row_line(row))
+        if self.source_url:
+            lines += ["", f"source: {self.source_url}"]
+        lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 
-    def _or_only_body(self) -> str:
-        lines = [f"Add `{self.entry_id}` to openrouter.yml.", ""]
-        lines += ["## OpenRouter", ""]
-        lines.extend(self._openrouter_table())
-        lines += ["", f"source: {OPENROUTER_MODELS_URL}", ""]
-        lines += ["## notes", ""]
-        lines.extend(self._disclaimer())
-        lines.append(
-            "- the vendor entry is already tracked; this pr only fills the openrouter "
-            "entry that the earlier add pr deferred"
+    def _row_line(self, row: dict[str, object]) -> str:
+        peak = "—"
+        if "peak_windows" in row:
+            windows = " and ".join(f"{start} - {end}" for start, end in row["peak_windows"])
+            peak = (
+                f"{_fmt(row.get('peak_input_mtok'))}/{_fmt(row.get('peak_output_mtok'))} {windows}"
+            )
+        return (
+            f"| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
+            f"{_fmt(row.get('input_mtok'))} | {_fmt(row.get('cache_read_mtok'))} | "
+            f"{_fmt(row.get('output_mtok'))} | {peak} |"
         )
-        lines.append(
-            "- closing this draft settles the follow-up by itself: the next run sees "
-            "the slug tracked in openrouter.yml"
-        )
-        lines.extend(self._review_section(["rates verified against the OpenRouter API"]))
-        return "\n".join(lines) + "\n"
 
-    def _disclaimer(self) -> list[str]:
+    def _disclaimer(self) -> str:
         link = self.run_url or f"{AUTOPR_REPO}/actions"
+        return (
+            f"- **opened automatically by the [GitHub Action]({link}) from {AUTOPR_REPO}.** "
+            "i read replies and will review the prices before marking it ready."
+        )
+
+    def _review_section(self) -> list[str]:
         return [
-            "- **opened automatically by the [GitHub Action]"
-            f"({link}) from {AUTOPR_REPO}.** i read replies and will "
-            "review the prices before marking it ready."
+            "",
+            "## review checklist",
+            "",
+            "- [ ] prices verified against the source page",
+            "- [ ] provider name correct",
+            "- [ ] peak/off-peak rates match the page",
         ]
 
-    def _review_section(self, items: list[str]) -> list[str]:
-        lines = ["", "## review checklist", ""]
-        lines.extend(f"- [ ] {item}" for item in items)
-        return lines
 
-
-def _fmt_price(value: float | None) -> str:
+def _fmt(value: object) -> str:
     return "—" if value is None else f"{value:g}"
 
 
-def parse_github_url(repo: str) -> tuple[str, str]:
-    prefix = "https://github.com/"
-    if not repo.startswith(prefix):
-        raise PrError(f"repo url must start with '{prefix}': {repo!r}")
-    parts = repo.removeprefix(prefix).split("/")
-    if len(parts) != 2 or not parts[0] or not parts[1]:
-        raise PrError(f"repo url must be '{prefix}<owner>/<name>': {repo!r}")
-    return parts[0], parts[1]
-
-
-def default_branch(owner: str, name: str, runner: PrRunner) -> str:
+def default_branch(runner: PrRunner) -> str:
+    """The default branch of THIS repo, read from the gh api."""
     return runner.run(
-        ["gh", "api", f"repos/{owner}/{name}", "--jq", ".default_branch"], cwd=Path.cwd()
+        ["gh", "repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
+        cwd=Path.cwd(),
     ).strip()
 
 
 def branch_name(key: str) -> str:
-    return "autopr/" + re.sub(r"[^A-Za-z0-9._/-]", "-", key)
+    return "pricelog/" + re.sub(r"[^A-Za-z0-9._/-]", "-", key)
 
 
-def pending_pr(model_id: str, runner: PrRunner) -> str | None:
-    """The url of an open PR on the real upstream naming model_id, or None.
+def pending_pr(model_id: str, runner: PrRunner) -> bool:
+    """Whether an open PR in THIS repo names model_id in its title or body.
 
-    The upstream repo is hardcoded: this is the one place that ignores REPO, so
-    a fork or a test clone never shadows the real pending-work scan. A hit is a
-    plain skip in the pipeline: no state change, the id re-candidates when the
-    PR closes.
+    Case-insensitive substring match, one gh call per model. The pipeline
+    checks it before scraping, so a closed-unmerged PR re-candidates the model
+    on the next run while an open one settles it.
     """
     out = runner.run(
-        [
-            "gh",
-            "pr",
-            "list",
-            "--repo",
-            UPSTREAM,
-            "--state",
-            "open",
-            "--search",
-            f"{model_id} in:title,body",
-            "--json",
-            "url",
-            "--jq",
-            ".[0].url",
-        ],
+        ["gh", "pr", "list", "--state", "open", "--json", "title,body"],
         cwd=Path.cwd(),
-    ).strip()
-    return out or None
+    )
+    try:
+        entries = json.loads(out)
+    except json.JSONDecodeError as exc:
+        raise PrError(f"gh pr list returned invalid json: {exc.msg}") from exc
+    needle = model_id.lower()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        if any(needle in str(entry.get(key, "")).lower() for key in ("title", "body")):
+            return True
+    return False
 
 
-def open_pr(
-    owner: str,
-    name: str,
-    base: str,
-    branch: str,
-    head_owner: str,
-    spec: PrSpec,
-    runner: PrRunner,
-) -> str:
+def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner) -> str:
     return runner.run(
         [
             "gh",
             "pr",
             "create",
-            "--repo",
-            f"{owner}/{name}",
             "--draft",
             "--base",
             base,
             "--head",
-            f"{head_owner}:{branch}",
+            branch,
             "--title",
             spec.title,
             "--body",
@@ -421,90 +176,6 @@ def open_pr(
         ],
         cwd=Path.cwd(),
     ).strip()
-
-
-def existing_pr(owner: str, name: str, branch: str, runner: PrRunner) -> str | None:
-    """the url of an open PR for branch, or None.
-
-    --head matches any owner's branch of that name, not just ours. branch
-    names are deterministic (autopr/<key>), so an earlier run's PR is found
-    after a fork or re-push. concurrent runs are not serialized: this assumes
-    the sequential daily cron, not parallel invocations racing one branch.
-    """
-    out = runner.run(
-        [
-            "gh",
-            "pr",
-            "list",
-            "--repo",
-            f"{owner}/{name}",
-            "--head",
-            branch,
-            "--state",
-            "open",
-            "--json",
-            "url",
-            "--jq",
-            ".[0].url",
-        ],
-        cwd=Path.cwd(),
-    ).strip()
-    return out or None
-
-
-def push_or_fork(repo_url: str, branch: str, slot: Path, runner: PrRunner) -> str:
-    owner, _name = parse_github_url(repo_url)
-    runner.run(["gh", "auth", "setup-git"], cwd=slot)
-    try:
-        runner.run(["git", "push", "origin", branch], cwd=slot)
-    except PrError as exc:
-        if not _is_permission_denied(exc):
-            raise
-        fork_url = _fork_url(owner, _name, runner, slot)
-        fork_owner, _name = parse_github_url(fork_url)
-        runner.run(["git", "remote", "add", "fork", fork_url], cwd=slot)
-        runner.run(["git", "push", "fork", branch], cwd=slot)
-        return fork_owner
-    return owner
-
-
-def _fork_url(owner: str, name: str, runner: PrRunner, slot: Path) -> str:
-    """The authenticated user's fork, creating it when it does not exist.
-
-    Goes through the api: `gh repo fork`'s flag set changed across versions
-    (newer gh rejects --remote when a repository argument is given), the api
-    shape is stable.
-    """
-    login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=slot).strip()
-    try:
-        return runner.run(
-            ["gh", "api", f"repos/{login}/{name}", "--jq", ".html_url"], cwd=slot
-        ).strip()
-    except PrError:
-        return runner.run(
-            ["gh", "api", f"repos/{owner}/{name}/forks", "-X", "POST", "--jq", ".html_url"],
-            cwd=slot,
-        ).strip()
-
-
-def open_draft_pr(cfg: Config, base: str, slot: Path, spec: PrSpec, runner: PrRunner) -> str:
-    owner, name = parse_github_url(cfg.repo)
-    found = existing_pr(owner, name, spec.branch, runner)
-    if found:
-        return found
-    from ai_pricelog import build
-
-    build.prepare(slot, base, spec, runner)
-    head_owner = push_or_fork(cfg.repo, spec.branch, slot, runner)
-    return open_pr(owner, name, base, spec.branch, head_owner, spec, runner)
-
-
-_PERMISSION_MARKERS = ("403", "denied", "permission")
-
-
-def _is_permission_denied(exc: PrError) -> bool:
-    text = f"{exc} {exc.stderr}".lower()
-    return any(marker in text for marker in _PERMISSION_MARKERS)
 
 
 def ensure_author(slot: Path, runner: PrRunner) -> None:

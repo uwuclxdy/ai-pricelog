@@ -15,8 +15,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "dashscope_page"
 def dashscope_cfg() -> ProviderCfg:
     return ProviderCfg(
         key="dashscope",
-        yml="dashscope.yml",
-        or_prefix="dashscope",
+        provider="DashScope",
         detector="dashscope_page",
         detector_url="https://help.aliyun.com/zh/model-studio/text-generation-model/",
         scraper="dashscope_page",

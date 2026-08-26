@@ -7,7 +7,7 @@ from ai_pricelog.state import ProviderState, State, load, new_ids, save
 
 
 def test_roundtrip(tmp_path):
-    original = State(providers={"deepseek": ProviderState(["a", "b"], ["a"])})
+    original = State(providers={"deepseek": ProviderState(["a", "b"])})
     path = tmp_path / "state.json"
     save(original, path)
     assert load(path) == original
@@ -47,15 +47,23 @@ def test_load_field_not_a_list(tmp_path):
 
 def test_load_field_holds_non_strings(tmp_path):
     path = tmp_path / "state.json"
-    path.write_text(json.dumps({"providers": {"deepseek": {"handled": [1]}}}))
-    with pytest.raises(ValueError, match="'handled'"):
+    path.write_text(json.dumps({"providers": {"deepseek": {"last_seen": [1]}}}))
+    with pytest.raises(ValueError, match="'last_seen'"):
         load(path)
 
 
+def test_load_ignores_legacy_handled_field(tmp_path):
+    # the pre-pivot state tracked handled ids; a stale file must load without
+    # them, store membership and the pending-pr scan replaced handled
+    path = tmp_path / "state.json"
+    path.write_text(json.dumps({"providers": {"deepseek": {"last_seen": ["a"], "handled": ["b"]}}}))
+    assert load(path).providers["deepseek"].last_seen == ["a"]
+
+
 def test_new_ids_diff_semantics():
-    s = State(providers={"deepseek": ProviderState(last_seen=["a"], handled=["b"])})
-    assert new_ids(s, "deepseek", ["a", "b", "c", "a"]) == ["c"]
-    assert new_ids(s, "deepseek", ["a", "b"]) == []
+    s = State(providers={"deepseek": ProviderState(last_seen=["a"])})
+    assert new_ids(s, "deepseek", ["a", "b", "c", "a"]) == ["b", "c"]
+    assert new_ids(s, "deepseek", ["a"]) == []
 
 
 def test_new_ids_unknown_provider():
@@ -68,16 +76,15 @@ def test_new_ids_keeps_current_order():
 
 
 def test_save_dedupes_preserving_order(tmp_path):
-    original = State(providers={"deepseek": ProviderState(["a", "b", "a"], ["b", "b"])})
+    original = State(providers={"deepseek": ProviderState(["a", "b", "a"])})
     path = tmp_path / "state.json"
     save(original, path)
     loaded = load(path)
     assert loaded.providers["deepseek"].last_seen == ["a", "b"]
-    assert loaded.providers["deepseek"].handled == ["b"]
 
 
 def test_save_atomic_leaves_no_temp_files(tmp_path):
-    original = State(providers={"deepseek": ProviderState(["a", "b"], ["a"])})
+    original = State(providers={"deepseek": ProviderState(["a", "b"])})
     path = tmp_path / "state.json"
     save(original, path)
     save(original, path)  # overwrite an existing file, same guarantee
@@ -88,7 +95,7 @@ def test_save_atomic_leaves_no_temp_files(tmp_path):
 
 
 def test_save_failed_commit_keeps_old_file_and_no_temp_files(tmp_path, monkeypatch):
-    original = State(providers={"deepseek": ProviderState(["a"], ["a"])})
+    original = State(providers={"deepseek": ProviderState(["a"])})
     path = tmp_path / "state.json"
     save(original, path)
     old_bytes = path.read_text()
@@ -98,7 +105,7 @@ def test_save_failed_commit_keeps_old_file_and_no_temp_files(tmp_path, monkeypat
 
     monkeypatch.setattr(state_mod.os, "replace", boom)
     with pytest.raises(OSError, match="disk full"):
-        save(State(providers={"deepseek": ProviderState(["b"], ["b"])}), path)
+        save(State(providers={"deepseek": ProviderState(["b"])}), path)
     leftovers = [p.name for p in tmp_path.iterdir() if p.name != "global.gitconfig"]
     assert leftovers == ["state.json"]
     assert path.read_text() == old_bytes

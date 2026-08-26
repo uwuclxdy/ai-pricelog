@@ -1,63 +1,63 @@
-"""Entry sanity checks that run before yml emission.
+"""Row-level checks that run before a price row is appended to the history.
 
-Only what our own emission could corrupt before the clone ever sees it: the
-model id charset (it lands verbatim in yml ids and match clauses, and inside
-rebuilt regex patterns), the price values, and the context window. The target
-clone's `make build` is the authority for everything else (schema, unit
-registry, match overlap, sort order, generated data); an entry that passes
-here and fails there skips the candidate and retries next run.
+The history is append-only, so a bad row lands forever. Only what our own
+emission could corrupt is checked here: the model id (rows are keyed by
+(source, model_id)), the price values, and the peak-pricing shape. The
+store's build_row output is the only producer.
 """
 
+from __future__ import annotations
+
 import math
-import re
-
-from ai_pricelog.pricing import Pricing
-
-_ID_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,99}$")
+from typing import Any
 
 
 class ValidationError(ValueError):
-    """an entry failed validation; the message names the field, bad value, fix."""
+    """a row failed validation; the message names the field, bad value, fix."""
 
 
-def validate_entry(model_id: str, pricing: Pricing) -> None:
-    if not _ID_PATTERN.fullmatch(model_id):
-        raise ValidationError(
-            f"model id {model_id!r}: must be 1-100 chars of [a-zA-Z0-9._:/-] "
-            "starting alphanumeric (it lands verbatim in yml ids and match "
-            "clauses); fix: check the detector output"
-        )
-    for field in ("input_cost_per_token", "output_cost_per_token"):
-        value = getattr(pricing, field)
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, float)
-            or not math.isfinite(value)
-            or value <= 0
-        ):
-            raise ValidationError(
-                f"pricing field '{field}' has bad value {value!r}; fix: use a finite float > 0"
-            )
-    for field in (
-        "cache_read_cost_per_token",
-        "peak_input_cost_per_token",
-        "peak_output_cost_per_token",
-    ):
-        value = getattr(pricing, field)
+_PRICE_FIELDS = ("input_mtok", "output_mtok")
+_PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok")
+
+
+def validate_row(row: dict[str, Any]) -> None:
+    model_id = row.get("model_id")
+    if not isinstance(model_id, str) or not model_id:
+        raise ValidationError("row field 'model_id' must be a non-empty string")
+    for field in _PRICE_FIELDS:
+        value = row.get(field)
         if value is None:
-            continue
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, float)
-            or not math.isfinite(value)
-            or value <= 0
-        ):
+            continue  # openrouter free rows carry no input/output prices
+        _check_price(row, field, value)
+    if any(field in row for field in _PEAK_PRICE_FIELDS) or "peak_windows" in row:
+        windows = row.get("peak_windows")
+        if not isinstance(windows, list) or not windows:
             raise ValidationError(
-                f"pricing field '{field}' has bad value {value!r}; fix: use a finite float > 0"
+                "row field 'peak_windows' must be a non-empty list when peak prices are set"
             )
-    if pricing.max_tokens:
-        value = pricing.max_tokens
-        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-            raise ValidationError(
-                f"pricing field 'max_tokens' has bad value {value!r}; fix: use an int > 0"
-            )
+        for window in windows:
+            if (
+                not isinstance(window, list)
+                or len(window) != 2
+                or not all(isinstance(part, str) and part for part in window)
+            ):
+                raise ValidationError(
+                    f"row field 'peak_windows' has bad window {window!r}; "
+                    "fix: use [start, end] string pairs"
+                )
+        for field in _PEAK_PRICE_FIELDS:
+            value = row.get(field)
+            if value is not None:
+                _check_price(row, field, value)
+
+
+def _check_price(row: dict[str, Any], field: str, value: Any) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, float)
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValidationError(
+            f"row field '{field}' has bad value {value!r}; fix: use a finite float >= 0"
+        )

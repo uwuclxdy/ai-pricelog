@@ -5,7 +5,7 @@ import pytest
 from ai_pricelog import openrouter
 from ai_pricelog.openrouter import OBSERVED_KEYS, OpenrouterModel, build_row, fetch_models, find
 
-FIXTURE = Path(__file__).parent / "fixtures" / "genai_prices" / "openrouter_models.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "openrouter_models.json"
 
 
 @pytest.fixture()
