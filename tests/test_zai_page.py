@@ -81,6 +81,32 @@ def test_scrape_promo_takes_charged_rate_not_struck_list_price(monkeypatch):
     assert pricing.cache_read_cost_per_token == pytest.approx(0.015 / 1e6)
 
 
+def test_scrape_glm45_cache_read_pinned(monkeypatch):
+    # 2026-08-26 flip-flop: one pass served every zai row without the cached
+    # rate; pin the restored values so a silent drop fails this test
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    for model_id, cache_read in (("glm-4.5", 0.11), ("glm-4.5-air", 0.03)):
+        pricing = scraper.scrape(cfg(), model_id)
+        assert pricing is not None
+        assert pricing.cache_read_cost_per_token == pytest.approx(cache_read / 1e6)
+
+
+def test_scrape_missing_cached_column_raises(monkeypatch):
+    # a table without the column must fail loudly: None would drop the field
+    # from the row and the diff reads it as a rate removal
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>Input</th><th>Output</th></tr>"
+            "<tr><td>GLM-4.5</td><td>$0.6</td><td>$2.2</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    with pytest.raises(FetchError, match="Cached Input"):
+        scraper.scrape(cfg(), "glm-4.5")
+
+
 def test_scrape_vision_model(monkeypatch):
     # the vision table shares the text table's per-token columns
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())

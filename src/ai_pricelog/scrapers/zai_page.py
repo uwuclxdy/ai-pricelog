@@ -10,8 +10,12 @@ dollar amount is the rate in force. the page carries no context window ->
 the max_tokens fields stay 0. rows match case-insensitively (detection
 lowercases; the page keeps GLM-4.7-FlashX).
 
+a table without the Cached Input column is a page-shape break (FetchError):
+silently returning None there reads as a cache-read rate drop in the diff.
+
 None = the model id is not on the page or a price cell carries no dollar
-amount. FetchError = the fetch failed or the page has no per-token tables.
+amount. FetchError = the fetch failed, the page has no per-token tables, or
+the model's table lacks the Cached Input column.
 """
 
 import re
@@ -38,15 +42,18 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         )
         if row is None:
             continue
+        if "Cached Input" not in header:
+            raise FetchError(
+                f"malformed pricing table for {model_id} on {cfg.scraper_url}: "
+                "no Cached Input column"
+            )
         if len(row) < len(header):
             raise FetchError(f"malformed pricing row for {model_id} on {cfg.scraper_url}")
         input_cost = _dollars(row[header.index("Input")])
         output_cost = _dollars(row[header.index("Output")])
         if input_cost is None or output_cost is None:
             return None
-        cache_read = (
-            _dollars(row[header.index("Cached Input")]) if "Cached Input" in header else None
-        )
+        cache_read = _dollars(row[header.index("Cached Input")])
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
