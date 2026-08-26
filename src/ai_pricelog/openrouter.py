@@ -1,4 +1,4 @@
-"""OpenRouter public models API: fetch and parse model entries.
+"""OpenRouter public models API: fetch and parse model entries, map them to store rows.
 
 https://openrouter.ai/api/v1/models is keyless. Per-token price strings are
 converted to per-megatoken floats with the same rounding as yml.py.
@@ -7,7 +7,7 @@ converted to per-megatoken floats with the same rounding as yml.py.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ai_pricelog.web import FetchError, fetch_text
 from ai_pricelog.yml import to_mtok
@@ -22,6 +22,11 @@ class OpenrouterModel:
     input_mtok: float | None
     output_mtok: float | None
     cache_read_mtok: float | None
+    # build_row-only payload; compare=False keeps the existing mtok-focused equality
+    alias_target: object | None = field(default=None, compare=False)
+    canonical_slug: str | None = field(default=None, compare=False)
+    context_length: int = field(default=0, compare=False)
+    pricing: dict[str, object] = field(default_factory=dict, compare=False)
 
 
 def fetch_models(url: str | None = None) -> list[OpenrouterModel]:
@@ -40,6 +45,37 @@ def find(models: list[OpenrouterModel], prefix: str, model_id: str) -> Openroute
         if model.id == slug:
             return model
     return None
+
+
+OBSERVED_KEYS = frozenset({"prompt", "completion", "input_cache_read"})
+
+
+def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
+    if model.alias_target or (
+        model.canonical_slug is not None and model.canonical_slug != model.id
+    ):
+        return None
+    row: dict[str, object] = {
+        "source": "openrouter",
+        "model_id": model.id,
+        "observed_at": observed_at,
+    }
+    if model.name:
+        row["name"] = model.name
+    for key, field_name in (
+        ("prompt", "input_mtok"),
+        ("completion", "output_mtok"),
+        ("input_cache_read", "cache_read_mtok"),
+    ):
+        value = model.pricing.get(key)
+        if value is not None:
+            row[field_name] = to_mtok(float(value))
+    if model.context_length > 0:
+        row["max_tokens"] = model.context_length
+    extra = {key: value for key, value in model.pricing.items() if key not in OBSERVED_KEYS}
+    if extra:
+        row["extra"] = extra
+    return row
 
 
 def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
@@ -61,6 +97,9 @@ def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
                 input_mtok=_price(pricing.get("prompt"), entry["id"]),
                 output_mtok=_price(pricing.get("completion"), entry["id"]),
                 cache_read_mtok=_price(pricing.get("input_cache_read"), entry["id"]),
+                canonical_slug=entry.get("canonical_slug"),
+                context_length=entry.get("context_length") or 0,
+                pricing=pricing,
             )
         )
     return models

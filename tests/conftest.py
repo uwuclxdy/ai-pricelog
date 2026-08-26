@@ -1,3 +1,4 @@
+import os
 import sys
 import types
 from pathlib import Path
@@ -36,23 +37,18 @@ class FakeRunner:
 
 @pytest.fixture(autouse=True)
 def isolated_git_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    # keep tests hermetic: git subprocesses must not read the developer's global config
+    # keep tests hermetic: git subprocesses must not read the developer's
+    # global config, and no leaked git env may retarget them. the global
+    # pre-commit hook runs this suite while git exports the in-flight
+    # commit's identity vars, and a commit from a linked worktree exports
+    # absolute GIT_DIR/GIT_INDEX_FILE; both classes must be scrubbed
     (tmp_path / "global.gitconfig").touch()
+    for name in list(os.environ):
+        if name.startswith("GIT_"):
+            monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "global.gitconfig"))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    # identity env outranks git config; the global pre-commit hook runs this
-    # suite while git exports the in-flight commit's GIT_AUTHOR_*/GIT_COMMITTER_*
-    # vars, and identity tests read them through the config seam
-    for name in (
-        "GIT_AUTHOR_NAME",
-        "GIT_AUTHOR_EMAIL",
-        "GIT_AUTHOR_DATE",
-        "GIT_COMMITTER_NAME",
-        "GIT_COMMITTER_EMAIL",
-        "GIT_COMMITTER_DATE",
-    ):
-        monkeypatch.delenv(name, raising=False)
 
 
 def git(cwd: Path, *args: str) -> str:

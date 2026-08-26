@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from ai_pricelog import openrouter
-from ai_pricelog.openrouter import OpenrouterModel, fetch_models, find
+from ai_pricelog.openrouter import OBSERVED_KEYS, OpenrouterModel, build_row, fetch_models, find
 
 FIXTURE = Path(__file__).parent / "fixtures" / "genai_prices" / "openrouter_models.json"
 
@@ -129,3 +129,123 @@ def test_fetch_models_strips_vendor_name_prefix(fake_fetch: list[str]) -> None:
     assert by_id["x-ai/grok-4.5"].name == "Grok 4.5"
     assert by_id["deepseek/deepseek-v4-pro"].name == "DeepSeek V4 Pro 0423"
     assert by_id["dots-studio/dots-3-note-preview:free"].name == "Dots3-Note Preview (free)"
+
+
+def test_build_row_skips_alias_entries():
+    model = OpenrouterModel("~x/y", "X", 1.0, 2.0, None, alias_target={"slug": "x/y"})
+    assert build_row(model, "2026-08-26T00:00:00Z") is None
+
+
+def test_build_row_skips_dated_canonical_snapshots():
+    snapshot = OpenrouterModel("a/b", "A", 1.0, 2.0, None, canonical_slug="a/b-20260101")
+    assert build_row(snapshot, "t") is None
+    canonical = OpenrouterModel("a/b-20260101", "A", 1.0, 2.0, None, canonical_slug="a/b-20260101")
+    assert build_row(canonical, "t") is not None
+
+
+def test_build_row_maps_pricing_keys_and_rounds():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        context_length=131072,
+        pricing={
+            "prompt": "0.000000435",
+            "completion": "0.0000012",
+            "input_cache_read": "0.0000001",
+        },
+    )
+    row = build_row(model, "2026-08-26T00:00:00Z")
+    assert row is not None
+    assert list(row) == [
+        "source",
+        "model_id",
+        "observed_at",
+        "name",
+        "input_mtok",
+        "output_mtok",
+        "cache_read_mtok",
+        "max_tokens",
+    ]
+    assert row["source"] == "openrouter"
+    assert row["model_id"] == "a/b"
+    assert row["name"] == "A"
+    assert row["input_mtok"] == 0.435
+    assert row["output_mtok"] == 1.2
+    assert row["cache_read_mtok"] == 0.1
+    assert row["max_tokens"] == 131072
+
+
+def test_build_row_omits_missing_prompt_and_empty_name():
+    model = OpenrouterModel("a/b", "", None, None, None, pricing={"completion": "0.0000012"})
+    row = build_row(model, "t")
+    assert row is not None
+    assert "name" not in row
+    assert "input_mtok" not in row
+    assert row["output_mtok"] == 1.2
+
+
+def test_build_row_passes_unconsumed_pricing_keys_through_extra():
+    model = OpenrouterModel(
+        "x/y",
+        "X",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "completion": "0.000002",
+            "web_search": "0.005",
+            "overrides": [{"min_prompt_tokens": 200000, "prompt": "0.000004"}],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["extra"] == {
+        "web_search": "0.005",
+        "overrides": [{"min_prompt_tokens": 200000, "prompt": "0.000004"}],
+    }
+    assert list(row)[-1] == "extra"
+
+
+def test_build_row_omits_extra_when_all_pricing_keys_consumed():
+    model = OpenrouterModel(
+        "x/y", "X", None, None, None, pricing={"prompt": "0.000001", "completion": "0.000002"}
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert "extra" not in row
+
+
+def test_build_row_keeps_zero_pricing_strings():
+    model = OpenrouterModel(
+        "x/y", "X", None, None, None, pricing={"prompt": "0", "completion": "0"}
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["input_mtok"] == 0.0
+    assert row["output_mtok"] == 0.0
+
+
+def test_observed_keys_lists_the_consumed_pricing_keys():
+    assert frozenset({"prompt", "completion", "input_cache_read"}) == OBSERVED_KEYS
+
+
+def test_build_row_keeps_only_fixture_models_without_dated_canonical(fake_fetch: list[str]) -> None:
+    models = fetch_models()
+    rows = []
+    for model in models:
+        row = build_row(model, "2026-08-26T00:00:00Z")
+        if row is not None:
+            rows.append(row)
+    assert [row["model_id"] for row in rows] == [
+        "minimax/minimax-m1",
+        "perplexity/sonar-pro",
+        "mistralai/codestral-2508",
+    ]
+    sonar = rows[1]
+    assert sonar["name"] == "Sonar Pro"
+    assert sonar["extra"] == {"web_search": "0.005"}
+    assert all("max_tokens" not in row for row in rows)

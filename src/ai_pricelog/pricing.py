@@ -11,3 +11,8 @@ class Pricing:
     peak_input_cost_per_token: float | None = None
     peak_output_cost_per_token: float | None = None
     peak_windows: tuple[tuple[str, str], ...] = ()
+
+
+def to_mtok(per_token: float) -> float:
+    """Per-token dollars -> per-megatoken dollars, rounded to 6 decimals."""
+    return round(per_token * 1_000_000, 6)
