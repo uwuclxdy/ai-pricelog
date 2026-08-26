@@ -67,13 +67,13 @@ def test_spec_body_disclosure_is_first_and_linked_to_the_run():
     s = spec(run_url="https://github.com/uwuclxdy/ai-pricelog/actions/runs/123")
     body = s.body
     assert body.startswith(
-        "- **opened automatically by the [GitHub Action](https://github.com/uwuclxdy/"
-        "ai-pricelog/actions/runs/123) from https://github.com/uwuclxdy/ai-pricelog.**"
+        "- **opened automatically by the [GitHub Action]"
+        "(https://github.com/uwuclxdy/ai-pricelog/actions/runs/123).**"
     )
 
 
 def test_spec_body_disclaimer_falls_back_to_actions_tab():
-    assert "[GitHub Action](https://github.com/uwuclxdy/ai-pricelog/actions) from" in spec().body
+    assert "[GitHub Action](https://github.com/uwuclxdy/ai-pricelog/actions)." in spec().body
 
 
 def test_spec_body_flat_row_table():
