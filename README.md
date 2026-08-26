@@ -38,11 +38,11 @@ git history is the changelog. every price a model ever had stays in the history 
 | step | what happens |
 |---|---|
 | detect | each provider's page is parsed for its current model list (no api keys, all sources are static pages) |
-| diff | new ids vs the git-backed state file + the store |
+| diff | new ids vs the store + open PRs |
 | scrape | input/output price per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
 | store | a row appends only when the price differs from the last stored row for that model |
 | delist | a stored model absent from its source twice, both observations merged, gets a removal row and a `Mark ... delisted` draft PR |
-| pr | one draft PR per changed model, max 3 open drafts per run; nothing merges without a human reading the prices |
+| pr | one draft PR per changed model, max 10 open drafts per run; nothing merges without a human reading the prices |
 
 the openrouter source stores the full keyless model list the same way. the first run with an empty store opens one seed PR with the full snapshot.
 
