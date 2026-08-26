@@ -8,11 +8,11 @@ branch). Rows for models that got no PR (draft cap or failed open) stay out
 of every branch: the human review of each draft PR is the only guard against
 a misread price, so a row lands only under its own PR or the seed, and a
 capped-out model re-candidates against the landed store on the next run. The
-index rides the same branch commit, and one human-reviewed draft PR is
-opened per (source, model_id) pair. The tree is restored to HEAD after each
-PR, so every PR branch starts from the default branch tip. When the store
-was empty at load, one seed PR carries all rows with no draft cap; while
-that seed PR is still open, the run skips itself.
+index and the recomputed README stats ride the same branch commit, and one
+human-reviewed draft PR is opened per (source, model_id) pair. The tree is
+restored to HEAD after each PR, so every PR branch starts from the default
+branch tip. When the store was empty at load, one seed PR carries all rows
+with no draft cap; while that seed PR is still open, the run skips itself.
 
 A stored model absent from its source's page twice (both observations landed
 through PRs) gets a removal row and a `Mark <id> delisted` PR; the counters
