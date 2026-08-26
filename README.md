@@ -73,7 +73,7 @@ uv sync --frozen
 uv run ai-pricelog
 ```
 
-`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the daily GitHub Actions run carries it as a secret. schedule: daily 05:17 utc, or `workflow_dispatch`.
+`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the scheduled GitHub Actions run carries it as a secret. schedule: every 6h (plus a weekly moonshot smoke), or `workflow_dispatch`.
 
 ## Configuration
 
@@ -81,7 +81,7 @@ uv run ai-pricelog
 
 ```toml
 [settings]
-cap = 3 # max open drafts per run
+cap = 10 # max open drafts per run
 
 [deepseek]
 detector = "deepseek_page"
