@@ -31,3 +31,18 @@ def test_load_non_object_rejected(tmp_path):
     path.write_text("[]")
     with pytest.raises(ValueError, match="must be an object"):
         absence.load_absence(path)
+
+
+def test_load_bad_entry_shapes_name_file_and_entry(tmp_path):
+    path = tmp_path / "absence.json"
+    path.write_text('{"deepseek": {"deepseek-chat": {"absent_runs": "1", "since": "x"}}}')
+    with pytest.raises(ValueError, match=r"absence file.*deepseek-chat.*absent_runs"):
+        absence.load_absence(path)
+    path.write_text('{"deepseek": {"deepseek-chat": {"absent_runs": 1}}}')
+    with pytest.raises(ValueError, match=r"absence file.*deepseek-chat.*since"):
+        absence.load_absence(path)
+    path.write_text('{"deepseek": {"deepseek-chat": {"absent_runs": 3, "since": "x"}}}')
+    with pytest.raises(
+        ValueError, match=r"absence file.*deepseek-chat.*absent_runs must be 1 or 2"
+    ):
+        absence.load_absence(path)
