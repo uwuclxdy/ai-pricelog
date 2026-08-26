@@ -3,7 +3,7 @@
     {
       "languageModels": [
         {
-          "name": "grok-4.3",
+          "name": "grok-4.20-0309-reasoning",
           "version": "1.0",
           "inputModalities": [
             "TEXT",
@@ -25,22 +25,26 @@
           "cluster": "us-east-1",
           "maxPromptLength": 1000000,
           "aliases": [
-            "grok-4.3-latest"
+            "grok-4.20-reasoning-latest",
+            "grok-4.20",
+            "grok-4.20-reasoning",
+            "grok-4.20-0309",
+            "grok-4.20-beta-0309-reasoning",
+            "grok-4.20-beta",
+            "grok-4.20-beta-0309",
+            "grok-4.20-beta-latest",
+            "grok-4.20-beta-latest-reasoning",
+            "grok-4.20-beta-reasoning",
+            "grok-4.20-experimental-beta-0304-reasoning",
+            "grok-4.20-experimental-beta-0304",
+            "grok-4.20-experimental-beta-reasoning-latest",
+            "grok-4.20-experimental-beta-latest",
+            "grok-4.20-reasoning-gv2"
           ],
           "features": {
             "functionCalling": true,
             "structuredOutputs": true,
-            "reasoning": true,
-            "reasoningEffortOptions": {
-              "supportedEfforts": [
-                "none",
-                "low",
-                "medium",
-                "high",
-                "xhigh"
-              ],
-              "defaultEffort": "low"
-            }
+            "reasoning": true
           },
           "algorithm": "grokSlop",
           "longContextThreshold": "200000",
@@ -58,62 +62,6 @@
             "tokensPerOutputUnit": "2500"
           },
           "batchEnabled": true
-        },
-        {
-          "name": "grok-4.5",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "TEXT"
-          ],
-          "promptTextTokenPrice": "20000",
-          "promptImageTokenPrice": "20000",
-          "promptTextTokenPriceLongContext": "40000",
-          "cachedPromptTokenPrice": "3000",
-          "cachedPromptTokenPriceLongContext": "6000",
-          "completionTextTokenPrice": "60000",
-          "completionTokenPriceLongContext": "120000",
-          "rps": "150",
-          "rpm": "7200",
-          "tpm": "50000000",
-          "cluster": "us-east-1",
-          "maxPromptLength": 500000,
-          "aliases": [
-            "grok-4.5-latest",
-            "grok-build-latest"
-          ],
-          "features": {
-            "functionCalling": true,
-            "structuredOutputs": true,
-            "reasoning": true,
-            "reasoningEffortOptions": {
-              "supportedEfforts": [
-                "low",
-                "medium",
-                "high",
-                "xhigh"
-              ],
-              "defaultEffort": "high"
-            }
-          },
-          "algorithm": "grokSlop",
-          "longContextThreshold": "200000",
-          "rateLimits": {
-            "queryOffset": "6080",
-            "queryBaseRate": "1120",
-            "queryMultiplier": "2",
-            "tokenOffset": "46500000",
-            "tokenBaseRate": "3500000",
-            "tokenMultiplier": "2"
-          },
-          "batchDiscountPercent": 0,
-          "provisionedThroughput": {
-            "tokensPerInputUnit": "3000",
-            "tokensPerOutputUnit": "1000"
-          }
         },
         {
           "name": "grok-4.6",
@@ -214,67 +162,6 @@
             "tokensPerInputUnit": "6000",
             "tokensPerOutputUnit": "3000"
           }
-        },
-        {
-          "name": "grok-4.20-0309-reasoning",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "TEXT"
-          ],
-          "promptTextTokenPrice": "12500",
-          "promptImageTokenPrice": "12500",
-          "promptTextTokenPriceLongContext": "25000",
-          "cachedPromptTokenPrice": "2000",
-          "cachedPromptTokenPriceLongContext": "4000",
-          "completionTextTokenPrice": "25000",
-          "completionTokenPriceLongContext": "50000",
-          "rps": "37",
-          "rpm": "1800",
-          "tpm": "10000000",
-          "cluster": "us-east-1",
-          "maxPromptLength": 1000000,
-          "aliases": [
-            "grok-4.20-reasoning-latest",
-            "grok-4.20",
-            "grok-4.20-reasoning",
-            "grok-4.20-0309",
-            "grok-4.20-beta-0309-reasoning",
-            "grok-4.20-beta",
-            "grok-4.20-beta-0309",
-            "grok-4.20-beta-latest",
-            "grok-4.20-beta-latest-reasoning",
-            "grok-4.20-beta-reasoning",
-            "grok-4.20-experimental-beta-0304-reasoning",
-            "grok-4.20-experimental-beta-0304",
-            "grok-4.20-experimental-beta-reasoning-latest",
-            "grok-4.20-experimental-beta-latest",
-            "grok-4.20-reasoning-gv2"
-          ],
-          "features": {
-            "functionCalling": true,
-            "structuredOutputs": true,
-            "reasoning": true
-          },
-          "algorithm": "grokSlop",
-          "longContextThreshold": "200000",
-          "rateLimits": {
-            "queryOffset": "1200",
-            "queryBaseRate": "600",
-            "queryMultiplier": "2",
-            "tokenOffset": "5000000",
-            "tokenBaseRate": "5000000",
-            "tokenMultiplier": "2"
-          },
-          "batchDiscountPercent": 20,
-          "provisionedThroughput": {
-            "tokensPerInputUnit": "5000",
-            "tokensPerOutputUnit": "2500"
-          },
-          "batchEnabled": true
         },
         {
           "name": "grok-4.20-0309-non-reasoning",
@@ -380,6 +267,119 @@
             "tokensPerOutputUnit": "2500"
           },
           "batchEnabled": true
+        },
+        {
+          "name": "grok-4.5",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "TEXT"
+          ],
+          "promptTextTokenPrice": "20000",
+          "promptImageTokenPrice": "20000",
+          "promptTextTokenPriceLongContext": "40000",
+          "cachedPromptTokenPrice": "3000",
+          "cachedPromptTokenPriceLongContext": "6000",
+          "completionTextTokenPrice": "60000",
+          "completionTokenPriceLongContext": "120000",
+          "rps": "150",
+          "rpm": "7200",
+          "tpm": "50000000",
+          "cluster": "us-east-1",
+          "maxPromptLength": 500000,
+          "aliases": [
+            "grok-4.5-latest",
+            "grok-build-latest"
+          ],
+          "features": {
+            "functionCalling": true,
+            "structuredOutputs": true,
+            "reasoning": true,
+            "reasoningEffortOptions": {
+              "supportedEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultEffort": "high"
+            }
+          },
+          "algorithm": "grokSlop",
+          "longContextThreshold": "200000",
+          "rateLimits": {
+            "queryOffset": "6080",
+            "queryBaseRate": "1120",
+            "queryMultiplier": "2",
+            "tokenOffset": "46500000",
+            "tokenBaseRate": "3500000",
+            "tokenMultiplier": "2"
+          },
+          "batchDiscountPercent": 0,
+          "provisionedThroughput": {
+            "tokensPerInputUnit": "3000",
+            "tokensPerOutputUnit": "1000"
+          }
+        },
+        {
+          "name": "grok-4.3",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "TEXT"
+          ],
+          "promptTextTokenPrice": "12500",
+          "promptImageTokenPrice": "12500",
+          "promptTextTokenPriceLongContext": "25000",
+          "cachedPromptTokenPrice": "2000",
+          "cachedPromptTokenPriceLongContext": "4000",
+          "completionTextTokenPrice": "25000",
+          "completionTokenPriceLongContext": "50000",
+          "rps": "37",
+          "rpm": "1800",
+          "tpm": "10000000",
+          "cluster": "us-east-1",
+          "maxPromptLength": 1000000,
+          "aliases": [
+            "grok-4.3-latest"
+          ],
+          "features": {
+            "functionCalling": true,
+            "structuredOutputs": true,
+            "reasoning": true,
+            "reasoningEffortOptions": {
+              "supportedEfforts": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultEffort": "low"
+            }
+          },
+          "algorithm": "grokSlop",
+          "longContextThreshold": "200000",
+          "rateLimits": {
+            "queryOffset": "1200",
+            "queryBaseRate": "600",
+            "queryMultiplier": "2",
+            "tokenOffset": "5000000",
+            "tokenBaseRate": "5000000",
+            "tokenMultiplier": "2"
+          },
+          "batchDiscountPercent": 20,
+          "provisionedThroughput": {
+            "tokensPerInputUnit": "5000",
+            "tokensPerOutputUnit": "2500"
+          },
+          "batchEnabled": true
         }
       ],
       "imageGenerationModels": [
@@ -428,6 +428,41 @@
           "batchEnabled": true
         },
         {
+          "name": "grok-imagine-image",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "IMAGE"
+          ],
+          "imagePrice": "200000000",
+          "rps": "6",
+          "rpm": "300",
+          "tpm": "9223372036854775807",
+          "cluster": "us-east-1",
+          "aliases": [
+            "grok-imagine-image-2026-03-02"
+          ],
+          "resolutionPricing": [
+            {
+              "resolution": "IMAGE_RESOLUTION_1K",
+              "pricePerImage": "200000000"
+            },
+            {
+              "resolution": "IMAGE_RESOLUTION_2K",
+              "pricePerImage": "200000000"
+            }
+          ],
+          "pricePerInputImage": "20000000",
+          "rateLimits": {
+            "queryBaseRate": "300",
+            "queryMultiplier": "2"
+          },
+          "batchEnabled": true
+        },
+        {
           "name": "grok-imagine-image-quality",
           "version": "1.0",
           "inputModalities": [
@@ -462,41 +497,6 @@
             "queryBaseRate": "300",
             "queryMultiplier": "2"
           }
-        },
-        {
-          "name": "grok-imagine-image",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "IMAGE"
-          ],
-          "imagePrice": "200000000",
-          "rps": "6",
-          "rpm": "300",
-          "tpm": "9223372036854775807",
-          "cluster": "us-east-1",
-          "aliases": [
-            "grok-imagine-image-2026-03-02"
-          ],
-          "resolutionPricing": [
-            {
-              "resolution": "IMAGE_RESOLUTION_1K",
-              "pricePerImage": "200000000"
-            },
-            {
-              "resolution": "IMAGE_RESOLUTION_2K",
-              "pricePerImage": "200000000"
-            }
-          ],
-          "pricePerInputImage": "20000000",
-          "rateLimits": {
-            "queryBaseRate": "300",
-            "queryMultiplier": "2"
-          },
-          "batchEnabled": true
         }
       ],
       "audioModels": [
@@ -1097,6 +1097,163 @@
     {
       "languageModels": [
         {
+          "name": "grok-4.3",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "TEXT"
+          ],
+          "promptTextTokenPrice": "12500",
+          "promptImageTokenPrice": "12500",
+          "promptTextTokenPriceLongContext": "25000",
+          "cachedPromptTokenPrice": "2000",
+          "cachedPromptTokenPriceLongContext": "4000",
+          "completionTextTokenPrice": "25000",
+          "completionTokenPriceLongContext": "50000",
+          "rps": "37",
+          "rpm": "1800",
+          "tpm": "10000000",
+          "cluster": "us-west-2",
+          "maxPromptLength": 1000000,
+          "aliases": [
+            "grok-4.3-latest"
+          ],
+          "features": {
+            "functionCalling": true,
+            "structuredOutputs": true,
+            "reasoning": true,
+            "reasoningEffortOptions": {
+              "supportedEfforts": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultEffort": "low"
+            }
+          },
+          "algorithm": "grokSlop",
+          "longContextThreshold": "200000",
+          "rateLimits": {
+            "queryOffset": "1200",
+            "queryBaseRate": "600",
+            "queryMultiplier": "2",
+            "tokenOffset": "5000000",
+            "tokenBaseRate": "5000000",
+            "tokenMultiplier": "2"
+          },
+          "batchDiscountPercent": 20,
+          "provisionedThroughput": {
+            "tokensPerInputUnit": "5000",
+            "tokensPerOutputUnit": "2500"
+          },
+          "batchEnabled": true
+        },
+        {
+          "name": "grok-4.6",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "TEXT"
+          ],
+          "promptTextTokenPrice": "20000",
+          "promptImageTokenPrice": "20000",
+          "promptTextTokenPriceLongContext": "40000",
+          "cachedPromptTokenPrice": "5000",
+          "cachedPromptTokenPriceLongContext": "10000",
+          "completionTextTokenPrice": "60000",
+          "completionTokenPriceLongContext": "120000",
+          "rps": "150",
+          "rpm": "7200",
+          "tpm": "50000000",
+          "cluster": "us-west-2",
+          "maxPromptLength": 500000,
+          "features": {
+            "functionCalling": true,
+            "structuredOutputs": true,
+            "reasoning": true,
+            "reasoningEffortOptions": {
+              "supportedEfforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultEffort": "high"
+            }
+          },
+          "algorithm": "grokSlop",
+          "longContextThreshold": "200000",
+          "rateLimits": {
+            "queryOffset": "6080",
+            "queryBaseRate": "1120",
+            "queryMultiplier": "2",
+            "tokenOffset": "46500000",
+            "tokenBaseRate": "3500000",
+            "tokenMultiplier": "2"
+          },
+          "batchDiscountPercent": 0,
+          "provisionedThroughput": {
+            "tokensPerInputUnit": "3000",
+            "tokensPerOutputUnit": "1000"
+          }
+        },
+        {
+          "name": "grok-build-0.1",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE"
+          ],
+          "outputModalities": [
+            "TEXT"
+          ],
+          "promptTextTokenPrice": "10000",
+          "promptImageTokenPrice": "10000",
+          "promptTextTokenPriceLongContext": "20000",
+          "cachedPromptTokenPrice": "2000",
+          "cachedPromptTokenPriceLongContext": "4000",
+          "completionTextTokenPrice": "20000",
+          "completionTokenPriceLongContext": "40000",
+          "rps": "37",
+          "rpm": "1800",
+          "tpm": "10000000",
+          "cluster": "us-west-2",
+          "maxPromptLength": 256000,
+          "aliases": [
+            "grok-code-fast-1",
+            "grok-code-fast",
+            "grok-code-fast-1-0825"
+          ],
+          "features": {
+            "functionCalling": true,
+            "structuredOutputs": true,
+            "reasoning": true
+          },
+          "algorithm": "grokSlop",
+          "longContextThreshold": "200000",
+          "rateLimits": {
+            "queryOffset": "1200",
+            "queryBaseRate": "600",
+            "queryMultiplier": "2",
+            "tokenOffset": "5000000",
+            "tokenBaseRate": "5000000",
+            "tokenMultiplier": "2"
+          },
+          "batchDiscountPercent": 20,
+          "provisionedThroughput": {
+            "tokensPerInputUnit": "6000",
+            "tokensPerOutputUnit": "3000"
+          }
+        },
+        {
           "name": "grok-4.20-0309-non-reasoning",
           "version": "1.0",
           "inputModalities": [
@@ -1211,163 +1368,6 @@
           "batchEnabled": true
         },
         {
-          "name": "grok-4.3",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "TEXT"
-          ],
-          "promptTextTokenPrice": "12500",
-          "promptImageTokenPrice": "12500",
-          "promptTextTokenPriceLongContext": "25000",
-          "cachedPromptTokenPrice": "2000",
-          "cachedPromptTokenPriceLongContext": "4000",
-          "completionTextTokenPrice": "25000",
-          "completionTokenPriceLongContext": "50000",
-          "rps": "37",
-          "rpm": "1800",
-          "tpm": "10000000",
-          "cluster": "us-west-2",
-          "maxPromptLength": 1000000,
-          "aliases": [
-            "grok-4.3-latest"
-          ],
-          "features": {
-            "functionCalling": true,
-            "structuredOutputs": true,
-            "reasoning": true,
-            "reasoningEffortOptions": {
-              "supportedEfforts": [
-                "none",
-                "low",
-                "medium",
-                "high",
-                "xhigh"
-              ],
-              "defaultEffort": "low"
-            }
-          },
-          "algorithm": "grokSlop",
-          "longContextThreshold": "200000",
-          "rateLimits": {
-            "queryOffset": "1200",
-            "queryBaseRate": "600",
-            "queryMultiplier": "2",
-            "tokenOffset": "5000000",
-            "tokenBaseRate": "5000000",
-            "tokenMultiplier": "2"
-          },
-          "batchDiscountPercent": 20,
-          "provisionedThroughput": {
-            "tokensPerInputUnit": "5000",
-            "tokensPerOutputUnit": "2500"
-          },
-          "batchEnabled": true
-        },
-        {
-          "name": "grok-build-0.1",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "TEXT"
-          ],
-          "promptTextTokenPrice": "10000",
-          "promptImageTokenPrice": "10000",
-          "promptTextTokenPriceLongContext": "20000",
-          "cachedPromptTokenPrice": "2000",
-          "cachedPromptTokenPriceLongContext": "4000",
-          "completionTextTokenPrice": "20000",
-          "completionTokenPriceLongContext": "40000",
-          "rps": "37",
-          "rpm": "1800",
-          "tpm": "10000000",
-          "cluster": "us-west-2",
-          "maxPromptLength": 256000,
-          "aliases": [
-            "grok-code-fast-1",
-            "grok-code-fast",
-            "grok-code-fast-1-0825"
-          ],
-          "features": {
-            "functionCalling": true,
-            "structuredOutputs": true,
-            "reasoning": true
-          },
-          "algorithm": "grokSlop",
-          "longContextThreshold": "200000",
-          "rateLimits": {
-            "queryOffset": "1200",
-            "queryBaseRate": "600",
-            "queryMultiplier": "2",
-            "tokenOffset": "5000000",
-            "tokenBaseRate": "5000000",
-            "tokenMultiplier": "2"
-          },
-          "batchDiscountPercent": 20,
-          "provisionedThroughput": {
-            "tokensPerInputUnit": "6000",
-            "tokensPerOutputUnit": "3000"
-          }
-        },
-        {
-          "name": "grok-4.6",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "TEXT"
-          ],
-          "promptTextTokenPrice": "20000",
-          "promptImageTokenPrice": "20000",
-          "promptTextTokenPriceLongContext": "40000",
-          "cachedPromptTokenPrice": "5000",
-          "cachedPromptTokenPriceLongContext": "10000",
-          "completionTextTokenPrice": "60000",
-          "completionTokenPriceLongContext": "120000",
-          "rps": "150",
-          "rpm": "7200",
-          "tpm": "50000000",
-          "cluster": "us-west-2",
-          "maxPromptLength": 500000,
-          "features": {
-            "functionCalling": true,
-            "structuredOutputs": true,
-            "reasoning": true,
-            "reasoningEffortOptions": {
-              "supportedEfforts": [
-                "low",
-                "medium",
-                "high",
-                "xhigh"
-              ],
-              "defaultEffort": "high"
-            }
-          },
-          "algorithm": "grokSlop",
-          "longContextThreshold": "200000",
-          "rateLimits": {
-            "queryOffset": "6080",
-            "queryBaseRate": "1120",
-            "queryMultiplier": "2",
-            "tokenOffset": "46500000",
-            "tokenBaseRate": "3500000",
-            "tokenMultiplier": "2"
-          },
-          "batchDiscountPercent": 0,
-          "provisionedThroughput": {
-            "tokensPerInputUnit": "3000",
-            "tokensPerOutputUnit": "1000"
-          }
-        },
-        {
           "name": "grok-4.20-multi-agent-0309",
           "version": "1.0",
           "inputModalities": [
@@ -1478,41 +1478,6 @@
       ],
       "imageGenerationModels": [
         {
-          "name": "grok-imagine-image",
-          "version": "1.0",
-          "inputModalities": [
-            "TEXT",
-            "IMAGE"
-          ],
-          "outputModalities": [
-            "IMAGE"
-          ],
-          "imagePrice": "200000000",
-          "rps": "6",
-          "rpm": "300",
-          "tpm": "9223372036854775807",
-          "cluster": "us-west-2",
-          "aliases": [
-            "grok-imagine-image-2026-03-02"
-          ],
-          "resolutionPricing": [
-            {
-              "resolution": "IMAGE_RESOLUTION_1K",
-              "pricePerImage": "200000000"
-            },
-            {
-              "resolution": "IMAGE_RESOLUTION_2K",
-              "pricePerImage": "200000000"
-            }
-          ],
-          "pricePerInputImage": "20000000",
-          "rateLimits": {
-            "queryBaseRate": "300",
-            "queryMultiplier": "2"
-          },
-          "batchEnabled": true
-        },
-        {
           "name": "grok-imagine-image-quality",
           "version": "1.0",
           "inputModalities": [
@@ -1591,42 +1556,44 @@
             "queryMultiplier": "2"
           },
           "batchEnabled": true
-        }
-      ],
-      "videoGenerationModels": [
+        },
         {
-          "name": "grok-imagine-video",
+          "name": "grok-imagine-image",
           "version": "1.0",
           "inputModalities": [
             "TEXT",
-            "IMAGE",
-            "VIDEO"
+            "IMAGE"
           ],
           "outputModalities": [
-            "VIDEO"
+            "IMAGE"
           ],
-          "rps": "10",
-          "rpm": "480",
+          "imagePrice": "200000000",
+          "rps": "6",
+          "rpm": "300",
           "tpm": "9223372036854775807",
           "cluster": "us-west-2",
+          "aliases": [
+            "grok-imagine-image-2026-03-02"
+          ],
           "resolutionPricing": [
             {
-              "resolution": "VIDEO_RESOLUTION_480P",
-              "pricePerSecond": "500000000"
+              "resolution": "IMAGE_RESOLUTION_1K",
+              "pricePerImage": "200000000"
             },
             {
-              "resolution": "VIDEO_RESOLUTION_720P",
-              "pricePerSecond": "700000000"
+              "resolution": "IMAGE_RESOLUTION_2K",
+              "pricePerImage": "200000000"
             }
           ],
           "pricePerInputImage": "20000000",
-          "pricePerInputVideoSecond": "100000000",
           "rateLimits": {
-            "queryBaseRate": "480",
+            "queryBaseRate": "300",
             "queryMultiplier": "2"
           },
           "batchEnabled": true
-        },
+        }
+      ],
+      "videoGenerationModels": [
         {
           "name": "grok-imagine-video-1.5",
           "version": "1.0",
@@ -1661,6 +1628,39 @@
             }
           ],
           "pricePerInputImage": "100000000",
+          "rateLimits": {
+            "queryBaseRate": "480",
+            "queryMultiplier": "2"
+          },
+          "batchEnabled": true
+        },
+        {
+          "name": "grok-imagine-video",
+          "version": "1.0",
+          "inputModalities": [
+            "TEXT",
+            "IMAGE",
+            "VIDEO"
+          ],
+          "outputModalities": [
+            "VIDEO"
+          ],
+          "rps": "10",
+          "rpm": "480",
+          "tpm": "9223372036854775807",
+          "cluster": "us-west-2",
+          "resolutionPricing": [
+            {
+              "resolution": "VIDEO_RESOLUTION_480P",
+              "pricePerSecond": "500000000"
+            },
+            {
+              "resolution": "VIDEO_RESOLUTION_720P",
+              "pricePerSecond": "700000000"
+            }
+          ],
+          "pricePerInputImage": "20000000",
+          "pricePerInputVideoSecond": "100000000",
           "rateLimits": {
             "queryBaseRate": "480",
             "queryMultiplier": "2"
