@@ -2,8 +2,10 @@
 
 The history is append-only, so a bad row lands forever. Only what our own
 emission could corrupt is checked here: the model id (rows are keyed by
-(source, model_id)), the price values, and the peak-pricing shape. The
-producers are the store's build_row and openrouter.build_row.
+(source, model_id)), the price values, the peak-pricing shape, and the
+removal-row shape (removed=true only, never alongside price fields). The
+producers are the store's build_row, build_removal_row, and
+openrouter.build_row.
 """
 
 from __future__ import annotations
@@ -18,12 +20,34 @@ class ValidationError(ValueError):
 
 _PRICE_FIELDS = ("input_mtok", "output_mtok")
 _PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok")
+# a removal row is provenance only: any pricing data beside it is junk
+_REMOVAL_FORBIDDEN = (
+    "input_mtok",
+    "output_mtok",
+    "cache_read_mtok",
+    "peak_windows",
+    "peak_input_mtok",
+    "peak_output_mtok",
+    "peak_cache_read_mtok",
+)
 
 
 def validate_row(row: dict[str, Any]) -> None:
     model_id = row.get("model_id")
     if not isinstance(model_id, str) or not model_id:
         raise ValidationError("row field 'model_id' must be a non-empty string")
+    if "removed" in row:
+        removed = row["removed"]
+        if not isinstance(removed, bool) or removed is not True:
+            raise ValidationError(
+                f"row field 'removed' has bad value {removed!r}; fix: only true is valid"
+            )
+        for field in _REMOVAL_FORBIDDEN:
+            if field in row:
+                raise ValidationError(
+                    f"row field '{field}' is not allowed on a removed row; fix: drop it"
+                )
+        return
     for field in _PRICE_FIELDS:
         value = row.get(field)
         if value is None:

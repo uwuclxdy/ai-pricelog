@@ -4,7 +4,17 @@ import pytest
 
 from ai_pricelog import validate
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.store import build_row, changed, last, load, save, union, write_index
+from ai_pricelog.store import (
+    build_removal_row,
+    build_row,
+    changed,
+    last,
+    load,
+    newest,
+    save,
+    union,
+    write_index,
+)
 
 
 def test_load_missing_file_returns_empty(tmp_path):
@@ -281,6 +291,75 @@ def test_write_index_picks_max_observed_at_not_last_row(tmp_path):
     assert entry["input_mtok"] == 5.0
     assert entry["observed_at"] == "2026-08-23"
     assert entry["first_seen"] == "2026-08-19"
+
+
+def test_last_skips_removed_rows():
+    rows = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
+        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
+    ]
+    assert last(rows, "a", "m")["observed_at"] == "t1"
+    assert last([rows[1]], "a", "m") is None
+
+
+def test_newest_returns_the_newest_row_removal_included():
+    rows = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
+        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
+    ]
+    assert newest(rows, "a", "m")["observed_at"] == "t2"
+    assert newest(rows, "a", "m")["removed"] is True
+    assert newest(rows, "a", "n") is None
+
+
+def test_changed_treats_a_removed_last_row_as_first():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
+    removed = {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True}
+    assert changed(row, removed) is True
+
+
+def test_build_removal_row_shape():
+    assert build_removal_row("deepseek", "deepseek-chat", "2026-08-26") == {
+        "source": "deepseek",
+        "model_id": "deepseek-chat",
+        "observed_at": "2026-08-26",
+        "removed": True,
+    }
+
+
+def test_write_index_removed_at_stamps_and_clears(tmp_path):
+    rows = [
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "input_mtok": 1.0,
+            "url": "u1",
+        },
+        {"source": "a", "model_id": "m", "observed_at": "2026-08-22", "removed": True},
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    # the entry keeps the last priced row's fields, stamped removed_at
+    assert entry["input_mtok"] == 1.0
+    assert entry["url"] == "u1"
+    assert entry["removed_at"] == "2026-08-22"
+    assert "removed" not in entry
+    rows.append(
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-24",
+            "input_mtok": 1.0,
+            "url": "u2",
+        }
+    )
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert "removed_at" not in entry
+    assert entry["observed_at"] == "2026-08-24"
+    assert entry["url"] == "u2"
 
 
 def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):

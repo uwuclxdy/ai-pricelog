@@ -86,3 +86,64 @@ def test_empty_peak_windows_rejected():
 def test_bad_peak_window_shape_rejected(bad_window):
     with pytest.raises(ValidationError, match="peak_windows"):
         validate_row(row(peak_input_mtok=0.44, peak_windows=[bad_window]))
+
+
+def test_removed_row_passes():
+    validate_row(
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "removed": True,
+        }
+    )
+
+
+@pytest.mark.parametrize("bad", [False, 0, 1, "true", None, []])
+def test_removed_flag_must_be_true(bad):
+    with pytest.raises(ValidationError, match="removed"):
+        validate_row(
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "removed": bad,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "input_mtok",
+        "output_mtok",
+        "cache_read_mtok",
+        "peak_input_mtok",
+        "peak_output_mtok",
+        "peak_cache_read_mtok",
+    ],
+)
+def test_removed_row_with_price_field_rejected(field):
+    with pytest.raises(ValidationError, match=field):
+        validate_row(
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "removed": True,
+                field: 1.0,
+            }
+        )
+
+
+def test_removed_row_with_peak_windows_rejected():
+    with pytest.raises(ValidationError, match="peak_windows"):
+        validate_row(
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "removed": True,
+                "peak_windows": [["01:00:00Z", "04:00:00Z"]],
+            }
+        )
