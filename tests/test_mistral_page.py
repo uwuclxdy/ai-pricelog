@@ -201,12 +201,15 @@ def test_detect_propagates_fetch_error(monkeypatch):
 
 def test_scrape_flagship_prices(live_pricing):
     cfg = make_cfg()
-    assert mistral_scraper.scrape(cfg, "mistral-large-3-25-12") == Pricing(5e-7, 1.5e-6, "chat", 0)
+    # 0.05 lands 1 ulp off the round decimal, hence approx
+    assert mistral_scraper.scrape(cfg, "mistral-large-3-25-12") == Pricing(
+        5e-7, 1.5e-6, "chat", 0, pytest.approx(5e-8, rel=1e-12)
+    )
     assert mistral_scraper.scrape(cfg, "mistral-medium-3-5-26-04") == Pricing(
-        1.5e-6, 7.5e-6, "chat", 0
+        1.5e-6, 7.5e-6, "chat", 0, 1.5e-7
     )
     assert mistral_scraper.scrape(cfg, "mistral-small-4-0-26-03") == Pricing(
-        1.5e-7, 6e-7, "chat", 0
+        1.5e-7, 6e-7, "chat", 0, 1.5e-8
     )
 
 
@@ -214,18 +217,18 @@ def test_scrape_ministral_prices(live_pricing):
     cfg = make_cfg()
     # 0.2 and 0.1 cents per 1M land 1 ulp off the round decimal, hence approx
     assert mistral_scraper.scrape(cfg, "ministral-3-14b-25-12") == Pricing(
-        pytest.approx(2e-7, rel=1e-12), pytest.approx(2e-7, rel=1e-12), "chat", 0
+        pytest.approx(2e-7, rel=1e-12), pytest.approx(2e-7, rel=1e-12), "chat", 0, 2e-8
     )
     assert mistral_scraper.scrape(cfg, "ministral-3-3b-25-12") == Pricing(
-        pytest.approx(1e-7, rel=1e-12), pytest.approx(1e-7, rel=1e-12), "chat", 0
+        pytest.approx(1e-7, rel=1e-12), pytest.approx(1e-7, rel=1e-12), "chat", 0, 1e-8
     )
 
 
 def test_scrape_token_priced_tables_beyond_flagship(live_pricing):
     cfg = make_cfg()
-    assert mistral_scraper.scrape(cfg, "zai-glm-5-2") == Pricing(1.4e-6, 4.4e-6, "chat", 0)
+    assert mistral_scraper.scrape(cfg, "zai-glm-5-2") == Pricing(1.4e-6, 4.4e-6, "chat", 0, 1.4e-7)
     assert mistral_scraper.scrape(cfg, "codestral-25-08") == Pricing(
-        3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0
+        3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0, 3e-8
     )
 
 
@@ -233,12 +236,25 @@ def test_scrape_accepts_stored_spellings(live_pricing):
     # the detector emits the stored spelling; scrape must match it to the row
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "codestral-2508") == Pricing(
-        3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0
+        3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0, 3e-8
     )
     assert mistral_scraper.scrape(cfg, "ministral-14b-2512") == Pricing(
-        pytest.approx(2e-7, rel=1e-12), pytest.approx(2e-7, rel=1e-12), "chat", 0
+        pytest.approx(2e-7, rel=1e-12), pytest.approx(2e-7, rel=1e-12), "chat", 0, 2e-8
     )
-    assert mistral_scraper.scrape(cfg, "mistral-large-2512") == Pricing(5e-7, 1.5e-6, "chat", 0)
+    assert mistral_scraper.scrape(cfg, "mistral-large-2512") == Pricing(
+        5e-7, 1.5e-6, "chat", 0, pytest.approx(5e-8, rel=1e-12)
+    )
+
+
+def test_scrape_cache_read_row_mtok(live_pricing):
+    # the domain-knowledge pin: zai-glm-5-2 cache reads cost $0.14 per 1M
+    from ai_pricelog import store
+
+    cfg = make_cfg()
+    pricing = mistral_scraper.scrape(cfg, "zai-glm-5-2")
+    assert pricing is not None
+    row = store.build_row(cfg.key, "zai-glm-5-2", pricing, "2026-08-26", cfg.scraper_url)
+    assert row["cache_read_mtok"] == 0.14
 
 
 def test_scrape_non_token_units_return_none(live_pricing):
@@ -302,14 +318,20 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
         '<tr><td><a href="/models/bbb">B</a></td><td>$1</td><td>$0.1</td><td>$2</td></tr>'
         '<tr><td><a href="/models/ccc">C</a></td><td>$4 /1000 Pages</td>'
         "<td>$0.4 /1000 Pages</td><td>$8 /1000 Pages</td></tr>"
+        '<tr><td><a href="/models/ddd">D</a></td><td>$1</td><td>Free</td><td>$2</td></tr>'
         "</table></section></body></html>"
     )
     serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
     cfg = make_cfg()
-    assert mistral_scraper.scrape(cfg, "bbb") == Pricing(1e-6, 2e-6, "chat", 0)
+    # 0.1 lands 1 ulp off the round decimal, hence approx
+    assert mistral_scraper.scrape(cfg, "bbb") == Pricing(
+        1e-6, 2e-6, "chat", 0, pytest.approx(1e-7, rel=1e-12)
+    )
     assert mistral_scraper.scrape(cfg, "aaa") is None
     # unit-priced row inside a token section: the cell regex must reject it
     assert mistral_scraper.scrape(cfg, "ccc") is None
+    # a non-dollar cached cell leaves the cache-read cost None
+    assert mistral_scraper.scrape(cfg, "ddd") == Pricing(1e-6, 2e-6, "chat", 0, None)
 
 
 def test_dedup_keys_compaction():

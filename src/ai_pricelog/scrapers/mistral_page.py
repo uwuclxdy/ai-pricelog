@@ -9,7 +9,9 @@ stored spelling (see ``dedup_keys``; the detector emits the stored spelling, so
 cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
 non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
-pricing -> None. the page carries no context window -> max_tokens 0. mode is chat.
+pricing -> None. the ``Cached input`` cell emits as cache-read cost when it
+carries a bare dollar amount (zai-glm-5-2: $0.14); other cached cells leave it
+None. the page carries no context window -> max_tokens 0. mode is chat.
 """
 
 import re
@@ -80,6 +82,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             ):
                 continue
             input_cost = _price(cells[1].get_text(" ", strip=True))
+            cache_read_cost = _price(cells[2].get_text(" ", strip=True))
             output_cost = _price(cells[3].get_text(" ", strip=True))
             if input_cost is None or output_cost is None:
                 return None
@@ -87,6 +90,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 input_cost_per_token=input_cost,
                 output_cost_per_token=output_cost,
                 mode="chat",
+                cache_read_cost_per_token=cache_read_cost,
             )
     if not found_token_table:
         raise FetchError(f"no per-token pricing tables found on {cfg.scraper_url}")
