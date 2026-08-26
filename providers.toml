@@ -88,10 +88,11 @@ announce_urls = [
   "https://docs.perplexity.ai/docs/resources/changelog.md",
 ]
 
-# re-probed 2026-08-24 (todo #3): static pages re-added below. the rest stay
-# out: anthropic/aws/azure/groq/fireworks/cerebras/modal/doubleword/ovhcloud
-# serve prices client-side only, openai blocks bots, voyage 404s/403s,
-# zhipuai is unreachable from here and CNY-only like volcengine.
+# re-probed 2026-08-24 (todo #1): static pages re-added below. the rest stay
+# out: anthropic/aws/azure/groq/cerebras/modal/doubleword/ovhcloud serve
+# prices client-side only, openai blocks bots, voyage 404s/403s, zhipuai is
+# unreachable from here and CNY-only like volcengine. the 2026-08-27
+# re-probe moved fireworks out of this list (docs pricing table is static).
 
 [together]
 provider = "Together AI"
@@ -112,6 +113,16 @@ scraper = "novita_page"
 scraper_url = "https://novita.ai/pricing"
 announce_urls = [
   "https://novita.ai/docs/changelog",
+]
+
+[fireworks]
+provider = "Fireworks"
+detector = "fireworks_page"
+detector_url = "https://docs.fireworks.ai/serverless/pricing"
+scraper = "fireworks_page"
+scraper_url = "https://docs.fireworks.ai/serverless/pricing"
+announce_urls = [
+  "https://docs.fireworks.ai/updates/changelog",
 ]
 
 [cohere]
