@@ -25,6 +25,7 @@ class OpenrouterModel:
     # build_row-only payload; compare=False keeps the existing mtok-focused equality
     alias_target: object | None = field(default=None, compare=False)
     canonical_slug: str | None = field(default=None, compare=False)
+    variant_snapshot: bool = field(default=False, compare=False)
     context_length: int = field(default=0, compare=False)
     pricing: dict[str, object] = field(default_factory=dict, compare=False)
 
@@ -43,9 +44,7 @@ OBSERVED_KEYS = frozenset({"prompt", "completion", "input_cache_read"})
 
 
 def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
-    if model.alias_target or (
-        model.canonical_slug is not None and model.canonical_slug != model.id
-    ):
+    if model.alias_target or model.variant_snapshot:
         return None
     row: dict[str, object] = {
         "source": "openrouter",
@@ -73,8 +72,10 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
 def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
     if not isinstance(data, dict) or not isinstance(data.get("data"), list):
         raise ValueError(f"{source}: root must be an object with a 'data' list")
+    entries = data["data"]
+    listed_ids = {entry["id"] for entry in entries if isinstance(entry, dict)}
     models: list[OpenrouterModel] = []
-    for entry in data["data"]:
+    for entry in entries:
         if not isinstance(entry, dict):
             raise ValueError(f"{source}: model entries must be objects")
         if entry.get("alias_target"):
@@ -82,6 +83,7 @@ def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
         pricing = entry.get("pricing") or {}
         if not isinstance(pricing, dict):
             raise ValueError(f"{source}: pricing of {entry.get('id')!r} must be an object")
+        canonical_slug = entry.get("canonical_slug")
         models.append(
             OpenrouterModel(
                 id=entry["id"],
@@ -89,7 +91,15 @@ def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
                 input_mtok=_price(pricing.get("prompt"), entry["id"]),
                 output_mtok=_price(pricing.get("completion"), entry["id"]),
                 cache_read_mtok=_price(pricing.get("input_cache_read"), entry["id"]),
-                canonical_slug=entry.get("canonical_slug"),
+                canonical_slug=canonical_slug,
+                # a variant entry redirects to another listed id (":batch"
+                # spellings pointing at the plain model); the plain id keys
+                # the row, so the redirect is not a priced row of its own
+                variant_snapshot=bool(
+                    canonical_slug is not None
+                    and canonical_slug != entry["id"]
+                    and canonical_slug in listed_ids
+                ),
                 context_length=entry.get("context_length") or 0,
                 pricing=pricing,
             )
