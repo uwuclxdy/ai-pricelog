@@ -1126,3 +1126,4 @@
 {"source":"zai","model_id":"glm-4.6v","observed_at":"2026-08-26","input_mtok":0.3,"output_mtok":0.9,"cache_read_mtok":0.05,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-ocr","observed_at":"2026-08-26","input_mtok":0.03,"output_mtok":0.03,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.6v-flashx","observed_at":"2026-08-26","input_mtok":0.04,"output_mtok":0.4,"cache_read_mtok":0.004,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"zai","model_id":"glm-4.5v","observed_at":"2026-08-26","input_mtok":0.6,"output_mtok":1.8,"cache_read_mtok":0.11,"url":"https://docs.z.ai/guides/overview/pricing"}
