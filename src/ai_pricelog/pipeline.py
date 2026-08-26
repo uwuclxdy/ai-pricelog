@@ -32,12 +32,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from ai_pricelog import absence, announce, config, openrouter, pr, store, validate
+from ai_pricelog import absence, announce, config, openrouter, pr, stats, store, validate
 
 log = logging.getLogger(__name__)
 
 HISTORY_FILE = "data/history.ndjson"
 INDEX_FILE = "data/index.json"
+README_FILE = "README.md"
 MARKER_FILE = ".run-changed"
 
 
@@ -626,7 +627,12 @@ def _open_group_pr(
         runner.run(["git", "switch", "-C", branch], cwd=repo_root)
         store.save(full_rows, history_path)
         store.write_index(full_rows, index_path)
-        add_cmd = ["git", "add", HISTORY_FILE, INDEX_FILE]
+        readme_path = repo_root / README_FILE
+        readme_path.write_text(
+            stats.render(readme_path.read_text(encoding="utf-8"), stats.compute(full_rows)),
+            encoding="utf-8",
+        )
+        add_cmd = ["git", "add", HISTORY_FILE, INDEX_FILE, README_FILE]
         if announce_updates is not None:
             announce.save_snapshot(announce_updates, repo_root / announce.ANNOUNCE_FILE)
             add_cmd.append(announce.ANNOUNCE_FILE)

@@ -118,6 +118,10 @@ def repo_root(tmp_path) -> Path:
     (root / "data").mkdir()
     (root / "data" / "history.ndjson").write_text("")
     (root / "data" / "index.json").write_text(json.dumps({"sources": {}}) + "\n")
+    # the stats render needs both markers; the content between them is free
+    (root / "README.md").write_text(
+        "<!-- stats:start -->x<!-- stats:end -->\n<!-- stats-row:start -->x<!-- stats-row:end -->\n"
+    )
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
     bare = tmp_path / "origin.git"
@@ -140,7 +144,7 @@ def assert_default_branch_clean(repo_root: Path, tip: str = "init") -> None:
     assert git(repo_root, "status", "--porcelain") == ""
     assert git(repo_root, "branch", "--show-current").strip() == "main"
     assert git(repo_root, "log", "--format=%s", "-1").strip() == tip
-    for rel in ("data/history.ndjson", "data/index.json"):
+    for rel in ("data/history.ndjson", "data/index.json", "README.md"):
         assert (repo_root / rel).read_text() == git(repo_root, "show", f"HEAD:{rel}")
 
 
@@ -186,6 +190,10 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert row["input_mtok"] == 0.27
     assert row["output_mtok"] == 1.1
     assert row["url"] == "https://example.com/pricing"
+
+    # the branch also carries the README with the recomputed stats
+    branch_readme = git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:README.md")
+    assert "**2** tracked across 1 sources" in branch_readme
 
     # the open pr names the id, so the next run skips it as pending: the store
     # on the default branch is still empty (no row)
