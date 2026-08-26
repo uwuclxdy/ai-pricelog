@@ -45,6 +45,7 @@ def test_config_holds_no_repo(tmp_path):
         "detector_url",
         "scraper",
         "scraper_url",
+        "announce_urls",
     }
 
 
@@ -53,6 +54,48 @@ def test_load_default_cap(tmp_path):
     path.write_text(HAPPY_TOML.replace("[settings]\ncap = 5\n", ""))
     cfg = config.load(providers_path=path)
     assert cfg.cap == 3
+
+
+def test_load_announce_urls(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        '[deepseek]\nprovider = "DeepSeek"\ndetector = "deepseek_page"\n'
+        'detector_url = "https://x"\nscraper = "deepseek_page"\nscraper_url = "https://x"\n'
+        'announce_urls = ["https://a.example/updates", "https://a.example/rss"]\n'
+    )
+    cfg = config.load(providers_path=path)
+    assert cfg.providers[0].announce_urls == (
+        "https://a.example/updates",
+        "https://a.example/rss",
+    )
+
+
+def test_load_announce_urls_defaults_empty(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(HAPPY_TOML)
+    assert config.load(providers_path=path).providers[0].announce_urls == ()
+
+
+def test_load_rejects_non_list_announce_urls(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        '[deepseek]\nprovider = "DeepSeek"\ndetector = "deepseek_page"\n'
+        'detector_url = "https://x"\nscraper = "deepseek_page"\nscraper_url = "https://x"\n'
+        'announce_urls = "https://x"\n'
+    )
+    with pytest.raises(config.ConfigError, match="announce_urls"):
+        config.load_providers(path)
+
+
+def test_load_rejects_empty_announce_url_element(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        '[deepseek]\nprovider = "DeepSeek"\ndetector = "deepseek_page"\n'
+        'detector_url = "https://x"\nscraper = "deepseek_page"\nscraper_url = "https://x"\n'
+        'announce_urls = [""]\n'
+    )
+    with pytest.raises(config.ConfigError, match="announce_urls"):
+        config.load_providers(path)
 
 
 def test_load_rejects_target_era_keys(tmp_path):

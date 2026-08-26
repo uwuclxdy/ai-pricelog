@@ -1,6 +1,11 @@
 # one section per watched provider. provider = the human-facing name in pr
 # titles and bodies, detector/scraper = module names under
 # ai_pricelog.{detectors,scrapers}. sources pinned 2026-08-19.
+# announce_urls = public news/changelog/rss channels watched each run for
+# billing-rule announcements (rate, tier, when-rates-apply, free-tier
+# changes); the key is optional and absent for providers with no watchable
+# surface. status feeds stay out (incidents only). channel choice evidence:
+# docs/research/announce-channels/.
 
 [settings]
 cap = 3
@@ -11,6 +16,10 @@ detector = "deepseek_page"
 detector_url = "https://api-docs.deepseek.com/quick_start/pricing"
 scraper = "deepseek_page"
 scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
+announce_urls = [
+  "https://api-docs.deepseek.com/updates/",
+  "https://api-docs.deepseek.com/sitemap.xml",
+]
 
 [zai]
 provider = "Z.AI"
@@ -18,6 +27,12 @@ detector = "zai_page"
 detector_url = "https://docs.z.ai/guides/overview/pricing"
 scraper = "zai_page"
 scraper_url = "https://docs.z.ai/guides/overview/pricing"
+announce_urls = [
+  "https://docs.z.ai/release-notes/new-released.md",
+  "https://docs.z.ai/devpack/notice/usage-revision.md",
+  "https://docs.z.ai/devpack/transition.md",
+  "https://docs.z.ai/llms.txt",
+]
 
 [moonshot]
 provider = "Moonshot AI"
@@ -25,6 +40,10 @@ detector = "moonshot_page"
 detector_url = "https://platform.kimi.ai/docs/models.md"
 scraper = "moonshot_page"
 scraper_url = "https://platform.kimi.ai/docs/llms.txt"
+announce_urls = [
+  "https://platform.kimi.ai/docs/platform-changelog.md",
+  "https://platform.kimi.ai/docs/llms.txt",
+]
 
 [minimax]
 provider = "MiniMax"
@@ -32,6 +51,10 @@ detector = "minimax_page"
 detector_url = "https://platform.minimax.io/docs/guides/models-intro.md"
 scraper = "minimax_page"
 scraper_url = "https://platform.minimax.io/docs/guides/pricing-paygo.md"
+announce_urls = [
+  "https://platform.minimax.io/docs/release-notes/models",
+  "https://www.minimax.io/blog",
+]
 
 [xai]
 provider = "xAI"
@@ -39,6 +62,10 @@ detector = "xai_page"
 detector_url = "https://docs.x.ai/docs/models"
 scraper = "xai_page"
 scraper_url = "https://docs.x.ai/docs/models"
+announce_urls = [
+  "https://docs.x.ai/developers/release-notes",
+  "https://x.ai/news",
+]
 
 [mistral]
 provider = "Mistral"
@@ -46,6 +73,10 @@ detector = "mistral_page"
 detector_url = "https://docs.mistral.ai/models/model-cards/"
 scraper = "mistral_page"
 scraper_url = "https://docs.mistral.ai/inference/pricing"
+announce_urls = [
+  "https://docs.mistral.ai/resources/changelogs",
+  "https://mistral.ai/news/rss",
+]
 
 [perplexity]
 provider = "Perplexity"
@@ -53,6 +84,9 @@ detector = "perplexity_page"
 detector_url = "https://docs.perplexity.ai/guides/pricing"
 scraper = "perplexity_page"
 scraper_url = "https://docs.perplexity.ai/guides/pricing"
+announce_urls = [
+  "https://docs.perplexity.ai/docs/resources/changelog.md",
+]
 
 # re-probed 2026-08-24 (todo #3): static pages re-added below. the rest stay
 # out: anthropic/aws/azure/groq/fireworks/cerebras/modal/doubleword/ovhcloud
@@ -65,6 +99,10 @@ detector = "together_page"
 detector_url = "https://www.together.ai/pricing"
 scraper = "together_page"
 scraper_url = "https://www.together.ai/pricing"
+announce_urls = [
+  "https://docs.together.ai/docs/changelog.md",
+  "https://www.together.ai/blog/rss.xml",
+]
 
 [novita]
 provider = "Novita"
@@ -72,6 +110,9 @@ detector = "novita_page"
 detector_url = "https://novita.ai/pricing"
 scraper = "novita_page"
 scraper_url = "https://novita.ai/pricing"
+announce_urls = [
+  "https://novita.ai/docs/changelog",
+]
 
 [cohere]
 provider = "Cohere"
@@ -79,6 +120,9 @@ detector = "cohere_page"
 detector_url = "https://cohere.com/pricing"
 scraper = "cohere_page"
 scraper_url = "https://cohere.com/pricing"
+announce_urls = [
+  "https://docs.cohere.com/changelog",
+]
 
 [google]
 provider = "Google"
@@ -86,6 +130,10 @@ detector = "google_page"
 detector_url = "https://ai.google.dev/gemini-api/docs/pricing"
 scraper = "google_page"
 scraper_url = "https://ai.google.dev/gemini-api/docs/pricing"
+announce_urls = [
+  "https://ai.google.dev/gemini-api/docs/changelog?hl=en",
+  "https://developers.googleblog.com/feeds/posts/default",
+]
 
 [avian]
 provider = "Avian"

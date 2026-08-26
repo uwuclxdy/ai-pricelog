@@ -17,6 +17,7 @@ class ProviderCfg:
     detector_url: str
     scraper: str
     scraper_url: str
+    announce_urls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         if not isinstance(values, dict):
             raise ConfigError(f"providers file '{path}': section '{section}' must be a table")
         for key in values:
-            if key not in _REQUIRED_KEYS:
+            if key not in _REQUIRED_KEYS and key != "announce_urls":
                 raise ConfigError(
                     f"providers file '{path}': provider '{section}' has unknown key '{key}'"
                 )
@@ -47,6 +48,14 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         if missing:
             raise ConfigError(
                 f"providers file '{path}': provider '{section}' is missing required keys {missing}"
+            )
+        announce = values.get("announce_urls", [])
+        if not isinstance(announce, list) or not all(
+            isinstance(url, str) and url for url in announce
+        ):
+            raise ConfigError(
+                f"providers file '{path}': provider '{section}' announce_urls"
+                " must be a list of non-empty strings"
             )
         providers.append(
             ProviderCfg(
@@ -56,6 +65,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
                 detector_url=values["detector_url"],
                 scraper=values["scraper"],
                 scraper_url=values["scraper_url"],
+                announce_urls=tuple(announce),
             )
         )
     return tuple(providers)
