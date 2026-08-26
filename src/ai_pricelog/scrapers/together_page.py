@@ -7,13 +7,14 @@ cache_read, both USD per 1M tokens -> /1e6. the page carries no context
 windows in these tables, so max_tokens stays 0. zero or missing amounts
 (free models) -> None.
 
-dedup_keys maps page spellings to the stale HF-style ids the target's
-together.yml tracks (measured against that yml, 2026-08-24): the page spells
-"Llama 3.3 70B" (href /models/llama-3-3-70b) and "Llama 3 8B Instruct Lite"
-(href /models/llama-3-8b-instruct-lite); the yml tracks those endpoints by
-their together API strings meta-llama/Llama-3.3-70B-Instruct-Turbo and
-meta-llama/Meta-Llama-3-8B-Instruct-Lite. the yml's Llama 4 Maverick/Scout
-and Mixtral ids have no row on the per-token tables, so nothing maps to them.
+dedup_keys maps page spellings to the stale HF-style ids the store
+holds (measured 2026-08-24): the page spells "Llama 3.3 70B" (href
+/models/llama-3-3-70b) and "Llama 3 8B Instruct Lite" (href
+/models/llama-3-8b-instruct-lite); the store holds those endpoints by
+their together api strings meta-llama/Llama-3.3-70B-Instruct-Turbo and
+meta-llama/Meta-Llama-3-8B-Instruct-Lite. the stored Llama 4
+Maverick/Scout and Mixtral ids have no row on the per-token tables, so
+nothing maps to them.
 """
 
 import re
@@ -39,7 +40,7 @@ _DEDUP_KEYS = {
 
 
 def dedup_keys(model_id: str) -> tuple[str, ...]:
-    """The target's tracked spelling of a page id, or () when unchanged."""
+    """The stored spelling of a page id, or () when unchanged."""
     return _DEDUP_KEYS.get(_normalize_id(model_id), ())
 
 

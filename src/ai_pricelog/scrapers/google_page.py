@@ -19,9 +19,9 @@ row (embedding models) are unpriced -> None. max_tokens comes from a "1M
 token context window" mention in the section's description paragraphs (only
 Gemini 2.5 Flash carries one), else 0. mode is chat.
 
-dedup_keys maps page spellings the target tracks under a different id:
-- gemini-3.1-flash-image / gemini-3-pro-image -> the tracked -preview
-  entries (their match clauses already list the GA spelling via equals)
+dedup_keys maps page spellings the store holds under a different id:
+- gemini-3.1-flash-image / gemini-3-pro-image -> the stored -preview
+  entries
 - gemini-2.5-flash-native-audio-preview-<date> -> gemini-live-2.5-flash
 - gemini-2.5-flash-lite-preview-<date> -> gemini-2.5-flash-lite
 """
@@ -54,7 +54,7 @@ _DATED_PREVIEW_IDS = {
 
 
 def dedup_keys(model_id: str) -> list[str]:
-    """The target's tracked spelling of a divergent page id, or [] when unchanged."""
+    """The stored spelling of a divergent page id, or [] when unchanged."""
     if model_id in _GA_IMAGE_IDS:
         return [_GA_IMAGE_IDS[model_id]]
     for pattern, tracked in _DATED_PREVIEW_IDS.items():

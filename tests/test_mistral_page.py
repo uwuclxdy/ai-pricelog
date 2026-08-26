@@ -234,8 +234,7 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
 def test_dedup_keys_compaction():
     from ai_pricelog.scrapers.mistral_page import dedup_keys
 
-    # page slug -> the target's tracked spellings, measured against
-    # prices/providers/mistral.yml (codestral-2508 etc., 2026-08-19)
+    # page slug -> the stored spellings, measured 2026-08-19
     cases = {
         "codestral-25-08": ["codestral-2508"],
         "codestral-25-01": ["codestral-2501"],

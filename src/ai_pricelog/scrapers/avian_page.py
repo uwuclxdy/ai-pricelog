@@ -12,7 +12,7 @@ missing, unparseable, or zero (a row without usable rates is never a
 candidate). FetchError = the fetch failed or the page has no pricing grid.
 
 no dedup_keys hook: the page models (deepseek, minimax, glm, kimi, mimo
-cards) map to none of the target's avian.yml ids (four stale Meta-Llama
+cards) map to none of the stored avian ids (four stale Meta-Llama
 entries), so nothing to normalize.
 """
 

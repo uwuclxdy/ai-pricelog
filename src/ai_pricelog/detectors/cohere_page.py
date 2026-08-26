@@ -8,14 +8,14 @@ reads https://cohere.com/pricing (static server-rendered html, snapshot
   instance``, one row per model and tier. the id is the slug of
   model+tier joined ("Embed 4" + "Small" -> "embed-4-small"). the rates
   are per instance, never per token, so the rows are detected (new
-  models the target's cohere.yml does not track) but scrape to None.
+  models the store does not hold yet) but scrape to None.
 - the legacy-models faq prose: ``<name> pricing is $<input>/1M tokens
   for input and $<output>/1M tokens for output`` sentences ("Command",
   "Command-light", "Command R 03-2024", "Command R+ 04-2024",
   "Command R+ 08-2024").
 
-the slug rule: lowercase, "+" -> "plus" (the target's own spelling of
-the R+ family; a bare "+" would fail the entry id charset), then every
+the slug rule: lowercase, "+" -> "plus" (the stored spelling of
+the R+ family; a bare "+" would fail the stored id charset), then every
 non-alphanumeric run (dots kept) collapses to "-", edges trimmed
 ("Rerank 3.5 Medium" -> "rerank-3.5-medium").
 
@@ -136,11 +136,10 @@ def _release_date(model: _Model) -> int:
 def _newest_dated_first(models: list[_Model]) -> list[_Model]:
     """same-base dated release spellings emit newest first.
 
-    the refresh pass drift-checks the first page id mapping to a tracked
-    entry; the target's cohere.yml carries the newest release's rates
-    (command-r-plus tracks 2.5/10 = the page's 08-2024 row, measured
-    2026-08-24), and an older dated row in the lead would open a false
-    drift draft every run.
+    the refresh pass drift-checks the first page id mapping to a stored
+    row; the store carries the newest release's rates (command-r-plus
+    holds 2.5/10 = the page's 08-2024 row, measured 2026-08-24), and an
+    older dated row in the lead would open a false drift row every run.
     """
     ordered: list[_Model] = []
     dated_run: list[_Model] = []

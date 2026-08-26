@@ -107,8 +107,8 @@ def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
 
 def _display_name(entry: dict) -> str:
     name = entry.get("name") or entry["id"]
-    # API names carry a vendor prefix ("SpaceXAI: Grok 4.6"); the target's
-    # openrouter.yml entries use the bare model name
+    # API names carry a vendor prefix ("SpaceXAI: Grok 4.6"); rows use the
+    # bare model name
     return name.split(": ", 1)[1] if ": " in name else name
 
 
@@ -122,7 +122,7 @@ def _price(value: object, model_id: str) -> float | None:
         )
     per_token = float(value)
     if per_token == 0:
-        # free models ship all-zero pricing strings; the target represents
-        # them as an empty prices mapping, and its schema forbids zero prices
+        # free models ship all-zero pricing strings; the fetch layer parses
+        # zero as None
         return None
     return to_mtok(per_token)

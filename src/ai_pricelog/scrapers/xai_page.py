@@ -7,7 +7,7 @@ max_tokens comes from ``maxOutputTokens`` when present (absent on the live page 
 0, the entry builder omits it). mode is chat.
 
 the page ids carry dated snapshot spellings (``grok-4.20-0309-non-reasoning``)
-for models the target's x_ai.yml tracks under their base id (``grok-4.20``).
+for models the store holds under their base id (``grok-4.20``).
 ``dedup_keys`` normalizes those: strip the ``-\d{4}`` date and the optional
 ``-(non-)?reasoning`` suffix, check the base. the reasoning strip only applies
 after a date strip, so a genuinely new id ending in ``-reasoning`` never

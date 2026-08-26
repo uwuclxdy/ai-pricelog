@@ -8,7 +8,7 @@ chat rows at identical rates). rows from both are merged by slug, first
 table in document order wins, so each model id appears once. ids are the
 Model column cells slugged: lowercase, whitespace runs -> "-", other
 punctuation kept as written ("DeepSeek V4 Pro 0813" -> "deepseek-v4-pro-0813";
-page names already carry dots and dashes, which the target's id charset
+page names already carry dots and dashes, which the stored id charset
 allows). cells whose slug does not fit that charset are skipped. every other
 table (image, audio, embeddings, moderation, fine-tuning, hardware) has
 different headers and is out of scope; the batch-api-price toggle holds no

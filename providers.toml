@@ -94,5 +94,5 @@ detector_url = "https://www.avian.io/pricing"
 scraper = "avian_page"
 scraper_url = "https://www.avian.io/pricing"
 
-# [dashscope] disabled: the target tracks no first-party qwen provider yml.
+# [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).

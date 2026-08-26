@@ -209,8 +209,8 @@ def test_scrape_unknown_model_returns_none(live_page):
 
 
 def test_dedup_keys_ga_image_spellings():
-    # the page dropped the -preview suffix at GA; the target's entries track
-    # the preview spelling (their match clauses list the GA spelling too)
+    # the page dropped the -preview suffix at GA; the store holds the
+    # preview spelling
     assert scraper.dedup_keys("gemini-3.1-flash-image") == ["gemini-3.1-flash-image-preview"]
     assert scraper.dedup_keys("gemini-3-pro-image") == ["gemini-3-pro-image-preview"]
 

@@ -10,9 +10,9 @@ non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
 pricing -> None. the page carries no context window -> max_tokens 0. mode is chat.
 
 note: the page spells dated slugs with dashes (``codestral-25-08``) while the
-target's mistral.yml compacts them (``codestral-2508``). the pipeline's dedup
-consults ``dedup_keys`` for the compacted spelling, so a model already tracked
-under it settles without a PR.
+store compacts them (``codestral-2508``). the pipeline's dedup consults
+``dedup_keys`` for the compacted spelling, so a model already stored under it
+settles without a new row.
 """
 
 import re
@@ -27,12 +27,12 @@ _TOKEN_UNIT_LINE = "Prices /M Tokens"
 _DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
 
 # slug tail like -4-0-26-03 or -25-08 (zero to three version segments, then
-# yy-mm) compacts to -2603 / -2508, the spellings the target's mistral.yml
-# tracks (codestral-2508 etc.). slugs without a dated tail stay verbatim.
+# yy-mm) compacts to -2603 / -2508, the stored spellings (codestral-2508 etc.).
+# slugs without a dated tail stay verbatim.
 _DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){0,3}-(\d{2})-(\d{2})$")
 
-# a generation segment between family and size (ministral-3-14b): the target
-# tracks the spelling without it (ministral-14b-2512)
+# a generation segment between family and size (ministral-3-14b): the store
+# holds the spelling without it (ministral-14b-2512)
 _GENERATION_SEGMENT = re.compile(r"^(.+)-(\d+)-(\d+b(?:-.*)?)$")
 
 
@@ -44,13 +44,13 @@ def _compact(slug: str) -> str:
 
 
 def dedup_keys(model_id: str) -> list[str]:
-    """The target's tracked spellings of this page slug, or [] when unchanged.
+    """The stored spellings of this page slug, or [] when unchanged.
 
     most slugs compact a dated tail (codestral-25-08 -> codestral-2508).
-    ministral slugs also carry a generation segment the target drops
+    ministral slugs also carry a generation segment the store drops
     (ministral-3-14b-25-12 -> ministral-3-14b-2512 AND ministral-14b-2512).
-    the pipeline settles only when a returned spelling is actually tracked
-    (is_tracked), so an untracked candidate spelling is harmless.
+    the pipeline settles only when a returned spelling has a stored row,
+    so an unknown candidate spelling is harmless.
     """
     compacted = _compact(model_id)
     keys = []

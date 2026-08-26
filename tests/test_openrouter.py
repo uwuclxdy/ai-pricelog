@@ -43,8 +43,8 @@ def test_fetch_models_skips_alias_entries(fake_fetch: list[str]) -> None:
 def test_fetch_models_free_model_and_missing_cache_read(fake_fetch: list[str]) -> None:
     by_id = {m.id: m for m in fetch_models()}
     free = by_id["dots-studio/dots-3-note-preview:free"]
-    # free models ship all-zero pricing strings; zero parses as None so the
-    # yml entry renders as `prices: {}` (the target's schema forbids zero)
+    # free models ship all-zero pricing strings; the fetch layer parses
+    # zero as None
     assert free.input_mtok is None
     assert free.output_mtok is None
     assert free.cache_read_mtok is None

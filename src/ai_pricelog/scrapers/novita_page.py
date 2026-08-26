@@ -27,9 +27,9 @@ from ai_pricelog.detectors.novita_page import (
 )
 from ai_pricelog.pricing import Pricing
 
-# deepseek dated snapshots: the target's novita.yml tracks the base ids
+# deepseek dated snapshots: the store holds the base ids
 # (deepseek/deepseek-r1, and deepseek_v3 with an underscore), measured
-# against the live yml 2026-08-24.
+# 2026-08-24.
 _DEDUP: dict[str, tuple[str, ...]] = {
     "deepseek/deepseek-r1-0528": ("deepseek/deepseek-r1",),
     "deepseek/deepseek-v3-0324": ("deepseek/deepseek_v3",),

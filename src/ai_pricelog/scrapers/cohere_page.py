@@ -13,12 +13,11 @@ None = the model id is not on the page, or the page has no per-token
 rate for it (model vault rows). FetchError = the fetch failed or the
 page carries no pricing content at all.
 
-dedup_keys maps the faq's dated release spellings to the target's
-tracked ids, measured against pydantic/genai-prices cohere.yml
-(2026-08-24). cohere names its releases by date; the page's legacy faq
-spells "Command R 03-2024" and "Command R+ 04-2024"/"Command R+
-08-2024", and the yml tracks those models as command-r and
-command-r-plus (its own match clauses alias the 08-2024 spellings).
+dedup_keys maps the faq's dated release spellings to the stored ids,
+measured against pydantic/genai-prices cohere.yml (2026-08-24). cohere
+names its releases by date; the page's legacy faq spells "Command R
+03-2024" and "Command R+ 04-2024"/"Command R+ 08-2024", and the store
+holds those models as command-r and command-r-plus.
 """
 
 from ai_pricelog.config import ProviderCfg

@@ -323,9 +323,9 @@ def test_scrape_no_model_cards_raises(monkeypatch):
 
 
 def test_dedup_keys_dated_snapshots():
-    # the page spells deepseek's dated snapshots; the target's novita.yml
-    # tracks the base ids (deepseek/deepseek-r1, and deepseek_v3 with an
-    # underscore), measured against the live yml 2026-08-24
+    # the page spells deepseek's dated snapshots; the store holds the base
+    # ids (deepseek/deepseek-r1, and deepseek_v3 with an underscore),
+    # measured 2026-08-24
     assert scraper.dedup_keys("deepseek/deepseek-r1-0528") == ("deepseek/deepseek-r1",)
     assert scraper.dedup_keys("deepseek/deepseek-v3-0324") == ("deepseek/deepseek_v3",)
 

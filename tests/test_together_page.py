@@ -258,7 +258,7 @@ def test_scrape_thousands_separator(monkeypatch):
 
 
 def test_dedup_keys_tracked_llama_endpoints():
-    # page spellings map to the HF-style ids the target's together.yml tracks
+    # page spellings map to the HF-style ids the store holds
     # (measured against that yml, 2026-08-24)
     assert scraper.dedup_keys("llama-3.3-70b") == ("meta-llama/Llama-3.3-70B-Instruct-Turbo",)
     assert scraper.dedup_keys("llama-3-8b-instruct-lite") == (
