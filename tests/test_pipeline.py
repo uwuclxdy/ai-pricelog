@@ -1311,6 +1311,31 @@ def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, re
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
+def test_absent_removed_model_does_not_churn_state(tmp_path, fake_modules, repo_root):
+    # a landed removal ends absence tracking: later quiet runs recreate no
+    # counter, so the state stays equal and the CI marker stays untouched
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    removal = store.build_removal_row("deepseek", "deepseek-chat", "2026-08-20")
+    seed_store(repo_root, [prior, removal])
+    seed_absence(repo_root, {})
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+
+
 def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
     # a run that opens a row pr touches the marker; a quiet run clears it
     detect, scrape = fake_modules

@@ -557,10 +557,18 @@ def _track_absence(
         del source_state[model_id]
     for model_id in [mid for mid in source_state if mid in present_ids]:
         del source_state[model_id]
+    # a landed removal ends tracking: the row is the record, and re-counting
+    # would churn the state (and the CI marker) on every later run
+    for model_id in [
+        mid for mid in source_state if store.newest(rows, source, mid).get("removed") is True
+    ]:
+        del source_state[model_id]
     absent_ids = {
         model_id
         for model_id in stored_ids
-        if model_id not in present_ids and not pr.pending_pr(model_id, open_prs)
+        if model_id not in present_ids
+        and not pr.pending_pr(model_id, open_prs)
+        and store.newest(rows, source, model_id).get("removed") is not True
     }
     for model_id in sorted(absent_ids):
         entry = source_state.get(model_id)
