@@ -64,6 +64,7 @@ def test_scrape_glm53(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(1.4 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(4.4 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.26 / 1e6)
     assert pricing.mode == "chat"
     assert pricing.max_tokens == 0
 
@@ -75,6 +76,7 @@ def test_scrape_vision_model(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(1.2 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(4.0 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.24 / 1e6)
 
 
 def test_scrape_matches_row_case_insensitively(monkeypatch):
@@ -88,6 +90,16 @@ def test_scrape_free_model_returns_none(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     assert scraper.scrape(cfg(), "glm-4.7-flash") is None
     assert scraper.scrape(cfg(), "glm-4.6v-flash") is None
+
+
+def test_scrape_cached_input_without_rate_is_omitted(monkeypatch):
+    # the 32b row carries "-" in the Cached Input column: no cache-read rate
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "glm-4-32b-0414-128k")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.1 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.1 / 1e6)
+    assert pricing.cache_read_cost_per_token is None
 
 
 def test_scrape_unknown_model_returns_none(monkeypatch):

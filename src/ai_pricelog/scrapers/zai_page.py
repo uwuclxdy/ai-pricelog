@@ -2,11 +2,11 @@
 
 same per-token tables as detection (Text + Vision Models). columns Model |
 Input | Cached Input | Cached Input Storage | Output: Input -> input_cost,
-Output -> output_cost, USD per 1M -> /1e6. Cached Input is cache-hit
-pricing and ignored. cells without a dollar amount ("Free",
-"Limited-time Free") -> None (skip until priced). the page carries no
-context window -> max_tokens stays 0. rows match case-insensitively
-(detection lowercases; the page keeps GLM-4.7-FlashX).
+Cached Input -> cache_read_cost_per_token, Output -> output_cost, USD per
+1M -> /1e6. cells without a dollar amount ("Free", "Limited-time Free",
+"-") -> None (skip until priced). the page carries no context window ->
+max_tokens stays 0. rows match case-insensitively (detection lowercases;
+the page keeps GLM-4.7-FlashX).
 
 None = the model id is not on the page or a price cell carries no dollar
 amount. FetchError = the fetch failed or the page has no per-token tables.
@@ -42,10 +42,14 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         output_cost = _dollars(row[header.index("Output")])
         if input_cost is None or output_cost is None:
             return None
+        cache_read = (
+            _dollars(row[header.index("Cached Input")]) if "Cached Input" in header else None
+        )
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
             mode="chat",
+            cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
         )
     return None
 
