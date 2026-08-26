@@ -144,8 +144,7 @@ class PrSpec:
             "- [ ] peak/off-peak rates match the page",
             "- [ ] a sibling merge conflict: concatenate both histories, dedupe"
             " exact lines only (a key-based union drops same-day updates);"
-            " index.json heals on the next push, state.json on the next"
-            " pr-bearing run",
+            " index.json heals on the next push",
         ]
 
 

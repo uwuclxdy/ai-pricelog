@@ -118,7 +118,6 @@ def repo_root(tmp_path) -> Path:
     (root / "data").mkdir()
     (root / "data" / "history.ndjson").write_text("")
     (root / "data" / "index.json").write_text(json.dumps({"sources": {}}) + "\n")
-    (root / "state.json").write_text(json.dumps({"providers": {}}) + "\n")
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
     bare = tmp_path / "origin.git"
@@ -127,12 +126,10 @@ def repo_root(tmp_path) -> Path:
     return root
 
 
-def seed_store(repo_root: Path, rows: list[dict], state: dict | None = None) -> None:
+def seed_store(repo_root: Path, rows: list[dict]) -> None:
     """Commit a prior store snapshot on the default branch (the merged-PR end state)."""
     store.save(rows, repo_root / "data" / "history.ndjson")
     store.write_index(rows, repo_root / "data" / "index.json")
-    if state is not None:
-        (repo_root / "state.json").write_text(json.dumps(state) + "\n")
     git(repo_root, "add", ".")
     git(repo_root, "commit", "-m", "seed store")
 
@@ -141,7 +138,7 @@ def assert_default_branch_clean(repo_root: Path, tip: str = "init") -> None:
     assert git(repo_root, "status", "--porcelain") == ""
     assert git(repo_root, "branch", "--show-current").strip() == "main"
     assert git(repo_root, "log", "--format=%s", "-1").strip() == tip
-    for rel in ("data/history.ndjson", "data/index.json", "state.json"):
+    for rel in ("data/history.ndjson", "data/index.json"):
         assert (repo_root / rel).read_text() == git(repo_root, "show", f"HEAD:{rel}")
 
 
@@ -173,8 +170,8 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert provider_report.skipped_cap == []
     assert provider_report.errors == []
 
-    # the row and the seen-state ride the pr branch only; the branch carries
-    # the full store (the loaded legacy row plus the new one)
+    # the row rides the pr branch only; the branch carries the full store
+    # (the loaded legacy row plus the new one)
     branch_history = git(
         repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
     )
@@ -187,13 +184,9 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert row["input_mtok"] == 0.27
     assert row["output_mtok"] == 1.1
     assert row["url"] == "https://example.com/pricing"
-    branch_state = json.loads(
-        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:state.json")
-    )
-    assert branch_state["providers"]["deepseek"]["last_seen"] == ["deepseek-chat"]
 
     # the open pr names the id, so the next run skips it as pending: the store
-    # on the default branch is still empty (no row, no seen-state)
+    # on the default branch is still empty (no row)
     assert_default_branch_clean(repo_root, tip="seed store")
     runner.open_prs = [{"title": runner.created[0][0], "body": ""}]
     second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
@@ -261,7 +254,7 @@ def test_cap_skips_extra_candidates(tmp_path, fake_modules, repo_root):
     assert provider_report.skipped_cap == ["b"]
     assert len(runner.pr_urls) == 1
 
-    # b got no pr, so neither its row nor its seen-state may ride a's branch
+    # b got no pr, so its row may not ride a's branch
     branch_rows = [
         json.loads(line)
         for line in git(
@@ -269,8 +262,6 @@ def test_cap_skips_extra_candidates(tmp_path, fake_modules, repo_root):
         ).splitlines()
     ]
     assert [row["model_id"] for row in branch_rows] == ["deepseek-legacy", "a"]
-    branch_state = json.loads(git(repo_root, "show", f"{pr.branch_name('a')}:state.json"))
-    assert branch_state["providers"]["deepseek"]["last_seen"] == ["a"]
     assert_default_branch_clean(repo_root, tip="seed store")
 
     # next run: a is settled by its open pr, b re-candidates against the
@@ -327,10 +318,6 @@ def test_seed_pr_carries_all_rows_without_cap(tmp_path, fake_modules, repo_root,
     branch_history = git(repo_root, "show", "pricelog/seed:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert [row["model_id"] for row in rows] == ["a", "b", "c", "deepseek/deepseek-chat"]
-    branch_state = json.loads(git(repo_root, "show", "pricelog/seed:state.json"))
-    assert branch_state["providers"]["deepseek"]["last_seen"] == ["a", "b"]
-    assert branch_state["providers"]["zai"]["last_seen"] == ["c"]
-    assert "openrouter" not in branch_state["providers"]
     assert_default_branch_clean(repo_root)
 
 
@@ -346,7 +333,7 @@ def test_refresh_drift_appends_and_opens_update_pr(tmp_path, fake_modules, repo_
         "2026-08-19",
         "https://example.com/pricing",
     )
-    seed_store(repo_root, [prior], {"providers": {"deepseek": {"last_seen": ["deepseek-chat"]}}})
+    seed_store(repo_root, [prior])
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
@@ -380,7 +367,7 @@ def test_refresh_unchanged_appends_nothing(tmp_path, fake_modules, repo_root):
         "2026-08-19",
         "https://example.com/pricing",
     )
-    seed_store(repo_root, [prior], {"providers": {"deepseek": {"last_seen": ["deepseek-chat"]}}})
+    seed_store(repo_root, [prior])
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
@@ -408,11 +395,7 @@ def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, rep
         "2026-08-19",
         "https://example.com/pricing",
     )
-    seed_store(
-        repo_root,
-        [prior],
-        {"providers": {"mistral": {"last_seen": ["codestral-25-08", "codestral-2508"]}}},
-    )
+    seed_store(repo_root, [prior])
 
     report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
 
@@ -424,13 +407,34 @@ def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, rep
     )
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert rows[1]["model_id"] == "codestral-2508"
-    branch_state = json.loads(
-        git(repo_root, "show", f"{pr.branch_name('codestral-2508')}:state.json")
-    )
-    assert branch_state["providers"]["mistral"]["last_seen"] == [
-        "codestral-25-08",
+
+
+def test_dedup_spelling_row_settles_detected_id(tmp_path, fake_modules, repo_root):
+    # the candidate gate is dedup-aware: a page id whose deduped spelling
+    # already has a row must not seed a duplicate track under the page
+    # spelling
+    detect, scrape = fake_modules
+    detect["mistral"] = ["codestral-25-08"]
+    scrape["mistral"] = {"codestral-25-08": Pricing(0.2e-6, 0.4e-6, "chat")}
+    scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
+    scr.dedup_keys = lambda model_id: [model_id.replace("-25-08", "-2508")]
+    cfg = make_cfg(3, "mistral")
+    prior = store.build_row(
+        "mistral",
         "codestral-2508",
-    ]
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [prior])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    provider_report = report.providers["mistral"]
+    assert provider_report.candidates == []
+    assert provider_report.prs == []
+    assert provider_report.skipped_no_pricing == []
 
 
 def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, or_models):
@@ -476,10 +480,6 @@ def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, o
     assert rows[1]["source"] == "openrouter"
     assert rows[1]["model_id"] == "deepseek/deepseek-chat"
     assert rows[1]["input_mtok"] == 0.27
-    # openrouter keeps no seen-state: the branch state.json equals the head one
-    assert git(repo_root, "show", f"{pr.branch_name('deepseek/deepseek-chat')}:state.json") == git(
-        repo_root, "show", "HEAD:state.json"
-    )
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -575,14 +575,16 @@ def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
     detect["deepseek"] = ["a", "b"]
     scrape["deepseek"] = {"a": RuntimeError("page broke"), "b": pricing()}
     cfg = make_cfg(3, "deepseek")
+    runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner())
+    report = pipeline.run(cfg, repo_root, runner)
 
     provider_report = report.providers["deepseek"]
     assert "page broke" in provider_report.errors[0]
     assert [model_id for model_id, _url in provider_report.prs] == ["b"]
     # a is not settled: the next run re-candidates it
-    assert json.loads((repo_root / "state.json").read_text()) == {"providers": {}}
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    assert "a" in second.providers["deepseek"].candidates
 
 
 def test_validation_failure_skips_candidate_and_continues(tmp_path, fake_modules, repo_root):
@@ -745,11 +747,7 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
         "2026-08-19",
         "https://example.com/pricing",
     )
-    seed_store(
-        repo_root,
-        [legacy, prior],
-        {"providers": {"deepseek": {"last_seen": ["deepseek-legacy", "deepseek-chat"]}}},
-    )
+    seed_store(repo_root, [legacy, prior])
 
     # a sibling run already opened the drift update pr for deepseek-chat; the
     # pending branch carries the full store snapshot
@@ -823,11 +821,7 @@ def test_closed_pr_branch_contributes_no_rows(tmp_path, fake_modules, repo_root)
         "2026-08-19",
         "https://example.com/pricing",
     )
-    seed_store(
-        repo_root,
-        [legacy, prior],
-        {"providers": {"deepseek": {"last_seen": ["deepseek-legacy", "deepseek-chat"]}}},
-    )
+    seed_store(repo_root, [legacy, prior])
     stale = store.build_row(
         "deepseek",
         "deepseek-chat",
