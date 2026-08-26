@@ -137,6 +137,7 @@ def test_build_row_omits_optional_fields_when_absent():
     assert "peak_windows" not in row
     assert "peak_input_mtok" not in row
     assert "peak_output_mtok" not in row
+    assert "peak_cache_read_mtok" not in row
 
 
 def test_build_row_includes_cache_read_and_max_tokens():
@@ -159,12 +160,29 @@ def test_build_row_emits_peak_fields_together():
         mode="flex",
         peak_input_cost_per_token=0.000002,
         peak_output_cost_per_token=0.000004,
+        peak_cache_read_cost_per_token=0.0000005,
         peak_windows=(("00:00", "04:00"), ("06:00", "10:00")),
     )
     row = build_row("a", "m", pricing, "t", "u")
     assert row["peak_windows"] == [["00:00", "04:00"], ["06:00", "10:00"]]
     assert row["peak_input_mtok"] == 2.0
     assert row["peak_output_mtok"] == 4.0
+    assert row["peak_cache_read_mtok"] == 0.5
+
+
+def test_build_row_peak_cache_read_alone_triggers_peak_block():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        peak_cache_read_cost_per_token=0.0000005,
+        peak_windows=(("00:00", "04:00"),),
+    )
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["peak_windows"] == [["00:00", "04:00"]]
+    assert row["peak_cache_read_mtok"] == 0.5
+    assert "peak_input_mtok" not in row
+    assert "peak_output_mtok" not in row
 
 
 def test_build_row_peak_prices_without_windows_builds_and_validation_rejects():

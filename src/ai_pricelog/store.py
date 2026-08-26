@@ -118,6 +118,7 @@ def build_row(
     if (
         pricing.peak_input_cost_per_token is not None
         or pricing.peak_output_cost_per_token is not None
+        or pricing.peak_cache_read_cost_per_token is not None
     ):
         # no assert on peak_windows here: the row must build even when the
         # scrape left the windows empty, so validate.validate_row rejects
@@ -127,6 +128,8 @@ def build_row(
             row["peak_input_mtok"] = to_mtok(pricing.peak_input_cost_per_token)
         if pricing.peak_output_cost_per_token is not None:
             row["peak_output_mtok"] = to_mtok(pricing.peak_output_cost_per_token)
+        if pricing.peak_cache_read_cost_per_token is not None:
+            row["peak_cache_read_mtok"] = to_mtok(pricing.peak_cache_read_cost_per_token)
     row["url"] = url
     return row
 

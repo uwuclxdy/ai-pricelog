@@ -36,6 +36,7 @@ def test_valid_peak_row_passes():
             output_mtok=0.66,
             peak_input_mtok=0.44,
             peak_output_mtok=1.32,
+            peak_cache_read_mtok=0.014,
             peak_windows=[["01:00:00Z", "04:00:00Z"], ["06:00:00Z", "10:00:00Z"]],
         )
     )
@@ -59,7 +60,7 @@ def test_bad_price_rejected(field, bad):
         validate_row(row(**{field: bad}))
 
 
-@pytest.mark.parametrize("field", ["peak_input_mtok", "peak_output_mtok"])
+@pytest.mark.parametrize("field", ["peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok"])
 @pytest.mark.parametrize("bad", [-1.0, float("inf"), float("nan"), True, 5])
 def test_bad_peak_price_rejected(field, bad):
     with pytest.raises(ValidationError, match=field):
@@ -69,6 +70,11 @@ def test_bad_peak_price_rejected(field, bad):
 def test_peak_price_without_windows_rejected():
     with pytest.raises(ValidationError, match="peak_windows"):
         validate_row(row(peak_input_mtok=0.44))
+
+
+def test_peak_cache_read_without_windows_rejected():
+    with pytest.raises(ValidationError, match="peak_windows"):
+        validate_row(row(peak_cache_read_mtok=0.014))
 
 
 def test_empty_peak_windows_rejected():

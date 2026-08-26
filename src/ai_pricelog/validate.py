@@ -17,7 +17,7 @@ class ValidationError(ValueError):
 
 
 _PRICE_FIELDS = ("input_mtok", "output_mtok")
-_PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok")
+_PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok")
 
 
 def validate_row(row: dict[str, Any]) -> None:

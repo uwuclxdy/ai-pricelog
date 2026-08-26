@@ -71,8 +71,10 @@ def test_scrape_flash_split_pricing(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
     assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
     assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
     assert pricing.mode == "chat"
     assert pricing.max_tokens == 384 * 1024
@@ -84,8 +86,10 @@ def test_scrape_pro_split_pricing(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.66 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(1.98 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.022 / 1e6)
     assert pricing.peak_input_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_output_cost_per_token == pytest.approx(3.96 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.044 / 1e6)
     assert pricing.peak_windows == WINDOWS
     assert pricing.max_tokens == 384 * 1024
 
@@ -168,6 +172,83 @@ def test_scrape_off_peak_only_is_flat_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token is None
     assert pricing.peak_windows == ()
     assert pricing.max_tokens == 128 * 1024
+
+
+def test_scrape_cache_hit_without_peak_subrow_is_flat(monkeypatch):
+    # a CACHE HIT label carrying no PEAK subrow is flat: cache_read only
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE HIT)</td><td>OFF-PEAK</td><td>$0.007</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr></table>",
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4-flash")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token is None
+    assert pricing.peak_windows == ()
+
+
+def test_scrape_flat_cache_hit_with_split_input_output(monkeypatch):
+    # CACHE HIT without a PEAK subrow while CACHE MISS/OUTPUT are split: the
+    # cache read stays flat, the peak fields cover input/output only
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE HIT)</td><td>OFF-PEAK</td><td>$0.007</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr>"
+        "<tr><td>PEAK</td><td>$1.32</td></tr></table>"
+        "<p>Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC.</p>",
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4-flash")
+    assert pricing is not None
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token is None
+    assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
+    assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.peak_windows == WINDOWS
+
+
+def test_scrape_cache_hit_peak_without_input_output_peak_returns_none(monkeypatch):
+    # a PEAK subrow on the CACHE HIT label only is an unusable split, like
+    # any other one-sided peak row
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE HIT)</td><td>OFF-PEAK</td><td>$0.007</td></tr>"
+        "<tr><td>PEAK</td><td>$0.014</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr></table>",
+    )
+    assert scraper.scrape(cfg(), "deepseek-v4-flash") is None
+
+
+def test_scrape_peak_cache_read_without_footnote_fails(monkeypatch):
+    # peak cache-read is a peak field: without the schedule footnote it fails
+    # the same way any peak row does
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE HIT)</td><td>OFF-PEAK</td><td>$0.007</td></tr>"
+        "<tr><td>PEAK</td><td>$0.014</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr>"
+        "<tr><td>PEAK</td><td>$1.32</td></tr></table>",
+    )
+    with pytest.raises(FetchError, match="footnote"):
+        scraper.scrape(cfg(), "deepseek-v4-flash")
 
 
 def test_scrape_peak_rows_without_footnote_fail(monkeypatch):

@@ -1,16 +1,18 @@
 """scrape per-token pricing for deepseek models.
 
 same table as detection. pricing rows are keyed by their label cell
-(1M INPUT TOKENS (CACHE MISS) / 1M OUTPUT TOKENS) and split into OFF-PEAK
-and PEAK subrows. the OFF-PEAK value becomes the default price and the PEAK
-value the peak fields, with the schedule footnote ("Peak hours are 01:00 -
-04:00 and 06:00 - 10:00 UTC") parsed into peak_windows pairs. labels without
-a PEAK subrow are flat (no peak fields). peak subrows without the footnote are
-a scrape failure: the entry builder requires windows with peak prices.
-1M INPUT TOKENS (CACHE HIT) is cache-hit pricing and ignored. values are USD
-per 1M tokens -> /1e6. max_tokens comes from the MAX OUTPUT row
-("MAXIMUM: 384K" -> 384 * 1024); that row may span all model columns as one
-merged cell, in which case the single value applies to every model.
+(1M INPUT TOKENS (CACHE MISS) / 1M OUTPUT TOKENS / 1M INPUT TOKENS (CACHE
+HIT)) and split into OFF-PEAK and PEAK subrows. the OFF-PEAK value becomes the
+default price and the PEAK value the peak fields, with the schedule footnote
+("Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC") parsed into
+peak_windows pairs. labels without a PEAK subrow are flat (no peak fields).
+peak subrows without the footnote are a scrape failure: the entry builder
+requires windows with peak prices. CACHE HIT parses like CACHE MISS into the
+cache-read fields: OFF-PEAK -> cache_read_cost_per_token, PEAK ->
+peak_cache_read_cost_per_token. values are USD per 1M tokens -> /1e6.
+max_tokens comes from the MAX OUTPUT row ("MAXIMUM: 384K" -> 384 * 1024);
+that row may span all model columns as one merged cell, in which case the
+single value applies to every model.
 
 None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed or the page has no MODEL header table.
@@ -26,6 +28,7 @@ from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, extract_tables, fetch_soup
 
 _CACHE_MISS = "1M INPUT TOKENS (CACHE MISS)"
+_CACHE_HIT = "1M INPUT TOKENS (CACHE HIT)"
 _OUTPUT = "1M OUTPUT TOKENS"
 _MARKERS = ("OFF-PEAK", "PEAK")
 _PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
@@ -45,16 +48,19 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     prices = _pricing_cells(table[1:], ids.index(model_id))
     off_input = _dollars(prices.get(_CACHE_MISS, {}).get("OFF-PEAK"))
     off_output = _dollars(prices.get(_OUTPUT, {}).get("OFF-PEAK"))
+    off_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("OFF-PEAK"))
     if off_input is None or off_output is None:
         return None
     peak_input = _dollars(prices.get(_CACHE_MISS, {}).get("PEAK"))
     peak_output = _dollars(prices.get(_OUTPUT, {}).get("PEAK"))
-    if peak_input is None and peak_output is None:
+    peak_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("PEAK"))
+    if peak_input is None and peak_output is None and peak_cache_read is None:
         return Pricing(
             input_cost_per_token=off_input / 1e6,
             output_cost_per_token=off_output / 1e6,
             mode="chat",
             max_tokens=_max_tokens(table[1:], ids, model_id),
+            cache_read_cost_per_token=_per_token(off_cache_read),
         )
     if peak_input is None or peak_output is None:
         return None
@@ -63,9 +69,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         output_cost_per_token=off_output / 1e6,
         mode="chat",
         max_tokens=_max_tokens(table[1:], ids, model_id),
+        cache_read_cost_per_token=_per_token(off_cache_read),
         peak_input_cost_per_token=peak_input / 1e6,
         peak_output_cost_per_token=peak_output / 1e6,
         peak_windows=_peak_windows(soup, cfg.scraper_url),
+        peak_cache_read_cost_per_token=_per_token(peak_cache_read),
     )
 
 
@@ -124,3 +132,8 @@ def _dollars(text: str | None) -> float | None:
         return None
     match = _PRICE_PATTERN.search(text)
     return float(match.group(1)) if match else None
+
+
+def _per_token(dollars: float | None) -> float | None:
+    """USD per 1M tokens -> USD per token."""
+    return None if dollars is None else dollars / 1e6

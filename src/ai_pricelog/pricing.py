@@ -11,6 +11,7 @@ class Pricing:
     peak_input_cost_per_token: float | None = None
     peak_output_cost_per_token: float | None = None
     peak_windows: tuple[tuple[str, str], ...] = ()
+    peak_cache_read_cost_per_token: float | None = None
 
 
 def to_mtok(per_token: float) -> float:
