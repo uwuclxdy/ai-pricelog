@@ -8,7 +8,7 @@ from ai_pricelog.detectors import deepseek_page as detector
 from ai_pricelog.scrapers import deepseek_page as scraper
 from ai_pricelog.web import FetchError
 
-PAGE_URL = "https://api-docs.deepseek.com/quick_start/pricing"
+PAGE_URL = "https://api-docs.deepseek.com/quick_start/pricing/"
 FIXTURE = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing.html"
 
 
@@ -33,7 +33,11 @@ def patch_soup(monkeypatch, module, html: str) -> None:
 
 def test_detect_models(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: load_soup())
-    assert detector.detect(cfg()) == ["deepseek-v4-flash", "deepseek-v4-pro"]
+    assert detector.detect(cfg()) == [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "deepseek-v4-flash-vision-exp",
+    ]
 
 
 def test_detect_skips_non_id_header_cells(monkeypatch):
@@ -90,6 +94,20 @@ def test_scrape_pro_split_pricing(monkeypatch):
     assert pricing.peak_input_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_output_cost_per_token == pytest.approx(3.96 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.044 / 1e6)
+    assert pricing.peak_windows == WINDOWS
+    assert pricing.max_tokens == 384 * 1024
+
+
+def test_scrape_vision_exp_split_pricing(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "deepseek-v4-flash-vision-exp")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
+    assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
+    assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
     assert pricing.max_tokens == 384 * 1024
 

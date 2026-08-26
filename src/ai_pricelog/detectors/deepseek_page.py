@@ -1,7 +1,9 @@
 """detect model ids on the deepseek api-docs pricing page.
 
-the page (https://api-docs.deepseek.com/quick_start/pricing) is a docusaurus
-static html page with a single table. its header row's first cell is "MODEL"
+the page (https://api-docs.deepseek.com/quick_start/pricing/) is a docusaurus
+static html page with a single table; the trailing slash is required, the
+slash-less path serves a JS shell without the table. its header row's first
+cell is "MODEL"
 and every remaining header cell is a raw model id. rows keyed by BASE URL /
 MODEL VERSION / THINKING MODE / CONTEXT LENGTH / MAX OUTPUT / FEATURES /
 PRICING are not model rows. header cells that do not look like model ids are

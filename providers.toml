@@ -13,9 +13,9 @@ cap = 3
 [deepseek]
 provider = "DeepSeek"
 detector = "deepseek_page"
-detector_url = "https://api-docs.deepseek.com/quick_start/pricing"
+detector_url = "https://api-docs.deepseek.com/quick_start/pricing/"
 scraper = "deepseek_page"
-scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
+scraper_url = "https://api-docs.deepseek.com/quick_start/pricing/"
 announce_urls = [
   "https://api-docs.deepseek.com/updates/",
   "https://api-docs.deepseek.com/sitemap.xml",

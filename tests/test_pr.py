@@ -17,7 +17,7 @@ def spec(**overrides) -> pr.PrSpec:
         source="deepseek",
         model_id="deepseek-chat",
         provider="DeepSeek",
-        source_url="https://api-docs.deepseek.com/quick_start/pricing",
+        source_url="https://api-docs.deepseek.com/quick_start/pricing/",
         rows=(
             {
                 "source": "deepseek",
@@ -80,7 +80,7 @@ def test_spec_body_flat_row_table():
     body = spec().body
     assert "## new rows" in body
     assert "| deepseek | `deepseek-chat` | 2026-08-26 | 0.27 | — | 1.1 | — |" in body
-    assert "source: https://api-docs.deepseek.com/quick_start/pricing" in body
+    assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
 
 
 def test_spec_body_peak_row():
