@@ -551,3 +551,4 @@
 {"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-08-26","name":"MythoMax 13B","input_mtok":0.06,"output_mtok":0.06,"max_tokens":8192}
 {"source":"openrouter","model_id":"openai/gpt-3.5-turbo","observed_at":"2026-08-26","name":"GPT-3.5 Turbo","input_mtok":0.5,"output_mtok":1.5,"max_tokens":16385}
 {"source":"openrouter","model_id":"openai/gpt-4","observed_at":"2026-08-26","name":"GPT-4","input_mtok":30.0,"output_mtok":60.0,"max_tokens":8191}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-26","name":"DeepSeek V4 Flash 0731","input_mtok":0.06,"output_mtok":0.12,"cache_read_mtok":0.012,"max_tokens":1310720}
