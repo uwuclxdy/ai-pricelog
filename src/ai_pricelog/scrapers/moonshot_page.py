@@ -26,6 +26,9 @@ has no cache split and titles the column plain "Input Price"), Input Price
 (Cache Hit) -> cache_read_cost_per_token when the column exists, Output Price
 -> output_cost, USD per 1M -> /1e6, Context Window digits -> max_tokens_in.
 
+the Pricing url names the page the rate was read from (the resolved
+per-model page, never the index); build_row stamps it as the row's url.
+
 None = no pricing page or no row for the model. FetchError = the fetch
 failed, the index lists no pricing pages, or a page's DocTable does not parse.
 """
@@ -112,7 +115,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     doc = _doc_table(fetch_text(page_url))
     if doc is None:
         raise FetchError(f"no DocTable block on {page_url}")
-    return _pricing(doc, model_id)
+    return _pricing(doc, model_id, page_url)
 
 
 def _scrape_fallback(index_url: str, model_id: str) -> Pricing | None:
@@ -122,7 +125,7 @@ def _scrape_fallback(index_url: str, model_id: str) -> Pricing | None:
     except FetchError:
         return None
     doc = _doc_table(text)
-    return _pricing(doc, model_id) if doc is not None else None
+    return _pricing(doc, model_id, fallback_url) if doc is not None else None
 
 
 def _doc_table(text: str) -> tuple[list[str], list[list[str]]] | None:
@@ -191,7 +194,9 @@ def _plain_rows(text: str) -> str:
     return _FRAGMENT_PATTERN.sub(r'"\1\2"', text)
 
 
-def _pricing(doc: tuple[list[str], list[list[str]]], model_id: str) -> Pricing | None:
+def _pricing(
+    doc: tuple[list[str], list[list[str]]], model_id: str, page_url: str
+) -> Pricing | None:
     titles, rows = doc
     model_col = _column_index(titles, "Model")
     input_col = _column_index(titles, "Input Price (Cache Miss)")
@@ -226,6 +231,7 @@ def _pricing(doc: tuple[list[str], list[list[str]]], model_id: str) -> Pricing |
             mode="chat",
             max_tokens_in=max_tokens_in,
             cache_read_cost_per_token=cache_cost / 1e6 if cache_cost is not None else None,
+            url=page_url,
         )
     return None
 

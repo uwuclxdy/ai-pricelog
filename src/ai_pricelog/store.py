@@ -182,7 +182,7 @@ def build_row(
             row["peak_output_mtok"] = to_mtok(pricing.peak_output_cost_per_token)
         if pricing.peak_cache_read_cost_per_token is not None:
             row["peak_cache_read_mtok"] = to_mtok(pricing.peak_cache_read_cost_per_token)
-    row["url"] = url
+    row["url"] = pricing.url or url
     return row
 
 

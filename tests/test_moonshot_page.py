@@ -115,6 +115,8 @@ def test_scrape_v1_plain_input_column(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(2.00 / 1e6)
     assert pricing.max_tokens_in == 8192
     assert pricing.cache_read_cost_per_token is None
+    # the provenance names the resolved per-model page, not the index
+    assert pricing.url == "https://platform.kimi.ai/docs/pricing/chat-v1.md"
 
 
 def test_scrape_index_fetched_once(monkeypatch):
@@ -180,7 +182,9 @@ def test_pricing_tolerates_non_string_context_cell():
         ["Model", "Input Price (Cache Miss)", "Output Price", "Context Window"],
         [["kimi-k2.6", "$0.95", "$4.00", 262_144]],
     )
-    pricing = scraper._pricing(doc, "kimi-k2.6")
+    pricing = scraper._pricing(
+        doc, "kimi-k2.6", "https://platform.kimi.ai/docs/pricing/chat-k26.md"
+    )
     assert pricing is not None
     assert pricing.max_tokens_in == 262_144
     assert pricing.cache_read_cost_per_token is None

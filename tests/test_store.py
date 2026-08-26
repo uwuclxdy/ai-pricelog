@@ -209,6 +209,22 @@ def test_build_row_emits_peak_fields_together():
     assert row["peak_cache_read_mtok"] == 0.5
 
 
+def test_build_row_stamps_the_page_the_scraper_read():
+    # the scraper's own url names the row unless the scrape resolved another
+    # page (moonshot reads the index to find the per-model page)
+    pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
+    row = build_row("a", "m", pricing, "t", "https://index")
+    assert row["url"] == "https://index"
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        url="https://resolved-page",
+    )
+    row = build_row("a", "m", pricing, "t", "https://index")
+    assert row["url"] == "https://resolved-page"
+
+
 def test_build_row_peak_cache_read_alone_triggers_peak_block():
     pricing = Pricing(
         input_cost_per_token=1e-6,

@@ -15,6 +15,10 @@ class Pricing:
     peak_windows: tuple[tuple[str, str], ...] = ()
     peak_cache_read_cost_per_token: float | None = None
     max_tokens_out: int = 0
+    # the page the rate was read from, when it is not the scraper's own url
+    # (moonshot reads the index to resolve a per-model page); build_row stamps
+    # it as the row's provenance url
+    url: str | None = None
 
 
 def to_mtok(per_token: float) -> float:
