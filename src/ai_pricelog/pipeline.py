@@ -1,4 +1,4 @@
-"""The daily run: append observed price and removal rows, open one draft PR per change.
+"""The 6-hourly run: append observed price and removal rows, open one draft PR per change.
 
 Watches the provider pages through the detector/scraper pairs, plus the
 OpenRouter models API. Every PR branch carries the landed store (the
@@ -17,9 +17,9 @@ that seed PR is still open, the run skips itself.
 A stored model absent from its source's page twice (both observations landed
 through PRs) gets a removal row and a `Mark <id> delisted` PR; the counters
 live in data/absence.json, which only ever lands on PR branches, so a flaky
-page never fakes a delisting. When a run lands rows or has an announce or
-absence state update, it touches `.run-changed` for the CI step that reads
-it.
+page never fakes a delisting. When the run opens a PR it touches
+`.run-changed` for the CI step that reads it; a state-only diff with no PR
+opens nothing reviewable and leaves the marker alone.
 """
 
 from __future__ import annotations
@@ -107,6 +107,14 @@ def run(
     fetch = announce.fetch_channels(cfg, snapshot, today)
     report.announce = list(fetch.changes)
     report.announce_errors = list(fetch.errors)
+    for change in fetch.changes:
+        log.info(
+            "announce change: %s %s %s -> %s",
+            change.provider,
+            change.url,
+            change.old_sha256[:8],
+            change.new_sha256[:8],
+        )
     # the fresh snapshot rides the next pr branch (skip-and-retry): with no pr
     # opened it stays uncommitted, the changes re-surface, and the snapshot
     # settles only under a human-reviewed pr
@@ -153,11 +161,10 @@ def run(
 
     fresh_absence = {source: entries for source, entries in fresh_absence.items() if entries}
     absence_diff = fresh_absence != absence_state
-    state_changed = announce_updates is not None or absence_diff
 
     if not plan and not removal_groups:
-        if state_changed:
-            _touch_marker(marker_path)
+        # no pr opened, so nothing reviewable landed: no marker, whatever the
+        # in-memory state diff says (skip-and-retry re-derives it next run)
         return report
 
     if seed:
@@ -171,6 +178,7 @@ def run(
             seed=True,
             run_url=run_url,
             announce=fetch.changes,
+            absence_update=absence_diff,
         )
         url = _open_group_pr(
             repo_root,
@@ -187,8 +195,6 @@ def run(
         if url is None:
             for group in plan.values():
                 _record_error(report, group.source, f"seed pr failed for {group.model_id}")
-            if state_changed:
-                _touch_marker(marker_path)
             return report
         for group in plan.values():
             _record_pr(report, group, url)
@@ -227,6 +233,7 @@ def run(
             removed=True,
             run_url=run_url,
             announce=fetch.changes,
+            absence_update=absence_diff or bool(kept),
         )
         url = _open_group_pr(
             repo_root,
@@ -262,6 +269,7 @@ def run(
             update=group.update,
             run_url=run_url,
             announce=fetch.changes,
+            absence_update=absence_diff or bool(kept),
         )
         # rows land only under the pr that reviews them, so a capped-out or
         # failed group settles nothing and re-candidates next run
@@ -284,7 +292,7 @@ def run(
         _record_pr(report, group, url)
         opened += 1
         log.info("opened pr for %s: %s", group.model_id, url)
-    if opened > 0 or state_changed:
+    if opened > 0:
         _touch_marker(marker_path)
     return report
 
@@ -583,8 +591,10 @@ def _track_absence(
             # the removal row is already on record: one per key ever
             del source_state[model_id]
             continue
+        row = store.build_removal_row(source, model_id, today)
+        validate.validate_row(row)
         group = _PrGroup(source, model_id, provider, source_url, removed=True)
-        group.rows.append(store.build_removal_row(source, model_id, today))
+        group.rows.append(row)
         removal_groups.append((group, dict(entry)))
         del source_state[model_id]
 

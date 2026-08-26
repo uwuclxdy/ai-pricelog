@@ -70,6 +70,7 @@ class PrSpec:
     seed: bool = False
     run_url: str | None = None
     announce: tuple[announce.ChannelChange, ...] = ()
+    absence_update: bool = False
 
     @property
     def branch(self) -> str:
@@ -122,6 +123,14 @@ class PrSpec:
             lines += [
                 "",
                 "full old/new prose: the `data/announce.json` diff on this branch",
+            ]
+        if self.absence_update:
+            lines += [
+                "",
+                "## absence state",
+                "",
+                "`data/absence.json` updated on this branch; the diff names which "
+                "stored models this run counted absent.",
             ]
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"

@@ -1282,6 +1282,80 @@ def test_openrouter_absence_appends_removal_row(tmp_path, fake_modules, repo_roo
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
+def test_openrouter_validation_failure_still_counts_present(
+    tmp_path, fake_modules, repo_root, or_models, monkeypatch
+):
+    # a row that builds but fails validation must not fake a delisting: the
+    # model counts present because build_row produced a rowable id
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg(3, "deepseek")
+    model = openrouter.OpenrouterModel(
+        id="deepseek/deepseek-chat",
+        name="DeepSeek Chat",
+        input_mtok=0.27,
+        output_mtok=1.1,
+        cache_read_mtok=None,
+        pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
+    )
+    prior = openrouter.build_row(model, "2026-08-19")
+    assert prior is not None
+    seed_store(repo_root, [prior])
+    seed_absence(
+        repo_root,
+        {"openrouter": {"deepseek/deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    real_validate = pipeline.validate.validate_row
+
+    def failing_validate(row):
+        if row.get("model_id") == "deepseek/deepseek-chat" and "removed" not in row:
+            raise pipeline.validate.ValidationError(
+                "row field 'input_mtok' has bad value; fix: float"
+            )
+        real_validate(row)
+
+    monkeypatch.setattr(pipeline.validate, "validate_row", failing_validate)
+    monkeypatch.setattr(pipeline.openrouter, "fetch_models", lambda: [model])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.providers["openrouter"].errors
+    assert [model_id for model_id, _url in report.providers["openrouter"].prs] == []
+    assert runner.pr_urls == []
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+
+
+def test_dedup_twin_counts_present(tmp_path, fake_modules, repo_root):
+    # a page id that dedups to the stored spelling counts as present: the
+    # stored model is not absent while its page twin is listed
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat-v2"]
+    scrape["deepseek"] = {"deepseek-chat-v2": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
+    scr.dedup_keys = lambda model_id: ["deepseek-chat"] if model_id == "deepseek-chat-v2" else []
+    stored = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [stored])
+    seed_absence(
+        repo_root,
+        {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+
+
 def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, repo_root):
     # the newest row is already a removal: a second absent cycle must never
     # append another removal row (one per source/model ever)
@@ -1363,8 +1437,10 @@ def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
     assert not (repo_root / pipeline.MARKER_FILE).exists()
 
 
-def test_run_changed_marker_on_announce_only_change(tmp_path, fake_modules, repo_root, monkeypatch):
-    # a state-only change (no rows) still touches the marker
+def test_run_changed_marker_stays_off_on_state_only_change(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a state-only change with no pr opens nothing reviewable: no marker
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-legacy"]
     scrape["deepseek"] = {"deepseek-legacy": pricing()}
@@ -1388,4 +1464,4 @@ def test_run_changed_marker_on_announce_only_change(tmp_path, fake_modules, repo
     pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     assert runner.pr_urls == []  # unchanged prices open no pr
-    assert (repo_root / pipeline.MARKER_FILE).exists()
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
