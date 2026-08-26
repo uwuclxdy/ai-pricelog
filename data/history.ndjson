@@ -1119,7 +1119,7 @@
 {"source":"zai","model_id":"glm-4.7-flashx","observed_at":"2026-08-26","input_mtok":0.07,"output_mtok":0.4,"cache_read_mtok":0.01,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-5-turbo","observed_at":"2026-08-26","input_mtok":1.2,"output_mtok":4.0,"cache_read_mtok":0.24,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-5.3","observed_at":"2026-08-26","input_mtok":1.4,"output_mtok":4.4,"cache_read_mtok":0.26,"url":"https://docs.z.ai/guides/overview/pricing"}
-{"source":"zai","model_id":"glm-5.3-flash","observed_at":"2026-08-26","input_mtok":0.15,"output_mtok":0.5,"cache_read_mtok":0.03,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"zai","model_id":"glm-5.3-flash","observed_at":"2026-08-26","input_mtok":0.075,"output_mtok":0.25,"cache_read_mtok":0.015,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-5v-turbo","observed_at":"2026-08-26","input_mtok":1.2,"output_mtok":4.0,"cache_read_mtok":0.24,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-ocr","observed_at":"2026-08-26","input_mtok":0.03,"output_mtok":0.03,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.5-air","observed_at":"2026-08-26","input_mtok":0.2,"output_mtok":1.1,"cache_read_mtok":0.03,"url":"https://docs.z.ai/guides/overview/pricing"}
