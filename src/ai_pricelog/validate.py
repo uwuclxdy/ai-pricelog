@@ -3,7 +3,7 @@
 The history is append-only, so a bad row lands forever. Only what our own
 emission could corrupt is checked here: the model id (rows are keyed by
 (source, model_id)), the price values, and the peak-pricing shape. The
-store's build_row output is the only producer.
+producers are the store's build_row and openrouter.build_row.
 """
 
 from __future__ import annotations

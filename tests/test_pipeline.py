@@ -505,6 +505,50 @@ def test_openrouter_unchanged_appends_nothing(tmp_path, fake_modules, repo_root,
     assert runner.pr_urls == []
 
 
+def test_openrouter_negative_pricing_builds_row_without_prices(
+    tmp_path, fake_modules, repo_root, or_models
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="openrouter/auto",
+            name="Auto Router",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            pricing={"prompt": "-1", "completion": "-1"},
+        )
+    )
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    or_report = report.providers["openrouter"]
+    assert or_report.candidates == ["openrouter/auto"]
+    assert or_report.errors == []
+    branch_history = git(
+        repo_root, "show", f"{pr.branch_name('openrouter/auto')}:data/history.ndjson"
+    )
+    rows = [json.loads(line) for line in branch_history.splitlines()]
+    assert len(rows) == 2
+    row = rows[1]
+    assert row["model_id"] == "openrouter/auto"
+    assert "input_mtok" not in row
+    assert "output_mtok" not in row
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
 def test_detector_error_does_not_block_next_provider(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = RuntimeError("detector boom")

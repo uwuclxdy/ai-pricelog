@@ -213,6 +213,35 @@ def test_build_row_keeps_zero_pricing_strings():
     assert row["output_mtok"] == 0.0
 
 
+def test_build_row_skips_negative_pricing_strings():
+    # router models ship "-1" pricing strings ("no fixed price"); a row must
+    # not carry a negative price
+    model = OpenrouterModel(
+        "openrouter/auto",
+        "Auto Router",
+        None,
+        None,
+        None,
+        pricing={"prompt": "-1", "completion": "-1", "input_cache_read": "-1"},
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert "input_mtok" not in row
+    assert "output_mtok" not in row
+    assert "cache_read_mtok" not in row
+
+
+def test_fetch_models_parses_negative_pricing_as_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = (
+        '{"data": [{"id": "openrouter/auto", "name": "Auto",'
+        ' "pricing": {"prompt": "-1", "completion": "-1"}}]}'
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    (model,) = fetch_models()
+    assert model.input_mtok is None
+    assert model.output_mtok is None
+
+
 def test_observed_keys_lists_the_consumed_pricing_keys():
     assert frozenset({"prompt", "completion", "input_cache_read"}) == OBSERVED_KEYS
 

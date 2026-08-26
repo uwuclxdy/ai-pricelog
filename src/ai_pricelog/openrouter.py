@@ -60,7 +60,7 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         ("input_cache_read", "cache_read_mtok"),
     ):
         value = model.pricing.get(key)
-        if value is not None:
+        if value is not None and float(value) >= 0:
             row[field_name] = to_mtok(float(value))
     if model.context_length > 0:
         row["max_tokens"] = model.context_length
@@ -113,8 +113,8 @@ def _price(value: object, model_id: str) -> float | None:
             f"got {type(value).__name__}"
         )
     per_token = float(value)
-    if per_token == 0:
-        # free models ship all-zero pricing strings; the fetch layer parses
-        # zero as None
+    if per_token <= 0:
+        # zero (free models) and negative ("no fixed price" router models)
+        # strings parse as no price
         return None
     return to_mtok(per_token)

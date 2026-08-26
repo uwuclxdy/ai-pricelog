@@ -346,6 +346,12 @@ def _openrouter_rows(
             # alias entries and dated-canonical snapshots are not priced rows
             or_report.skipped_no_pricing.append(model.id)
             continue
+        try:
+            validate.validate_row(row)
+        except validate.ValidationError as exc:
+            log.warning("openrouter entry %s failed validation: %s", model.id, exc)
+            or_report.errors.append(_describe(exc))
+            continue
         model_id = row["model_id"]
         last_row = store.last(rows, "openrouter", model_id)
         if not store.changed(row, last_row):
