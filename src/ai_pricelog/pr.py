@@ -125,6 +125,9 @@ class PrSpec:
             "- [ ] prices verified against the source page",
             "- [ ] provider name correct",
             "- [ ] peak/off-peak rates match the page",
+            "- [ ] a sibling merge conflict: accept both sides for history.ndjson"
+            " (order irrelevant); index.json + state.json heal on the next"
+            " pr-bearing run",
         ]
 
 
