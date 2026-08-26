@@ -3,7 +3,7 @@
 same pricing grid as detection. per card: Input -> input_cost_per_token,
 Output -> output_cost_per_token, Cache -> cache_read_cost_per_token, USD per
 1M tokens -> /1e6. a card with no Cache block keeps the cache field None.
-context from the card meta -> max_tokens ("262K context · ..." -> 262000;
+context from the card meta -> max_tokens_in ("262K context · ..." -> 262000;
 K = 1000, M = 1000000: the page abbreviates and the exact token count is not
 shown, the human verifier reconciles it). mode is chat; no peak fields.
 
@@ -65,7 +65,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             input_cost_per_token=input_cost,
             output_cost_per_token=output_cost,
             mode="chat",
-            max_tokens=_context_tokens(card.meta),
+            max_tokens_in=_context_tokens(card.meta),
             cache_read_cost_per_token=_rate(card.prices, "Cache"),
         )
     return None

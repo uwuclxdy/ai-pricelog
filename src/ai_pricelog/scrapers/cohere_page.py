@@ -13,8 +13,8 @@ same page as detection. three rate shapes:
 - Model Vault table: per instance (hourly or monthly), never per token,
   so those models scrape to None until the page publishes token rates.
 
-none of the shapes carries a context window or max output -> max_tokens
-stays 0. mode is chat; cohere lists no cache-read rates, so
+none of the shapes carries a context window or max output -> the max_tokens
+fields stay 0. mode is chat; cohere lists no cache-read rates, so
 cache_read_cost_per_token stays None, and there are no peak fields.
 
 None = the model id is not on the page, or the page has no per-token

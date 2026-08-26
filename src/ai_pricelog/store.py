@@ -92,12 +92,25 @@ def newest(rows: list[dict[str, object]], source: str, model_id: str) -> dict[st
 _PROVENANCE_FIELDS = frozenset({"observed_at", "url", "name"})
 
 
+def _comparable(row: dict[str, object]) -> dict[str, object]:
+    """The row minus provenance, with the legacy max_tokens key renamed.
+
+    rows before 2026-08-27 store the context window (deepseek: max output)
+    under `max_tokens`; the split into `max_tokens_in` / `max_tokens_out`
+    renamed the field. treating the legacy key as `max_tokens_in` keeps the
+    rename from reading as a price change on the next re-scrape of every
+    still-legacy row.
+    """
+    fields = {k: v for k, v in row.items() if k not in _PROVENANCE_FIELDS}
+    if "max_tokens" in fields and "max_tokens_in" not in fields:
+        fields["max_tokens_in"] = fields.pop("max_tokens")
+    return fields
+
+
 def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
     if last_row is None or last_row.get("removed") is True:
         return True
-    return {k: v for k, v in row.items() if k not in _PROVENANCE_FIELDS} != {
-        k: v for k, v in last_row.items() if k not in _PROVENANCE_FIELDS
-    }
+    return _comparable(row) != _comparable(last_row)
 
 
 def write_index(rows: list[dict[str, object]], path: Path) -> None:
@@ -150,8 +163,10 @@ def build_row(
     }
     if pricing.cache_read_cost_per_token is not None:
         row["cache_read_mtok"] = to_mtok(pricing.cache_read_cost_per_token)
-    if pricing.max_tokens > 0:
-        row["max_tokens"] = pricing.max_tokens
+    if pricing.max_tokens_in > 0:
+        row["max_tokens_in"] = pricing.max_tokens_in
+    if pricing.max_tokens_out > 0:
+        row["max_tokens_out"] = pricing.max_tokens_out
     if (
         pricing.peak_input_cost_per_token is not None
         or pricing.peak_output_cost_per_token is not None

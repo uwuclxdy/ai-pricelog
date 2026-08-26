@@ -86,20 +86,40 @@ def test_detect_raises_fetch_error_when_page_has_no_ids(monkeypatch: pytest.Monk
 
 
 @pytest.mark.parametrize(
-    ("model_id", "input_cost", "output_cost", "max_tokens"),
+    ("model_id", "input_cost", "output_cost", "max_tokens_out", "max_tokens_in"),
     [
-        # CNY per 1M tokens / 1e6 / CNY_PER_USD, exact per-token floats
+        # CNY per 1M tokens / 1e6 / CNY_PER_USD, exact per-token floats;
+        # out = 最大输出, in = 上下文窗口, K * 1024
         (
             "doubao-seed-evolving-latest-version",
             8.333333333333333e-07,
             4.166666666666667e-06,
             262_144,
+            262_144,
         ),
-        ("doubao-seed-2-1-pro-260628", 8.333333333333333e-07, 4.166666666666667e-06, 262_144),
-        ("doubao-seed-2-1-turbo-260628", 4.1666666666666667e-07, 2.0833333333333334e-06, 262_144),
+        (
+            "doubao-seed-2-1-pro-260628",
+            8.333333333333333e-07,
+            4.166666666666667e-06,
+            262_144,
+            262_144,
+        ),
+        (
+            "doubao-seed-2-1-turbo-260628",
+            4.1666666666666667e-07,
+            2.0833333333333334e-06,
+            262_144,
+            262_144,
+        ),
         # reasoning cards quote ranges: low bound wins
-        ("doubao-seed-2-0-lite-260428", 8.333333333333333e-08, 5e-07, 131_072),
-        ("doubao-seed-2-0-mini-260428", 2.777777777777778e-08, 2.7777777777777776e-07, 131_072),
+        ("doubao-seed-2-0-lite-260428", 8.333333333333333e-08, 5e-07, 131_072, 262_144),
+        (
+            "doubao-seed-2-0-mini-260428",
+            2.777777777777778e-08,
+            2.7777777777777776e-07,
+            131_072,
+            262_144,
+        ),
     ],
     ids=["evolving", "pro", "turbo", "lite", "mini"],
 )
@@ -108,14 +128,16 @@ def test_scrape_converts_cny_prices_exactly(
     model_id: str,
     input_cost: float,
     output_cost: float,
-    max_tokens: int,
+    max_tokens_out: int,
+    max_tokens_in: int,
 ) -> None:
     _patch_soup(monkeypatch, _load())
     assert scraper.scrape(_cfg(), model_id) == Pricing(
         input_cost_per_token=input_cost,
         output_cost_per_token=output_cost,
         mode="chat",
-        max_tokens=max_tokens,
+        max_tokens_out=max_tokens_out,
+        max_tokens_in=max_tokens_in,
     )
 
 
@@ -151,7 +173,8 @@ def test_scrape_missing_window_labels_yields_zero_max_tokens(
     _patch_soup(monkeypatch, BeautifulSoup(html, "html.parser"))
     pricing = scraper.scrape(_cfg(), "doubao-seed-2-1-turbo-260628")
     assert pricing is not None
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_out == 0
+    assert pricing.max_tokens_in == 0
 
 
 def test_page_fetched_once_per_url(monkeypatch: pytest.MonkeyPatch) -> None:

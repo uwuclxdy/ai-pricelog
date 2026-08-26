@@ -89,7 +89,7 @@ def test_scrape_qwen37_plus_takes_first_dollar_amount(dashscope_cfg, feed_fixtur
     assert pricing.input_cost_per_token == 0.4 / 1e6
     assert pricing.output_cost_per_token == 1.6 / 1e6
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_snapshot_version_matches_its_row(dashscope_cfg, feed_fixtures):
@@ -153,7 +153,7 @@ def test_scrape_short_row_falls_through_to_later_tables(dashscope_cfg, monkeypat
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.1 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(0.5 / 1e6)
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_unpriced_row_falls_through_to_later_tables(dashscope_cfg, monkeypatch):

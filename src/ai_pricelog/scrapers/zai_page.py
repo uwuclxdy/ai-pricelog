@@ -4,9 +4,11 @@ same per-token tables as detection (Text + Vision Models). columns Model |
 Input | Cached Input | Cached Input Storage | Output: Input -> input_cost,
 Cached Input -> cache_read_cost_per_token, Output -> output_cost, USD per
 1M -> /1e6. cells without a dollar amount ("Free", "Limited-time Free",
-"-") -> None (skip until priced). the page carries no context window ->
-max_tokens stays 0. rows match case-insensitively (detection lowercases;
-the page keeps GLM-4.7-FlashX).
+"-") -> None (skip until priced). a promo cell renders the struck-through
+list price before the charged one (`<del>$0.15</del> $0.075`), so the LAST
+dollar amount is the rate in force. the page carries no context window ->
+the max_tokens fields stay 0. rows match case-insensitively (detection
+lowercases; the page keeps GLM-4.7-FlashX).
 
 None = the model id is not on the page or a price cell carries no dollar
 amount. FetchError = the fetch failed or the page has no per-token tables.
@@ -55,5 +57,5 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
 
 
 def _dollars(text: str) -> float | None:
-    match = _PRICE_PATTERN.search(text)
-    return float(match.group(1)) if match else None
+    matches = _PRICE_PATTERN.findall(text)
+    return float(matches[-1]) if matches else None

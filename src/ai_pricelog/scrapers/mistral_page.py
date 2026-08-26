@@ -11,7 +11,7 @@ client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
 non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
 pricing -> None. the ``Cached input`` cell emits as cache-read cost when it
 carries a bare dollar amount (zai-glm-5-2: $0.14); other cached cells leave it
-None. the page carries no context window -> max_tokens 0. mode is chat.
+None. the page carries no context window -> the max_tokens fields 0. mode is chat.
 """
 
 import re

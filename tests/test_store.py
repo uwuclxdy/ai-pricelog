@@ -127,6 +127,20 @@ def test_changed_ignores_name_only_difference():
     assert changed(row, prev) is False
 
 
+def test_changed_treats_legacy_max_tokens_as_max_tokens_in():
+    # pre-split rows store the context under max_tokens; the rename alone is
+    # not a change
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "max_tokens_in": 131072}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "max_tokens": 131072}
+    assert changed(row, prev) is False
+
+
+def test_changed_detects_legacy_max_tokens_value_difference():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "max_tokens_in": 1048576}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "max_tokens": 393216}
+    assert changed(row, prev) is True
+
+
 def test_changed_detects_dropped_field():
     row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
     prev = {
@@ -155,7 +169,8 @@ def test_build_row_omits_optional_fields_when_absent():
     pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
     row = build_row("a", "m", pricing, "t", "u")
     assert "cache_read_mtok" not in row
-    assert "max_tokens" not in row
+    assert "max_tokens_in" not in row
+    assert "max_tokens_out" not in row
     assert "peak_windows" not in row
     assert "peak_input_mtok" not in row
     assert "peak_output_mtok" not in row
@@ -168,11 +183,13 @@ def test_build_row_includes_cache_read_and_max_tokens():
         output_cost_per_token=2e-6,
         mode="flex",
         cache_read_cost_per_token=0.0000001,
-        max_tokens=200000,
+        max_tokens_in=200000,
+        max_tokens_out=8192,
     )
     row = build_row("a", "m", pricing, "t", "u")
     assert row["cache_read_mtok"] == 0.1
-    assert row["max_tokens"] == 200000
+    assert row["max_tokens_in"] == 200000
+    assert row["max_tokens_out"] == 8192
 
 
 def test_build_row_emits_peak_fields_together():

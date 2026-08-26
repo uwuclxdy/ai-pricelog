@@ -24,7 +24,7 @@ price cells written as JSX fragments (<>{"$"}0.30</>) and the context window
 as "1,048,576 tokens". Input Price (Cache Miss) -> input_cost (the v1 page
 has no cache split and titles the column plain "Input Price"), Input Price
 (Cache Hit) -> cache_read_cost_per_token when the column exists, Output Price
--> output_cost, USD per 1M -> /1e6, Context Window digits -> max_tokens.
+-> output_cost, USD per 1M -> /1e6, Context Window digits -> max_tokens_in.
 
 None = no pricing page or no row for the model. FetchError = the fetch
 failed, the index lists no pricing pages, or a page's DocTable does not parse.
@@ -219,12 +219,12 @@ def _pricing(doc: tuple[list[str], list[list[str]]], model_id: str) -> Pricing |
         if input_cost is None or output_cost is None:
             return None
         cache_cost = _dollars(str(row[cache_col])) if cache_col is not None else None
-        max_tokens = _token_count(str(row[context_col])) if context_col is not None else 0
+        max_tokens_in = _token_count(str(row[context_col])) if context_col is not None else 0
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
             mode="chat",
-            max_tokens=max_tokens,
+            max_tokens_in=max_tokens_in,
             cache_read_cost_per_token=cache_cost / 1e6 if cache_cost is not None else None,
         )
     return None

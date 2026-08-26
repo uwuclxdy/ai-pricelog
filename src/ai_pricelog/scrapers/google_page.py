@@ -15,7 +15,7 @@ tokens -> divided by 1e6. a first amount directly followed by "per " is a
 per-image/per-unit rate, not a per-token one (2.5 Flash Image output reads
 $0.039 per image) -> the model has no usable output rate. cells without a
 dollar amount (Free of charge, Not available) and sections without an output
-row (embedding models) are unpriced -> None. max_tokens comes from a "1M
+row (embedding models) are unpriced -> None. max_tokens_in comes from a "1M
 token context window" mention in the section's description paragraphs (only
 Gemini 2.5 Flash carries one), else 0. mode is chat.
 
@@ -147,6 +147,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_cost_per_token=input_cost / 1e6,
         output_cost_per_token=output_cost / 1e6,
         mode="chat",
-        max_tokens=_context_window(h2),
+        max_tokens_in=_context_window(h2),
         cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
     )

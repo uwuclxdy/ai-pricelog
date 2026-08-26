@@ -139,7 +139,7 @@ def test_scrape_gemini_3_7_flash_exact(live_page):
     assert pricing.output_cost_per_token == 3.75 / 1e6
     assert pricing.cache_read_cost_per_token == 0.075 / 1e6
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_gemini_2_5_flash_exact(live_page):
@@ -150,7 +150,7 @@ def test_scrape_gemini_2_5_flash_exact(live_page):
     assert pricing.output_cost_per_token == 2.50 / 1e6
     assert pricing.cache_read_cost_per_token == 0.03 / 1e6
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 1_000_000
+    assert pricing.max_tokens_in == 1_000_000
 
 
 def test_scrape_gemini_2_5_pro_takes_base_input_tier(live_page):
@@ -266,6 +266,6 @@ def test_scrape_equals_pricing_shape(live_page):
         input_cost_per_token=1.5 / 1e6,
         output_cost_per_token=9 / 1e6,
         mode="chat",
-        max_tokens=0,
+        max_tokens_in=0,
         cache_read_cost_per_token=0.15 / 1e6,
     )

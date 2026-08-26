@@ -4,7 +4,7 @@ same per-token tables as detection. row shape: model | input | cached |
 output, the cached amount sitting inside the input cell after the standard
 amount ("$0.30 $0.06 (cached)"): first $ amount -> input_cost, second ->
 cache_read, both USD per 1M tokens -> /1e6. the page carries no context
-windows in these tables, so max_tokens stays 0. a row without dollar
+windows in these tables, so the max_tokens fields stay 0. a row without dollar
 amounts -> None; $0.00 prices as 0.0, since first-party rows may carry it
 as a real price.
 
@@ -74,7 +74,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 input_cost_per_token=input_cost / 1e6,
                 output_cost_per_token=output_cost / 1e6,
                 mode="chat",
-                max_tokens=0,
                 cache_read_cost_per_token=cache_read,
             )
     return None

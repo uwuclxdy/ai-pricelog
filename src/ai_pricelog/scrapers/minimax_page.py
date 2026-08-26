@@ -9,7 +9,7 @@ current price: we take the LAST dollar amount in the cell. a `Prompt caching
 Read` header cell (case-insensitive) is the cache-read rate, emitted as
 cache_read_cost_per_token; tables without the column leave it unset. dollars
 per 1M tokens -> divided by 1e6. the page carries no context window, so
-max_tokens stays 0 (the entry builder omits it).
+the max_tokens fields stay 0 (the entry builder omits them).
 """
 
 import re
@@ -67,7 +67,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 input_amount / 1e6,
                 output_amount / 1e6,
                 mode="chat",
-                max_tokens=0,
                 cache_read_cost_per_token=(
                     cache_amount / 1e6 if cache_amount is not None else None
                 ),

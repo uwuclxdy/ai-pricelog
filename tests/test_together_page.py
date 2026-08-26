@@ -154,7 +154,7 @@ def test_scrape_model_with_cached_rate(monkeypatch):
     assert pricing.output_cost_per_token == 1.20 / 1e6
     assert pricing.cache_read_cost_per_token == 0.06 / 1e6
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_model_without_cached_rate(monkeypatch):

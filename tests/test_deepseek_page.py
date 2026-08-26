@@ -81,7 +81,8 @@ def test_scrape_flash_split_pricing(monkeypatch):
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 384 * 1024
+    assert pricing.max_tokens_out == 384 * 1024
+    assert pricing.max_tokens_in == 1024 * 1024
 
 
 def test_scrape_pro_split_pricing(monkeypatch):
@@ -95,7 +96,8 @@ def test_scrape_pro_split_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token == pytest.approx(3.96 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.044 / 1e6)
     assert pricing.peak_windows == WINDOWS
-    assert pricing.max_tokens == 384 * 1024
+    assert pricing.max_tokens_out == 384 * 1024
+    assert pricing.max_tokens_in == 1024 * 1024
 
 
 def test_scrape_vision_exp_split_pricing(monkeypatch):
@@ -109,7 +111,8 @@ def test_scrape_vision_exp_split_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
-    assert pricing.max_tokens == 384 * 1024
+    assert pricing.max_tokens_out == 384 * 1024
+    assert pricing.max_tokens_in == 1024 * 1024
 
 
 def test_scrape_unknown_model_returns_none(monkeypatch):
@@ -143,10 +146,10 @@ def test_scrape_per_model_max_output_cells(monkeypatch):
     )
     flash = scraper.scrape(cfg(), "deepseek-v4-flash")
     assert flash is not None
-    assert flash.max_tokens == 128 * 1024
+    assert flash.max_tokens_out == 128 * 1024
     pro = scraper.scrape(cfg(), "deepseek-v4-pro")
     assert pro is not None
-    assert pro.max_tokens == 256 * 1024
+    assert pro.max_tokens_out == 256 * 1024
 
 
 def test_scrape_per_model_cell_without_k_value_is_zero(monkeypatch):
@@ -166,10 +169,10 @@ def test_scrape_per_model_cell_without_k_value_is_zero(monkeypatch):
     )
     flash = scraper.scrape(cfg(), "deepseek-v4-flash")
     assert flash is not None
-    assert flash.max_tokens == 128 * 1024
+    assert flash.max_tokens_out == 128 * 1024
     pro = scraper.scrape(cfg(), "deepseek-v4-pro")
     assert pro is not None
-    assert pro.max_tokens == 0
+    assert pro.max_tokens_out == 0
 
 
 def test_scrape_off_peak_only_is_flat_pricing(monkeypatch):
@@ -189,7 +192,7 @@ def test_scrape_off_peak_only_is_flat_pricing(monkeypatch):
     assert pricing.peak_input_cost_per_token is None
     assert pricing.peak_output_cost_per_token is None
     assert pricing.peak_windows == ()
-    assert pricing.max_tokens == 128 * 1024
+    assert pricing.max_tokens_out == 128 * 1024
 
 
 def test_scrape_cache_hit_without_peak_subrow_is_flat(monkeypatch):

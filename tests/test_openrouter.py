@@ -158,7 +158,7 @@ def test_build_row_maps_pricing_keys_and_rounds():
         "input_mtok",
         "output_mtok",
         "cache_read_mtok",
-        "max_tokens",
+        "max_tokens_in",
     ]
     assert row["source"] == "openrouter"
     assert row["model_id"] == "a/b"
@@ -166,7 +166,7 @@ def test_build_row_maps_pricing_keys_and_rounds():
     assert row["input_mtok"] == 0.435
     assert row["output_mtok"] == 1.2
     assert row["cache_read_mtok"] == 0.1
-    assert row["max_tokens"] == 131072
+    assert row["max_tokens_in"] == 131072
 
 
 def test_build_row_omits_missing_prompt_and_empty_name():
@@ -299,4 +299,4 @@ def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) ->
     sonar = rows[11]
     assert sonar["name"] == "Sonar Pro"
     assert sonar["extra"] == {"web_search": "0.005"}
-    assert all("max_tokens" not in row for row in rows)
+    assert all("max_tokens_in" not in row for row in rows)

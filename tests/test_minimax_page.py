@@ -54,7 +54,7 @@ def test_scrape_m3_takes_first_standard_row(minimax_cfg, feed_fixtures):
     assert pricing.input_cost_per_token == 0.3 / 1e6
     assert pricing.output_cost_per_token == 1.2 / 1e6
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_m27_prices_exact(minimax_cfg, feed_fixtures):

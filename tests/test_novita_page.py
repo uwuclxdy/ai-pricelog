@@ -249,7 +249,7 @@ def test_scrape_cache_read_model_exact(live_page):
     assert pricing.input_cost_per_token == 1.32 / 1e6
     assert pricing.cache_read_cost_per_token == 0.132 / 1e6
     assert pricing.output_cost_per_token == 3.96 / 1e6
-    assert pricing.max_tokens == 1048576
+    assert pricing.max_tokens_in == 1048576
     assert pricing.mode == "chat"
     assert pricing.peak_input_cost_per_token is None
 
@@ -260,7 +260,7 @@ def test_scrape_model_without_cache_read(live_page):
     assert pricing.input_cost_per_token == 0.27 / 1e6
     assert pricing.cache_read_cost_per_token is None
     assert pricing.output_cost_per_token == 0.41 / 1e6
-    assert pricing.max_tokens == 163840
+    assert pricing.max_tokens_in == 163840
     assert pricing.mode == "chat"
 
 
@@ -272,7 +272,7 @@ def test_scrape_resolves_dash_vendor_ids(live_page):
     assert llama is not None
     assert llama.input_cost_per_token == 0.02 / 1e6
     assert llama.output_cost_per_token == 0.05 / 1e6
-    assert llama.max_tokens == 16384
+    assert llama.max_tokens_in == 16384
     glm = scraper.scrape(cfg, "zai-org/glm-5.2")
     assert glm is not None
     assert glm.input_cost_per_token == 1.4 / 1e6
@@ -301,7 +301,7 @@ def test_scrape_zero_rate_returns_none(monkeypatch):
     assert scraper.scrape(make_cfg(), "free/model") is None
 
 
-def test_scrape_card_without_context_omits_max_tokens(monkeypatch):
+def test_scrape_card_without_context_omits_max_tokens_in(monkeypatch):
     monkeypatch.setattr(
         detector,
         "fetch_soup",
@@ -311,7 +311,7 @@ def test_scrape_card_without_context_omits_max_tokens(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == 1.00 / 1e6
     assert pricing.output_cost_per_token == 2.00 / 1e6
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == 0
 
 
 def test_scrape_no_model_cards_raises(monkeypatch):

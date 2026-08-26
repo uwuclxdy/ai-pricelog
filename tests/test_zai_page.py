@@ -12,6 +12,7 @@ PAGE_URL = "https://docs.z.ai/guides/overview/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "zai_page" / "pricing.html"
 
 EXPECTED_IDS = [
+    "glm-5.3-flash",
     "glm-5.3",
     "glm-5.2",
     "glm-5.1",
@@ -66,7 +67,18 @@ def test_scrape_glm53(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(4.4 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(0.26 / 1e6)
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
+
+
+def test_scrape_promo_takes_charged_rate_not_struck_list_price(monkeypatch):
+    # a promo cell renders the struck-through list price before the charged
+    # one; the last dollar amount is the rate in force
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "glm-5.3-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.075 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.25 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.015 / 1e6)
 
 
 def test_scrape_vision_model(monkeypatch):

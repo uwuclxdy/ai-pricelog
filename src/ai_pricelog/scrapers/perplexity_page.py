@@ -5,7 +5,7 @@ Output Tokens ($/1M) | Citation Tokens ($/1M) | Search Queries ($/1K) |
 Reasoning Tokens ($/1M): Input -> input_cost, Output -> output_cost, USD per
 1M -> /1e6. citation, search-query and reasoning columns are ignored (not
 input/output token rates). the page carries no context window or max output
--> max_tokens stays 0. rows match by the same normalization as detection
+-> the max_tokens fields stay 0. rows match by the same normalization as detection
 (lowercase, whitespace -> "-"), so "Sonar Pro" and "sonar-pro" both match.
 
 None = the model id is not on the page or an input/output cell carries no

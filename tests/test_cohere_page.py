@@ -193,7 +193,7 @@ def test_scrape_prose_model_command(live_page):
     pricing = cohere_scraper.scrape(make_cfg(), "command")
     assert pricing == Pricing(1e-6, 2e-6, "chat")
     assert pricing is not None
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
     assert pricing.cache_read_cost_per_token is None
     assert pricing.peak_input_cost_per_token is None
     assert pricing.peak_output_cost_per_token is None

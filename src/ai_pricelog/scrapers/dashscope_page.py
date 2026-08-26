@@ -11,8 +11,8 @@ id and are skipped. the `Deployment scope` cell must contain `International`:
 rows scoped to Chinese mainland / Global / Japan / US are skipped for now (no
 entry beats a wrong one; the pipeline retries next run). price cells like
 `List price $0.4 Limited-time 20% off` yield the first `$` float; USD per 1M
-tokens -> /1e6. the page carries no context window, so max_tokens stays 0
-(the entry builder omits it).
+tokens -> /1e6. the page carries no context window, so the max_tokens fields
+stay 0 (the entry builder omits them).
 """
 
 import re
@@ -72,5 +72,5 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 # an unpriced row is not a verdict either: a later table may
                 # carry the same id with real prices
                 continue
-            return Pricing(input_amount / 1e6, output_amount / 1e6, mode="chat", max_tokens=0)
+            return Pricing(input_amount / 1e6, output_amount / 1e6, mode="chat")
     return None

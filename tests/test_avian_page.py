@@ -157,17 +157,17 @@ def test_scrape_exact_prices_with_cache(serve_soup):
     assert pricing.output_cost_per_token == pytest.approx(0.4 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(0.05 / 1e6)
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 1_000_000
+    assert pricing.max_tokens_in == 1_000_000
 
 
-def test_scrape_max_tokens_from_context(serve_soup):
+def test_scrape_max_tokens_in_from_context(serve_soup):
     # "262K context" -> 262000; K = 1000, M = 1000000 (the page abbreviates)
     pricing = scraper.scrape(cfg(), "kimi-k2.5")
     assert pricing is not None
-    assert pricing.max_tokens == 262_000
+    assert pricing.max_tokens_in == 262_000
     pricing = scraper.scrape(cfg(), "deepseek-v3.2-legacy")
     assert pricing is not None
-    assert pricing.max_tokens == 163_000
+    assert pricing.max_tokens_in == 163_000
 
 
 def test_scrape_model_without_cache(monkeypatch):
@@ -179,7 +179,7 @@ def test_scrape_model_without_cache(monkeypatch):
     assert pricing.input_cost_per_token == pytest.approx(0.27 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(1.08 / 1e6)
     assert pricing.cache_read_cost_per_token is None
-    assert pricing.max_tokens == 196_000
+    assert pricing.max_tokens_in == 196_000
 
 
 def test_scrape_zero_cache_keeps_field_none(monkeypatch):

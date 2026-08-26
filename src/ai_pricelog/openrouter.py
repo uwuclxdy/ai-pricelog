@@ -62,7 +62,7 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         if value is not None and float(value) >= 0:
             row[field_name] = to_mtok(float(value))
     if model.context_length > 0:
-        row["max_tokens"] = model.context_length
+        row["max_tokens_in"] = model.context_length
     extra = {key: value for key, value in model.pricing.items() if key not in OBSERVED_KEYS}
     if extra:
         row["extra"] = extra

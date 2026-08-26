@@ -4,8 +4,8 @@ prices live in the same embedded blob the detector reads. the blob price fields 
 USD per 1M tokens scaled by 1e4 (20000 -> $2.00/1M, measured 2026-08-19), so a
 per-token cost is ``float(field) * 1e-4 / 1e6``. ``cachedPromptTokenPrice``
 parses into cache_read_cost_per_token; the long-context cache variant is a
-different tier and stays ignored. max_tokens comes from ``maxPromptLength``, the
-context window (absent -> 0, the entry builder omits it). mode is chat.
+different tier and stays ignored. max_tokens_in comes from ``maxPromptLength``,
+the context window (absent -> 0, the entry builder omits it). mode is chat.
 
 the page ids carry dated snapshot spellings (``grok-4.20-0309-non-reasoning``)
 for models the store holds under their base id (``grok-4.20``).
@@ -43,7 +43,7 @@ def _price(value: object) -> float | None:
         return None
 
 
-def _max_tokens(entry: dict) -> int:
+def _max_tokens_in(entry: dict) -> int:
     value = entry.get("maxPromptLength")
     if value is None:
         return 0
@@ -69,7 +69,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             input_cost_per_token=input_cost,
             output_cost_per_token=output_cost,
             mode="chat",
-            max_tokens=_max_tokens(entry),
+            max_tokens_in=_max_tokens_in(entry),
             cache_read_cost_per_token=_price(entry.get("cachedPromptTokenPrice")),
         )
     return None

@@ -105,7 +105,7 @@ def test_scrape_sonar(monkeypatch):
     assert pricing.input_cost_per_token == pytest.approx(1 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(1 / 1e6)
     assert pricing.mode == "chat"
-    assert pricing.max_tokens == 0
+    assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
 def test_scrape_sonar_pro(monkeypatch):

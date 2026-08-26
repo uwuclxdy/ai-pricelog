@@ -6,7 +6,7 @@ attributes as exact dollars per 1M tokens. Input -> input_cost, Output ->
 output_cost, /1e6. the input row's ``[data-pricing-key="cache-read"]``
 wrapper carries a second titled span for the cache-read rate ->
 cache_read_cost_per_token. the context row's span title is the exact token
-count -> max_tokens (0 when absent or unreadable, the entry builder omits
+count -> max_tokens_in (0 when absent or unreadable, the entry builder omits
 it). cards with tiered or omnimodal pricing ("-" input, "Tiered pricing"
 button) or zero amounts carry no usable rates -> None. mode is chat.
 
@@ -120,6 +120,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_cost_per_token=input_amount / 1e6,
         output_cost_per_token=output_amount / 1e6,
         mode="chat",
-        max_tokens=_context_tokens(card),
+        max_tokens_in=_context_tokens(card),
         cache_read_cost_per_token=cache_amount / 1e6 if cache_amount is not None else None,
     )

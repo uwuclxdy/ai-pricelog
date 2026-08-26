@@ -10,8 +10,9 @@ peak subrows without the footnote are a scrape failure: the entry builder
 requires windows with peak prices. CACHE HIT parses like CACHE MISS into the
 cache-read fields: OFF-PEAK -> cache_read_cost_per_token, PEAK ->
 peak_cache_read_cost_per_token. values are USD per 1M tokens -> /1e6.
-max_tokens comes from the MAX OUTPUT row ("MAXIMUM: 384K" -> 384 * 1024);
-that row may span all model columns as one merged cell, in which case the
+max_tokens_out comes from the MAX OUTPUT row ("MAXIMUM: 384K" -> 384 *
+1024) and max_tokens_in from the CONTEXT LENGTH row ("1M" -> 1024 * 1024);
+either row may span all model columns as one merged cell, in which case the
 single value applies to every model.
 
 None = the model id is not on the page, or a needed price is missing.
@@ -32,7 +33,8 @@ _CACHE_HIT = "1M INPUT TOKENS (CACHE HIT)"
 _OUTPUT = "1M OUTPUT TOKENS"
 _MARKERS = ("OFF-PEAK", "PEAK")
 _PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
-_MAX_OUTPUT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
+_K_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
+_M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
 _FOOTNOTE_PATTERN = re.compile(
     r"Peak hours are (\d{2}:\d{2}) - (\d{2}:\d{2}) and (\d{2}:\d{2}) - (\d{2}:\d{2}) UTC"
 )
@@ -59,7 +61,10 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             input_cost_per_token=off_input / 1e6,
             output_cost_per_token=off_output / 1e6,
             mode="chat",
-            max_tokens=_max_tokens(table[1:], ids, model_id),
+            max_tokens_in=_window_tokens(
+                table[1:], ids, model_id, "CONTEXT LENGTH", _M_PATTERN, 1024 * 1024
+            ),
+            max_tokens_out=_window_tokens(table[1:], ids, model_id, "MAX OUTPUT", _K_PATTERN, 1024),
             cache_read_cost_per_token=_per_token(off_cache_read),
         )
     if peak_input is None or peak_output is None:
@@ -68,7 +73,10 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_cost_per_token=off_input / 1e6,
         output_cost_per_token=off_output / 1e6,
         mode="chat",
-        max_tokens=_max_tokens(table[1:], ids, model_id),
+        max_tokens_in=_window_tokens(
+            table[1:], ids, model_id, "CONTEXT LENGTH", _M_PATTERN, 1024 * 1024
+        ),
+        max_tokens_out=_window_tokens(table[1:], ids, model_id, "MAX OUTPUT", _K_PATTERN, 1024),
         cache_read_cost_per_token=_per_token(off_cache_read),
         peak_input_cost_per_token=peak_input / 1e6,
         peak_output_cost_per_token=peak_output / 1e6,
@@ -107,22 +115,29 @@ def _peak_windows(soup: BeautifulSoup, url: str) -> tuple[tuple[str, str], ...]:
     )
 
 
-def _max_tokens(rows: list[list[str]], ids: list[str], model_id: str) -> int:
+def _window_tokens(
+    rows: list[list[str]],
+    ids: list[str],
+    model_id: str,
+    label: str,
+    pattern: re.Pattern[str],
+    multiplier: int,
+) -> int:
     for row in rows:
-        if not row or row[0] != "MAX OUTPUT":
+        if not row or row[0] != label:
             continue
         cells = row[1:]
         if len(cells) == len(ids):
             # one cell per model column: the model takes its own cell's value;
-            # a cell without a K value yields 0, never another model's value
-            match = _MAX_OUTPUT_PATTERN.search(cells[ids.index(model_id)])
-            return int(float(match.group(1))) * 1024 if match else 0
-        # merged cell(s) spanning the model columns: the first K value applies
+            # a cell without a matching value yields 0, never another model's
+            match = pattern.search(cells[ids.index(model_id)])
+            return int(float(match.group(1))) * multiplier if match else 0
+        # merged cell(s) spanning the model columns: the first value applies
         # to every model
         for cell in cells:
-            match = _MAX_OUTPUT_PATTERN.search(cell)
+            match = pattern.search(cell)
             if match:
-                return int(float(match.group(1))) * 1024
+                return int(float(match.group(1))) * multiplier
         return 0
     return 0
 

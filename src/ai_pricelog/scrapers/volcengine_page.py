@@ -11,8 +11,9 @@ ranges: the reasoning labels stand in for input/output and the LOW bound of
 the range is used. CNY is converted to USD at the pinned rate CNY_PER_USD
 (update the constant when the rate drifts; litellm's own volcengine entries
 carry no costs, so the conversion policy lives in this module only).
-max_tokens comes from the card's 最大输出 label, falling back to 上下文窗口
-(values like "256k" / "128k", K * 1024); cards without either label yield 0.
+max_tokens_out comes from the card's 最大输出 label and max_tokens_in from
+上下文窗口 (values like "256k" / "128k", K * 1024); cards without a label
+yield 0 for that field.
 
 None = the model id is not on the page or its card carries no parseable
 price (skip-and-retry). FetchError = the fetch failed, or the page text
@@ -56,7 +57,8 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_cost_per_token=input_price / 1e6 / CNY_PER_USD,
         output_cost_per_token=output_price / 1e6 / CNY_PER_USD,
         mode="chat",
-        max_tokens=_max_tokens(window),
+        max_tokens_out=_window_value(window, "最大输出"),
+        max_tokens_in=_window_value(window, "上下文窗口"),
     )
 
 
@@ -98,20 +100,16 @@ def _price_after(window: str, labels: tuple[str, ...]) -> float | None:
     return float(match.group(1)) if match else None
 
 
-def _max_tokens(window: str) -> int:
-    """the K value after the card's 最大输出 label, falling back to
-    上下文窗口; 0 when neither carries a parseable K value. the value
-    search stops at the next label so a missing value cannot pick up the
-    following label's value."""
-    for label in _WINDOW_LABELS:
-        pos = window.find(label)
-        if pos == -1:
-            continue
-        span_start = pos + len(label)
-        next_label = [window.find(other, span_start) for other in _ALL_LABELS]
-        next_label = [pos for pos in next_label if pos != -1]
-        span_end = min(next_label) if next_label else len(window)
-        match = _K_RE.search(window[span_start:span_end])
-        if match:
-            return int(float(match.group(1))) * 1024
-    return 0
+def _window_value(window: str, label: str) -> int:
+    """the K value after the card's label, 0 when it carries none. the
+    value search stops at the next label so a missing value cannot pick up
+    the following label's value."""
+    pos = window.find(label)
+    if pos == -1:
+        return 0
+    span_start = pos + len(label)
+    next_label = [window.find(other, span_start) for other in _ALL_LABELS]
+    next_label = [pos for pos in next_label if pos != -1]
+    span_end = min(next_label) if next_label else len(window)
+    match = _K_RE.search(window[span_start:span_end])
+    return int(float(match.group(1))) * 1024 if match else 0
