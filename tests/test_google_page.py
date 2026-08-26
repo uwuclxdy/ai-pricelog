@@ -38,6 +38,7 @@ EXPECTED_IDS = [
     "gemini-2.5-pro-preview-tts",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
+    "gemini-embedding-2",
     "gemini-embedding-001",
     "gemini-robotics-er-2-preview",
     "gemini-robotics-er-2-streaming-preview",

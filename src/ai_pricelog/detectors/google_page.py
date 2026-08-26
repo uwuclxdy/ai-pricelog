@@ -10,9 +10,12 @@ Preview, carries two slugs in its em (the customtools endpoint); both are
 emitted.
 
 only sections carrying a token pricing table are watched: a table whose
-header holds "Paid Tier, per 1M tokens in USD" and that has an "Input price"
-row. that keeps out imagen/veo/lyria (per image/second/request) and the
-tools/agents tables. ids are emitted as written on the page, page order.
+header holds "Paid Tier, per 1M tokens in USD" and that has an input-price
+row ("Input price", "Text input price", "Image input price"). that keeps
+out imagen/veo/lyria (per image/second/request) and the tools/agents
+tables. input-only sections (gemini-embedding-2) are detected; the scraper
+returns None for them (no output row). ids are emitted as written on the
+page, page order.
 """
 
 from collections.abc import Iterator
@@ -60,7 +63,7 @@ def _is_token_table(table: Tag) -> bool:
         return False
     for row in table.find_all("tr"):
         cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
-        if cells and cells[0].startswith("Input price"):
+        if cells and "input price" in cells[0].lower():
             return True
     return False
 
