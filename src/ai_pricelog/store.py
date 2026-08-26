@@ -15,16 +15,21 @@ def load(path: Path) -> list[dict[str, object]]:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return []
+    return parse(text, str(path))
+
+
+def parse(text: str, label: str) -> list[dict[str, object]]:
+    """Parse ndjson rows from text; errors name the label and the line."""
     rows: list[dict[str, object]] = []
     for number, line in enumerate(text.splitlines(), start=1):
         try:
             row = json.loads(line)
         except json.JSONDecodeError as exc:
             raise ValueError(
-                f"history file '{path}': line {number}: invalid json: {exc.msg}"
+                f"history file '{label}': line {number}: invalid json: {exc.msg}"
             ) from exc
         if not isinstance(row, dict):
-            raise ValueError(f"history file '{path}': line {number}: must be an object")
+            raise ValueError(f"history file '{label}': line {number}: must be an object")
         rows.append(row)
     return rows
 
@@ -36,8 +41,22 @@ def save(rows: list[dict[str, object]], path: Path) -> None:
     _atomic_write(payload, path)
 
 
-def append_row(rows: list[dict[str, object]], row: dict[str, object]) -> None:
-    rows.append(row)
+def union(rows: list[dict[str, object]], extra: list[dict[str, object]]) -> list[dict[str, object]]:
+    """rows plus the extra rows not already present, keyed by (source, model_id, observed_at).
+
+    Pending PR branches each carry a full store snapshot, so their union over
+    the loaded store repeats every load-time row; the key dedupe collapses
+    those while keeping the rows unique to a pending branch.
+    """
+    seen = {(row.get("source"), row.get("model_id"), row.get("observed_at")) for row in rows}
+    merged = list(rows)
+    for row in extra:
+        key = (row.get("source"), row.get("model_id"), row.get("observed_at"))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(row)
+    return merged
 
 
 def last(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str, object] | None:
@@ -92,7 +111,9 @@ def build_row(
         pricing.peak_input_cost_per_token is not None
         or pricing.peak_output_cost_per_token is not None
     ):
-        assert pricing.peak_windows, "peak prices set without peak windows"
+        # no assert on peak_windows here: the row must build even when the
+        # scrape left the windows empty, so validate.validate_row rejects
+        # THIS row instead of an AssertionError killing the whole run
         row["peak_windows"] = [list(window) for window in pricing.peak_windows]
         if pricing.peak_input_cost_per_token is not None:
             row["peak_input_mtok"] = to_mtok(pricing.peak_input_cost_per_token)

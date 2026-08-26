@@ -3594,7 +3594,7 @@ border-color: #ef4444;
     var colIndex = raw ? parseInt(raw, 10) : colCount;
     if (!colIndex || colIndex < 1 || colIndex > colCount) return;
 
-    // Grab the target cell from every row.
+    // Grab the matching cell from every row.
     var cells = [];
     rows.forEach(function (row) {
       var cell = row.querySelectorAll("td, th")[colIndex - 1];

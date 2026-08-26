@@ -24,4 +24,4 @@ jobs:
         run: uv sync --frozen
 
       - name: run moonshot smoke probe
-        run: uv run autopr-genai-prices-smoke
+        run: uv run ai-pricelog-smoke

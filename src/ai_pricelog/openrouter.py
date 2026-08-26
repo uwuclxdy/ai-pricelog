@@ -39,14 +39,6 @@ def fetch_models(url: str | None = None) -> list[OpenrouterModel]:
     return _parse_models(data, f"url '{url}'")
 
 
-def find(models: list[OpenrouterModel], prefix: str, model_id: str) -> OpenrouterModel | None:
-    slug = f"{prefix}/{model_id.lower()}"
-    for model in models:
-        if model.id == slug:
-            return model
-    return None
-
-
 OBSERVED_KEYS = frozenset({"prompt", "completion", "input_cache_read"})
 
 

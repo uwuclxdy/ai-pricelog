@@ -33,17 +33,27 @@ def make_cfg(cap: int, *keys: str) -> config.Config:
 class PipelineRunner:
     """gh calls scripted, git subprocesses real (all local, offline)."""
 
-    def __init__(self, open_prs: list[dict] | None = None, base: str = "main") -> None:
+    def __init__(
+        self,
+        open_prs: list[dict] | None = None,
+        base: str = "main",
+        failures: dict[str, Exception] | None = None,
+    ) -> None:
         self.real = pr.PrRunner()
         self.calls: list[tuple[list[str], Path]] = []
         self.pr_urls: list[str] = []
         self.created: list[tuple[str, str]] = []
         self.open_prs = open_prs or []
+        self.failures = failures or {}
         self.base = base
 
     def run(self, cmd: list[str], cwd: Path) -> str:
         self.calls.append((cmd, cwd))
         if cmd[0] == "gh":
+            key = " ".join(cmd)
+            for pattern, failure in self.failures.items():
+                if pattern in key:
+                    raise failure
             if cmd[1] == "auth":
                 return ""
             if cmd[1] == "api" and cmd[2] == "user":
@@ -162,7 +172,9 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
 
     # the row and the seen-state ride the pr branch only; the branch carries
     # the full store (the loaded legacy row plus the new one)
-    branch_history = git(repo_root, "show", "pricelog/deepseek-chat:data/history.ndjson")
+    branch_history = git(
+        repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
+    )
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert len(rows) == 2
     row = rows[1]
@@ -172,7 +184,9 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert row["input_mtok"] == 0.27
     assert row["output_mtok"] == 1.1
     assert row["url"] == "https://example.com/pricing"
-    branch_state = json.loads(git(repo_root, "show", "pricelog/deepseek-chat:state.json"))
+    branch_state = json.loads(
+        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:state.json")
+    )
     assert branch_state["providers"]["deepseek"]["last_seen"] == ["deepseek-chat"]
 
     # the open pr names the id, so the next run skips it as pending: the store
@@ -313,7 +327,9 @@ def test_refresh_drift_appends_and_opens_update_pr(tmp_path, fake_modules, repo_
     assert provider_report.rows == ["deepseek-chat"]
     assert runner.created[0][0] == "Update deepseek-chat pricing for Deepseek"
 
-    branch_history = git(repo_root, "show", "pricelog/deepseek-chat:data/history.ndjson")
+    branch_history = git(
+        repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
+    )
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert len(rows) == 2
     assert rows[1]["model_id"] == "deepseek-chat"
@@ -373,10 +389,14 @@ def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, rep
     provider_report = report.providers["mistral"]
     assert provider_report.candidates == []
     assert [model_id for model_id, _url in provider_report.prs] == ["codestral-2508"]
-    branch_history = git(repo_root, "show", "pricelog/codestral-2508:data/history.ndjson")
+    branch_history = git(
+        repo_root, "show", f"{pr.branch_name('codestral-2508')}:data/history.ndjson"
+    )
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert rows[1]["model_id"] == "codestral-2508"
-    branch_state = json.loads(git(repo_root, "show", "pricelog/codestral-2508:state.json"))
+    branch_state = json.loads(
+        git(repo_root, "show", f"{pr.branch_name('codestral-2508')}:state.json")
+    )
     assert branch_state["providers"]["mistral"]["last_seen"] == [
         "codestral-25-08",
         "codestral-2508",
@@ -417,7 +437,9 @@ def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, o
     assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
     assert runner.created[0][0] == "Add deepseek/deepseek-chat pricing for OpenRouter"
 
-    branch_history = git(repo_root, "show", "pricelog/deepseek/deepseek-chat:data/history.ndjson")
+    branch_history = git(
+        repo_root, "show", f"{pr.branch_name('deepseek/deepseek-chat')}:data/history.ndjson"
+    )
     rows = [json.loads(line) for line in branch_history.splitlines()]
     # the branch carries the full store: the loaded rows plus the new one
     assert len(rows) == 2
@@ -425,7 +447,7 @@ def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, o
     assert rows[1]["model_id"] == "deepseek/deepseek-chat"
     assert rows[1]["input_mtok"] == 0.27
     # openrouter keeps no seen-state: the branch state.json equals the head one
-    assert git(repo_root, "show", "pricelog/deepseek/deepseek-chat:state.json") == git(
+    assert git(repo_root, "show", f"{pr.branch_name('deepseek/deepseek-chat')}:state.json") == git(
         repo_root, "show", "HEAD:state.json"
     )
     assert_default_branch_clean(repo_root, tip="seed store")
@@ -532,3 +554,169 @@ def test_branch_commit_sets_identity_when_missing(tmp_path, fake_modules, repo_r
         git(repo_root, "log", "--format=%an <%ae>", "-1", "pricelog/seed").strip()
         == "octocat <octocat@users.noreply.github.com>"
     )
+
+
+def test_push_uses_force_with_lease(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
+    assert pushes == [
+        ["git", "push", "--force-with-lease", "origin", pr.branch_name("deepseek-chat")]
+    ]
+
+
+def test_pr_create_failure_deletes_the_remote_branch(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner(failures={"gh pr create": pr.PrError("pr create failed")})
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert runner.pr_urls == []
+    assert "pr open failed for deepseek-chat" in report.providers["deepseek"].errors[0]
+    branch = pr.branch_name("deepseek-chat")
+    pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
+    assert ["git", "push", "--force-with-lease", "origin", branch] in pushes
+    assert ["git", "push", "origin", "--delete", branch] in pushes
+    # the orphaned branch is gone, so the next run re-creates it cleanly
+    assert branch not in git(repo_root, "ls-remote", "origin")
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_seed_rerun_skipped_while_seed_pr_open(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    runner = PipelineRunner(
+        open_prs=[{"title": "Seed price history", "body": "", "headRefName": "pricelog/seed"}]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.providers == {}
+    assert runner.pr_urls == []
+    assert_default_branch_clean(repo_root)
+
+
+def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(
+        repo_root,
+        [legacy, prior],
+        {"providers": {"deepseek": {"last_seen": ["deepseek-legacy", "deepseek-chat"]}}},
+    )
+
+    # a sibling run already pushed the drift update for deepseek-chat but its
+    # pr never opened; the pending branch carries the full store snapshot
+    pending = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+    )
+    pending_branch = pr.branch_name("deepseek-chat")
+    git(repo_root, "switch", "-C", pending_branch)
+    store.save([legacy, prior, pending], repo_root / "data" / "history.ndjson")
+    store.write_index([legacy, prior, pending], repo_root / "data" / "index.json")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "sibling drift update")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+
+    # deepseek-chat is already pending with today's prices: the union diff
+    # stops a duplicate row, and only the genuinely new model gets a pr
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-new"]
+    assert report.providers["deepseek"].skipped_pending == []
+    branch_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('deepseek-new')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in branch_rows] == [
+        "deepseek-legacy",
+        "deepseek-chat",
+        "deepseek-chat",
+        "deepseek-new",
+    ]
+    keys = [(row["source"], row["model_id"], row["observed_at"]) for row in branch_rows]
+    assert len(keys) == len(set(keys))
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_open_pr_list_fetched_once_per_run(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-a", "deepseek-b"]
+    scrape["deepseek"] = {"deepseek-a": pricing(), "deepseek-b": pricing()}
+    cfg = make_cfg(3, "deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Add DEEPSEEK-A pricing for Deepseek",
+                "body": "",
+                "headRefName": "pricelog/deepseek-a-12345678",
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    list_calls = [cmd for cmd, _cwd in runner.calls if cmd[0:3] == ["gh", "pr", "list"]]
+    assert len(list_calls) == 1
+    assert "--limit" in list_calls[0] and "100" in list_calls[0]
+    assert report.providers["deepseek"].skipped_pending == ["deepseek-a"]
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-b"]
+    assert_default_branch_clean(repo_root, tip="seed store")

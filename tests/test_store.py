@@ -2,8 +2,9 @@ import json
 
 import pytest
 
+from ai_pricelog import validate
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.store import append_row, build_row, changed, last, load, save, write_index
+from ai_pricelog.store import build_row, changed, last, load, save, union, write_index
 
 
 def test_load_missing_file_returns_empty(tmp_path):
@@ -44,10 +45,22 @@ def test_save_load_roundtrip_preserves_order_and_trailing_newline(tmp_path):
     assert path.read_text(encoding="utf-8") == expected
 
 
-def test_append_row_appends_in_place():
-    rows = [{"source": "a", "model_id": "m", "observed_at": "t1"}]
-    append_row(rows, {"source": "a", "model_id": "m", "observed_at": "t2"})
-    assert [row["observed_at"] for row in rows] == ["t1", "t2"]
+def test_union_dedupes_by_source_model_observed_at():
+    base = [
+        {"source": "a", "model_id": "m", "observed_at": "t1"},
+        {"source": "a", "model_id": "n", "observed_at": "t2"},
+    ]
+    extra = [
+        {"source": "a", "model_id": "m", "observed_at": "t1"},  # duplicate of base[0]
+        {"source": "a", "model_id": "m", "observed_at": "t3"},
+    ]
+    assert union(base, extra) == base + [extra[1]]
+
+
+def test_union_preserves_base_rows_and_order():
+    base = [{"source": "a", "model_id": "m", "observed_at": "t1"}]
+    assert union(base, []) is not base
+    assert union(base, []) == base
 
 
 def test_last_returns_latest_row_per_source_and_model():
@@ -142,15 +155,19 @@ def test_build_row_emits_peak_fields_together():
     assert row["peak_output_mtok"] == 4.0
 
 
-def test_build_row_asserts_peak_windows_with_peak_prices():
+def test_build_row_peak_prices_without_windows_builds_and_validation_rejects():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
         mode="flex",
         peak_input_cost_per_token=0.000002,
     )
-    with pytest.raises(AssertionError):
-        build_row("a", "m", pricing, "t", "u")
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["peak_windows"] == []
+    assert row["peak_input_mtok"] == 2.0
+    # one malformed scrape must fail only its own row, not the whole run
+    with pytest.raises(validate.ValidationError, match="peak_windows"):
+        validate.validate_row(row)
 
 
 def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):

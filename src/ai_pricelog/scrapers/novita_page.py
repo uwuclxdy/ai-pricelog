@@ -37,7 +37,7 @@ _DEDUP: dict[str, tuple[str, ...]] = {
 
 
 def dedup_keys(model_id: str) -> tuple[str, ...]:
-    """The target yml's tracked spelling of this page id, or () when unchanged."""
+    """The stored spelling this page id is tracked under, or () when unchanged."""
     return _DEDUP.get(model_id, ())
 
 

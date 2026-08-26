@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from ai_pricelog import openrouter
-from ai_pricelog.openrouter import OBSERVED_KEYS, OpenrouterModel, build_row, fetch_models, find
+from ai_pricelog.openrouter import OBSERVED_KEYS, OpenrouterModel, build_row, fetch_models
 
 FIXTURE = Path(__file__).parent / "fixtures" / "openrouter_models.json"
 
@@ -76,22 +76,6 @@ def test_fetch_models_uses_default_url_and_passes_custom_through(
     assert seen == ["https://openrouter.ai/api/v1/models"]
     fetch_models("https://example.test/models")
     assert seen[-1] == "https://example.test/models"
-
-
-def test_find_lowercases_model_id(fake_fetch: list[str]) -> None:
-    models = fetch_models()
-    minimax = find(models, "minimax", "MiniMax-M3")
-    assert minimax is not None
-    assert minimax.id == "minimax/minimax-m3"
-    deepseek = find(models, "deepseek", "DeepSeek-V4-Pro")
-    assert deepseek is not None
-    assert deepseek.id == "deepseek/deepseek-v4-pro"
-
-
-def test_find_missing_model_returns_none(fake_fetch: list[str]) -> None:
-    models = fetch_models()
-    assert find(models, "z-ai", "GLM-5.4") is None
-    assert find(models, "minimax", "MiniMax-M3 ") is None
 
 
 def test_fetch_models_rounds_to_six_decimals(monkeypatch: pytest.MonkeyPatch) -> None:

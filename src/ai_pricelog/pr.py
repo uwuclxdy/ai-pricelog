@@ -1,11 +1,21 @@
+"""git/gh plumbing for the pipeline: runners, specs, branch names, pending scans."""
+
+import hashlib
 import json
+import logging
 import os
 import re
 import subprocess
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from ai_pricelog import store
+
+log = logging.getLogger(__name__)
+
 AUTOPR_REPO = "https://github.com/uwuclxdy/ai-pricelog"
+SEED_BRANCH = "pricelog/seed"
 
 
 def run_url_from_env() -> str | None:
@@ -55,7 +65,7 @@ class PrSpec:
 
     @property
     def branch(self) -> str:
-        return "pricelog/seed" if self.seed else branch_name(self.model_id)
+        return SEED_BRANCH if self.seed else branch_name(self.model_id)
 
     @property
     def title(self) -> str:
@@ -122,43 +132,90 @@ def _fmt(value: object) -> str:
     return "—" if value is None else f"{value:g}"
 
 
-def default_branch(runner: PrRunner) -> str:
+def default_branch(runner: PrRunner, cwd: Path) -> str:
     """The default branch of THIS repo, read from the gh api."""
     return runner.run(
         ["gh", "repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
-        cwd=Path.cwd(),
+        cwd=cwd,
     ).strip()
 
 
 def branch_name(key: str) -> str:
-    return "pricelog/" + re.sub(r"[^A-Za-z0-9._/-]", "-", key)
+    """`pricelog/<slug>-<sha8>`: the slugged model id plus a digest suffix.
 
-
-def pending_pr(model_id: str, runner: PrRunner) -> bool:
-    """Whether an open PR in THIS repo names model_id in its title or body.
-
-    Case-insensitive substring match, one gh call per model. The pipeline
-    checks it before scraping, so a closed-unmerged PR re-candidates the model
-    on the next run while an open one settles it.
+    The slash becomes a dash because a slash nests the refname and lets one id
+    be a path prefix of another, which the remote rejects once both branches
+    exist. The first 8 hex chars of the id's sha256 keep distinct ids distinct
+    after slugging. The branch is automation-owned, so the run pushes it with
+    --force-with-lease.
     """
+    slug = re.sub(r"[^A-Za-z0-9._-]", "-", key.replace("/", "-"))
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
+    return f"pricelog/{slug}-{digest}"
+
+
+@dataclass(frozen=True)
+class OpenPr:
+    """One open PR as gh pr list reports it; what the pending checks key on."""
+
+    title: str
+    body: str
+    head_ref: str
+
+
+def open_pull_requests(runner: PrRunner, cwd: Path) -> list[OpenPr]:
+    """All open PRs in THIS repo, one gh call per run (never per model)."""
     out = runner.run(
-        ["gh", "pr", "list", "--state", "open", "--json", "title,body"],
-        cwd=Path.cwd(),
+        [
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--limit",
+            "100",
+            "--json",
+            "title,body,headRefName",
+        ],
+        cwd=cwd,
     )
     try:
         entries = json.loads(out)
     except json.JSONDecodeError as exc:
         raise PrError(f"gh pr list returned invalid json: {exc.msg}") from exc
-    needle = model_id.lower()
+    if not isinstance(entries, list):
+        raise PrError("gh pr list returned a non-list json value")
+    prs: list[OpenPr] = []
     for entry in entries:
         if not isinstance(entry, dict):
             continue
-        if any(needle in str(entry.get(key, "")).lower() for key in ("title", "body")):
-            return True
-    return False
+        prs.append(
+            OpenPr(
+                title=str(entry.get("title") or ""),
+                body=str(entry.get("body") or ""),
+                head_ref=str(entry.get("headRefName") or ""),
+            )
+        )
+    return prs
 
 
-def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner) -> str:
+def pending_pr(model_id: str, open_prs: Sequence[OpenPr]) -> bool:
+    """Whether an open PR in THIS repo names model_id in its title or body.
+
+    Case-insensitive substring match over the run's one pr list. The pipeline
+    checks it before scraping, so a closed-unmerged PR re-candidates the model
+    on the next run while an open one settles it.
+    """
+    needle = model_id.lower()
+    return any(needle in entry.title.lower() or needle in entry.body.lower() for entry in open_prs)
+
+
+def seed_pending(open_prs: Sequence[OpenPr]) -> bool:
+    """Whether the seed PR is still open (matched by branch, not by title)."""
+    return any(entry.head_ref == SEED_BRANCH for entry in open_prs)
+
+
+def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner, cwd: Path) -> str:
     return runner.run(
         [
             "gh",
@@ -174,8 +231,49 @@ def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner) -> str:
             "--body",
             spec.body,
         ],
-        cwd=Path.cwd(),
+        cwd=cwd,
     ).strip()
+
+
+def fetch_pending_rows(
+    runner: PrRunner, repo_root: Path, history_file: str
+) -> list[dict[str, object]]:
+    """The rows on unmerged pricelog branches of origin, under refs/remotes/pending.
+
+    Every pending branch carries a full store snapshot; its rows unique over
+    the local store are what a new PR branch must union in, so sibling PRs
+    stop rewriting the same files. A run without an origin remote (local dev)
+    or a branch without the file just yields no pending rows.
+    """
+    try:
+        runner.run(
+            ["git", "fetch", "origin", "refs/heads/pricelog/*:refs/remotes/pending/*"],
+            cwd=repo_root,
+        )
+    except PrError as exc:
+        log.info("pending branch fetch failed; continuing with no pending rows: %s", exc)
+        return []
+    try:
+        refs = runner.run(
+            ["git", "for-each-ref", "refs/remotes/pending", "--format=%(refname)"],
+            cwd=repo_root,
+        ).splitlines()
+    except PrError as exc:
+        log.info("pending ref listing failed; continuing with no pending rows: %s", exc)
+        return []
+    rows: list[dict[str, object]] = []
+    for ref in refs:
+        try:
+            text = runner.run(["git", "show", f"{ref}:{history_file}"], cwd=repo_root)
+        except PrError as exc:
+            log.info("pending branch %s has no %s; skipping: %s", ref, history_file, exc)
+            continue
+        try:
+            rows.extend(store.parse(text, ref))
+        except ValueError as exc:
+            log.warning("pending branch %s history unreadable; skipping: %s", ref, exc)
+            continue
+    return rows
 
 
 def ensure_author(slot: Path, runner: PrRunner) -> None:

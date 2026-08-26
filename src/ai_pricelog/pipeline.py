@@ -1,19 +1,23 @@
 """The daily run: append observed price rows, open one draft PR per change.
 
 Watches the provider pages through the detector/scraper pairs, plus the
-OpenRouter models API. Every new or drifted row is appended to
-data/history.ndjson on a `pricelog/<model-id>` branch (never the default
-branch); the index and the seen-state ride the same branch commit, and one
-human-reviewed draft PR is opened per (source, model_id) pair. The tree is
-restored to HEAD after each PR, so every PR branch starts from the default
-branch tip. When the store was empty at load, one seed PR carries all rows
-with no draft cap.
+OpenRouter models API. Every PR branch carries the same full store (the
+load-time rows plus the pending branches' rows plus this run's rows) on a
+`pricelog/<slug>-<sha8>` branch (never the default branch), so sibling PRs
+stop conflicting on the data files at merge: the first merged PR lands
+everything pending and the later ones merge as empty diffs. The index and the
+seen-state ride the same branch commit, and one human-reviewed draft PR is
+opened per (source, model_id) pair. The tree is restored to HEAD after each
+PR, so every PR branch starts from the default branch tip. When the store was
+empty at load, one seed PR carries all rows with no draft cap; while that
+seed PR is still open, the run skips itself.
 """
 
 from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -79,11 +83,18 @@ def run(
     report = RunReport()
     run_url = pr.run_url_from_env()
 
-    base = pr.default_branch(runner)
+    base = pr.default_branch(runner, repo_root)
     base_sha = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
     original_branch = runner.run(["git", "branch", "--show-current"], cwd=repo_root).strip()
     pr.ensure_author(repo_root, runner)
     runner.run(["gh", "auth", "setup-git"], cwd=repo_root)
+
+    open_prs = pr.open_pull_requests(runner, repo_root)
+    if seed and pr.seed_pending(open_prs):
+        log.info("store empty at load and the seed pr is still open; skipping the run")
+        return report
+
+    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_FILE))
 
     plan: dict[tuple[str, str], _PrGroup] = {}
 
@@ -105,35 +116,45 @@ def run(
             continue
         dedup_keys = getattr(scraper, "dedup_keys", None)
 
-        _add_candidates(pcfg, scraper, detected, rows, state, plan, provider_report, runner, today)
+        _add_candidates(
+            pcfg, scraper, detected, rows, state, plan, provider_report, open_prs, today
+        )
         _refresh_drift(
-            pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, runner, today
+            pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, open_prs, today
         )
 
-    _openrouter_rows(rows, plan, report, runner, today)
+    _openrouter_rows(rows, plan, report, open_prs, today)
 
-    if seed and plan:
+    if not plan:
+        return report
+
+    run_rows = [row for group in plan.values() for row in group.rows]
+    full_rows = rows + run_rows
+    state_updates: dict[str, list[str]] = {}
+    for group in plan.values():
+        if group.state_ids:
+            state_updates.setdefault(group.source, []).extend(group.state_ids)
+    updated_state = _with_new_ids(state, state_updates) if state_updates else state
+
+    if seed:
         spec = pr.PrSpec(
             source="seed",
             model_id="seed",
             provider="",
             source_url="",
-            rows=tuple(row for group in plan.values() for row in group.rows),
+            rows=tuple(run_rows),
             seed=True,
             run_url=run_url,
         )
-        state_updates: dict[str, list[str]] = {}
-        for group in plan.values():
-            state_updates.setdefault(group.source, []).extend(group.state_ids)
         url = _open_group_pr(
             repo_root,
             base,
             base_sha,
             original_branch,
             spec,
-            rows,
+            full_rows,
             state,
-            state_updates,
+            updated_state,
             "feat: seed price history",
             runner,
         )
@@ -167,9 +188,9 @@ def run(
             base_sha,
             original_branch,
             spec,
-            rows,
+            full_rows,
             state,
-            {group.source: group.state_ids},
+            updated_state,
             f"feat: {verb} {group.model_id} price history",
             runner,
         )
@@ -190,20 +211,21 @@ def _add_candidates(
     state: State,
     plan: dict[tuple[str, str], _PrGroup],
     provider_report: ProviderReport,
-    runner: pr.PrRunner,
+    open_prs: Sequence[pr.OpenPr],
     today: str,
 ) -> None:
     """First rows for ids the store has never seen.
 
-    Store membership (a row under the exact page id) and last_seen settle an
-    id silently; an open draft PR naming it skips it without a state change,
-    so a closed-unmerged PR re-candidates it next run.
+    Store membership (a row under the exact page id, pending branches
+    included) and last_seen settle an id silently; an open draft PR naming it
+    skips it without a state change, so a closed-unmerged PR re-candidates it
+    next run.
     """
     candidates: list[str] = []
     for model_id in state_new_ids(state, pcfg.key, detected):
         if store.last(rows, pcfg.key, model_id) is not None:
             continue
-        if pr.pending_pr(model_id, runner):
+        if pr.pending_pr(model_id, open_prs):
             provider_report.skipped_pending.append(model_id)
             continue
         candidates.append(model_id)
@@ -242,17 +264,17 @@ def _refresh_drift(
     rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     provider_report: ProviderReport,
-    runner: pr.PrRunner,
+    open_prs: Sequence[pr.OpenPr],
     today: str,
 ) -> None:
     """Drift-check every detected page id against its stored rows.
 
     Maps the page id through the scraper's dedup_keys to the stored spelling
-    (the first spelling that has a row), scrapes with the PAGE id (the
-    scrapers key their rows by page spelling), and appends a row under the
-    STORED spelling when the rates changed. Stateless: a merged PR settles by
-    itself (the next run diffs against the landed row), an open one is
-    skipped by the pending check.
+    (the first spelling that has a row, pending branches included), scrapes
+    with the PAGE id (the scrapers key their rows by page spelling), and
+    appends a row under the STORED spelling when the rates changed. Stateless:
+    a merged PR settles by itself (the next run diffs against the landed row),
+    an open one is skipped by the pending check.
     """
     for page_id in detected:
         spellings = [page_id] + list(dedup_keys(page_id) if dedup_keys is not None else [])
@@ -266,7 +288,7 @@ def _refresh_drift(
         )
         if stored is None or (pcfg.key, stored) in plan:
             continue  # nothing stored yet, or the row is fresh from this run
-        if pr.pending_pr(stored, runner):
+        if pr.pending_pr(stored, open_prs):
             log.info("refresh for %s skipped: pending pr", stored)
             provider_report.skipped_pending.append(stored)
             continue
@@ -301,7 +323,7 @@ def _openrouter_rows(
     rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     report: RunReport,
-    runner: pr.PrRunner,
+    open_prs: Sequence[pr.OpenPr],
     today: str,
 ) -> None:
     """OpenRouter rows: the API is the source, store membership settles ids."""
@@ -323,7 +345,7 @@ def _openrouter_rows(
         last_row = store.last(rows, "openrouter", model_id)
         if not store.changed(row, last_row):
             continue
-        if pr.pending_pr(model_id, runner):
+        if pr.pending_pr(model_id, open_prs):
             or_report.skipped_pending.append(model_id)
             continue
         or_report.candidates.append(model_id)
@@ -346,17 +368,19 @@ def _open_group_pr(
     base_sha: str,
     original_branch: str,
     spec: pr.PrSpec,
-    rows: list[dict[str, object]],
+    full_rows: list[dict[str, object]],
     state: State,
-    state_updates: dict[str, list[str]],
+    updated_state: State,
     message: str,
     runner: pr.PrRunner,
 ) -> str | None:
     """Write the PR branch, push it, open the draft, restore the tree.
 
-    The rows and the seen-state ride the branch commit; the default branch is
-    never committed or pushed. The tree is restored to the pre-run head after
-    every PR, so each branch starts from the same base.
+    Every branch of a run carries the same full_rows and seen-state, so the
+    first merged PR lands everything pending and the later sibling PRs merge
+    as empty diffs instead of conflicting on the data files. The default
+    branch is never committed or pushed, and the tree is restored to the
+    pre-run head after every PR, so each branch starts from the same base.
     """
     branch = spec.branch
     history_path = repo_root / HISTORY_FILE
@@ -364,13 +388,8 @@ def _open_group_pr(
     state_path = repo_root / STATE_FILE
     try:
         runner.run(["git", "switch", "-C", branch], cwd=repo_root)
-        full_rows = rows + list(spec.rows)
         store.save(full_rows, history_path)
         store.write_index(full_rows, index_path)
-        updated_state = state
-        for source, ids in state_updates.items():
-            if ids:
-                updated_state = _with_new_ids(updated_state, source, ids)
         add_cmd = ["git", "add", HISTORY_FILE, INDEX_FILE]
         if updated_state is not state:
             save_state(updated_state, state_path)
@@ -382,14 +401,27 @@ def _open_group_pr(
         _restore(repo_root, original_branch, base_sha, runner)
         return None
     try:
-        runner.run(["git", "push", "origin", branch], cwd=repo_root)
-        url = pr.open_pr(base, branch, spec, runner)
+        runner.run(["git", "push", "--force-with-lease", "origin", branch], cwd=repo_root)
+        url = pr.open_pr(base, branch, spec, runner, repo_root)
     except pr.PrError:
         log.exception("push or pr open failed for %s", branch)
+        _delete_remote_branch(repo_root, branch, runner)
         _restore(repo_root, original_branch, base_sha, runner)
         return None
     _restore(repo_root, original_branch, base_sha, runner)
     return url
+
+
+def _delete_remote_branch(repo_root: Path, branch: str, runner: pr.PrRunner) -> None:
+    """Drop the just-pushed branch from origin so the next run can re-create it.
+
+    The push succeeded but the PR never opened; the orphaned branch would
+    otherwise ride the next run's pending-branch union as rows no PR carries.
+    """
+    try:
+        runner.run(["git", "push", "origin", "--delete", branch], cwd=repo_root)
+    except pr.PrError:
+        log.warning("remote branch cleanup for %s failed", branch)
 
 
 def _restore(repo_root: Path, original_branch: str, base_sha: str, runner: pr.PrRunner) -> None:
@@ -409,16 +441,17 @@ def _restore(repo_root: Path, original_branch: str, base_sha: str, runner: pr.Pr
         log.exception("restore failed; the next PR branch would start from the previous one")
 
 
-def _with_new_ids(state: State, source: str, ids: list[str]) -> State:
+def _with_new_ids(state: State, updates: dict[str, list[str]]) -> State:
     updated = State(
         providers={
             key: ProviderState(last_seen=list(provider_state.last_seen))
             for key, provider_state in state.providers.items()
         }
     )
-    target = updated.providers.setdefault(source, ProviderState())
-    for model_id in ids:
-        append_unique(target.last_seen, model_id)
+    for source, ids in updates.items():
+        target = updated.providers.setdefault(source, ProviderState())
+        for model_id in ids:
+            append_unique(target.last_seen, model_id)
     return updated
 
 
