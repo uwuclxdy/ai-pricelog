@@ -3,44 +3,25 @@
 the page is static; each pricing table sits in a section whose unit line reads
 ``Prices /M Tokens`` (flagship, third-party-hosted, code sections) or ``Prices as
 marked`` (specialized, labs: per-page/per-minute/per-char units, not token-priced).
-rows link their model cell to the model-card slug and are matched by exact slug.
+rows link their model cell to the model-card slug and are matched by slug or
+stored spelling (see ``dedup_keys``; the detector emits the stored spelling, so
+``scrape`` accepts ``codestral-2508`` as well as ``codestral-25-08``).
 cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
 non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
 pricing -> None. the page carries no context window -> max_tokens 0. mode is chat.
-
-note: the page spells dated slugs with dashes (``codestral-25-08``) while the
-store compacts them (``codestral-2508``). the pipeline's dedup consults
-``dedup_keys`` for the compacted spelling, so a model already stored under it
-settles without a new row.
 """
 
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.detectors.mistral_page import SLUG_RE
+from ai_pricelog.detectors.mistral_page import _GENERATION_SEGMENT, SLUG_RE, _compact
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, fetch_soup
 
 _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"
 _DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
-
-# slug tail like -4-0-26-03 or -25-08 (zero to three version segments, then
-# yy-mm) compacts to -2603 / -2508, the stored spellings (codestral-2508 etc.).
-# slugs without a dated tail stay verbatim.
-_DATED_TAIL = re.compile(r"^(.*?)(?:-\d+){0,3}-(\d{2})-(\d{2})$")
-
-# a generation segment between family and size (ministral-3-14b): the store
-# holds the spelling without it (ministral-14b-2512)
-_GENERATION_SEGMENT = re.compile(r"^(.+)-(\d+)-(\d+b(?:-.*)?)$")
-
-
-def _compact(slug: str) -> str:
-    match = _DATED_TAIL.match(slug)
-    if match is None:
-        return slug
-    return f"{match.group(1)}-{match.group(2)}{match.group(3)}"
 
 
 def dedup_keys(model_id: str) -> list[str]:
@@ -94,7 +75,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             if link is None:
                 continue
             match = SLUG_RE.fullmatch(link["href"])
-            if match is None or match.group(1) != model_id:
+            if match is None or (
+                match.group(1) != model_id and model_id not in dedup_keys(match.group(1))
+            ):
                 continue
             input_cost = _price(cells[1].get_text(" ", strip=True))
             output_cost = _price(cells[3].get_text(" ", strip=True))

@@ -13,69 +13,73 @@ FIXTURES = Path(__file__).parent / "fixtures" / "mistral_page"
 CARDS_URL = "https://docs.mistral.ai/models/model-cards/"
 PRICING_URL = "https://docs.mistral.ai/inference/pricing"
 
+# the detector emits the stored spellings (dedup_keys conventions): dashed
+# dated tails compact (codestral-25-08 -> codestral-2508) and the ministral
+# generation segment drops (ministral-3-14b-25-12 -> ministral-14b-2512).
+# cards-page order first; the pricing-page set adds nothing not already listed.
 EXPECTED_IDS = [
-    "mistral-medium-3-5-26-04",
+    "mistral-medium-2604",
     "ocr-4-1",
     "zai-glm-5-2",
-    "mistral-small-4-0-26-03",
-    "voxtral-mini-transcribe-26-02",
-    "voxtral-mini-transcribe-realtime-26-02",
-    "mistral-large-3-25-12",
-    "ministral-3-14b-25-12",
-    "ministral-3-8b-25-12",
-    "ministral-3-3b-25-12",
+    "mistral-small-2603",
+    "voxtral-mini-transcribe-2602",
+    "voxtral-mini-transcribe-realtime-2602",
+    "mistral-large-2512",
+    "ministral-14b-2512",
+    "ministral-8b-2512",
+    "ministral-3b-2512",
     "ocr-4-0",
-    "ocr-3-25-12",
-    "voxtral-tts-26-03",
-    "voxtral-small-25-07",
-    "codestral-25-08",
-    "codestral-embed-25-05",
-    "mistral-embed-23-12",
+    "ocr-2512",
+    "voxtral-tts-2603",
+    "voxtral-small-2507",
+    "codestral-2508",
+    "codestral-embed-2505",
+    "mistral-embed-2312",
     "shieldstral-1-0",
-    "mistral-moderation-26-03",
+    "mistral-moderation-2603",
     "leanstral-1-5",
-    "leanstral-26-03",
-    "mistral-medium-3-1-25-08",
-    "mistral-small-3-2-25-06",
-    "voxtral-mini-transcribe-25-07",
-    "devstral-2-25-12",
-    "magistral-medium-1-1-25-07",
-    "mistral-small-creative-25-12",
-    "devstral-small-2-25-12",
-    "magistral-medium-1-2-25-09",
-    "magistral-small-1-2-25-09",
-    "magistral-small-1-1-25-07",
-    "voxtral-mini-25-07",
-    "devstral-medium-1-0-25-07",
-    "devstral-small-1-1-25-07",
-    "magistral-medium-1-0-25-06",
-    "magistral-small-1-0-25-06",
-    "ocr-2-25-05",
-    "devstral-small-1-0-25-05",
-    "mistral-medium-3-25-05",
-    "mistral-small-3-1-25-03",
-    "ocr-25-03",
-    "mistral-saba-25-02",
-    "mistral-small-3-0-25-01",
-    "codestral-25-01",
-    "mistral-large-2-1-24-11",
-    "pixtral-large-24-11",
-    "mistral-moderation-24-11",
+    "leanstral-2603",
+    "mistral-medium-2508",
+    "mistral-small-2506",
+    "voxtral-mini-transcribe-2507",
+    "devstral-2512",
+    "magistral-medium-2507",
+    "mistral-small-creative-2512",
+    "devstral-small-2512",
+    "magistral-medium-2509",
+    "magistral-small-2509",
+    "magistral-small-2507",
+    "voxtral-mini-2507",
+    "devstral-medium-2507",
+    "devstral-small-2507",
+    "magistral-medium-2506",
+    "magistral-small-2506",
+    "ocr-2505",
+    "devstral-small-2505",
+    "mistral-medium-2505",
+    "mistral-small-2503",
+    "ocr-2503",
+    "mistral-saba-2502",
+    "mistral-small-2501",
+    "codestral-2501",
+    "mistral-large-2411",
+    "pixtral-large-2411",
+    "mistral-moderation-2411",
     "ministral-3b-24-1",
     "ministral-8b-24-1",
-    "mistral-small-2-0-24-09",
-    "pixtral-12b-24-09",
-    "mistral-large-2-0-24-07",
-    "mistral-nemo-12b-24-07",
+    "mistral-small-2409",
+    "pixtral-12b-2409",
+    "mistral-large-2407",
+    "mistral-nemo-12b-2407",
     "codestral-mamba-7b-0-1",
     "mathstral-7b-0-1",
-    "codestral-24-05",
+    "codestral-2405",
     "mistral-7b-0-3",
     "mixtral-8x22b-0-1-0-3",
-    "mistral-small-1-0-24-02",
-    "mistral-large-1-0-24-02",
+    "mistral-small-2402",
+    "mistral-large-2402",
     "mistral-next",
-    "mistral-medium-1-0-23-12",
+    "mistral-medium-2312",
     "mixtral-8x7b-0-1",
     "mistral-7b-0-2",
     "mistral-7b-0-1",
@@ -93,13 +97,28 @@ def make_cfg() -> ProviderCfg:
     )
 
 
-def serve(monkeypatch: pytest.MonkeyPatch, module, html: str) -> None:
-    monkeypatch.setattr(module, "fetch_soup", lambda url: BeautifulSoup(html, "html.parser"))
+def serve(monkeypatch: pytest.MonkeyPatch, module, pages: dict[str, str]) -> None:
+    """serve one html per url; an unserved url fails the test loudly."""
+    soups = {url: BeautifulSoup(html, "html.parser") for url, html in pages.items()}
+
+    def fetch(url: str) -> BeautifulSoup:
+        if url not in soups:
+            raise AssertionError(f"unscripted fetch for {url}")
+        return soups[url]
+
+    monkeypatch.setattr(module, "fetch_soup", fetch)
 
 
 @pytest.fixture
-def live_cards(monkeypatch: pytest.MonkeyPatch) -> None:
-    serve(monkeypatch, mistral_page, (FIXTURES / "model_cards.html").read_text(encoding="utf-8"))
+def live_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    serve(
+        monkeypatch,
+        mistral_page,
+        {
+            CARDS_URL: (FIXTURES / "model_cards.html").read_text(encoding="utf-8"),
+            PRICING_URL: (FIXTURES / "pricing.html").read_text(encoding="utf-8"),
+        },
+    )
 
 
 @pytest.fixture
@@ -107,16 +126,66 @@ def live_pricing(monkeypatch: pytest.MonkeyPatch) -> None:
     serve(
         monkeypatch,
         mistral_scraper,
-        (FIXTURES / "pricing.html").read_text(encoding="utf-8"),
+        {PRICING_URL: (FIXTURES / "pricing.html").read_text(encoding="utf-8")},
     )
 
 
-def test_detect_lists_every_slug_in_page_order(live_cards):
+def test_detect_lists_every_slug_in_page_order(live_pages):
     assert mistral_page.detect(make_cfg()) == EXPECTED_IDS
 
 
+def test_detect_includes_priced_models_missing_from_cards(monkeypatch):
+    # the cards index under-lists; the pricing page carries the priced set
+    serve(
+        monkeypatch,
+        mistral_page,
+        {
+            CARDS_URL: '<html><body><a href="/models/legacy-only">legacy</a></body></html>',
+            PRICING_URL: (FIXTURES / "pricing.html").read_text(encoding="utf-8"),
+        },
+    )
+    ids = mistral_page.detect(make_cfg())
+    assert ids[0] == "legacy-only"
+    for priced in ("mistral-large-2512", "codestral-2508", "zai-glm-5-2", "ministral-14b-2512"):
+        assert priced in ids
+
+
+def test_detect_emits_stored_spellings(monkeypatch):
+    serve(
+        monkeypatch,
+        mistral_page,
+        {
+            CARDS_URL: (
+                '<html><body><a href="/models/codestral-25-08">c</a>'
+                '<a href="/models/ministral-3-14b-25-12">m</a>'
+                '<a href="/models/ocr-4-1">o</a></body></html>'
+            ),
+            PRICING_URL: '<html><body><a href="/models/codestral-25-08">c</a></body></html>',
+        },
+    )
+    assert mistral_page.detect(make_cfg()) == [
+        "codestral-2508",
+        "ministral-14b-2512",
+        "ocr-4-1",
+    ]
+
+
 def test_detect_raises_when_no_model_links(monkeypatch):
-    serve(monkeypatch, mistral_page, '<html><body><a href="/api">api</a></body></html>')
+    html = '<html><body><a href="/api">api</a></body></html>'
+    serve(monkeypatch, mistral_page, {CARDS_URL: html, PRICING_URL: html})
+    with pytest.raises(web.FetchError, match="no model links"):
+        mistral_page.detect(make_cfg())
+
+
+def test_detect_raises_when_pricing_page_has_no_model_links(monkeypatch):
+    serve(
+        monkeypatch,
+        mistral_page,
+        {
+            CARDS_URL: '<html><body><a href="/models/aaa">A</a></body></html>',
+            PRICING_URL: '<html><body><a href="/api">api</a></body></html>',
+        },
+    )
     with pytest.raises(web.FetchError, match="no model links"):
         mistral_page.detect(make_cfg())
 
@@ -160,6 +229,18 @@ def test_scrape_token_priced_tables_beyond_flagship(live_pricing):
     )
 
 
+def test_scrape_accepts_stored_spellings(live_pricing):
+    # the detector emits the stored spelling; scrape must match it to the row
+    cfg = make_cfg()
+    assert mistral_scraper.scrape(cfg, "codestral-2508") == Pricing(
+        3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0
+    )
+    assert mistral_scraper.scrape(cfg, "ministral-14b-2512") == Pricing(
+        pytest.approx(2e-7, rel=1e-12), pytest.approx(2e-7, rel=1e-12), "chat", 0
+    )
+    assert mistral_scraper.scrape(cfg, "mistral-large-2512") == Pricing(5e-7, 1.5e-6, "chat", 0)
+
+
 def test_scrape_non_token_units_return_none(live_pricing):
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "ocr-4-1") is None
@@ -197,7 +278,7 @@ def test_scrape_raises_when_no_token_table(monkeypatch):
         "<tr><th>Model</th><th>Input</th><th>Cached input</th><th>Output</th></tr>"
         "</table></section></body></html>"
     )
-    serve(monkeypatch, mistral_scraper, html)
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
     with pytest.raises(web.FetchError, match="no per-token pricing tables"):
         mistral_scraper.scrape(make_cfg(), "mistral-large-3-25-12")
 
@@ -208,7 +289,7 @@ def test_scrape_raises_on_header_mismatch(monkeypatch):
         "<tr><th>Model</th><th>Input</th></tr>"
         "</table></section></body></html>"
     )
-    serve(monkeypatch, mistral_scraper, html)
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
     with pytest.raises(web.FetchError, match="no per-token pricing tables"):
         mistral_scraper.scrape(make_cfg(), "mistral-large-3-25-12")
 
@@ -223,7 +304,7 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
         "<td>$0.4 /1000 Pages</td><td>$8 /1000 Pages</td></tr>"
         "</table></section></body></html>"
     )
-    serve(monkeypatch, mistral_scraper, html)
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "bbb") == Pricing(1e-6, 2e-6, "chat", 0)
     assert mistral_scraper.scrape(cfg, "aaa") is None
