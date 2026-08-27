@@ -199,5 +199,12 @@ announce_urls = [
   "https://docs.digitalocean.com/release-notes/",
 ]
 
+[sambanova]
+provider = "SambaNova"
+detector = "sambanova_page"
+detector_url = "https://cloud.sambanova.ai/pricing"
+scraper = "sambanova_page"
+scraper_url = "https://cloud.sambanova.ai/pricing"
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
