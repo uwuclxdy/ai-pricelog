@@ -90,9 +90,10 @@ announce_urls = [
 
 # re-probed 2026-08-24 (todo #1): static pages re-added below. the rest stay
 # out: anthropic/aws/azure/groq/cerebras/modal/doubleword/ovhcloud serve
-# prices client-side only, openai blocks bots, voyage 404s/403s, zhipuai is
-# unreachable from here and CNY-only like volcengine. the 2026-08-27
-# re-probe moved fireworks out of this list (docs pricing table is static).
+# prices client-side only, voyage 404s/403s, zhipuai is unreachable from
+# here and CNY-only like volcengine. the 2026-08-27 re-probe moved fireworks
+# (docs pricing table is static) and openai (the standard-tier table ships
+# as serialized island props) out of this list.
 
 [together]
 provider = "Together AI"
@@ -212,6 +213,26 @@ detector = "publicai_page"
 detector_url = "https://platform.publicai.co/models"
 scraper = "publicai_page"
 scraper_url = "https://platform.publicai.co/models"
+
+# gated-set re-probe, 2026-08-27 (todo #1): ai21's /pricing serves the
+# Foundation Models cards statically again (its 403 bot block was
+# transient); openai's docs pricing page ships the standard-tier table as
+# serialized astro island props. both docs changelogs are JS shells from
+# this host, so neither carries announce_urls.
+
+[ai21]
+provider = "AI21"
+detector = "ai21_page"
+detector_url = "https://www.ai21.com/pricing"
+scraper = "ai21_page"
+scraper_url = "https://www.ai21.com/pricing"
+
+[openai]
+provider = "OpenAI"
+detector = "openai_page"
+detector_url = "https://platform.openai.com/docs/pricing"
+scraper = "openai_page"
+scraper_url = "https://platform.openai.com/docs/pricing"
 
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
