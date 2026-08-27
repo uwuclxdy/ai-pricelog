@@ -206,5 +206,12 @@ detector_url = "https://cloud.sambanova.ai/pricing"
 scraper = "sambanova_page"
 scraper_url = "https://cloud.sambanova.ai/pricing"
 
+[publicai]
+provider = "PublicAI"
+detector = "publicai_page"
+detector_url = "https://platform.publicai.co/models"
+scraper = "publicai_page"
+scraper_url = "https://platform.publicai.co/models"
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
