@@ -1137,3 +1137,4 @@
 {"source":"moonshot","model_id":"moonshot-v1-32k","observed_at":"2026-08-26","input_mtok":1.0,"output_mtok":3.0,"url":"https://platform.kimi.ai/docs/llms.txt","max_tokens_in":32768}
 {"source":"minimax","model_id":"MiniMax-M2.5-Lightning","observed_at":"2026-08-27","removed":true}
 {"source":"mistral","model_id":"devstral-2-25-12","observed_at":"2026-08-27","removed":true}
+{"source":"mistral","model_id":"devstral-small-2-25-12","observed_at":"2026-08-27","removed":true}
