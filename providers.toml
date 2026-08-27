@@ -175,5 +175,12 @@ announce_urls = [
   "https://developers.cloudflare.com/workers-ai/changelog/",
 ]
 
+[watsonx]
+provider = "IBM watsonx"
+detector = "watsonx_page"
+detector_url = "https://www.ibm.com/products/watsonx-ai/pricing"
+scraper = "watsonx_page"
+scraper_url = "https://www.ibm.com/products/watsonx-ai/pricing"
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
