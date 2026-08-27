@@ -165,5 +165,15 @@ detector_url = "https://deepinfra.com/pricing"
 scraper = "deepinfra_page"
 scraper_url = "https://deepinfra.com/pricing"
 
+[cloudflare]
+provider = "Cloudflare"
+detector = "cloudflare_page"
+detector_url = "https://developers.cloudflare.com/workers-ai/platform/pricing/"
+scraper = "cloudflare_page"
+scraper_url = "https://developers.cloudflare.com/workers-ai/platform/pricing/"
+announce_urls = [
+  "https://developers.cloudflare.com/workers-ai/changelog/",
+]
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
