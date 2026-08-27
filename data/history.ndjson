@@ -1142,3 +1142,4 @@
 {"source":"mistral","model_id":"magistral-medium-1-2-25-09","observed_at":"2026-08-27","removed":true}
 {"source":"mistral","model_id":"magistral-small-1-2-25-09","observed_at":"2026-08-27","removed":true}
 {"source":"mistral","model_id":"ministral-3b-2410","observed_at":"2026-08-27","removed":true}
+{"source":"perplexity","model_id":"llama-3.1-sonar-small-128k-online","observed_at":"2026-08-27","removed":true}
