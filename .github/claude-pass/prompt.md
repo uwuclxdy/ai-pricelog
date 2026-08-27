@@ -70,6 +70,9 @@ billing-rule announcement surfaces per provider, watched every run via `provider
 - cohere: `docs.cohere.com/changelog` page 1 is the feed (no working rss); deprecation/retirement entries are the highest-signal class.
 - google: the gemini-api changelog carries intro-price windows, deprecations, and free-tier notes; fetch with `?hl=en` pinned (a locale-less fetch returned Japanese from one vantage). the developers.googleblog feed spans all dev products (label feeds 404).
 - avian: no watchable surface: homepage banners only, x/linkedin gated. it carries no `announce_urls`; the pricing pages stay the only diffable artifact.
+- cloudflare: `workers-ai/changelog/` is the static per-product changelog (pricing-update posts land there; the site-wide changelog mixes every product). OBSERVED 2026-08-27.
+- digitalocean: `docs.digitalocean.com/release-notes/` is the static release-notes index. OBSERVED 2026-08-27.
+- deepinfra, watsonx, baseten, sambanova, publicai: no watchable announce surface from this host (no changelog page found, or docs 403 this egress). they carry no `announce_urls`; pricing pages stay the only diffable artifact. OBSERVED 2026-08-27.
 
 ## rubric question
 
