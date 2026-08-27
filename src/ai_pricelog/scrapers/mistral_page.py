@@ -4,8 +4,8 @@ the page is static; each pricing table sits in a section whose unit line reads
 ``Prices /M Tokens`` (flagship, third-party-hosted, code sections) or ``Prices as
 marked`` (specialized, labs: per-page/per-minute/per-char units, not token-priced).
 rows link their model cell to the model-card slug and are matched by slug or
-stored spelling (see ``dedup_keys``; the detector emits the stored spelling, so
-``scrape`` accepts ``codestral-2508`` as well as ``codestral-25-08``).
+stored spelling (see ``dedup_keys``: the detector emits raw page slugs, and
+``scrape`` accepts the stored spellings as well).
 cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
 non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token

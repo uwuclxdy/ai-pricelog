@@ -148,6 +148,16 @@ def run(
             continue
         dedup_keys = getattr(scraper, "dedup_keys", None)
 
+        absence_ids = detected
+        detect_priced = getattr(detector, "detect_priced", None)
+        if detect_priced is not None:
+            try:
+                absence_ids = list(detect_priced(pcfg))
+            except Exception as exc:
+                log.exception("priced detection for %s failed", pcfg.key)
+                provider_report.errors.append(_describe(exc))
+                absence_ids = None
+
         _add_candidates(
             pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, open_prs, today
         )
@@ -155,7 +165,7 @@ def run(
             pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, open_prs, today
         )
         _track_provider_absence(
-            pcfg, dedup_keys, detected, rows, fresh_absence, removal_groups, open_prs, today
+            pcfg, dedup_keys, absence_ids, rows, fresh_absence, removal_groups, open_prs, today
         )
 
     _openrouter_rows(rows, plan, report, open_prs, today, fresh_absence, removal_groups)
@@ -506,7 +516,7 @@ def _openrouter_rows(
 def _track_provider_absence(
     pcfg: config.ProviderCfg,
     dedup_keys: Any,
-    detected: list[str],
+    absence_ids: list[str] | None,
     rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[tuple[_PrGroup, dict[str, object]]],
@@ -515,16 +525,21 @@ def _track_provider_absence(
 ) -> None:
     """Absence counters for one provider: page ids mapped to stored spellings.
 
-    Only stored ids can be absent, and the scraper's dedup decides which page
-    id covers which stored spelling, so a deduped spelling never counts as
-    absent while its page twin is listed.
+    `absence_ids` is the priced set when the detector exposes `detect_priced`
+    (a model still carded but no longer priced counts absent), else the full
+    detected set. a `None` set means priced detection failed and the counters
+    skip this run (skip-and-retry). Only stored ids can be absent, and the
+    scraper's dedup decides which page id covers which stored spelling, so a
+    deduped spelling never counts as absent while its page twin is listed.
     """
+    if absence_ids is None:
+        return
     stored_ids = {row["model_id"] for row in rows if row.get("source") == pcfg.key}
     if not stored_ids:
         state.pop(pcfg.key, None)
         return
     present: set[str] = set()
-    for page_id in dict.fromkeys(detected):
+    for page_id in dict.fromkeys(absence_ids):
         spelling = _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
         if spelling is not None:
             present.add(spelling)

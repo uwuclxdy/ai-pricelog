@@ -15,76 +15,97 @@ FIXTURES = Path(__file__).parent / "fixtures" / "mistral_page"
 CARDS_URL = "https://docs.mistral.ai/models/model-cards/"
 PRICING_URL = "https://docs.mistral.ai/inference/pricing"
 
-# the detector emits the stored spellings (dedup_keys conventions): dashed
-# dated tails compact (codestral-25-08 -> codestral-2508) and the ministral
-# generation segment drops (ministral-3-14b-25-12 -> ministral-14b-2512).
-# cards-page order first; the pricing-page set adds nothing not already listed.
+# the detector emits the raw page slugs, cards-page order first; the pricing
+# page adds nothing not already listed. the scraper's dedup_keys maps a slug
+# to the stored spellings (compacted dated tails, dropped ministral
+# generation segments).
 EXPECTED_IDS = [
-    "mistral-medium-2604",
+    "mistral-medium-3-5-26-04",
     "ocr-4-1",
     "zai-glm-5-2",
-    "mistral-small-2603",
-    "voxtral-mini-transcribe-2602",
-    "voxtral-mini-transcribe-realtime-2602",
-    "mistral-large-2512",
-    "ministral-14b-2512",
-    "ministral-8b-2512",
-    "ministral-3b-2512",
+    "mistral-small-4-0-26-03",
+    "voxtral-mini-transcribe-26-02",
+    "voxtral-mini-transcribe-realtime-26-02",
+    "mistral-large-3-25-12",
+    "ministral-3-14b-25-12",
+    "ministral-3-8b-25-12",
+    "ministral-3-3b-25-12",
     "ocr-4-0",
-    "ocr-2512",
-    "voxtral-tts-2603",
-    "voxtral-small-2507",
-    "codestral-2508",
-    "codestral-embed-2505",
-    "mistral-embed-2312",
+    "ocr-3-25-12",
+    "voxtral-tts-26-03",
+    "voxtral-small-25-07",
+    "codestral-25-08",
+    "codestral-embed-25-05",
+    "mistral-embed-23-12",
     "shieldstral-1-0",
-    "mistral-moderation-2603",
+    "mistral-moderation-26-03",
     "leanstral-1-5",
-    "leanstral-2603",
-    "mistral-medium-2508",
-    "mistral-small-2506",
-    "voxtral-mini-transcribe-2507",
-    "devstral-2512",
-    "magistral-medium-2507",
-    "mistral-small-creative-2512",
-    "devstral-small-2512",
-    "magistral-medium-2509",
-    "magistral-small-2509",
-    "magistral-small-2507",
-    "voxtral-mini-2507",
-    "devstral-medium-2507",
-    "devstral-small-2507",
-    "magistral-medium-2506",
-    "magistral-small-2506",
-    "ocr-2505",
-    "devstral-small-2505",
-    "mistral-medium-2505",
-    "mistral-small-2503",
-    "ocr-2503",
-    "mistral-saba-2502",
-    "mistral-small-2501",
-    "codestral-2501",
-    "mistral-large-2411",
-    "pixtral-large-2411",
-    "mistral-moderation-2411",
+    "leanstral-26-03",
+    "mistral-medium-3-1-25-08",
+    "mistral-small-3-2-25-06",
+    "voxtral-mini-transcribe-25-07",
+    "devstral-2-25-12",
+    "magistral-medium-1-1-25-07",
+    "mistral-small-creative-25-12",
+    "devstral-small-2-25-12",
+    "magistral-medium-1-2-25-09",
+    "magistral-small-1-2-25-09",
+    "magistral-small-1-1-25-07",
+    "voxtral-mini-25-07",
+    "devstral-medium-1-0-25-07",
+    "devstral-small-1-1-25-07",
+    "magistral-medium-1-0-25-06",
+    "magistral-small-1-0-25-06",
+    "ocr-2-25-05",
+    "devstral-small-1-0-25-05",
+    "mistral-medium-3-25-05",
+    "mistral-small-3-1-25-03",
+    "ocr-25-03",
+    "mistral-saba-25-02",
+    "mistral-small-3-0-25-01",
+    "codestral-25-01",
+    "mistral-large-2-1-24-11",
+    "pixtral-large-24-11",
+    "mistral-moderation-24-11",
     "ministral-3b-24-1",
     "ministral-8b-24-1",
-    "mistral-small-2409",
-    "pixtral-12b-2409",
-    "mistral-large-2407",
-    "mistral-nemo-12b-2407",
+    "mistral-small-2-0-24-09",
+    "pixtral-12b-24-09",
+    "mistral-large-2-0-24-07",
+    "mistral-nemo-12b-24-07",
     "codestral-mamba-7b-0-1",
     "mathstral-7b-0-1",
-    "codestral-2405",
+    "codestral-24-05",
     "mistral-7b-0-3",
     "mixtral-8x22b-0-1-0-3",
-    "mistral-small-2402",
-    "mistral-large-2402",
+    "mistral-small-1-0-24-02",
+    "mistral-large-1-0-24-02",
     "mistral-next",
-    "mistral-medium-2312",
+    "mistral-medium-1-0-23-12",
     "mixtral-8x7b-0-1",
     "mistral-7b-0-2",
     "mistral-7b-0-1",
+]
+
+# the priced set: the pricing-page slugs in page order. the cards index
+# still lists sunset models (devstral, magistral, ministral-3b-24-1), which
+# the priced set must exclude for absence.
+PRICED_IDS = [
+    "mistral-large-3-25-12",
+    "mistral-medium-3-5-26-04",
+    "mistral-small-4-0-26-03",
+    "ministral-3-14b-25-12",
+    "ministral-3-8b-25-12",
+    "ministral-3-3b-25-12",
+    "ocr-4-1",
+    "ocr-4-0",
+    "voxtral-mini-transcribe-26-02",
+    "voxtral-tts-26-03",
+    "mistral-moderation-26-03",
+    "zai-glm-5-2",
+    "codestral-25-08",
+    "codestral-embed-25-05",
+    "leanstral-1-5",
 ]
 
 
@@ -148,11 +169,16 @@ def test_detect_includes_priced_models_missing_from_cards(monkeypatch):
     )
     ids = mistral_page.detect(make_cfg())
     assert ids[0] == "legacy-only"
-    for priced in ("mistral-large-2512", "codestral-2508", "zai-glm-5-2", "ministral-14b-2512"):
+    for priced in (
+        "mistral-large-3-25-12",
+        "codestral-25-08",
+        "zai-glm-5-2",
+        "ministral-3-14b-25-12",
+    ):
         assert priced in ids
 
 
-def test_detect_emits_stored_spellings(monkeypatch):
+def test_detect_emits_raw_slugs(monkeypatch):
     serve(
         monkeypatch,
         mistral_page,
@@ -166,10 +192,25 @@ def test_detect_emits_stored_spellings(monkeypatch):
         },
     )
     assert mistral_page.detect(make_cfg()) == [
-        "codestral-2508",
-        "ministral-14b-2512",
+        "codestral-25-08",
+        "ministral-3-14b-25-12",
         "ocr-4-1",
     ]
+
+
+def test_detect_priced_lists_only_pricing_slugs(live_pages):
+    priced = mistral_page.detect_priced(make_cfg())
+    assert priced == PRICED_IDS
+    # the cards index still lists sunset models; the priced set excludes them
+    for cards_only in ("devstral-2-25-12", "magistral-medium-1-0-25-06", "ministral-3b-24-1"):
+        assert cards_only not in priced
+
+
+def test_detect_priced_raises_when_no_model_links(monkeypatch):
+    html = '<html><body><a href="/api">api</a></body></html>'
+    serve(monkeypatch, mistral_page, {PRICING_URL: html})
+    with pytest.raises(web.FetchError, match="no model links"):
+        mistral_page.detect_priced(make_cfg())
 
 
 def test_detect_raises_when_no_model_links(monkeypatch):
@@ -235,7 +276,8 @@ def test_scrape_token_priced_tables_beyond_flagship(live_pricing):
 
 
 def test_scrape_accepts_stored_spellings(live_pricing):
-    # the detector emits the stored spelling; scrape must match it to the row
+    # the detector emits raw slugs; scrape still matches the stored spellings
+    # through dedup_keys
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "codestral-2508") == Pricing(
         3e-7, pytest.approx(9e-7, rel=1e-12), "chat", 0, 3e-8

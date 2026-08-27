@@ -1178,6 +1178,88 @@ def test_flaky_absent_run_without_pr_leaves_no_trace(tmp_path, fake_modules, rep
     assert not (repo_root / "data" / "absence.json").exists()
 
 
+def test_absence_keys_on_priced_set_when_detect_priced_exists(tmp_path, fake_modules, repo_root):
+    # the mistral case: a carded-but-unpriced model counts absent, while a
+    # priced model whose store row uses the raw slug stays present
+    detect, scrape = fake_modules
+    detect["mistral"] = ["devstral-2-25-12", "ministral-3-14b-25-12"]
+    det = sys.modules["ai_pricelog.detectors.fake_det"]
+    det.detect_priced = lambda cfg: ["ministral-3-14b-25-12"]
+    scrape["mistral"] = {
+        "devstral-2-25-12": None,
+        "ministral-3-14b-25-12": pricing(),
+    }
+    detect["zai"] = ["zai-chat"]
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg(3, "mistral", "zai")
+    seed_store(
+        repo_root,
+        [
+            store.build_row(
+                "mistral",
+                "ministral-3-14b-25-12",
+                pricing(),
+                "2026-02-06",
+                "https://example.com/pricing",
+            ),
+            store.build_row(
+                "mistral",
+                "devstral-2-25-12",
+                pricing(),
+                "2025-12-09",
+                "https://example.com/pricing",
+            ),
+        ],
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
+    zai_branch = pr.branch_name("zai-chat")
+    assert branch_absence(repo_root, zai_branch) == {
+        "mistral": {"devstral-2-25-12": {"absent_runs": 1, "since": TODAY}}
+    }
+
+
+def test_absence_skips_when_priced_detection_fails(tmp_path, fake_modules, repo_root):
+    # a priced-detection failure leaves the counters alone: no false absence
+    # from a transient page break
+    detect, scrape = fake_modules
+    detect["mistral"] = ["ministral-3-14b-25-12"]
+    det = sys.modules["ai_pricelog.detectors.fake_det"]
+
+    def priced_or_boom(cfg):
+        if cfg.key == "mistral":
+            raise RuntimeError("boom")
+        return det.detect(cfg)
+
+    det.detect_priced = priced_or_boom
+    scrape["mistral"] = {"ministral-3-14b-25-12": pricing()}
+    detect["zai"] = ["zai-chat"]
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg(3, "mistral", "zai")
+    seed_store(
+        repo_root,
+        [
+            store.build_row(
+                "mistral",
+                "ministral-3-14b-25-12",
+                pricing(),
+                "2026-02-06",
+                "https://example.com/pricing",
+            ),
+        ],
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
+    # no counter landed on the branch: the pr carries no absence state at all
+    tree = git(repo_root, "ls-tree", "-r", "--name-only", pr.branch_name("zai-chat"))
+    assert "data/absence.json" not in tree.splitlines()
+    assert report.providers["mistral"].errors
+
+
 def test_capped_removal_pr_keeps_entry_at_two(tmp_path, fake_modules, repo_root):
     # a removal pr that cannot open (cap) keeps its entry at 2 so the next
     # run re-derives it; removal prs consume the cap before price prs
