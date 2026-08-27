@@ -189,5 +189,15 @@ detector_url = "https://www.baseten.co/pricing"
 scraper = "baseten_page"
 scraper_url = "https://www.baseten.co/pricing"
 
+[digitalocean]
+provider = "DigitalOcean"
+detector = "digitalocean_page"
+detector_url = "https://docs.digitalocean.com/products/inference/details/pricing/"
+scraper = "digitalocean_page"
+scraper_url = "https://docs.digitalocean.com/products/inference/details/pricing/"
+announce_urls = [
+  "https://docs.digitalocean.com/release-notes/",
+]
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).

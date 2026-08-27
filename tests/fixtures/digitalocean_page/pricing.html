@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="en">
+<head>
+    
+<script>
+var pdocsTheme = new URLSearchParams(window.location.search).get('theme');
+if (pdocsTheme === 'light' || pdocsTheme === 'dark') {
+    document.documentElement.dataset.theme = pdocsTheme;
+} else if (localStorage.pdocsTheme) {
+    document.documentElement.dataset.theme = localStorage.pdocsTheme;
+}
+</script><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark"><meta name="description" content="Inference itself has no cost. Pricing depends on the features you use within Inference, such as serverless inference or dedicated deployments, and the …">
+
+<meta name="generator" content="Hugo 0.161.1">
+
+<meta name="google-site-verification" content="CAYPZwe7daX8KlYYZfB4VMjfT4g8Tqrrc4Q3g_wMvI8">
+
+<meta name="og:site_name" content="DigitalOcean">
+<meta name="og:type" content="article">
+
+<meta name="twitter:site" content="DigitalOcean">
+<meta name="twitter:creator" content="@DigitalOcean">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://docs.digitalocean.com/products/inference/details/pricing/">
+
+<link rel="canonical" href="https://docs.digitalocean.com/products/inference/details/pricing/">
+<meta name="keywords" content="DigitalOcean, cloud computing">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "about": {
+    "@type": "Thing",
+    "name": "inference"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "DigitalOcean",
+    "url": "https://www.digitalocean.com"
+  },
+  "dateModified": "2026-08-24",
+  "datePublished": "2026-03-16",
+  "description": "Inference itself has no cost. Pricing depends on the features you use within Inference, such as serverless inference or dedicated deployments, and the …",
+  "headline": "Inference Pricing",
+  "image": "https://www.digitalocean.com/_next/static/media/intro-to-cloud.d49bc5f7.jpeg",
+  "inLanguage": "en",
+  "keywords": "DigitalOcean, cloud computing",
+  "mainEntityOfPage": {
+    "@id": "https://docs.digitalocean.com/products/inference/details/pricing/",
+    "@type": "WebPage"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.digitalocean.com/_next/static/media/logo.b31e883e.svg"
+    },
+    "name": "DigitalOcean"
+  }
+}
+</script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<link rel="stylesheet" href="/css/bundle.min.49bd8a385f384db4b3828ffe2bb6385353582b6ef45f19b1792183e5500ff956e0a01e20bb431cd41d71d8b085e41afa7ac4b1fb15062851e3b3027acafffe10.css" integrity="sha512-Sb2KOF84TbSzgo/&#43;K7Y4U1NYK270XxmxeSGD5VAP&#43;VbgoB4gu0Mc1B1x2LCF5Br6esSx&#43;xUGKFHjswJ6yv/&#43;EA=="><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<title>Inference Pricing | DigitalOcean Documentation</title>
+
+</head>
+
+<body>
+
+    
+    <script>
+    if (window.top !== window.self) {
+        document.body.classList.add('in-iframe');
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a').forEach(function(a) {
+                a.target = '_blank';
+                a.rel = 'noopener';
+            });
+        });
+    }
+    </script>
+
+    
+    
+
+
+
+
+    
+
+
+
+    
+
+
+
+    
+    <header id="top-nav" class="pico container-fluid"><nav>
+    
+    <button id="mobile-menu" class="mobile-nav" aria-label="Menu" aria-expanded="false" aria-controls="section-links">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    
+    <ul>
+        <li id="top-nav-title-logo">
+            <a href="https://docs.digitalocean.com/"><div id="logo"><svg viewBox="0 0 156 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Logo">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M13.2947 27V21.7718C18.7578 21.7718 22.9578 16.287 20.8736 10.4494C20.1157 8.30044 18.4105 6.5684 16.2947 5.79861C10.5473 3.68168 5.14736 7.97969 5.14736 13.4965H0C0 4.676 8.39998 -2.22007 17.4947 0.666657C21.4736 1.91757 24.6315 5.15712 25.8947 9.19853C28.7368 18.4681 21.9789 27 13.2947 27Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M13.2937 21.8041H8.17792V16.608H13.2937V21.8041Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.17732 25.815H4.22996V21.8057H8.17732V25.815Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4.23308 21.806H0.917302V18.4702H4.2015V21.806H4.23308Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M46.8249 7.82554C45.3246 6.78287 43.4493 6.24573 41.2614 6.24573H36.5106V21.5383H41.2614C43.4493 21.5383 45.3246 20.9696 46.8249 19.8637C47.6375 19.2634 48.2939 18.4419 48.7314 17.3992C49.169 16.3565 49.4191 15.1559 49.4191 13.7972C49.4191 12.4386 49.2003 11.2379 48.7314 10.2269C48.2939 9.18418 47.6688 8.36268 46.8249 7.82554ZM39.2949 8.80664H40.7951C42.4517 8.80664 43.8269 9.1226 44.8583 9.78613C46.0148 10.4812 46.6087 11.8399 46.6087 13.7673C46.6087 15.7578 46.0148 17.1481 44.8583 17.9064C43.8582 18.5699 42.5142 18.9175 40.8264 18.9175H39.3261V8.80664H39.2949Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M52.7629 6.0249C52.2941 6.0249 51.919 6.18288 51.6064 6.49885C51.2939 6.81481 51.1064 7.19397 51.1064 7.66791C51.1064 8.14185 51.2626 8.52101 51.5752 8.86857C51.8877 9.18453 52.2941 9.34251 52.7629 9.34251C53.2317 9.34251 53.6068 9.18453 53.9506 8.86857C54.2632 8.55261 54.4194 8.14185 54.4194 7.66791C54.4194 7.19397 54.2632 6.81481 53.9506 6.49885C53.6068 6.21448 53.2005 6.0249 52.7629 6.0249Z" fill="currentColor"/>
+<path d="M51.3883 10.7314H54.0763V21.5057H51.3883V10.7314Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M63.7931 11.6481C62.9805 10.9214 62.0741 10.5106 61.1052 10.5106C59.6361 10.5106 58.3859 11.0162 57.4483 12.0588C56.4793 13.0699 56.0105 14.3654 56.0105 15.9136C56.0105 17.4302 56.4793 18.7257 57.417 19.7683C58.3547 20.7794 59.6049 21.285 61.0739 21.285C62.1053 21.285 62.9805 21.0006 63.7306 20.4319V20.6846C63.7306 21.5693 63.4806 22.2644 63.043 22.7384C62.5742 23.2123 61.9178 23.4651 61.1364 23.4651C59.8862 23.4651 59.1361 22.9596 58.1671 21.6957L56.3543 23.4651L56.4168 23.5283C56.8232 24.097 57.417 24.6342 58.1984 25.1397C58.9798 25.6452 60.0112 25.9296 61.1677 25.9296C62.7617 25.9296 64.0432 25.4241 64.9808 24.4446C65.9185 23.4651 66.4186 22.1381 66.4186 20.5266V10.7318H63.7931V11.6481ZM63.0745 17.9998C62.6057 18.5369 62.0118 18.7897 61.2304 18.7897C60.4491 18.7897 59.8552 18.5369 59.4176 17.9998C58.9488 17.4626 58.73 16.7675 58.73 15.8828C58.73 14.9981 58.9488 14.303 59.4176 13.7659C59.8865 13.2287 60.4803 12.976 61.2304 12.976C62.0118 12.976 62.6057 13.2287 63.0745 13.7659C63.5433 14.303 63.7621 15.0297 63.7621 15.8828C63.7934 16.7675 63.5433 17.4626 63.0745 17.9998Z" fill="currentColor"/>
+<path d="M68.7036 10.7314H71.3916V21.5058H68.7036V10.7314Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M70.0782 6.0249C69.6093 6.0249 69.2343 6.18288 68.9217 6.49885C68.6092 6.81481 68.4216 7.19397 68.4216 7.66791C68.4216 8.14185 68.5779 8.52101 68.8905 8.86857C69.203 9.18453 69.6093 9.34251 70.0782 9.34251C70.547 9.34251 70.9221 9.18453 71.2659 8.86857C71.5784 8.55261 71.7347 8.14185 71.7347 7.66791C71.7347 7.19397 71.5784 6.81481 71.2659 6.49885C70.9221 6.21448 70.547 6.0249 70.0782 6.0249Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M77.2656 7.82446H74.6402V10.7313H73.1086V13.1958H74.6402V17.6509C74.6402 19.0411 74.9214 20.0522 75.4528 20.621C76.0154 21.1897 76.9843 21.5057 78.3283 21.5057C78.7659 21.5057 79.2034 21.5057 79.641 21.4741H79.766V19.0095L78.8596 19.0727C78.2345 19.0727 77.7969 18.9464 77.5782 18.7252C77.3594 18.504 77.2656 18.0301 77.2656 17.3033V13.2274H79.766V10.7629H77.2656V7.82446Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M92.3331 6.21277H95.021V21.5054H92.3331V6.21277Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M122.056 17.6514C121.587 18.1885 121.087 18.6625 120.712 18.9152C120.337 19.168 119.868 19.2628 119.337 19.2628C118.555 19.2628 117.899 18.9784 117.399 18.3781C116.899 17.7778 116.617 17.0195 116.617 16.1032C116.617 15.1869 116.867 14.4286 117.367 13.8282C117.868 13.2279 118.524 12.9435 119.305 12.9435C120.18 12.9435 121.087 13.4807 121.868 14.4286L123.65 12.7224C122.493 11.2057 121.024 10.5106 119.274 10.5106C117.805 10.5106 116.524 11.0478 115.492 12.122C114.461 13.1963 113.929 14.5233 113.929 16.1348C113.929 17.7462 114.461 19.1048 115.492 20.1475C116.524 21.2218 117.805 21.7589 119.274 21.7589C121.212 21.7589 122.775 20.9058 123.837 19.3576L122.056 17.6514Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M133.058 12.2504C132.683 11.7132 132.152 11.2709 131.527 10.9549C130.902 10.6389 130.152 10.481 129.308 10.481C127.808 10.481 126.589 11.0497 125.682 12.124C124.776 13.2298 124.338 14.5885 124.338 16.1683C124.338 17.8113 124.838 19.1383 125.807 20.181C126.776 21.1921 128.089 21.7292 129.683 21.7292C131.496 21.7292 132.965 21.0025 134.09 19.5491L134.152 19.4859L132.402 17.7797C132.246 17.9693 131.996 18.1905 131.808 18.4116C131.558 18.6644 131.308 18.854 131.027 18.9804C130.62 19.1699 130.183 19.2963 129.683 19.2963C128.933 19.2963 128.339 19.0751 127.87 18.6328C127.432 18.222 127.182 17.6849 127.12 16.9898H134.215L134.246 16.0103C134.246 15.3152 134.152 14.6517 133.965 14.0197C133.715 13.3562 133.433 12.7875 133.058 12.2504ZM127.213 14.7769C127.338 14.2714 127.588 13.8291 127.901 13.5131C128.276 13.1655 128.745 12.976 129.307 12.976C129.964 12.976 130.464 13.1655 130.808 13.5447C131.12 13.8922 131.308 14.303 131.339 14.8085H127.213V14.7769Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M143.343 11.5533C142.531 10.8582 141.405 10.5106 139.999 10.5106C139.093 10.5106 138.28 10.7002 137.53 11.0794C136.842 11.4269 136.154 12.0272 135.717 12.8171L135.748 12.8487L137.467 14.5233C138.186 13.3859 138.967 12.9751 139.999 12.9751C140.562 12.9751 141.03 13.1331 141.374 13.4175C141.718 13.7018 141.905 14.081 141.905 14.5865V15.1237C141.249 14.9341 140.593 14.8077 139.936 14.8077C138.592 14.8077 137.53 15.1237 136.717 15.7556C135.904 16.3875 135.498 17.3038 135.498 18.4413C135.498 19.4524 135.842 20.2739 136.53 20.8742C137.217 21.4745 138.092 21.7589 139.124 21.7589C140.155 21.7589 141.093 21.3481 141.968 20.6214V21.5061H144.593V14.5865C144.562 13.2595 144.156 12.2484 143.343 11.5533ZM138.59 17.3986C138.903 17.1774 139.309 17.0826 139.872 17.0826C140.528 17.0826 141.216 17.209 141.903 17.4618V18.5045C141.31 19.0416 140.528 19.326 139.591 19.326C139.122 19.326 138.778 19.2312 138.528 19.01C138.278 18.8204 138.153 18.5677 138.153 18.2201C138.153 17.8725 138.278 17.5882 138.59 17.3986Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M154.875 11.7415C154.125 10.8884 153.093 10.4777 151.749 10.4777C150.687 10.4777 149.811 10.7936 149.186 11.394V10.7304H146.561V21.5048H149.249V15.5647C149.249 14.7432 149.436 14.1112 149.811 13.6373C150.186 13.1633 150.718 12.9422 151.405 12.9422C151.999 12.9422 152.468 13.1317 152.812 13.5425C153.156 13.9533 153.312 14.522 153.312 15.2487V21.4732H156V15.2487C156 13.7637 155.625 12.5946 154.875 11.7415Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M88.9599 11.5533C88.1472 10.8582 87.022 10.5106 85.6155 10.5106C84.7091 10.5106 83.8965 10.7002 83.1464 11.0794C82.4587 11.4269 81.7711 12.0272 81.3336 12.8171L81.3648 12.8487L83.0839 14.5233C83.8027 13.3859 84.5841 12.9751 85.6155 12.9751C86.1781 12.9751 86.647 13.1331 86.9908 13.4175C87.3346 13.7018 87.5221 14.081 87.5221 14.5865V15.1237C86.8658 14.9341 86.2094 14.8077 85.553 14.8077C84.2091 14.8077 83.1464 15.1237 82.3337 15.7556C81.5211 16.3875 81.1148 17.3038 81.1148 18.4413C81.1148 19.4524 81.4586 20.2739 82.1462 20.8742C82.8338 21.4745 83.709 21.7589 84.7404 21.7589C85.7718 21.7589 86.7095 21.3481 87.5846 20.6214V21.5061H90.2101V14.5865C90.1788 13.2595 89.7725 12.2484 88.9599 11.5533ZM84.207 17.3986C84.5196 17.1774 84.9259 17.0826 85.4885 17.0826C86.1448 17.0826 86.8325 17.209 87.5201 17.4618V18.5045C86.9262 19.0416 86.1448 19.326 85.2072 19.326C84.7384 19.326 84.3945 19.2312 84.1445 19.01C83.8945 18.8204 83.7694 18.5677 83.7694 18.2201C83.7694 17.8725 83.8945 17.5882 84.207 17.3986Z" fill="currentColor"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M104.71 21.7269C100.428 21.7269 96.9269 18.1881 96.9269 13.8594C96.9269 9.53073 100.428 5.99194 104.71 5.99194C108.992 5.99194 112.492 9.53073 112.492 13.8594C112.492 18.1881 109.023 21.7269 104.71 21.7269ZM104.708 8.74072C101.926 8.74072 99.6756 11.0157 99.6756 13.8277C99.6756 16.6398 101.926 18.9147 104.708 18.9147C107.489 18.9147 109.74 16.6398 109.74 13.8277C109.74 11.0157 107.489 8.74072 104.708 8.74072Z" fill="currentColor"/>
+</g>
+</svg>
+</div><span class="nav-divider" aria-hidden="true"></span>
+                <span class="nav-docs-label">Docs</span>
+            </a>
+        </li>
+    </ul>
+
+    
+    <ul id="section-links"><li class="top-nav-section-links">
+            <a href="https://docs.digitalocean.com/platform/">Platform</a>
+        </li><li class="top-nav-section-links active">
+            <a href="https://docs.digitalocean.com/products/" class="active" aria-current="page">Products</a>
+        </li><li class="top-nav-section-links">
+            <a href="https://docs.digitalocean.com/reference/">Reference</a>
+        </li><li class="top-nav-section-links">
+            <a href="https://docs.digitalocean.com/support/">Support</a>
+        </li>
+    </ul>
+
+    
+    <ul>
+        <li class="nav-search-wrapper">
+            <div class="nav-search-box">
+                <i class="fa-solid fa-magnifying-glass nav-search-icon" aria-hidden="true"></i>
+                
+                <input id="top-nav-search" type="search" name="search" placeholder="Search Docs..." aria-label="Search" autocomplete="off"/>
+                <kbd class="nav-search-shortcut" aria-hidden="true"></kbd>
+            </div>
+        </li>
+        <li id="sign-up" class="not-mobile-nav">
+            <a href="https://cloud.digitalocean.com/registrations/new"><button>Sign Up</button></a>
+        </li>
+        <li>
+            <button id="light-dark-toggle" class="outline not-mobile-nav" type="button" aria-label="Toggle light or dark theme">
+                <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <g fill="currentColor" transform="translate(12 12)">
+    <circle r="3.2"/>
+    <g transform="rotate(0)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(45)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(90)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(135)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(180)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(225)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(270)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+    <g transform="rotate(315)">
+      <rect x="-1.1" y="-7.5" width="2.2" height="3.3" rx="1.1"/>
+    </g>
+  </g>
+</svg>
+</span>
+                <span class="theme-icon theme-icon-moon" aria-hidden="true">
+                    <i class="fa-regular fa-moon"></i>
+                </span>
+            </button>
+        </li>
+    </ul>
+</nav>
+
+    </header>
+    
+
+    <div class="main-grid">
+        <aside id="left-nav" class="pico"><nav id="left-menu" data-menu="inference">
+    <div class="mobile-nav section-list"></div><ul>
+    <li class="menu-back-link">
+            <a href="https://docs.digitalocean.com/products/" class="contrast">
+                <span class="menuText">Product Home</span>
+            </a>
+        </li><li class="has-submenu" data-menu-key="/products/inference/|Inference"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/" class="contrast menu-link"><img src="/images/icons/inference.25e060459000674212c9927743d98eb7ce79e985aa1f3e51711b57eaf7a0d961.svg" integrity="sha256-JeBgRZAAZ0ISyZJ3Q9mOt8556YWqHz5RcRtX6veg2WE="><span class="menuText">Inference</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-2692427332" aria-label="Toggle Inference section"></button>
+</div><ul class="menu-children" id="submenu-2692427332">
+    <li class="has-submenu" data-menu-key="/products/inference/getting-started/|Getting Started"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/getting-started/" class="contrast menu-link"><span class="menuText">Getting Started</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-1443257971" aria-label="Toggle Getting Started section"></button>
+</div><ul class="menu-children" id="submenu-1443257971">
+    <li data-menu-key="/products/inference/getting-started/quickstart/|Quickstart"><a href="/products/inference/getting-started/quickstart/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Quickstart</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/getting-started/use-adk/|Use Agent Development Kit"><a href="/products/inference/getting-started/use-adk/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Agent Development Kit</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/getting-started/use-rag-playground/|Use RAG Playground"><a href="/products/inference/getting-started/use-rag-playground/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use RAG Playground</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li class="has-submenu" data-menu-key="/products/inference/how-to/|How-Tos"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/how-to/" class="contrast menu-link"><span class="menuText">How-Tos</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-4139447993" aria-label="Toggle How-Tos section"></button>
+</div><ul class="menu-children" id="submenu-4139447993">
+    <li data-menu-key="/products/inference/how-to/browse-model-catalog/|Browse Models in Model Catalog"><a href="/products/inference/how-to/browse-model-catalog/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Browse Models in Model Catalog</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/import-models/|Import Models"><a href="/products/inference/how-to/import-models/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Import Models</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-model-playground/|Test and Compare Models"><a href="/products/inference/how-to/use-model-playground/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Test and Compare Models</span>
+    </span></a>
+</li>
+
+
+        <li class="has-submenu is-collapsed" data-menu-key="/products/inference/how-to/use-serverless-inference/|Use Serverless Inference"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/how-to/use-serverless-inference/" class="contrast menu-link"><span class="menuText">Use Serverless Inference</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="false" aria-controls="submenu-1858375945" aria-label="Toggle Use Serverless Inference section"></button>
+</div><ul class="menu-children" id="submenu-1858375945">
+    <li data-menu-key="/products/inference/how-to/si-overview/|Overview"><a href="/products/inference/how-to/si-overview/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Overview</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-serverless-inference-prepayment/|Manage Prepayment"><a href="/products/inference/how-to/manage-serverless-inference-prepayment/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Prepayment</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/si-endpoints/|API Endpoints"><a href="/products/inference/how-to/si-endpoints/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">API Endpoints</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/retrieve-available-models/|Retrieve Available Models"><a href="/products/inference/how-to/retrieve-available-models/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Retrieve Available Models</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-chat-completions-api/|Send Prompts Using Chat Completions API"><a href="/products/inference/how-to/use-chat-completions-api/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Send Prompts Using Chat Completions API</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-responses-api/|Send Prompts Using Responses API"><a href="/products/inference/how-to/use-responses-api/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Send Prompts Using Responses API</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-prompt-caching/|Use Prompt Caching"><a href="/products/inference/how-to/use-prompt-caching/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Prompt Caching</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-reasoning/|Use Reasoning"><a href="/products/inference/how-to/use-reasoning/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Reasoning</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/generate-images-from-text-prompts/|Generate Images From Text Prompts"><a href="/products/inference/how-to/generate-images-from-text-prompts/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Generate Images From Text Prompts</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-multimodal-inference/|Use Multimodal Inference"><a href="/products/inference/how-to/use-multimodal-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Multimodal Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-fal-models/|Use fal Models"><a href="/products/inference/how-to/use-fal-models/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use fal Models</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/generate-vector-embeddings/|Generate Vector Embeddings"><a href="/products/inference/how-to/generate-vector-embeddings/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Generate Vector Embeddings</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-messages-api/|Use Messages API"><a href="/products/inference/how-to/use-messages-api/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Messages API</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/view-serverless-inference-metrics/|View Serverless Inference Metrics"><a href="/products/inference/how-to/view-serverless-inference-metrics/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">View Serverless Inference Metrics</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-serverless-after-model-update/|Use Serverless Inference After Model Update"><a href="/products/inference/how-to/use-serverless-after-model-update/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Serverless Inference After Model Update</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-dedicated-inference/|Use Dedicated Inference"><a href="/products/inference/how-to/use-dedicated-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Dedicated Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-batch-inference/|Use Batch Inference"><a href="/products/inference/how-to/use-batch-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Batch Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-inference-router/|Use Inference Router"><a href="/products/inference/how-to/use-inference-router/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Inference Router</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/evaluate-models/|Evaluate Models"><a href="/products/inference/how-to/evaluate-models/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Evaluate Models</span>
+    </span></a>
+</li>
+
+
+        <li class="has-submenu is-collapsed" data-menu-key="/products/inference/how-to/use-server-side-tools/|Use Server-Side Tools"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/how-to/use-server-side-tools/" class="contrast menu-link"><span class="menuText">Use Server-Side Tools</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="false" aria-controls="submenu-1981396907" aria-label="Toggle Use Server-Side Tools section"></button>
+</div><ul class="menu-children" id="submenu-1981396907">
+    <li data-menu-key="/products/inference/how-to/use-server-side-tools/use-web-search/|Use Web Search"><a href="/products/inference/how-to/use-server-side-tools/use-web-search/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Web Search</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-server-side-tools/use-web-fetch/|Use Web Fetch"><a href="/products/inference/how-to/use-server-side-tools/use-web-fetch/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Web Fetch</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-server-side-tools/use-model-synthesis-tool/|Use the Model Synthesis Tool"><a href="/products/inference/how-to/use-server-side-tools/use-model-synthesis-tool/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use the Model Synthesis Tool</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-server-side-tools/retrieve-knowledge-base/|Retrieve Knowledge Base"><a href="/products/inference/how-to/use-server-side-tools/retrieve-knowledge-base/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Retrieve Knowledge Base</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-server-side-tools/use-mcp/|Use MCP"><a href="/products/inference/how-to/use-server-side-tools/use-mcp/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use MCP</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-server-side-tools/use-provider-agentic-tools/|Use Provider Passthrough Tools"><a href="/products/inference/how-to/use-server-side-tools/use-provider-agentic-tools/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Provider Passthrough Tools</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li class="has-submenu is-collapsed" data-menu-key="/products/inference/how-to/use-agent-platform/|Use Agent Platform"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/how-to/use-agent-platform/" class="contrast menu-link"><span class="menuText">Use Agent Platform</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="false" aria-controls="submenu-2827936823" aria-label="Toggle Use Agent Platform section"></button>
+</div><ul class="menu-children" id="submenu-2827936823">
+    <li data-menu-key="/products/inference/how-to/create-agents/|Create Agents"><a href="/products/inference/how-to/create-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Create Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/build-agents-using-adk/|Build Agents Using Agent Development Kit"><a href="/products/inference/how-to/build-agents-using-adk/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Build Agents Using Agent Development Kit</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-model-provider-keys/|Manage Partner Provider Model Keys"><a href="/products/inference/how-to/manage-model-provider-keys/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Partner Provider Model Keys</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-workspaces/|Manage Workspaces"><a href="/products/inference/how-to/manage-workspaces/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Workspaces</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-agents/|Use Agents"><a href="/products/inference/how-to/use-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/test-agents/|Test Agents"><a href="/products/inference/how-to/test-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Test Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/evaluate-agents/|Evaluate Agents"><a href="/products/inference/how-to/evaluate-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Evaluate Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/create-evaluation-datasets/|Create Evaluation Dataset"><a href="/products/inference/how-to/create-evaluation-datasets/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Create Evaluation Dataset</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/view-agent-observability/|View Agent Metrics and Logs"><a href="/products/inference/how-to/view-agent-observability/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">View Agent Metrics and Logs</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/route-agents/|Route to Multiple Agents"><a href="/products/inference/how-to/route-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Route to Multiple Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/route-agent-functions/|Route Functions in Agents"><a href="/products/inference/how-to/route-agent-functions/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Route Functions in Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-agent-versions/|Manage Agent Versions"><a href="/products/inference/how-to/manage-agent-versions/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Agent Versions</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/create-manage-agent-knowledge-bases/|Create and Manage Knowledge Bases"><a href="/products/inference/how-to/create-manage-agent-knowledge-bases/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Create and Manage Knowledge Bases</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/attach-agent-knowledge-bases/|Attach and Detach Agent Knowledge Bases"><a href="/products/inference/how-to/attach-agent-knowledge-bases/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Attach and Detach Agent Knowledge Bases</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-agent-guardrails/|Manage Agent Guardrails"><a href="/products/inference/how-to/manage-agent-guardrails/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Agent Guardrails</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/destroy-agents/|Destroy Agents"><a href="/products/inference/how-to/destroy-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Destroy Agents</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/test-knowledge-base-retrieval/|Test Knowledge Base Data Retrieval"><a href="/products/inference/how-to/test-knowledge-base-retrieval/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Test Knowledge Base Data Retrieval</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/manage-model-access-keys/|Manage Model Access Keys"><a href="/products/inference/how-to/manage-model-access-keys/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Manage Model Access Keys</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/how-to/use-with-coding-agents/|Use with Coding Agents"><a href="/products/inference/how-to/use-with-coding-agents/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Use with Coding Agents</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li class="has-submenu" data-menu-key="/products/inference/reference/|Reference"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/reference/" class="contrast menu-link"><span class="menuText">Reference</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-3753336520" aria-label="Toggle Reference section"></button>
+</div><ul class="menu-children" id="submenu-3753336520">
+    <li class="has-submenu is-collapsed" data-menu-key="/products/inference/reference/api/|API Reference"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/reference/api/" class="contrast menu-link"><span class="menuText">API Reference</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="false" aria-controls="submenu-1661220473" aria-label="Toggle API Reference section"></button>
+</div><ul class="menu-children" id="submenu-1661220473">
+    <li data-menu-key="/products/inference/reference/api/dedicated-inference/|Dedicated Inference"><a href="/products/inference/reference/api/dedicated-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Dedicated Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/api/serverless-inference/|Serverless Inference"><a href="/products/inference/reference/api/serverless-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Serverless Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/api/embeddings/|Embeddings"><a href="/products/inference/reference/api/embeddings/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Embeddings</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/api/batch-inference/|Batch Inference"><a href="/products/inference/reference/api/batch-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Batch Inference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/api/gradientai-platform/|GradientAI Platform"><a href="/products/inference/reference/api/gradientai-platform/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">GradientAI Platform</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/api/agent-inference/|Agent Inference"><a href="/products/inference/reference/api/agent-inference/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Agent Inference</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li data-menu-key="/reference/doctl/reference/gradient/|doctl CLI Reference"><a href="/reference/doctl/reference/gradient/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">doctl CLI Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="https://github.com/digitalocean/gradient-adk?tab=readme-ov-file#cli-commands|gradient CLI Reference"><a href="https://github.com/digitalocean/gradient-adk?tab=readme-ov-file#cli-commands" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">gradient CLI Reference</span>
+    </span>
+        <span class="pill pill-public">public</span></a>
+</li>
+
+
+        <li data-menu-key="https://gradientai-sdk.digitalocean.com/api/python|Python SDK Reference"><a href="https://gradientai-sdk.digitalocean.com/api/python" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Python SDK Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/reference/pydo/reference/genai|Agent Platform PyDo SDK Reference"><a href="/reference/pydo/reference/genai" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Agent Platform PyDo SDK Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/reference/pydo/reference/agent_inference|Agent Inference PyDo SDK Reference"><a href="/reference/pydo/reference/agent_inference" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Agent Inference PyDo SDK Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/reference/pydo/reference/inference|Serverless Inference PyDo SDK Reference"><a href="/reference/pydo/reference/inference" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Serverless Inference PyDo SDK Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/reference/pydo/reference/dedicated_inferences|Dedicated Inference PyDo SDK Reference"><a href="/reference/pydo/reference/dedicated_inferences" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Dedicated Inference PyDo SDK Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/reference/mcp/|MCP Reference"><a href="/reference/mcp/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">MCP Reference</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/serverless-inference-metrics/|Serverless Inference Metrics"><a href="/products/inference/reference/serverless-inference-metrics/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Serverless Inference Metrics</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/quota-specific-response-headers/|Quota-Specific Response Headers"><a href="/products/inference/reference/quota-specific-response-headers/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Quota-Specific Response Headers</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/agent-evaluation-metrics/|Agent Evaluation Metrics"><a href="/products/inference/reference/agent-evaluation-metrics/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Agent Evaluation Metrics</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/reference/chunking-strategies/|Chunking Parameters"><a href="/products/inference/reference/chunking-strategies/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Chunking Parameters</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li class="has-submenu" data-menu-key="/products/inference/concepts/|Concepts"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/concepts/" class="contrast menu-link"><span class="menuText">Concepts</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-2344899684" aria-label="Toggle Concepts section"></button>
+</div><ul class="menu-children" id="submenu-2344899684">
+    <li data-menu-key="/products/inference/concepts/context-management/|Context Management Best Practices"><a href="/products/inference/concepts/context-management/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Context Management Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/agent-instructions/|Agent Instructions Best Practices"><a href="/products/inference/concepts/agent-instructions/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Agent Instructions Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/function-instructions/|Function Instructions Best Practices"><a href="/products/inference/concepts/function-instructions/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Function Instructions Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/evaluations-best-practices/|Evaluations Best Practices"><a href="/products/inference/concepts/evaluations-best-practices/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Evaluations Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/prompts-best-practices/|Prompt Writing Best Practices"><a href="/products/inference/concepts/prompts-best-practices/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Prompt Writing Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/workspaces/|Effectively Use Workspaces"><a href="/products/inference/concepts/workspaces/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Effectively Use Workspaces</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/chunking-strategies/|Chunking Best Practices"><a href="/products/inference/concepts/chunking-strategies/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Chunking Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/system-instructions/|System Instructions Best Practices"><a href="/products/inference/concepts/system-instructions/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">System Instructions Best Practices</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/concepts/retrieval/|Knowledge Base Retrieval Best Practices"><a href="/products/inference/concepts/retrieval/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Knowledge Base Retrieval Best Practices</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+
+        <li class="has-submenu" data-menu-key="/products/inference/details/|Details"><div class="menu-row">
+<span class="menu-label">
+<a href="/products/inference/details/" class="contrast menu-link"><span class="menuText">Details</span>
+</a>
+</span><button type="button" class="menu-toggle" aria-expanded="true" aria-controls="submenu-3140759110" aria-label="Toggle Details section"></button>
+</div><ul class="menu-children" id="submenu-3140759110">
+    <li data-menu-key="/products/inference/details/features/|Features"><a href="/products/inference/details/features/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Features</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/pricing/|Pricing"><a href="/products/inference/details/pricing/" class="primary active menu-link">
+    <span class="menu-label"><span class="menuText">Pricing</span>
+    </span></a>
+</li>
+
+<li data-menu-key="/products/inference/details/availability/|Availability"><a href="/products/inference/details/availability/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Availability</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/limits/|Limits"><a href="/products/inference/details/limits/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Limits</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/models/|Available Models"><a href="/products/inference/details/models/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Available Models</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/data-privacy/|Data Privacy"><a href="/products/inference/details/data-privacy/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Data Privacy</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/website-crawler/|Website Crawler"><a href="/products/inference/details/website-crawler/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Website Crawler</span>
+    </span></a>
+</li>
+
+
+        <li data-menu-key="/products/inference/details/model-support-policy/|Model Support Policy"><a href="/products/inference/details/model-support-policy/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Model Support Policy</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</li>
+
+</ul>
+</li>
+
+<li data-menu-key="/products/inference/support/|Support"><a href="/products/inference/support/" class="contrast menu-link">
+    <span class="menu-label"><span class="menuText">Support</span>
+    </span></a>
+</li>
+
+
+        </ul>
+</nav>
+<script>
+
+
+(function() {
+    var menu = document.getElementById('left-menu');
+    if (!menu) return;
+
+    var menuName = menu.dataset.menu || '';
+    var scrollKey = 'pdocs-left-menu-scroll-' + menuName;
+    var stateKey = 'pdocs-left-menu-state-' + menuName;
+
+    var saved = sessionStorage.getItem(scrollKey);
+    if (saved) {
+        menu.scrollTop = parseInt(saved, 10);
+    }
+
+    var rawState = sessionStorage.getItem(stateKey);
+    if (rawState) {
+        try {
+            var state = JSON.parse(rawState);
+            menu.querySelectorAll('li[data-menu-key]').forEach(function(li) {
+                var key = li.getAttribute('data-menu-key');
+                if (!key || !(key in state)) return;
+                var toggle = li.querySelector('.menu-toggle');
+                if (state[key] === 'closed') {
+                    li.classList.add('is-collapsed');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                } else if (state[key] === 'open') {
+                    li.classList.remove('is-collapsed');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                }
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    var active = menu.querySelector('a.active');
+    if (active) {
+        var state = {};
+        try {
+            var rawState = sessionStorage.getItem(stateKey);
+            if (rawState) state = JSON.parse(rawState);
+        } catch (e) {
+            console.error(e);
+        }
+        var node = active.closest('li');
+        while (node && menu.contains(node)) {
+            node.classList.remove('is-collapsed');
+            var toggle = node.querySelector('.menu-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'true');
+            var menuKey = node.getAttribute('data-menu-key');
+            if (menuKey) state[menuKey] = 'open';
+            var parentUl = node.parentElement;
+            if (!parentUl || parentUl.tagName !== 'UL') break;
+            node = parentUl.closest('li');
+        }
+        sessionStorage.setItem(stateKey, JSON.stringify(state));
+
+        var mr = menu.getBoundingClientRect();
+        var ar = active.getBoundingClientRect();
+        if (ar.top < mr.top || ar.bottom > mr.bottom) {
+            active.scrollIntoView({ block: 'center' });
+        }
+    }
+})();
+</script>
+</aside>
+
+        <main id="content">
+            <div class="pico before-content">
+
+<nav id="breadcrumbs" aria-label="breadcrumb">
+<ul itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"><a itemscope itemtype="https://schema.org/WebPage" itemprop="item" 
+            href="/products/inference/" itemid="/products/inference/"
+        >
+            <span itemprop="name">Inference</span>
+        </a><meta itemprop="position" content="1" />
+    </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"><a itemscope itemtype="https://schema.org/WebPage" itemprop="item" 
+            href="/products/inference/details/" itemid="/products/inference/details/"
+        >
+            <span itemprop="name">Details</span>
+        </a><meta itemprop="position" content="2" />
+    </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem"><span itemprop="name">Pricing</span><meta itemprop="position" content="3" />
+</li>
+</ul>
+</nav>
+<div class="feedback">
+    <span>
+        <button onclick="thumbRatingClicked(this, 'Page Rating','2026-08-24 00:00:00 \u002b0000 UTC', 1);">
+            <i class="fa-solid fa-thumbs-up" ></i>
+        </button>
+        <button onclick="thumbRatingClicked(this, 'Page Rating','2026-08-24 00:00:00 \u002b0000 UTC', 0);">
+            <i class="fa-solid fa-thumbs-down" ></i>
+        </button>
+    </span>
+    <span><a href="https://ideas.digitalocean.com/documentation">Give Feedback</a>
+    </span>
+</div>
+</div>
+
+            <section><blockquote class="agent-docs-directive" style="display:none">
+  <p><strong>For AI agents:</strong> The documentation index is at <a href="https://docs.digitalocean.com/llms.txt">https://docs.digitalocean.com/llms.txt</a>. Markdown versions of pages use the same URL with <code>index.html.md</code> in place of the HTML page (for example, append <code>index.html.md</code> to the directory path instead of opening the HTML document).</p>
+</blockquote>
+
+                <hgroup id="content-header">
+                    <h1>Inference Pricing</h1><p>Last verified 24 Aug 2026</p><p id="product-summary">Inference provides a single control plane for managing inference workflows. It includes a Model Catalog where you can view available foundation models, including both DigitalOcean-hosted and third-party commercial models, compare model capabilities and pricing, use routing to match inference requests to the best-fit model, and run inference using serverless or dedicated deployments.</p></hgroup>
+
+                <div class="md-tools">
+    <a href="#" class="page-tool copy-text has-fa" data-copy-url="/products/inference/details/pricing/index.html.md" aria-label="Copy page as Markdown">
+        <i class="fa-regular fa-clipboard"></i> Copy page as Markdown
+    </a>
+    <a href="/products/inference/details/pricing/index.html.md" class="page-tool view-markdown has-fa" target="_blank" rel="noopener" aria-label="View page as Markdown">
+        <i class="fa-regular fa-file-lines"></i> View page as Markdown <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </a>
+</div>
+<p>Inference has a usage-based pricing model, so costs scale with your actual usage.</p>
+<h2 id="bring-your-own-models-byom">Bring Your Own Models (BYOM)
+    <a href="#bring-your-own-models-byom" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#bring-your-own-models-byom');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>BYOM model weights are stored in a service-managed, non-accessible Spaces location, and are billed at $5.00 per month. We do not charge you for browsing or managing imported models in Model Catalog. Costs apply only for storing model weights and for using those models with other paid features, such as dedicated inference deployments.</p>
+<h2 id="model-playground">Model Playground
+    <a href="#model-playground" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#model-playground');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Usage is charged at the same rate as <a href="#serverless-inference-pricing">serverless inference</a>.</p>
+<h2 id="serverless-inference-pricing">Serverless Inference
+    <a href="#serverless-inference-pricing" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#serverless-inference-pricing');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Serverless inference is billed by DigitalOcean for both open-source and commercial models. Prices align with each provider&rsquo;s published rates for transparency.</p>
+<article class="notice notice-warning">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Warning</span>
+    </header>
+    <div class="notice-body"><p>Serverless inference is prepaid only. You must maintain a positive prepaid account balance to send serverless inference requests, and we deduct usage charges from this balance. If your balance reaches $0, access is suspended until you replenish it. To add a balance or enable auto-reload, see <a href="/products/inference/how-to/manage-serverless-inference-prepayment/">Manage Serverless Inference Prepayment</a>.</p>
+</div>
+</article>
+
+<p>The following shows pricing for foundation models available through serverless inference.</p>
+
+<details class="expand" name="accordion-2">
+    <summary role="button" class="outline contrast">Anthropic Models</summary><article class="notice notice-note">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Note</span>
+    </header>
+    <div class="notice-body"><p>When using Anthropic commercial models with your own model API keys, billing is handled directly by Anthropic at the provider&rsquo;s rates.</p>
+</div>
+</article>
+<p>Claude Sonnet 5 and Sonnet 4.5 support an input context window of up to 1M tokens.</p>
+<div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th style="text-align: left">Serverless Inference</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/fable">Claude Fable 5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$10.00 per 1M input tokens<br>$50.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$12.50 per 1M cache creation 5m input tokens<br>$20.00 per 1M cache creation 1h input tokens<br>$1.00 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/haiku">Claude Haiku 4.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.00 per 1M input tokens<br>$5.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$1.25 per 1M cache creation 5m input tokens<br>$2.00 per 1M cache creation 1h input tokens<br>$0.100 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/opus">Claude Opus 5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$25.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$6.25 per 1M cache creation 5m input tokens<br>$10.00 per 1M cache creation 1h input tokens<br>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/opus">Claude Opus 5 (Fast Mode)</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$10.00 per 1M input tokens<br>$50.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$12.50 per 1M cache creation 5m input tokens<br>$20.00 per 1M cache creation 1h input tokens<br>$1.00 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/news/claude-opus-4-8">Claude Opus 4.8</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$25.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$6.25 per 1M cache creation 5m input tokens<br>$10.00 per 1M cache creation 1h input tokens<br>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/opus">Claude Opus 4.7</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$25.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$6.25 per 1M cache creation 5m input tokens<br>$10.00 per 1M cache creation 1h input tokens<br>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/opus">Claude Opus 4.6</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$25.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$6.25 per 1M cache creation 5m input tokens<br>$10.00 per 1M cache creation 1h input tokens<br>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/opus">Claude Opus 4.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$25.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$6.25 per 1M cache creation 5m input tokens<br>$10.00 per 1M cache creation 1h input tokens<br>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/news/claude-sonnet-5">Claude Sonnet 5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.00 per 1M input tokens<br>$10.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$2.50 per 1M cache creation 5m input tokens<br>$4.00 per 1M cache creation 1h input tokens<br>$0.200 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/sonnet">Claude Sonnet 4.6</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$3.00 per 1M input tokens<br>$15.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$3.75 per 1M cache creation 5m input tokens<br>$6.00 per 1M cache creation 1h input tokens<br>$0.30 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://www.anthropic.com/claude/sonnet">Claude Sonnet 4.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤200K tokens</span><span>$3.00 per 1M input tokens<br>$15.00 per 1M output tokens<br></span><span>Prompts &gt;200K tokens</span><span>$6.00 per 1M input tokens<br>$22.50 per 1M output tokens<br></span><span>Prompt caching</span><span>$3.75 per 1M cache creation 5m input tokens<br>$6.00 per 1M cache creation 1h input tokens<br>$0.30 per 1M cache read input tokens<br></span></span></td>
+      </tr>
+  </tbody>
+</table>
+</div>
+</details>
+
+<details class="expand" name="accordion-2">
+    <summary role="button" class="outline contrast">Arcee Models</summary><div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th style="text-align: left">Serverless Inference</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td style="text-align: left"><a href="https://www.arcee.ai/trinity#trinity-large-preview">Trinity Large</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.25 per 1M input tokens<br>$0.90 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.06 per 1M cache read input tokens<br></span></span></td>
+      </tr>
+  </tbody>
+</table>
+</div>
+</details>
+
+
+<details class="expand" name="accordion-2">
+    <summary role="button" class="outline contrast">fal Models</summary><div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th style="text-align: left">Serverless Inference</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td style="text-align: left">Fast SDXL</td>
+          <td style="text-align: left">$0.0011 per compute second</td>
+      </tr><tr>
+          <td style="text-align: left">Flux Schnell</td>
+          <td style="text-align: left">$0.0030 per megapixel</td>
+      </tr><tr>
+          <td style="text-align: left">Stable Audio 2.5 (Text-to-Audio)</td>
+          <td style="text-align: left">$0.00058 per compute second</td>
+      </tr><tr>
+          <td style="text-align: left">Multilingual TTS v2</td>
+          <td style="text-align: left">$0.10 per 1000 characters</td>
+      </tr>
+  </tbody>
+</table>
+</div>
+</details>
+
+<details class="expand" name="accordion-2">
+    <summary role="button" class="outline contrast">OpenAI Models</summary><article class="notice notice-note">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Note</span>
+    </header>
+    <div class="notice-body"><p>When using OpenAI commercial models with your own model API keys, billing is handled directly by OpenAI at the provider&rsquo;s rates.</p>
+</div>
+</article>
+<p>GPT-5.6 Sol, Terra, and Luna support an input context window of up to 1.05M tokens. GPT-5.5 and GPT-5.4 support an input context window of up to 1M tokens. GPT-5.6 Sol, Terra, Luna, GPT-5.5, GPT-5.4, and GPT-5.4 pro use long-context pricing for prompts over 272K tokens.</p>
+<div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th style="text-align: left">Serverless Inference</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-oss-120b">gpt-oss-120b</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.06 per 1M input tokens<br>$0.39 per 1M output tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-oss-20b">gpt-oss-20b</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.05 per 1M input tokens<br>$0.45 per 1M output tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.6-sol">GPT-5.6 Sol</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$5.00 per 1M input tokens<br>$30.00 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$10.00 per 1M input tokens<br>$45.00 per 1M output tokens<br></span><span>Prompt caching (Prompts ≤272K tokens)</span><span>$6.25 per 1M cache write input tokens<br>$0.50 per 1M cache read input tokens<br></span><span>Prompt caching (Prompts &gt;272K tokens)</span><span>$12.50 per 1M cache write input tokens<br>$1.00 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.6-terra">GPT-5.6 Terra</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$2.00 per 1M input tokens<br>$12.00 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$4.00 per 1M input tokens<br>$18.00 per 1M output tokens<br></span><span>Prompt caching (Prompts ≤272K tokens)</span><span>$2.50 per 1M cache write input tokens<br>$0.200 per 1M cache read input tokens<br></span><span>Prompt caching (Prompts &gt;272K tokens)</span><span>$5.00 per 1M cache write input tokens<br>$0.400 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.6-luna">GPT-5.6 Luna</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$0.20 per 1M input tokens<br>$1.20 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$0.40 per 1M input tokens<br>$1.80 per 1M output tokens<br></span><span>Prompt caching (Prompts ≤272K tokens)</span><span>$0.25 per 1M cache write input tokens<br>$0.02 per 1M cache read input tokens<br></span><span>Prompt caching (Prompts &gt;272K tokens)</span><span>$0.50 per 1M cache write input tokens<br>$0.04 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.5">GPT-5.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$5.00 per 1M input tokens<br>$30.00 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$10.00 per 1M input tokens<br>$45.00 per 1M output tokens<br></span><span>Prompt caching (Prompts ≤272K tokens)</span><span>$0.50 per 1M cache read input tokens<br></span><span>Prompt caching (Prompts &gt;272K tokens)</span><span>$1.00 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.4">GPT-5.4</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$2.50 per 1M input tokens<br>$15.00 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$5.00 per 1M input tokens<br>$22.50 per 1M output tokens<br></span><span>Prompt caching (Prompts ≤272K tokens)</span><span>$0.25 per 1M cache read input tokens<br></span><span>Prompt caching (Prompts &gt;272K tokens)</span><span>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.4-mini">GPT-5.4 mini</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.75 per 1M input tokens<br>$4.50 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.075 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.4-nano">GPT-5.4 nano</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.20 per 1M input tokens<br>$1.25 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.02 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.4-pro">GPT-5.4 pro</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Prompts ≤272K tokens</span><span>$30.00 per 1M input tokens<br>$180.00 per 1M output tokens<br></span><span>Prompts &gt;272K tokens</span><span>$60.00 per 1M input tokens<br>$270.00 per 1M output tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-5.3-codex">GPT-5.3-Codex</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.75 per 1M input tokens<br>$14.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.175 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-5.2">GPT-5.2</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.75 per 1M input tokens<br>$14.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.175 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-5.2-pro">GPT-5.2 pro</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$21.00 per 1M input tokens<br>$168.00 per 1M output tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-5">GPT-5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.25 per 1M input tokens<br>$10.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.125 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-5-mini">GPT-5 mini</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.25 per 1M input tokens<br>$2.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.025 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-5-nano">GPT-5 nano</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.05 per 1M input tokens<br>$0.40 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.005 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-4.1">GPT-4.1</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.00 per 1M input tokens<br>$8.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.50 per 1M input tokens<br>$10.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$1.25 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o mini</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.15 per 1M input tokens<br>$0.60 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.075 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/o1">o1</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$15.00 per 1M input tokens<br>$60.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$7.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/o3">o3</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.00 per 1M input tokens<br>$8.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.50 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/o3-mini">o3-mini</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.10 per 1M input tokens<br>$4.40 per 1M output tokens<br></span><span>Prompt caching</span><span>$0.55 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://platform.openai.com/docs/models/gpt-image-1">GPT-image-1</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$40.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$1.25 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-image-1.5">GPT Image 1.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$5.00 per 1M input tokens<br>$10.00 per 1M output tokens<br></span><span>Prompt caching</span><span>$1.00 per 1M cache read input tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left"><a href="https://developers.openai.com/api/docs/models/gpt-image-2">GPT Image 2</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Text input</span><span>$5.00 per 1M tokens<br></span><span>Text output</span><span>$0.00 per 1M tokens<br></span><span>Text cache read</span><span>$1.25 per 1M tokens<br></span><span>Image input</span><span>$8.00 per 1M tokens<br></span><span>Image output</span><span>$30.00 per 1M tokens<br></span><span>Image cache read</span><span>$2.00 per 1M tokens<br></span></span></td>
+      </tr>
+  </tbody>
+</table>
+</div>
+</details>
+
+<details class="expand" name="accordion-2">
+    <summary role="button" class="outline contrast">DigitalOcean-Hosted Models</summary><div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Provider</th>
+          <th style="text-align: left">Model</th>
+          <th style="text-align: left">Serverless Inference</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td style="text-align: left">Alibaba</td>
+          <td style="text-align: left"><a href="https://huggingface.co/Inferact/Qwen3.8-2.4T-A95B-NVFP4-W4A4-0809">Qwen3.8-Max</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.00 per 1M tokens<br>$6.00 per 1M tokens<br></span><span>Prompt caching</span><span>$0.20 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Alibaba</td>
+          <td style="text-align: left"><a href="https://huggingface.co/Qwen/Qwen3.5-397B-A17B">Qwen 3.5 397B A17B</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.55 per 1M tokens<br>$3.50 per 1M tokens<br></span><span>Prompt caching</span><span>$0.111 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Alibaba</td>
+          <td style="text-align: left"><a href="https://fal.ai/models/fal-ai/qwen-3-tts/text-to-speech/1.7b">Qwen 3 TTS (1.7B)</a></td>
+          <td style="text-align: left"><!--no dynamic pricing for this model--> $20.00 per 1M character tokens</td>
+      </tr><tr>
+          <td style="text-align: left">Alibaba</td>
+          <td style="text-align: left"><a href="https://fal.ai/models/fal-ai/wan/v2.2-a14b/text-to-video">Wan2.2-T2V-A14B</a></td>
+          <td style="text-align: left"><!--no dynamic pricing for this model--> $0.60 per video</td>
+      </tr><tr>
+          <td style="text-align: left">DeepSeek</td>
+          <td style="text-align: left"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813">DeepSeek V4 Pro 0813</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.32 per 1M tokens<br>$3.96 per 1M tokens<br></span><span>Prompt caching</span><span>$0.044 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">DeepSeek</td>
+          <td style="text-align: left"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731">DeepSeek V4 Flash 0731</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.080 per 1M tokens<br>$0.252 per 1M tokens<br></span><span>Prompt caching</span><span>$0.025 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">DeepSeek</td>
+          <td style="text-align: left"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro">DeepSeek V4 Pro</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.87 per 1M tokens<br>$1.74 per 1M tokens<br></span><span>Prompt caching</span><span>$0.174 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">DeepSeek</td>
+          <td style="text-align: left"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash">DeepSeek V4 Flash</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.068 per 1M tokens<br>$0.168 per 1M tokens<br></span><span>Prompt caching</span><span>$0.017 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">DeepSeek</td>
+          <td style="text-align: left"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2">DeepSeek V3.2</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.25 per 1M tokens<br>$0.80 per 1M tokens<br></span><span>Prompt caching</span><span>$0.075 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Google</td>
+          <td style="text-align: left"><a href="https://deepmind.google/models/gemma/gemma-4/">Gemma 4</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.18 per 1M tokens<br>$0.50 per 1M tokens<br></span><span>Prompt caching</span><span>$0.036 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">MiniMax</td>
+          <td style="text-align: left"><a href="https://huggingface.co/MiniMaxAI/MiniMax-M2.5">MiniMax M2.5</a> (Public Preview)</td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.30 per 1M tokens<br>$1.20 per 1M tokens<br></span><span>Prompt caching</span><span>$0.06 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Moonshot AI</td>
+          <td style="text-align: left"><a href="https://www.kimi.com/blog/kimi-k3">Kimi K3</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$2.85 per 1M tokens<br>$14.25 per 1M tokens<br></span><span>Prompt caching</span><span>$0.285 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Moonshot AI</td>
+          <td style="text-align: left"><a href="https://www.kimi.com/ai-models/kimi-k2-6">Kimi K2.6</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.95 per 1M tokens<br>$4.00 per 1M tokens<br></span><span>Prompt caching</span><span>$0.19 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Moonshot AI</td>
+          <td style="text-align: left"><a href="https://www.kimi.com/ai-models/kimi-k2-5">Kimi K2.5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.50 per 1M tokens<br>$2.70 per 1M tokens<br></span><span>Prompt caching</span><span>$0.203 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Meta</td>
+          <td style="text-align: left"><a href="https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct">Llama 4 Maverick 17B 128E Instruct</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.20 per 1M tokens<br>$0.696 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Mistral AI</td>
+          <td style="text-align: left"><a href="https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512">Ministral 3 14B Instruct</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.20 per 1M tokens<br>$0.20 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">NVIDIA</td>
+          <td style="text-align: left"><a href="https://developer.nvidia.com/nemotron">Nemotron 3 Ultra</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.90 per 1M tokens<br>$1.70 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">NVIDIA</td>
+          <td style="text-align: left"><a href="https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4">Nemotron-3-Super-120B</a> (Public Preview)</td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.30 per 1M tokens<br>$0.65 per 1M tokens<br></span><span>Prompt caching</span><span>$0.06 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">NVIDIA</td>
+          <td style="text-align: left"><a href="https://developer.nvidia.com/nemotron">Nemotron Nano 3 Omni</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.50 per 1M tokens<br>$0.90 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">NVIDIA</td>
+          <td style="text-align: left"><a href="https://research.nvidia.com/labs/nemotron/Nemotron-3/">Nemotron Nano 12B v2 VL</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.20 per 1M tokens<br>$0.60 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Stability AI</td>
+          <td style="text-align: left"><a href="https://fal.ai/models/fal-ai/stable-diffusion-v35-large">Stable Diffusion 3.5 Large</a></td>
+          <td style="text-align: left"><!--no dynamic pricing for this model--> $0.08 per image</td>
+      </tr><tr>
+          <td style="text-align: left">Xiaomi</td>
+          <td style="text-align: left"><a href="https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro">MiMo V2.5 Pro</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.40 per 1M tokens<br>$1.50 per 1M tokens<br></span><span>Prompt caching</span><span>$0.08 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Z.ai</td>
+          <td style="text-align: left"><a href="https://huggingface.co/zai-org/GLM-5.2">GLM-5.2</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$0.70 per 1M tokens<br>$2.20 per 1M tokens<br></span><span>Prompt caching</span><span>$0.105 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Z.ai</td>
+          <td style="text-align: left"><a href="https://huggingface.co/zai-org/GLM-5.1">GLM-5.1</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.30 per 1M tokens<br>$4.30 per 1M tokens<br></span><span>Prompt caching</span><span>$0.26 per 1M tokens<br></span></span></td>
+      </tr><tr>
+          <td style="text-align: left">Z.ai</td>
+          <td style="text-align: left"><a href="https://z.ai/blog/glm-5">GLM 5</a></td>
+          <td style="text-align: left"><span class="gen-ai-pricing-grid"><span>Input/output tokens</span><span>$1.00 per 1M tokens<br>$3.20 per 1M tokens<br></span><span>Prompt caching</span><span>$0.20 per 1M tokens<br></span></span></td>
+      </tr>
+  </tbody>
+</table>
+</div>
+</details>
+
+
+<h2 id="dedicated-inference">Dedicated Inference
+    <a href="#dedicated-inference" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#dedicated-inference');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Dedicated Inference is billed per GPU-hour based on the GPU you use.</p>
+<div class="overflow-auto">
+<table>
+  <thead>
+      <tr>
+          <th>GPU</th>
+          <th>Price</th>
+      </tr>
+  </thead>
+  <tbody><tr>
+          <td>AMD MI300X</td>
+          <td>$2.59 per hour</td>
+      </tr><tr>
+          <td>AMD MI300X (8x)</td>
+          <td>$20.70 per hour</td>
+      </tr><tr>
+          <td>AMD MI325X</td>
+          <td>$2.98 per hour</td>
+      </tr><tr>
+          <td>AMD MI325X (8x)</td>
+          <td>$23.82 per hour</td>
+      </tr><tr>
+          <td>AMD MI350X</td>
+          <td>$6.89 per hour</td>
+      </tr><tr>
+          <td>NVIDIA B300</td>
+          <td>$10.39 per hour</td>
+      </tr><tr>
+          <td>NVIDIA B300 (8x)</td>
+          <td>$83.10 per hour</td>
+      </tr><tr>
+          <td>NVIDIA H100</td>
+          <td>$4.41 per hour</td>
+      </tr><tr>
+          <td>NVIDIA H100 (8x)</td>
+          <td>$30.32 per hour</td>
+      </tr><tr>
+          <td>NVIDIA H200</td>
+          <td>$4.47 per hour</td>
+      </tr><tr>
+          <td>NVIDIA H200 (8x)</td>
+          <td>$35.78 per hour</td>
+      </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="batch-inference">Batch Inference
+    <a href="#batch-inference" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#batch-inference');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Batch inference is charged at up to a 50% discount on <a href="#serverless-inference-pricing">OpenAI and Anthropic models</a>.</p>
+<p>You are only charged for completed requests. If a batch job fails, is blocked by guardrails, or expires partway through, requests that were not processed are not charged.</p>
+<h2 id="inference-router">Inference Router
+        <span class="pill pill-in-header pill-public">public</span>
+    
+    <a href="#inference-router" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#inference-router');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p><a href="/products/inference/how-to/use-inference-router/">Inference Router</a> is available in <a href="/platform/product-lifecycle/#public-preview">public preview</a> and enabled for all users. You can <a href="https://cloudsupport.digitalocean.com">contact support</a> for questions or assistance.</p>
+<p>There is no additional cost to using Inference Router during public preview. Using inference routing forwards requests to foundation models for serverless inference. You are <a href="#serverless-inference-pricing">billed for the models that serve each request</a>.</p>
+<h2 id="tools-usage">Tools Usage
+    <a href="#tools-usage" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#tools-usage');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Knowledge base retrieval, DigitalOcean MCP servers, and Anthropic- and OpenAI-only tools, such as tool search and computer use, do not incur additional charges other than the <a href="#serverless-inference-pricing">standard per-token inference costs</a>.</p>
+<p>The following tools incur charges in addition to the standard per-token inference costs:</p>
+<ul>
+<li>Web search: $10 per 1000 requests, not charged when using Anthropic models</li>
+<li>Web fetch: $3 per 1000 requests, not charged when using Anthropic models</li>
+</ul>
+<p>The <a href="/products/inference/how-to/use-server-side-tools/use-model-synthesis-tool/">model synthesis tool</a> does not add a separate charge. One model synthesis tool request can invoke multiple panel models, the primary judge model, and web search or web fetch calls. Usage and billing reflect all of that work at the existing <a href="#serverless-inference-pricing">per-model token rates</a> and web tool rates above.</p>
+<h2 id="evaluations">DigitalOcean Evaluations
+    <a href="#evaluations" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#evaluations');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>DigitalOcean Evaluations can use a model or an Inference Router configuration as the candidate. Evaluations that use candidate models deployed on Serverless Inference, or judge models, are charged at the same token rates as <a href="#serverless-inference-pricing">serverless inference</a>.</p>
+<p>Candidate models deployed on Dedicated Inference do not incur additional evaluation-specific token charges.</p>
+<p>Storage for evaluation datasets and evaluation results is currently provided at no additional charge. DigitalOcean may introduce or modify storage fees in the future.</p>
+<h2 id="knowledge-bases">Knowledge Bases
+    <a href="#knowledge-bases" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#knowledge-bases');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>Knowledge base pricing is shown per million tokens, but billing is calculated per thousand tokens.</p>
+<p>You&rsquo;re billed for both indexing and storage:</p>
+<ul>
+<li>
+<p><strong>Tokens used for indexing and retrieval query vectorization</strong>:  We charge for tokens used to generate embeddings during indexing and to vectorize user queries during retrieval. Both use the same embeddings model pricing.</p>
+<p>Indexing pricing is the same for manual and auto-indexing. Indexing charges apply only when changes are detected, such as new, updated, or deleted files or URLs. If auto-indexing is paused or no changes are found, there are no indexing charges.</p>
+<article class="notice notice-note">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Note</span>
+    </header>
+    <div class="notice-body"><p><a href="/reference/mcp/kbaas-mcp-tools/">Retrieval requests sent through a MCP server</a> are billed the same as retrieval requests sent directly to the knowledge base retrieve endpoint. This includes the tokens used to vectorize the retrieval query with the selected embeddings model.</p>
+</div>
+</article>
+
+<p>For example, a 10 MB dataset is about 3 million tokens, and a 1 GB dataset is about 250 million tokens.</p>
+<p>Actual costs depend on the embeddings model:</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th>Price</th>
+      </tr>
+  </thead>
+  <tbody>
+  <tr>
+          <td style="text-align: left"><code>all-mini-lm-l6-v2</code></td>
+          <td>$0.009 per 1M input tokens</td>
+      </tr><tr>
+          <td style="text-align: left"><code>multi-qa-mpnet-base-dot-v1</code></td>
+          <td>$0.009 per 1M input tokens</td>
+      </tr><tr>
+          <td style="text-align: left"><code>gte-large-en-v1.5</code></td>
+          <td>$0.09 per 1M input tokens</td>
+      </tr><tr>
+          <td style="text-align: left"><code>Qwen3 Embedding 0.6B</code></td>
+          <td>$0.04 per 1,000,000 tokens</td>
+      </tr><tr>
+          <td style="text-align: left"><code>BGE-M3</code></td>
+          <td>$0.02 per 1,000,000 tokens</td>
+      </tr><tr>
+          <td style="text-align: left"><code>E5 Large V2</code></td>
+          <td>$0.02 per 1,000,000 tokens</td>
+      </tr>
+  </tbody>
+  </table>
+<article class="notice notice-note">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Note</span>
+    </header>
+    <div class="notice-body"><p>One token is roughly four characters (approximately 75 words per 100 tokens). Non-Latin scripts, emojis, or binary data may increase token counts.</p>
+</div>
+</article>
+
+</li>
+<li>
+<p><strong>Reranking tokens</strong>: If reranking is enabled, tokens used to rerank results are billed based on the selected reranking model. For supported reranking models, see <a href="/products/inference/details/models/#reranking-models">available reranking models</a>.</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Model</th>
+          <th>Price</th>
+      </tr>
+  </thead>
+  <tbody>
+  <tr>
+          <td style="text-align: left"><code>BGE Reranker v2 m3</code></td>
+          <td>$0.01 per 1M reranking tokens</td>
+      </tr>
+  </tbody>
+  </table>
+</li>
+<li>
+<p><strong>Storage</strong>: Embeddings are stored in OpenSearch. See <a href="/products/databases/opensearch/details/pricing/">OpenSearch pricing</a>.</p>
+</li>
+</ul>
+<p>Chunking has no separate charge. Chunking costs depend on embedding token usage, OpenSearch database, and the selected embeddings model.</p>
+<p>Chunking strategy cost depends on how many tokens the strategy embeds and returns:</p>
+<ul>
+<li>Section-based and fixed length chunking are the most cost-efficient because they use simple splitting and have predictable token usage.</li>
+<li>Semantic chunking costs more because it uses the embeddings model to detect semantic boundaries and embed final chunks, often resulting in 1.5 to 3 times more indexing tokens.</li>
+<li>Hierarchical chunking slightly increases indexing cost by creating parent and child embeddings. It can also increase retrieval cost because agents receive both child and parent chunks for each lookup.</li>
+</ul>
+<p>Changing your chunking strategy or configuration requires re-indexing the affected data source, which consumes additional tokens. For guidance on chunking configurations and best practices, see our <a href="/products/inference/reference/chunking-strategies/">chunking parameters reference</a> and <a href="/products/inference/concepts/chunking-strategies/">chunking best practices</a>.</p>
+<p>If you use <a href="/products/inference/how-to/test-knowledge-base-retrieval/">RAG Playground</a>, answer generation is billed separately based on the selected <a href="#foundation-model-usage">serverless inference model</a>. Free tokens for RAG Playground are not separate; they are shared with <a href="/products/inference/how-to/use-model-playground/">Model Playground</a>.</p>
+<h2 id="agent-platform">Agent Platform
+    <a href="#agent-platform" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#agent-platform');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p><a href="/products/inference/how-to/create-agents/">Agent creation</a> is free. We charge for model usage and for additional features like <a href="/products/inference/how-to/create-manage-agent-knowledge-bases/">knowledge bases</a> and <a href="/products/inference/how-to/manage-agent-guardrails/">guardrails</a>. We display prices per million tokens and bill per thousand tokens for accuracy.</p>
+<p>Model usage is billed by DigitalOcean. You are charged for all input and output tokens processed by the agent at the same token rates as <a href="#serverless-inference-pricing">serverless inference</a>. Token usage depends on factors such as input length, agent instructions, attached knowledge bases, and configuration settings. To optimize usage, <a href="/products/inference/how-to/test-agents/">test your agents</a> and adjust their parameters.</p>
+<h3 id="agent-guardrails">Agent Guardrails
+    <a href="#agent-guardrails" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#agent-guardrails');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h3>
+<p>Charges apply for all tokens processed through agent guardrails:</p>
+<table>
+<thead>
+    <tr>
+        <th style="text-align: left">Guardrail</th>
+        <th>Price</th>
+    </tr>
+</thead>
+<tbody>
+<tr>
+        <td style="text-align: left">Content Moderation</td>
+        <td>$0.20 per 1,000,000 tokens</td>
+    </tr><tr>
+        <td style="text-align: left">Jailbreak Detection</td>
+        <td>$0.20 per 1,000,000 tokens</td>
+    </tr><tr>
+        <td style="text-align: left">Sensitive Data Detection</td>
+        <td>$0.34 per 1,000,000 tokens</td>
+    </tr>
+</tbody>
+</table>
+<p>Costs are per token. Creating, editing, or duplicating guardrails has no additional cost.</p>
+<h3 id="functions">Functions
+    <a href="#functions" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#functions');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h3>
+<p>If you attach <a href="/products/functions/">DigitalOcean Functions</a> to your agent, you are billed at <a href="/products/functions/details/pricing/">functions pricing</a>.</p>
+<h3 id="agent-evaluations">Agent Evaluations
+    <a href="#agent-evaluations" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#agent-evaluations');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h3>
+<p>Agent evaluations are charged by token usage at the same rates as <a href="#foundation-model-usage">model usage</a>.</p>
+<h2 id="adk">Agent Development Kit
+        <span class="pill pill-in-header pill-public">public</span>
+    
+    <a href="#adk" class="anchor has-fa"
+        onclick="navigator.clipboard.writeText(window.location.origin + window.location.pathname + '#adk');"
+    >
+        <i class="fa-solid fa-link"></i>
+    </a>
+</h2>
+<p>You are not charged for using the Agent Development Kit during <a href="/platform/product-lifecycle/#public-preview">public preview</a>. However, you are billed for other DigitalOcean Inference features you use with your agent deployment:</p>
+<ul>
+<li>We charge for model usage for Agent Development Kit (ADK). If you are using a DigitalOcean-hosted model, you are <a href="#serverless-inference-pricing">charged for those model keys</a>.</li>
+</ul>
+<article class="notice notice-note">
+    <header>
+        <span class="notice-icon" aria-hidden="true"></span>
+        <span class="notice-title">Note</span>
+    </header>
+    <div class="notice-body"><p>For General Availability, agent deployment hosting, measured in GiB-sec, will be charged. We will also be charging for judge input and output tokens, which are the tokens used for judging the agent inputs and outputs against the test case’s chosen metrics. These costs are waived during public preview.</p>
+</div>
+</article>
+
+</section>
+        </main>
+
+        <aside id="right-nav"><div id="right-menu">
+                <p>In this article...</p><nav id="TableOfContents">
+  <ul>
+    <li><a href="#bring-your-own-models-byom">Bring Your Own Models (BYOM)</a></li>
+    <li><a href="#model-playground">Model Playground</a></li>
+    <li><a href="#serverless-inference-pricing">Serverless Inference</a></li>
+    <li><a href="#dedicated-inference">Dedicated Inference</a></li>
+    <li><a href="#batch-inference">Batch Inference</a></li>
+    <li><a href="#inference-router">Inference Router</a></li>
+    <li><a href="#tools-usage">Tools Usage</a></li>
+    <li><a href="#evaluations">DigitalOcean Evaluations</a></li>
+    <li><a href="#knowledge-bases">Knowledge Bases</a></li>
+    <li><a href="#agent-platform">Agent Platform</a>
+      <ul>
+        <li><a href="#agent-guardrails">Agent Guardrails</a></li>
+        <li><a href="#functions">Functions</a></li>
+        <li><a href="#agent-evaluations">Agent Evaluations</a></li>
+      </ul>
+    </li>
+    <li><a href="#adk">Agent Development Kit</a></li>
+  </ul>
+</nav>
+            </div></aside>
+
+        <footer id="footer" class="pico">
+            <div id="footer-top" class="footer-section"><div>
+        <h5>Company</h5>
+        <ul><li><a href="https://www.digitalocean.com/about">About</a></li><li><a href="https://www.digitalocean.com/careers">Careers</a></li><li><a href="https://www.digitalocean.com/blog">Blog</a></li></ul>
+    </div><div>
+        <h5>Docs</h5>
+        <ul><li><a href="https://docs.digitalocean.com">Docs Home</a></li><li><a href="https://docs.digitalocean.com/reference/api">API Reference</a></li><li><a href="https://docs.digitalocean.com/reference/doctl">CLI Reference</a></li><li><a href="https://docs.digitalocean.com/release-notes">Release Notes</a></li><li><a href="https://docs.digitalocean.com/llms.txt">llms.txt</a></li><li><a href="https://www.digitalocean.com/trust">Trust Platform</a></li></ul>
+    </div><div>
+        <h5>Community</h5>
+        <ul><li><a href="https://www.digitalocean.com/community/tutorials">Tutorials</a></li><li><a href="https://www.digitalocean.com/community/questions">Q&amp;A</a></li><li><a href="https://www.digitalocean.com/community/pages/write-for-digitalocean">Write for DOnations</a></li><li><a href="https://www.digitalocean.com/currents">Currents Research</a></li><li><a href="https://www.digitalocean.com/legal">Legal</a></li><li><a href="https://www.digitalocean.com/community/pages/code-of-conduct">Code of Conduct</a></li></ul>
+    </div><div>
+        <h5>Support</h5>
+        <ul><li><a href="/support">Support Center</a></li><li><a href="https://www.digitalocean.com/company/contact/abuse">Report Abuse</a></li></ul>
+    </div></div>
+
+<hr>
+
+<div id="footer-bottom" class="footer-section">
+    <div class="footer-branding"><span class="footer-logo"><svg viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M13.2947 27V21.7718C18.7578 21.7718 22.9578 16.287 20.8736 10.4494C20.1157 8.30044 18.4105 6.5684 16.2947 5.79861C10.5473 3.68168 5.14736 7.97969 5.14736 13.4965H0C0 4.676 8.39998 -2.22007 17.4947 0.666657C21.4736 1.91757 24.6315 5.15712 25.8947 9.19853C28.7368 18.4681 21.9789 27 13.2947 27Z" fill="#0080FF"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M13.2937 21.8041H8.17792V16.608H13.2937V21.8041Z" fill="#0080FF"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.17732 25.815H4.22996V21.8057H8.17732V25.815Z" fill="#0080FF"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4.23308 21.806H0.917302V18.4702H4.2015V21.806H4.23308Z" fill="#0080FF"/>
+</svg>
+</span><small class="copyright">© 2026 DigitalOcean, LLC. All rights reserved</small>
+        <div id="teconsent-mount" class="footer-cookie-consent"></div>
+    </div>
+
+    <div class="footer-socials"><a href="https://x.com/digitalocean" class="social" aria-label="X (Twitter)">
+            <i class="fa-brands fa-x-twitter"></i>
+        </a><a href="https://www.instagram.com/thedigitalocean" class="social" aria-label="Instagram">
+            <i class="fa-brands fa-instagram"></i>
+        </a><a href="https://www.facebook.com/DigitalOceanCloudHosting" class="social" aria-label="Facebook">
+            <i class="fa-brands fa-facebook"></i>
+        </a><a href="https://discord.gg/digitalocean" class="social" aria-label="Discord">
+            <i class="fa-brands fa-discord"></i>
+        </a><a href="https://www.youtube.com/DigitalOcean" class="social" aria-label="YouTube">
+            <i class="fa-brands fa-youtube"></i>
+        </a><a href="https://www.linkedin.com/company/digitalocean" class="social" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin"></i>
+        </a><a href="https://github.com/digitalocean" class="social" aria-label="GitHub">
+            <i class="fa-brands fa-github"></i>
+        </a></div>
+</div>
+
+<div class="footer-flourishes" aria-hidden="true">
+    <div class="flourish-group flourish-left">
+        <img src="/flourish-7.svg" class="flourish" alt="">
+        <img src="/flourish-frame.svg" class="flourish" alt="">
+        <img src="/flourish-2.svg" class="flourish" alt="">
+        <img src="/flourish-1.svg" class="flourish" alt="">
+    </div>
+    <div class="flourish-group flourish-center">
+        <img src="/flourish-9.svg" class="flourish" alt="">
+        <img src="/flourish-6.svg" class="flourish" alt="">
+        <img src="/flourish-4.svg" class="flourish" alt="">
+        <img src="/flourish-3.svg" class="flourish" alt="">
+    </div>
+    <div class="flourish-group flourish-right">
+        <img src="/flourish-5.svg" class="flourish" alt="">
+        <img src="/flourish-8.svg" class="flourish" alt="">
+    </div>
+</div>
+
+        </footer>
+    </div>
+
+    
+    
+    
+
+
+<script src="https://docs.digitalocean.com/js/bundle.min.d1d07685a7d243b0a1025dd23a72875bc820d655d298e7c5fe16d65c324436e24882cd9b9493a0a38e725ebfdc6388827594eace5726c762a63e5d741be7af21.js" integrity="sha512-0dB2hafSQ7ChAl3SOnKHW8gg1lXSmOfF/hbWXDJENuJIgs2blJOgo45yXr/cY4iCdZTqzlcmx2KmPl10G&#43;evIQ=="></script>
+<script src="https://assets.digitalocean.com/labs/search.js.gz" defer onload="init_algolia()"></script>
+<div id="algolia_empty_state">
+    <h3>We can&#39;t find any results for your search.</h3>
+    <p>Try using different keywords or simplifying your search terms.</p>
+</div>
+
+
+<script async src="https://yxt72quk3m7tpemhea54qobd.agents.do-ai.run/static/chatbot/widget.js"
+    data-agent-id="2d2d7649-d6e0-11f0-b074-4e013e2ddde4"
+    data-chatbot-id="vJdL-kXYvZQL1Zc9inmdPyPavYK6vjeL"
+    data-name="DigitalOcean Docs Agent"
+    data-primary-color="#0069ff"
+    data-secondary-color="#E5E8ED"
+    data-button-background-color="#0061EB"
+    data-starting-message="This is the DigitalOcean Docs AI, built with OpenAI GPT-4o. You can ask it questions such as `How do I create a Droplet?` or `How do I set up a domain?`
+
+Responses may not always be accurate, but we’re continuously working to improve the experience. This AI does not connect to DigitalOcean’s support team. For support, visit our support page: https://do.co/support.
+
+We’d also like to hear your feedback about your experience: https://do.co/ask-docs-feedback"
+    data-logo="https://product-docs.nyc3.cdn.digitaloceanspaces.com/ai-agent-icon.svg"
+></script>
+
+    
+    
+</body>
+</html>
