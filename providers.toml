@@ -153,5 +153,17 @@ detector_url = "https://www.avian.io/pricing"
 scraper = "avian_page"
 scraper_url = "https://www.avian.io/pricing"
 
+# new-provider probe additions, 2026-08-27 (todo #13). probe evidence:
+# docs/research/new-provider-probe/. five of the seven have no watchable
+# announce surface from this host (deepinfra, watsonx 403s docs, baseten,
+# sambanova, publicai); cloudflare and digitalocean carry the feeds below.
+
+[deepinfra]
+provider = "DeepInfra"
+detector = "deepinfra_page"
+detector_url = "https://deepinfra.com/pricing"
+scraper = "deepinfra_page"
+scraper_url = "https://deepinfra.com/pricing"
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
