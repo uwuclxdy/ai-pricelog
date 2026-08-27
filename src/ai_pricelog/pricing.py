@@ -1,3 +1,7 @@
+"""the Pricing dataclass scrapers return, and per-token conversion helpers."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 

@@ -14,6 +14,8 @@ carries a bare dollar amount (zai-glm-5-2: $0.14); other cached cells leave it
 None. the page carries no context window -> the max_tokens fields 0. mode is chat.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

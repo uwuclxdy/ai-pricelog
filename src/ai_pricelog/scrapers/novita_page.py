@@ -14,6 +14,8 @@ None = the model id is not on the page or its card carries no usable rates.
 FetchError = the fetch failed or the page has no model cards.
 """
 
+from __future__ import annotations
+
 import math
 
 from bs4 import Tag

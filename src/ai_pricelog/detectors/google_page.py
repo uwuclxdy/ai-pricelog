@@ -18,6 +18,8 @@ prices them with output 0 (embeddings bill input tokens only). ids are
 emitted as written on the page, page order.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 
 from bs4 import BeautifulSoup, Tag

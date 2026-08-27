@@ -14,6 +14,8 @@ page has no serverless table, or a matched cell carries an unexpected
 amount count.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

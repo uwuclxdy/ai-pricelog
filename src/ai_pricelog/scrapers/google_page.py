@@ -29,6 +29,8 @@ dedup_keys maps page spellings the store holds under a different id:
 - gemini-2.5-flash-lite-preview-<date> -> gemini-2.5-flash-lite
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup, Tag

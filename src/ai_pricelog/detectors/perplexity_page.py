@@ -12,6 +12,8 @@ the embeddings and request-fee tables are out of scope. a page with no such
 table is a parse failure (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

@@ -1,3 +1,7 @@
+"""http fetch helpers: fetch_text, fetch_soup, and table extraction."""
+
+from __future__ import annotations
+
 import urllib.parse
 
 import httpx

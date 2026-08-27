@@ -14,6 +14,8 @@ out of scope. a page with no model cards or no ids is a parse failure
 (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 from functools import cache
 

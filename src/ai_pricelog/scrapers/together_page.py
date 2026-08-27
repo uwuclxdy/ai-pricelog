@@ -18,6 +18,8 @@ Maverick/Scout and Mixtral ids have no row on the per-token tables, so
 nothing maps to them.
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import Tag

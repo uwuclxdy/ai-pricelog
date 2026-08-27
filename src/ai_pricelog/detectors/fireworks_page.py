@@ -9,6 +9,8 @@ page (SFT and embeddings, priced by size class) are not per-model. a page
 without the table is a parse failure (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup

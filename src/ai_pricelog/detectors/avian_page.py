@@ -15,6 +15,8 @@ id for new models. every labeled card in the grid is detected, priced or not:
 an unpriced card scrapes to None and the pipeline retries next run.
 """
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 

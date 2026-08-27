@@ -8,6 +8,8 @@ page: the docs spell some legacy models with `-highspeed` where litellm's file
 has `-lightning`; the human verifier reconciles that drift.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

@@ -10,6 +10,8 @@ PRICING are not model rows. header cells that do not look like model ids are
 skipped; a page whose MODEL row carries no id is a parse failure (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

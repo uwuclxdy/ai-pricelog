@@ -12,6 +12,8 @@ them; main() owns the network, which flows through the moonshot modules'
 fetch_text (web.fetch_text, one retry layer) exactly like the pipeline does.
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

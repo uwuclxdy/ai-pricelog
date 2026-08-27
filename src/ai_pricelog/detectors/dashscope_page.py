@@ -11,6 +11,8 @@ mixes recommended and third-party models; litellm's dashscope namespace
 tracks them all. dedupe preserves page order.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

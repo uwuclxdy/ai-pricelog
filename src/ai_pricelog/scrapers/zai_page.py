@@ -18,6 +18,8 @@ amount. FetchError = the fetch failed, the page has no per-token tables, or
 the model's table lacks the Cached Input column.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

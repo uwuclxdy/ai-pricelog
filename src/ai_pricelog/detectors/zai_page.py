@@ -10,6 +10,8 @@ GLM-4.7-FlashX; ids are lowercased because litellm keys are lowercase. a
 page with no such table is a parse failure (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup

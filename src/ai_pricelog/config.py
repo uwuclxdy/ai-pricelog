@@ -1,3 +1,7 @@
+"""provider config: parse the providers toml into frozen config dataclasses."""
+
+from __future__ import annotations
+
 import importlib
 import tomllib
 from dataclasses import dataclass

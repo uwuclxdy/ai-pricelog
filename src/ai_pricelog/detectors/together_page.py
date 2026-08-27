@@ -17,6 +17,8 @@ with no per-token model table, or with no usable ids, is a parse failure
 (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup, Tag

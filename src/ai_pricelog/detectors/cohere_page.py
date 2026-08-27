@@ -38,6 +38,8 @@ _newest_dated_first). a page with none of the shapes is a parse failure
 (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from functools import cache

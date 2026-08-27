@@ -16,6 +16,8 @@ cards) map to none of the stored avian ids (four stale Meta-Llama
 entries), so nothing to normalize.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

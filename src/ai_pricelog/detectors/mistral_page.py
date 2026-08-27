@@ -10,6 +10,8 @@ first stored spelling names the model. deduped, cards-page order first, then
 pricing-page rows.
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup

@@ -15,6 +15,8 @@ after a date strip, so a genuinely new id ending in ``-reasoning`` never
 dedups against a base it is not a snapshot of.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from ai_pricelog.validate import ValidationError, validate_row

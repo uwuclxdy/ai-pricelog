@@ -6,6 +6,8 @@ entries carrying ``promptTextTokenPrice`` inside ``clusterConfigs``; image, audi
 and video entries have no token pricing and are out of scope.
 """
 
+from __future__ import annotations
+
 import json
 from functools import cache
 

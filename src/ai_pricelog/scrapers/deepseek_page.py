@@ -19,6 +19,8 @@ None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed or the page has no MODEL header table.
 """
 
+from __future__ import annotations
+
 import re
 
 from bs4 import BeautifulSoup

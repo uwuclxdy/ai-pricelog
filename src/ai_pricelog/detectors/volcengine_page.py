@@ -8,6 +8,8 @@ doubao-seed id at all is a parse failure (the page moved or was redesigned),
 raised as FetchError instead of a silent empty list.
 """
 
+from __future__ import annotations
+
 import re
 from functools import cache
 

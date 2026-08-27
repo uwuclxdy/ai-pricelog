@@ -12,6 +12,8 @@ per 1M tokens -> divided by 1e6. the page carries no context window, so
 the max_tokens fields stay 0 (the entry builder omits them).
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

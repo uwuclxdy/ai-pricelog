@@ -28,6 +28,8 @@ names its releases by date; the page's legacy faq spells "Command R
 holds those models as command-r and command-r-plus.
 """
 
+from __future__ import annotations
+
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.cohere_page import _page, _slug
 from ai_pricelog.pricing import Pricing

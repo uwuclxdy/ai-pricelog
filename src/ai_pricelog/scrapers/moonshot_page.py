@@ -33,6 +33,8 @@ None = no pricing page or no row for the model. FetchError = the fetch
 failed, the index lists no pricing pages, or a page's DocTable does not parse.
 """
 
+from __future__ import annotations
+
 import ast
 import functools
 import re

@@ -20,6 +20,8 @@ price (skip-and-retry). FetchError = the fetch failed, or the page text
 carries no doubao-seed id at all (page redesigned).
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

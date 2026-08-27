@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 import types
@@ -16,7 +18,7 @@ class FakeRunner:
         self._outputs: dict[str, str] = {}
         self._failures: dict[str, Exception] = {}
 
-    def on(self, pattern: str, output: str = "", failure: Exception | None = None) -> "FakeRunner":
+    def on(self, pattern: str, output: str = "", failure: Exception | None = None) -> FakeRunner:
         if failure is not None:
             self._failures[pattern] = failure
         else:

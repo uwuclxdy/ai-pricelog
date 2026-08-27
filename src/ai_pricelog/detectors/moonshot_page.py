@@ -8,6 +8,8 @@ on the page already; litellm keys are lowercase). a page with no Model Name
 table rows is a parse failure (FetchError).
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg

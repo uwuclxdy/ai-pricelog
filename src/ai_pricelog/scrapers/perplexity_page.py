@@ -13,6 +13,8 @@ dollar amount. FetchError = the fetch failed or the page has no Token Pricing
 table.
 """
 
+from __future__ import annotations
+
 import re
 
 from ai_pricelog.config import ProviderCfg
