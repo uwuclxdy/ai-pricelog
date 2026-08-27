@@ -182,5 +182,12 @@ detector_url = "https://www.ibm.com/products/watsonx-ai/pricing"
 scraper = "watsonx_page"
 scraper_url = "https://www.ibm.com/products/watsonx-ai/pricing"
 
+[baseten]
+provider = "Baseten"
+detector = "baseten_page"
+detector_url = "https://www.baseten.co/pricing"
+scraper = "baseten_page"
+scraper_url = "https://www.baseten.co/pricing"
+
 # [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
