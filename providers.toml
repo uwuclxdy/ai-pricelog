@@ -89,11 +89,12 @@ announce_urls = [
 ]
 
 # re-probed 2026-08-24 (todo #1): static pages re-added below. the rest stay
-# out: anthropic/aws/azure/groq/cerebras/modal/doubleword/ovhcloud serve
-# prices client-side only, voyage 404s/403s, zhipuai is unreachable from
-# here and CNY-only like volcengine. the 2026-08-27 re-probe moved fireworks
-# (docs pricing table is static) and openai (the standard-tier table ships
-# as serialized island props) out of this list.
+# out: aws/azure/modal/doubleword/ovhcloud serve prices client-side only,
+# voyage sits behind a host-wide egress 403, zhipuai closed gated-for-good
+# 2026-08-28 (zai covers the glm line in USD). the 2026-08-27 re-probe moved
+# fireworks (docs pricing table is static) and openai (the standard-tier
+# table ships as serialized island props) out of this list; anthropic,
+# cerebras and dashscope followed 2026-08-28 (todo #17), groq 2026-08-29.
 
 [together]
 provider = "Together AI"
