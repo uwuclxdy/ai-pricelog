@@ -246,3 +246,15 @@ detector = "dashscope_page"
 detector_url = "https://help.aliyun.com/zh/model-studio/text-generation-model/"
 scraper = "dashscope_page"
 scraper_url = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+
+# ungated 2026-08-28 (todo 17): the docs pricing markdown twin serves the
+# full model table statically (llms.txt advertises it); both cache-write
+# tiers and the cache-read rate ride the same table. no announce surface
+# probed yet; the pricing page stays the only diffable artifact.
+
+[anthropic]
+provider = "Anthropic"
+detector = "anthropic_page"
+detector_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
+scraper = "anthropic_page"
+scraper_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
