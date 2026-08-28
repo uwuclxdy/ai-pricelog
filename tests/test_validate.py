@@ -55,7 +55,16 @@ def test_bad_model_id_rejected(model_id):
         validate_row(row(model_id=model_id))
 
 
-@pytest.mark.parametrize("field", ["input_mtok", "output_mtok"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "input_mtok",
+        "output_mtok",
+        "cache_read_mtok",
+        "cache_write_mtok",
+        "cache_write_1h_mtok",
+    ],
+)
 @pytest.mark.parametrize("bad", [-1.0, float("inf"), float("nan"), True, 5, "0.1"])
 def test_bad_price_rejected(field, bad):
     with pytest.raises(ValidationError, match=field):
@@ -120,6 +129,8 @@ def test_removed_flag_must_be_true(bad):
         "input_mtok",
         "output_mtok",
         "cache_read_mtok",
+        "cache_write_mtok",
+        "cache_write_1h_mtok",
         "peak_input_mtok",
         "peak_output_mtok",
         "peak_cache_read_mtok",

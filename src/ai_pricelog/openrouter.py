@@ -40,7 +40,9 @@ def fetch_models(url: str | None = None) -> list[OpenrouterModel]:
     return _parse_models(data, f"url '{url}'")
 
 
-OBSERVED_KEYS = frozenset({"prompt", "completion", "input_cache_read"})
+OBSERVED_KEYS = frozenset(
+    {"prompt", "completion", "input_cache_read", "input_cache_write", "input_cache_write_1h"}
+)
 
 
 def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
@@ -57,6 +59,8 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         ("prompt", "input_mtok"),
         ("completion", "output_mtok"),
         ("input_cache_read", "cache_read_mtok"),
+        ("input_cache_write", "cache_write_mtok"),
+        ("input_cache_write_1h", "cache_write_1h_mtok"),
     ):
         value = model.pricing.get(key)
         if value is not None and float(value) >= 0:

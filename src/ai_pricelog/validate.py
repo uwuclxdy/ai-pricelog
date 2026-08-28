@@ -18,13 +18,21 @@ class ValidationError(ValueError):
     """a row failed validation; the message names the field, bad value, fix."""
 
 
-_PRICE_FIELDS = ("input_mtok", "output_mtok")
+_PRICE_FIELDS = (
+    "input_mtok",
+    "output_mtok",
+    "cache_read_mtok",
+    "cache_write_mtok",
+    "cache_write_1h_mtok",
+)
 _PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok")
 # a removal row is provenance only: any pricing data beside it is junk
 _REMOVAL_FORBIDDEN = (
     "input_mtok",
     "output_mtok",
     "cache_read_mtok",
+    "cache_write_mtok",
+    "cache_write_1h_mtok",
     "peak_windows",
     "peak_input_mtok",
     "peak_output_mtok",

@@ -39,7 +39,7 @@ def test_fetch_models_parses_fixture(fake_fetch: list[str]) -> None:
 def test_fetch_models_skips_alias_entries(fake_fetch: list[str]) -> None:
     ids = [m.id for m in fetch_models()]
     assert "~z-ai/glm-latest" not in ids
-    assert len(ids) == 14
+    assert len(ids) == 15
 
 
 def test_fetch_models_free_model_and_missing_cache_read(fake_fetch: list[str]) -> None:
@@ -148,6 +148,8 @@ def test_build_row_maps_pricing_keys_and_rounds():
             "prompt": "0.000000435",
             "completion": "0.0000012",
             "input_cache_read": "0.0000001",
+            "input_cache_write": "0.0000025",
+            "input_cache_write_1h": "0.000004",
         },
     )
     row = build_row(model, "2026-08-26T00:00:00Z")
@@ -160,6 +162,8 @@ def test_build_row_maps_pricing_keys_and_rounds():
         "input_mtok",
         "output_mtok",
         "cache_read_mtok",
+        "cache_write_mtok",
+        "cache_write_1h_mtok",
         "max_tokens_in",
     ]
     assert row["source"] == "openrouter"
@@ -168,6 +172,8 @@ def test_build_row_maps_pricing_keys_and_rounds():
     assert row["input_mtok"] == 0.435
     assert row["output_mtok"] == 1.2
     assert row["cache_read_mtok"] == 0.1
+    assert row["cache_write_mtok"] == 2.5
+    assert row["cache_write_1h_mtok"] == 4.0
     assert row["max_tokens_in"] == 131072
 
 
@@ -231,13 +237,21 @@ def test_build_row_skips_negative_pricing_strings():
         None,
         None,
         None,
-        pricing={"prompt": "-1", "completion": "-1", "input_cache_read": "-1"},
+        pricing={
+            "prompt": "-1",
+            "completion": "-1",
+            "input_cache_read": "-1",
+            "input_cache_write": "-1",
+            "input_cache_write_1h": "-1",
+        },
     )
     row = build_row(model, "t")
     assert row is not None
     assert "input_mtok" not in row
     assert "output_mtok" not in row
     assert "cache_read_mtok" not in row
+    assert "cache_write_mtok" not in row
+    assert "cache_write_1h_mtok" not in row
 
 
 def test_fetch_models_parses_negative_pricing_as_none(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -272,7 +286,32 @@ def test_fetch_models_marks_variants_that_redirect_to_a_listed_id(
 
 
 def test_observed_keys_lists_the_consumed_pricing_keys():
-    assert frozenset({"prompt", "completion", "input_cache_read"}) == OBSERVED_KEYS
+    assert (
+        frozenset(
+            {
+                "prompt",
+                "completion",
+                "input_cache_read",
+                "input_cache_write",
+                "input_cache_write_1h",
+            }
+        )
+        == OBSERVED_KEYS
+    )
+
+
+def test_build_row_maps_fixture_cache_write_tiers(fake_fetch: list[str]) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    row = build_row(by_id["anthropic/claude-opus-5-fast"], "2026-08-28")
+    assert row is not None
+    assert row["input_mtok"] == 10.0
+    assert row["output_mtok"] == 50.0
+    assert row["cache_read_mtok"] == 1.0
+    assert row["cache_write_mtok"] == 12.5
+    assert row["cache_write_1h_mtok"] == 20.0
+    assert row["max_tokens_in"] == 1000000
+    # the write keys no longer ride extra in their per-token spelling
+    assert row["extra"] == {"web_search": "0.01"}
 
 
 def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) -> None:
@@ -297,8 +336,11 @@ def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) ->
         "perplexity/sonar-pro",
         "mistralai/codestral-2508",
         "mistralai/mistral-small-3.2-24b-instruct",
+        "anthropic/claude-opus-5-fast",
     ]
     sonar = rows[11]
     assert sonar["name"] == "Sonar Pro"
     assert sonar["extra"] == {"web_search": "0.005"}
-    assert all("max_tokens_in" not in row for row in rows)
+    assert [row["model_id"] for row in rows if "max_tokens_in" in row] == [
+        "anthropic/claude-opus-5-fast"
+    ]

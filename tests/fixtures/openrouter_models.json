@@ -163,6 +163,20 @@
         "completion": "0.00000025"
       },
       "canonical_slug": "mistralai/mistral-small-3.2-24b-instruct-2506"
+    },
+    {
+      "id": "anthropic/claude-opus-5-fast",
+      "name": "Anthropic: Claude Opus 5 (Fast)",
+      "pricing": {
+        "prompt": "0.00001",
+        "completion": "0.00005",
+        "web_search": "0.01",
+        "input_cache_read": "0.000001",
+        "input_cache_write": "0.0000125",
+        "input_cache_write_1h": "0.00002"
+      },
+      "canonical_slug": "anthropic/claude-opus-5-fast-20260723",
+      "context_length": 1000000
     }
   ],
   "total_count": 416,

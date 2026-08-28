@@ -85,12 +85,13 @@ def test_detect_ids(monkeypatch):
 
 
 def test_scrape_five_column_row(monkeypatch):
-    # five-column row: input, cached read, cache write (dropped), output
+    # five-column row: input, cached read, cache write, output
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
     pricing = scraper.scrape(cfg(), "gpt-5.6-sol")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(4 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(0.4 / 1e6)
+    assert pricing.cache_write_cost_per_token == pytest.approx(5 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(20 / 1e6)
     assert pricing.mode == "chat"
 
@@ -101,6 +102,7 @@ def test_scrape_four_column_row(monkeypatch):
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(2.5 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(1.25 / 1e6)
+    assert pricing.cache_write_cost_per_token is None
     assert pricing.output_cost_per_token == pytest.approx(10 / 1e6)
 
 

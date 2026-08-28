@@ -2,11 +2,10 @@
 
 rows come from the standard tier island (see the detector for the shape):
 [model, input, cached read, cache write?, output], dollars per 1M tokens.
-input, cached read and output parse into Pricing; the cache-write column of
-five-column rows has no index slot and is dropped. "null" and "-" cells
-mean the model has no cached-read rate. max_tokens stays unset: the rows
-carry no context column (the page prints context as a name annotation, not
-a field).
+input, cached read, cache write (the default 5m tier on five-column rows)
+and output parse into Pricing. "null" and "-" cells mean the model has no
+such rate. max_tokens stays unset: the rows carry no context column (the
+page prints context as a name annotation, not a field).
 
 None = the model id is not on the page, or its row carries no input or
 output rate. FetchError = the fetch failed, the page has no standard
@@ -37,6 +36,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             continue
         input_cost = _rate(row[1], model_id, cfg.scraper_url)
         cache_read = _rate(row[2], model_id, cfg.scraper_url)
+        cache_write = _rate(row[3], model_id, cfg.scraper_url) if len(row) == 5 else None
         output_cost = _rate(row[-1], model_id, cfg.scraper_url)
         if input_cost is None or output_cost is None:
             return None
@@ -45,5 +45,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             output_cost / 1e6,
             mode="chat",
             cache_read_cost_per_token=(cache_read / 1e6 if cache_read is not None else None),
+            cache_write_cost_per_token=(cache_write / 1e6 if cache_write is not None else None),
         )
     return None

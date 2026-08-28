@@ -143,6 +143,33 @@ def test_changed_detects_legacy_max_tokens_value_difference():
     assert changed(row, prev) is True
 
 
+def test_changed_fires_when_an_extra_key_moves_to_a_standard_field():
+    # the 2026-08-28 key migration: stored openrouter rows carry the write
+    # rate verbatim under extra; the next row moves it to cache_write_mtok,
+    # and the move is a change (one refresh row per priced model, human-reviewed)
+    row = {
+        "source": "openrouter",
+        "model_id": "a/b",
+        "observed_at": "t2",
+        "input_mtok": 1.0,
+        "cache_write_mtok": 12.5,
+    }
+    prev = {
+        "source": "openrouter",
+        "model_id": "a/b",
+        "observed_at": "t1",
+        "input_mtok": 1.0,
+        "extra": {"input_cache_write": "0.0000125"},
+    }
+    assert changed(row, prev) is True
+
+
+def test_changed_detects_cache_write_value_difference():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "cache_write_mtok": 12.5}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "cache_write_mtok": 15.0}
+    assert changed(row, prev) is True
+
+
 def test_changed_detects_dropped_field():
     row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
     prev = {
@@ -192,6 +219,19 @@ def test_build_row_includes_cache_read_and_max_tokens():
     assert row["cache_read_mtok"] == 0.1
     assert row["max_tokens_in"] == 200000
     assert row["max_tokens_out"] == 8192
+
+
+def test_build_row_includes_cache_write_tiers():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="chat",
+        cache_write_cost_per_token=1.25e-6,
+        cache_write_1h_cost_per_token=2e-6,
+    )
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["cache_write_mtok"] == 1.25
+    assert row["cache_write_1h_mtok"] == 2.0
 
 
 def test_build_row_emits_peak_fields_together():

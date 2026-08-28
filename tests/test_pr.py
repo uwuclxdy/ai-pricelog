@@ -81,8 +81,32 @@ def test_spec_body_disclaimer_falls_back_to_actions_tab():
 def test_spec_body_flat_row_table():
     body = spec().body
     assert "## new rows" in body
-    assert "| deepseek | `deepseek-chat` | 2026-08-26 | 0.27 | — | 1.1 | — |" in body
+    assert "| deepseek | `deepseek-chat` | 2026-08-26 | 0.27 | — | — | 1.1 | — |" in body
     assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
+
+
+def test_spec_body_cache_write_column():
+    row = {
+        "source": "openrouter",
+        "model_id": "anthropic/claude-opus-5-fast",
+        "observed_at": "2026-08-28",
+        "input_mtok": 10.0,
+        "output_mtok": 50.0,
+        "cache_read_mtok": 1.0,
+        "cache_write_mtok": 12.5,
+        "cache_write_1h_mtok": 20.0,
+    }
+    body = spec(
+        source="openrouter",
+        model_id="anthropic/claude-opus-5-fast",
+        provider="OpenRouter",
+        source_url="",
+        rows=(row,),
+    ).body
+    assert (
+        "| openrouter | `anthropic/claude-opus-5-fast` | 2026-08-28 "
+        "| 10 | 1 | 12.5/20 | 50 | — |" in body
+    )
 
 
 def test_spec_body_peak_row():

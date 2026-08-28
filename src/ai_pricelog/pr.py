@@ -139,9 +139,9 @@ class PrSpec:
         lines = [
             "## new rows",
             "",
-            "| source | model | observed | input (/1M) | cache read (/1M) | output (/1M) |"
-            " peak (/1M) |",
-            "|---|---|---|---|---|---|---|",
+            "| source | model | observed | input (/1M) | cache read (/1M) |"
+            " cache write 5m/1h (/1M) | output (/1M) | peak (/1M) |",
+            "|---|---|---|---|---|---|---|---|",
         ]
         lines.extend(self._row_line(row) for row in self.rows)
         return lines
@@ -156,7 +156,7 @@ class PrSpec:
         return (
             f"| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
             f"{_fmt(row.get('input_mtok'))} | {_fmt(row.get('cache_read_mtok'))} | "
-            f"{_fmt(row.get('output_mtok'))} | {peak} |"
+            f"{_cache_write(row)} | {_fmt(row.get('output_mtok'))} | {peak} |"
         )
 
     def _disclaimer(self) -> str:
@@ -190,6 +190,17 @@ class PrSpec:
 
 def _fmt(value: object) -> str:
     return "—" if value is None else f"{value:g}"
+
+
+def _cache_write(row: dict[str, object]) -> str:
+    """The 5m write rate, the 1h tier appended when the row carries one."""
+    five = row.get("cache_write_mtok")
+    one_h = row.get("cache_write_1h_mtok")
+    if five is None and one_h is None:
+        return "—"
+    if one_h is None:
+        return _fmt(five)
+    return f"{_fmt(five)}/{_fmt(one_h)}"
 
 
 def default_branch(runner: PrRunner, cwd: Path) -> str:

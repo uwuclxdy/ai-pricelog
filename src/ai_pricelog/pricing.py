@@ -23,6 +23,10 @@ class Pricing:
     # (moonshot reads the index to resolve a per-model page); build_row stamps
     # it as the row's provenance url
     url: str | None = None
+    # cache-write tiers (5m default + 1h); appended after url so positional
+    # constructions of the pre-existing prefix keep their meaning
+    cache_write_cost_per_token: float | None = None
+    cache_write_1h_cost_per_token: float | None = None
 
 
 def to_mtok(per_token: float) -> float:

@@ -163,6 +163,10 @@ def build_row(
     }
     if pricing.cache_read_cost_per_token is not None:
         row["cache_read_mtok"] = to_mtok(pricing.cache_read_cost_per_token)
+    if pricing.cache_write_cost_per_token is not None:
+        row["cache_write_mtok"] = to_mtok(pricing.cache_write_cost_per_token)
+    if pricing.cache_write_1h_cost_per_token is not None:
+        row["cache_write_1h_mtok"] = to_mtok(pricing.cache_write_1h_cost_per_token)
     if pricing.max_tokens_in > 0:
         row["max_tokens_in"] = pricing.max_tokens_in
     if pricing.max_tokens_out > 0:

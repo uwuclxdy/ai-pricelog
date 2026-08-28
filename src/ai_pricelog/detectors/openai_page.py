@@ -9,8 +9,8 @@ cached read, cache write?, output], dollars per 1M tokens. the standard
 tier is watched: it is the base rate the other tiers discount or premium
 on. five-column rows carry the cache-write rate in the middle column (the
 page's own "Cache writes" heading; measured at 1.25x the input on every
-five-column row in the 2026-08-27 fixture); the index has no slot for it
-and drops it here. model names may carry a page annotation
+five-column row in the 2026-08-27 fixture); the scraper stores it as the
+default cache-write tier. model names may carry a page annotation
 ("gpt-5.5 (<272K context length)"); the annotation is stripped and the
 bare name is the id. a page without the standard island, with unparseable
 props, or with a row outside this shape is a parse failure (FetchError).
