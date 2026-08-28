@@ -1162,3 +1162,4 @@
 {"source":"openrouter","model_id":"anthracite-org/magnum-v2-72b","observed_at":"2026-08-28","removed":true}
 {"source":"openrouter","model_id":"baidu/ernie-4.5-300b-a47b","observed_at":"2026-08-28","removed":true}
 {"source":"openrouter","model_id":"baidu/ernie-4.5-vl-28b-a3b","observed_at":"2026-08-28","removed":true}
+{"source":"mistral","model_id":"codestral-2405","observed_at":"2026-08-28","removed":true}
