@@ -1159,3 +1159,4 @@
 {"source":"google","model_id":"gemini-3-pro-preview","observed_at":"2026-08-28","removed":true}
 {"source":"google","model_id":"gemini-3.1-flash-lite-preview","observed_at":"2026-08-28","removed":true}
 {"source":"google","model_id":"gemini-robotics-er-1.5-preview","observed_at":"2026-08-28","removed":true}
+{"source":"openrouter","model_id":"anthracite-org/magnum-v2-72b","observed_at":"2026-08-28","removed":true}
