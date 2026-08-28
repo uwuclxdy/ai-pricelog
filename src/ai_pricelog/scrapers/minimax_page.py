@@ -17,9 +17,8 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.detectors.minimax_page import _markdown_tables
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_text
+from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text
 
 _AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
 _MODEL_RE = re.compile(r"\*\*(.+?)\*\*")
@@ -43,7 +42,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     text = fetch_text(cfg.scraper_url)
     pricing_tables = [
         table
-        for table in _markdown_tables(text)
+        for table in extract_markdown_tables(text)
         if table[0][0] == "Model" and "Input" in table[0] and "Output" in table[0]
     ]
     if not pricing_tables:

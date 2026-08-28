@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import urllib.parse
 
 import httpx
@@ -30,6 +31,26 @@ def fetch_text(url: str) -> str:
 
 def fetch_soup(url: str) -> BeautifulSoup:
     return BeautifulSoup(fetch_text(url), "html.parser")
+
+
+def extract_markdown_tables(text: str) -> list[list[list[str]]]:
+    """split markdown pipe tables into row lists: header, separator, data rows."""
+    blocks: list[list[str]] = []
+    block: list[str] = []
+    for line in text.splitlines():
+        if "|" in line:
+            block.append(line)
+        elif block:
+            blocks.append(block)
+            block = []
+    if block:
+        blocks.append(block)
+    tables: list[list[list[str]]] = []
+    for lines in blocks:
+        rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in lines]
+        if len(rows) >= 2 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in rows[1]):
+            tables.append(rows)
+    return tables
 
 
 def extract_tables(soup: BeautifulSoup) -> list[list[list[str]]]:

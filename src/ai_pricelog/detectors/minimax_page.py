@@ -13,35 +13,15 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_text
+from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text
 
 _ID_RE = re.compile(r"^MiniMax-M[\w.-]+$")
 _LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 
 
-def _markdown_tables(text: str) -> list[list[list[str]]]:
-    """split markdown pipe tables into row lists: header, separator, data rows."""
-    blocks: list[list[str]] = []
-    block: list[str] = []
-    for line in text.splitlines():
-        if "|" in line:
-            block.append(line)
-        elif block:
-            blocks.append(block)
-            block = []
-    if block:
-        blocks.append(block)
-    tables: list[list[list[str]]] = []
-    for lines in blocks:
-        rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in lines]
-        if len(rows) >= 2 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in rows[1]):
-            tables.append(rows)
-    return tables
-
-
 def detect(cfg: ProviderCfg) -> list[str]:
     text = fetch_text(cfg.detector_url)
-    tables = _markdown_tables(text)
+    tables = extract_markdown_tables(text)
     if not tables:
         raise FetchError(f"no markdown tables found on {cfg.detector_url}")
     ids: list[str] = []
