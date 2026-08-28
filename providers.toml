@@ -234,5 +234,15 @@ detector_url = "https://platform.openai.com/docs/pricing"
 scraper = "openai_page"
 scraper_url = "https://platform.openai.com/docs/pricing"
 
-# [dashscope] disabled: no first-party qwen watch.
 # [volcengine] dormant: doubao pricing is CNY-only on the CN plaza (unchanged).
+
+# re-opened 2026-08-28 (todo 17): model-studio intl serves the first-party
+# surface. the detector reads the CN model list, the scraper prices on the
+# intl page (USD, International-scope rows only; the pair's tests pin both).
+
+[dashscope]
+provider = "DashScope"
+detector = "dashscope_page"
+detector_url = "https://help.aliyun.com/zh/model-studio/text-generation-model/"
+scraper = "dashscope_page"
+scraper_url = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
