@@ -283,3 +283,40 @@ detector = "groq_page"
 detector_url = "https://console.groq.com/docs/models.md"
 scraper = "groq_page"
 scraper_url = "https://console.groq.com/docs/models.md"
+
+# ungated 2026-08-29: the model-as-a-service page serves the per-1M-token
+# table statically in EUR; build_row converts through data/fx-rates.json.
+# announce surface: the docs changelog (server-rendered prose) and its rss.
+
+[scaleway]
+provider = "Scaleway"
+detector = "scaleway_page"
+detector_url = "https://www.scaleway.com/en/pricing/model-as-a-service/"
+scraper = "scaleway_page"
+scraper_url = "https://www.scaleway.com/en/pricing/model-as-a-service/"
+announce_urls = [
+  "https://www.scaleway.com/en/docs/changelog/",
+  "https://www.scaleway.com/en/docs/changelog/rss.xml",
+]
+
+# ungated 2026-08-29: the foundation-model-serving page serves the DBU
+# rates table statically. currency_rate = USD per DBU, the pay-as-you-go
+# rate stated on the AI card at https://www.databricks.com/product/pricing
+# ("$0.07 / DBU", covering Model Serving / Foundation Model Serving; read
+# 2026-08-29 from the rendered page - the card text is client-rendered, a
+# direct fetch returns the shell; third-party consensus agrees: truefoundry,
+# databricksters, capitalandcompute, medium). DBU rates differ per cloud:
+# the announce channel watches docs.databricks.com/aws, so re-probe the
+# rate before trusting it for another cloud. announce surface: the docs
+# release notes (server-rendered prose).
+
+[databricks]
+provider = "Databricks"
+detector = "databricks_page"
+detector_url = "https://www.databricks.com/product/pricing/foundation-model-serving"
+scraper = "databricks_page"
+scraper_url = "https://www.databricks.com/product/pricing/foundation-model-serving"
+announce_urls = [
+  "https://docs.databricks.com/aws/en/release-notes/",
+]
+currency_rate = 0.07
