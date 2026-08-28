@@ -258,3 +258,14 @@ detector = "anthropic_page"
 detector_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
 scraper = "anthropic_page"
 scraper_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
+
+# ungated 2026-08-28 (todo 17): the public models api is keyless and serves
+# per-token rates directly (two models today; cross-checked against the
+# www.cerebras.ai pricing table by the 2026-08-28 probe).
+
+[cerebras]
+provider = "Cerebras"
+detector = "cerebras_page"
+detector_url = "https://api.cerebras.ai/public/v1/models"
+scraper = "cerebras_page"
+scraper_url = "https://api.cerebras.ai/public/v1/models"
