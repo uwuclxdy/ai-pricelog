@@ -1,22 +1,37 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from functools import partial
 
 import pytest
 
 from ai_pricelog import validate
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.store import (
+    FxError,
     build_removal_row,
     build_row,
     changed,
     last,
     load,
+    load_fx,
     newest,
+    resolve_rate,
     save,
     union,
     write_index,
 )
+
+EUR_FX: dict[str, dict[str, float]] = {
+    "EUR": {"2026-08-20": 1.05, "2026-08-26": 1.1, "2026-08-28": 1.1643}
+}
+
+
+def eur_resolve(
+    fx: dict[str, dict[str, float]] = EUR_FX,
+) -> Callable[[str, str], tuple[float, str] | None]:
+    return partial(resolve_rate, fx, None)
 
 
 def test_load_missing_file_returns_empty(tmp_path):
@@ -204,6 +219,11 @@ def test_build_row_omits_optional_fields_when_absent():
     assert "peak_input_mtok" not in row
     assert "peak_output_mtok" not in row
     assert "peak_cache_read_mtok" not in row
+    # the quote slot reads USD per 1M tokens when omitted
+    assert "currency" not in row
+    assert "unit" not in row
+    assert "currency_rate" not in row
+    assert "currency_rate_date" not in row
 
 
 def test_build_row_includes_cache_read_and_max_tokens():
@@ -471,3 +491,237 @@ def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):
     entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
     assert entry["input_mtok"] == 5.0
     assert entry["url"] == "second"
+
+
+def test_build_row_converts_eur_quote_to_usd():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        currency="EUR",
+    )
+    row = build_row("scaleway", "m", pricing, "2026-08-28", "u", resolve=eur_resolve())
+    assert list(row) == [
+        "source",
+        "model_id",
+        "observed_at",
+        "currency",
+        "currency_rate",
+        "currency_rate_date",
+        "input_mtok",
+        "output_mtok",
+        "url",
+    ]
+    assert row["currency"] == "EUR"
+    assert row["currency_rate"] == 1.1643
+    assert row["currency_rate_date"] == "2026-08-28"
+    assert row["input_mtok"] == 1.1643
+    assert row["output_mtok"] == 2.3286
+    assert row["url"] == "u"
+
+
+def test_build_row_picks_latest_rate_on_or_before_observation():
+    pricing = Pricing(1e-6, 2e-6, "flex", currency="EUR")
+    row = build_row("scaleway", "m", pricing, "2026-08-27", "u", resolve=eur_resolve())
+    assert row["currency_rate"] == 1.1
+    assert row["currency_rate_date"] == "2026-08-26"
+    assert row["input_mtok"] == 1.1
+
+
+def test_build_row_converts_every_price_field_but_not_max_tokens():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        cache_read_cost_per_token=5e-7,
+        cache_write_cost_per_token=1.25e-6,
+        cache_write_1h_cost_per_token=2e-6,
+        peak_input_cost_per_token=2e-6,
+        peak_output_cost_per_token=4e-6,
+        peak_cache_read_cost_per_token=5e-7,
+        peak_windows=(("00:00", "04:00"),),
+        max_tokens_in=200000,
+        max_tokens_out=8192,
+        currency="EUR",
+    )
+    row = build_row("scaleway", "m", pricing, "2026-08-26", "u", resolve=eur_resolve())
+    assert row["input_mtok"] == 1.1
+    assert row["output_mtok"] == 2.2
+    assert row["cache_read_mtok"] == 0.55
+    assert row["cache_write_mtok"] == 1.375
+    assert row["cache_write_1h_mtok"] == 2.2
+    assert row["peak_input_mtok"] == 2.2
+    assert row["peak_output_mtok"] == 4.4
+    assert row["peak_cache_read_mtok"] == 0.55
+    assert row["max_tokens_in"] == 200000
+    assert row["max_tokens_out"] == 8192
+
+
+def test_build_row_requires_resolver_for_non_usd_quote():
+    pricing = Pricing(1e-6, 2e-6, "flex", currency="EUR")
+    with pytest.raises(FxError, match="resolver"):
+        build_row("scaleway", "m", pricing, "2026-08-28", "u")
+
+
+def test_build_row_dbu_quote_converts_via_provider_rate():
+    pricing = Pricing(7e-8, 1.4e-7, "chat", currency="DBU")
+    row = build_row(
+        "databricks",
+        "m",
+        pricing,
+        "2026-08-28",
+        "u",
+        resolve=partial(resolve_rate, {}, 0.55),
+    )
+    assert row["currency"] == "DBU"
+    assert row["currency_rate"] == 0.55
+    assert row["currency_rate_date"] == "2026-08-28"
+    assert row["input_mtok"] == 0.0385
+    assert row["output_mtok"] == 0.077
+
+
+def test_build_row_stamps_unit_without_conversion_for_usd_quote():
+    pricing = Pricing(1e-6, 2e-6, "flex", unit="dbu")
+    row = build_row("databricks", "m", pricing, "2026-08-28", "u", resolve=eur_resolve())
+    assert row["unit"] == "dbu"
+    assert "currency" not in row
+    assert "currency_rate" not in row
+    assert "currency_rate_date" not in row
+    assert row["input_mtok"] == 1.0
+
+
+def test_resolve_rate_returns_none_for_usd():
+    assert resolve_rate(EUR_FX, 0.55, "USD", "2026-08-28") is None
+
+
+def test_resolve_rate_missing_currency_names_the_fix():
+    with pytest.raises(FxError, match="GBP"):
+        resolve_rate(EUR_FX, None, "GBP", "2026-08-28")
+
+
+def test_resolve_rate_missing_date_names_the_fix():
+    with pytest.raises(FxError, match="2026-08-27"):
+        resolve_rate({"EUR": {"2026-08-28": 1.2}}, None, "EUR", "2026-08-27")
+
+
+def test_resolve_rate_missing_dbu_config_names_the_fix():
+    with pytest.raises(FxError, match="DBU"):
+        resolve_rate({}, None, "DBU", "2026-08-28")
+
+
+def test_resolve_rate_dbu_uses_provider_rate_with_observation_date():
+    assert resolve_rate({}, 0.55, "DBU", "2026-08-28T00:00:00Z") == (0.55, "2026-08-28")
+
+
+def test_resolve_rate_dbu_ignores_an_fx_table_dbu_key():
+    # DBU is the provider's configured rate, never a dated fx currency: an fx
+    # table carrying a DBU key must not override it
+    assert resolve_rate({"DBU": {"2026-08-20": 9.99}}, 0.55, "DBU", "2026-08-28") == (
+        0.55,
+        "2026-08-28",
+    )
+
+
+def test_load_fx_reads_the_committed_table(tmp_path):
+    path = tmp_path / "fx-rates.json"
+    path.write_text('{"EUR": {"2026-08-28": 1.1643}}\n', encoding="utf-8")
+    assert load_fx(path) == {"EUR": {"2026-08-28": 1.1643}}
+
+
+def test_load_fx_missing_file_is_an_empty_table(tmp_path):
+    assert load_fx(tmp_path / "nope.json") == {}
+
+
+def test_load_fx_bad_shapes_name_the_file(tmp_path):
+    path = tmp_path / "fx-rates.json"
+    path.write_text("{oops\n", encoding="utf-8")
+    with pytest.raises(FxError, match="invalid json"):
+        load_fx(path)
+    path.write_text("[1]\n", encoding="utf-8")
+    with pytest.raises(FxError, match="must be an object"):
+        load_fx(path)
+    path.write_text('{"EUR": {"2026-08-28": -1.0}}\n', encoding="utf-8")
+    with pytest.raises(FxError, match="2026-08-28"):
+        load_fx(path)
+    path.write_text('{"EUR": []}\n', encoding="utf-8")
+    with pytest.raises(FxError, match="EUR"):
+        load_fx(path)
+
+
+def test_load_fx_rejects_bad_date_key(tmp_path):
+    path = tmp_path / "fx-rates.json"
+    path.write_text('{"EUR": {"2026-8-28": 1.1643}}\n', encoding="utf-8")
+    with pytest.raises(FxError, match="2026-8-28"):
+        load_fx(path)
+
+
+def test_changed_ignores_rate_refresh_only_difference():
+    # a rate refresh with unchanged USD prices must not append a row
+    row = {
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "t2",
+        "input_mtok": 1.1643,
+        "currency": "EUR",
+        "currency_rate": 1.1643,
+        "currency_rate_date": "2026-08-28",
+    }
+    prev = {
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "t1",
+        "input_mtok": 1.1643,
+        "currency": "EUR",
+        "currency_rate": 1.1,
+        "currency_rate_date": "2026-08-26",
+    }
+    assert changed(row, prev) is False
+
+
+def test_changed_detects_currency_difference():
+    row = {
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "input_mtok": 1.0,
+        "currency": "EUR",
+        "currency_rate": 1.1643,
+        "currency_rate_date": "2026-08-28",
+    }
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
+    assert changed(row, prev) is True
+
+
+def test_changed_detects_unit_difference():
+    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "unit": "dbu"}
+    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
+    assert changed(row, prev) is True
+
+
+def test_write_index_keeps_currency_and_unit_from_newest_row(tmp_path):
+    rows = [
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "input_mtok": 1.05,
+            "currency": "EUR",
+            "currency_rate": 1.05,
+            "currency_rate_date": "2026-08-20",
+        },
+        {
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-28",
+            "input_mtok": 1.1643,
+            "currency": "EUR",
+            "currency_rate": 1.1643,
+            "currency_rate_date": "2026-08-28",
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["currency"] == "EUR"
+    assert entry["currency_rate"] == 1.1643
+    assert entry["currency_rate_date"] == "2026-08-28"

@@ -2,17 +2,26 @@
 
 Price rows carry the pricing fields; a removal row marks a model delisted
 from its source. The index entry keeps the last priced row's fields and gains
-a removed_at stamp while the newest row for the key is a removal.
+a removed_at stamp while the newest row for the key is a removal. Non-USD
+quotes convert to USD at row build through an fx resolver backed by the
+committed fx table and the provider's configured rate.
 """
 
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from ai_pricelog.pricing import Pricing, to_mtok
+
+
+class FxError(ValueError):
+    """an fx rate needed to convert a quote is missing or malformed."""
 
 
 def load(path: Path) -> list[dict[str, object]]:
@@ -79,6 +88,74 @@ def last(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str,
     return None
 
 
+def load_fx(path: Path) -> dict[str, dict[str, float]]:
+    """Committed per-currency dated USD rates; a missing file is an empty table."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise FxError(f"fx file '{path}': invalid json: {exc.msg}") from exc
+    if not isinstance(data, dict):
+        raise FxError(f"fx file '{path}': must be an object of currency -> date -> rate")
+    fx: dict[str, dict[str, float]] = {}
+    for currency, dated in data.items():
+        if not isinstance(dated, dict):
+            raise FxError(f"fx file '{path}': currency '{currency}' must map dates to rates")
+        rates: dict[str, float] = {}
+        for day, rate in dated.items():
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", day) is None:
+                raise FxError(
+                    f"fx file '{path}': date '{day}' for currency '{currency}' must be YYYY-MM-DD"
+                )
+            if (
+                isinstance(rate, bool)
+                or not isinstance(rate, (int, float))
+                or not math.isfinite(rate)
+                or rate <= 0
+            ):
+                raise FxError(
+                    f"fx file '{path}': rate for '{currency}' on {day} must be a finite float > 0"
+                )
+            rates[day] = float(rate)
+        fx[currency] = rates
+    return fx
+
+
+def resolve_rate(
+    fx: dict[str, dict[str, float]],
+    provider_rate: float | None,
+    currency: str,
+    observed_at: str,
+) -> tuple[float, str] | None:
+    """The USD-per-unit rate and its date for a non-USD quote, None for USD.
+
+    FX currencies resolve to the latest dated entry on or before the
+    observation; DBU resolves to the provider's configured rate, dated with
+    the observation itself, and never consults the fx table.
+    """
+    if currency == "USD":
+        return None
+    if currency == "DBU":
+        if provider_rate is None:
+            raise FxError(
+                f"no fx rate for currency {currency!r}; fix: set currency_rate in providers.toml"
+            )
+        return provider_rate, observed_at[:10]
+    dated = fx.get(currency)
+    if dated is not None:
+        day = max((d for d in dated if d <= observed_at[:10]), default="")
+        if not day:
+            raise FxError(
+                f"no fx rate for {currency!r} on or before {observed_at[:10]};"
+                " fix: add a dated entry to data/fx-rates.json"
+            )
+        return dated[day], day
+    raise FxError(f"no fx rate for currency {currency!r}; fix: add it to data/fx-rates.json")
+
+
 def newest(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str, object] | None:
     """The newest row for the key, removal rows included."""
     for row in reversed(rows):
@@ -88,8 +165,12 @@ def newest(rows: list[dict[str, object]], source: str, model_id: str) -> dict[st
 
 
 # provenance fields describe where a row came from, never what it costs; a
-# difference in them alone is not an observed price change
-_PROVENANCE_FIELDS = frozenset({"observed_at", "url", "name"})
+# difference in them alone is not an observed price change. currency_rate /
+# currency_rate_date are conversion provenance: a rate refresh with unchanged
+# USD prices must not append a row
+_PROVENANCE_FIELDS = frozenset(
+    {"observed_at", "url", "name", "currency_rate", "currency_rate_date"}
+)
 
 
 def _comparable(row: dict[str, object]) -> dict[str, object]:
@@ -152,21 +233,48 @@ def write_index(rows: list[dict[str, object]], path: Path) -> None:
 
 
 def build_row(
-    source: str, model_id: str, pricing: Pricing, observed_at: str, url: str
+    source: str,
+    model_id: str,
+    pricing: Pricing,
+    observed_at: str,
+    url: str,
+    resolve: Callable[[str, str], tuple[float, str] | None] | None = None,
 ) -> dict[str, object]:
+    """Build one price row: every mtok price field holds USD.
+
+    `resolve` maps a non-USD quote currency to its USD rate and the rate's
+    date; without one, a non-USD quote is refused instead of passing through
+    unconverted. max_tokens fields are never converted.
+    """
+    conversion = None
+    if pricing.currency != "USD":
+        if resolve is None:
+            raise FxError(
+                f"cannot convert {pricing.currency!r} quote to USD without an fx"
+                " resolver; fix: pass one to build_row"
+            )
+        conversion = resolve(pricing.currency, observed_at)
+    factor = 1.0 if conversion is None else conversion[0]
     row: dict[str, object] = {
         "source": source,
         "model_id": model_id,
         "observed_at": observed_at,
-        "input_mtok": to_mtok(pricing.input_cost_per_token),
-        "output_mtok": to_mtok(pricing.output_cost_per_token),
     }
+    if pricing.currency != "USD":
+        row["currency"] = pricing.currency
+    if pricing.unit != "tokens":
+        row["unit"] = pricing.unit
+    if conversion is not None:
+        row["currency_rate"] = conversion[0]
+        row["currency_rate_date"] = conversion[1]
+    row["input_mtok"] = to_mtok(pricing.input_cost_per_token * factor)
+    row["output_mtok"] = to_mtok(pricing.output_cost_per_token * factor)
     if pricing.cache_read_cost_per_token is not None:
-        row["cache_read_mtok"] = to_mtok(pricing.cache_read_cost_per_token)
+        row["cache_read_mtok"] = to_mtok(pricing.cache_read_cost_per_token * factor)
     if pricing.cache_write_cost_per_token is not None:
-        row["cache_write_mtok"] = to_mtok(pricing.cache_write_cost_per_token)
+        row["cache_write_mtok"] = to_mtok(pricing.cache_write_cost_per_token * factor)
     if pricing.cache_write_1h_cost_per_token is not None:
-        row["cache_write_1h_mtok"] = to_mtok(pricing.cache_write_1h_cost_per_token)
+        row["cache_write_1h_mtok"] = to_mtok(pricing.cache_write_1h_cost_per_token * factor)
     if pricing.max_tokens_in > 0:
         row["max_tokens_in"] = pricing.max_tokens_in
     if pricing.max_tokens_out > 0:
@@ -181,11 +289,11 @@ def build_row(
         # THIS row instead of an AssertionError killing the whole run
         row["peak_windows"] = [list(window) for window in pricing.peak_windows]
         if pricing.peak_input_cost_per_token is not None:
-            row["peak_input_mtok"] = to_mtok(pricing.peak_input_cost_per_token)
+            row["peak_input_mtok"] = to_mtok(pricing.peak_input_cost_per_token * factor)
         if pricing.peak_output_cost_per_token is not None:
-            row["peak_output_mtok"] = to_mtok(pricing.peak_output_cost_per_token)
+            row["peak_output_mtok"] = to_mtok(pricing.peak_output_cost_per_token * factor)
         if pricing.peak_cache_read_cost_per_token is not None:
-            row["peak_cache_read_mtok"] = to_mtok(pricing.peak_cache_read_cost_per_token)
+            row["peak_cache_read_mtok"] = to_mtok(pricing.peak_cache_read_cost_per_token * factor)
     row["url"] = pricing.url or url
     return row
 

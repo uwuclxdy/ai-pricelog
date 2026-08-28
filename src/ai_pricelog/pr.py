@@ -153,10 +153,22 @@ class PrSpec:
             peak = (
                 f"{_fmt(row.get('peak_input_mtok'))}/{_fmt(row.get('peak_output_mtok'))} {windows}"
             )
-        return (
+        line = (
             f"| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
             f"{_fmt(row.get('input_mtok'))} | {_fmt(row.get('cache_read_mtok'))} | "
             f"{_cache_write(row)} | {_fmt(row.get('output_mtok'))} | {peak} |"
+        )
+        if row.get("currency") is None or row.get("currency_rate") is None:
+            return line
+        unit = str(row.get("unit") or "tokens")
+        # the slot is a base word ("dbu" -> "dbus"), already-plural values
+        # ("tokens") stay as they are
+        plural = f"{unit}s" if not unit.endswith("s") else unit
+        return (
+            line + f"\n| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
+            f"quoted `{_quoted_mtok(row)} {row['currency']} per 1M {plural}`, rate "
+            f"`{_fmt(row['currency_rate'])}` on `{row.get('currency_rate_date') or '—'}` |"
+            " | | | |"
         )
 
     def _disclaimer(self) -> str:
@@ -190,6 +202,15 @@ class PrSpec:
 
 def _fmt(value: object) -> str:
     return "—" if value is None else f"{value:g}"
+
+
+def _quoted_mtok(row: dict[str, object]) -> str:
+    """The source-quote input rate, recovered from the USD row as USD / rate."""
+    input_mtok = row.get("input_mtok")
+    rate = row.get("currency_rate")
+    if not isinstance(input_mtok, float) or not isinstance(rate, float):
+        return "—"
+    return _fmt(input_mtok / rate)
 
 
 def _cache_write(row: dict[str, object]) -> str:

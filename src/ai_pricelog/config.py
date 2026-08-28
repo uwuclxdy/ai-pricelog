@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import math
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,8 @@ class ProviderCfg:
     scraper: str
     scraper_url: str
     announce_urls: tuple[str, ...] = ()
+    # USD per one source unit: the dbu->usd rate for providers quoting DBUs
+    currency_rate: float | None = None
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         if not isinstance(values, dict):
             raise ConfigError(f"providers file '{path}': section '{section}' must be a table")
         for key in values:
-            if key not in _REQUIRED_KEYS and key != "announce_urls":
+            if key not in _REQUIRED_KEYS and key not in ("announce_urls", "currency_rate"):
                 raise ConfigError(
                     f"providers file '{path}': provider '{section}' has unknown key '{key}'"
                 )
@@ -61,6 +64,17 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
                 f"providers file '{path}': provider '{section}' announce_urls"
                 " must be a list of non-empty strings"
             )
+        rate = values.get("currency_rate")
+        if rate is not None and (
+            isinstance(rate, bool)
+            or not isinstance(rate, (int, float))
+            or not math.isfinite(rate)
+            or rate <= 0
+        ):
+            raise ConfigError(
+                f"providers file '{path}': provider '{section}' currency_rate must"
+                " be a finite positive float"
+            )
         providers.append(
             ProviderCfg(
                 key=section,
@@ -70,6 +84,7 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
                 scraper=values["scraper"],
                 scraper_url=values["scraper_url"],
                 announce_urls=tuple(announce),
+                currency_rate=float(rate) if rate is not None else None,
             )
         )
     return tuple(providers)

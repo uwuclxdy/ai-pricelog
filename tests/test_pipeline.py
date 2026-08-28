@@ -18,7 +18,10 @@ def pricing(input_cost: float = 2.7e-07, output_cost: float = 1.1e-06) -> Pricin
 
 
 def make_provider_cfg(
-    key: str, provider: str | None = None, announce_urls: tuple[str, ...] = ()
+    key: str,
+    provider: str | None = None,
+    announce_urls: tuple[str, ...] = (),
+    currency_rate: float | None = None,
 ) -> config.ProviderCfg:
     return config.ProviderCfg(
         key=key,
@@ -28,6 +31,7 @@ def make_provider_cfg(
         scraper="fake_scr",
         scraper_url="https://example.com/pricing",
         announce_urls=announce_urls,
+        currency_rate=currency_rate,
     )
 
 
@@ -1557,3 +1561,113 @@ def test_run_changed_marker_stays_off_on_state_only_change(
 
     assert runner.pr_urls == []  # unchanged prices open no pr
     assert not (repo_root / pipeline.MARKER_FILE).exists()
+
+
+def commit_fx(repo_root: Path, rates: dict[str, dict[str, float]]) -> None:
+    (repo_root / "data" / "fx-rates.json").write_text(json.dumps(rates) + "\n", encoding="utf-8")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "seed fx")
+
+
+def test_eur_quote_row_converts_and_opens_pr(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["scaleway"] = ["m"]
+    scrape["scaleway"] = {
+        "m": Pricing(1e-6, 2e-6, "chat", 65536, currency="EUR"),
+    }
+    commit_fx(repo_root, {"EUR": {"2026-08-26": 1.1643}})
+    cfg = make_cfg(3, "scaleway")
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["scaleway"].prs] == ["m"]
+    branch_rows = [
+        json.loads(line)
+        for line in git(repo_root, "show", "pricelog/seed:data/history.ndjson").splitlines()
+    ]
+    assert len(branch_rows) == 1
+    row = branch_rows[0]
+    assert row["input_mtok"] == 1.1643
+    assert row["output_mtok"] == 2.3286
+    assert row["currency"] == "EUR"
+    assert row["currency_rate"] == 1.1643
+    assert row["currency_rate_date"] == TODAY
+    assert "quoted `1 EUR per 1M tokens`, rate `1.1643`" in runner.created[0][1]
+    assert_default_branch_clean(repo_root, tip="seed fx")
+
+
+def test_eur_refresh_converts_against_the_dated_rate(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["scaleway"] = ["m"]
+    scrape["scaleway"] = {
+        "m": Pricing(1e-6, 2e-6, "chat", 65536, currency="EUR"),
+    }
+    commit_fx(repo_root, {"EUR": {"2026-08-19": 1.05, "2026-08-26": 1.1643}})
+    prior = {
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "2026-08-19",
+        "input_mtok": 1.05,
+        "output_mtok": 2.1,
+        "currency": "EUR",
+        "currency_rate": 1.05,
+        "currency_rate_date": "2026-08-19",
+    }
+    seed_store(repo_root, [prior])
+    cfg = make_cfg(3, "scaleway")
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["scaleway"].prs] == ["m"]
+    branch_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{pr.branch_name('m')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert len(branch_rows) == 2
+    row = branch_rows[1]
+    assert row["input_mtok"] == 1.1643
+    assert row["currency"] == "EUR"
+    assert row["currency_rate"] == 1.1643
+    assert row["currency_rate_date"] == TODAY
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_dbu_provider_uses_the_configured_rate(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["databricks"] = ["m"]
+    scrape["databricks"] = {"m": Pricing(7e-8, 1.4e-7, "chat", 65536, currency="DBU")}
+    cfg = config.Config(providers=(make_provider_cfg("databricks", currency_rate=0.55),), cap=3)
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert [model_id for model_id, _url in report.providers["databricks"].prs] == ["m"]
+    branch_rows = [
+        json.loads(line)
+        for line in git(repo_root, "show", "pricelog/seed:data/history.ndjson").splitlines()
+    ]
+    assert len(branch_rows) == 1
+    row = branch_rows[0]
+    assert row["input_mtok"] == 0.0385
+    assert row["output_mtok"] == 0.077
+    assert row["currency"] == "DBU"
+    assert row["currency_rate"] == 0.55
+    assert row["currency_rate_date"] == TODAY
+    assert_default_branch_clean(repo_root)
+
+
+def test_missing_fx_rate_fails_the_run_loudly(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["scaleway"] = ["m"]
+    scrape["scaleway"] = {"m": Pricing(1e-6, 2e-6, "chat", 65536, currency="EUR")}
+    cfg = make_cfg(3, "scaleway")
+
+    with pytest.raises(store.FxError, match="EUR"):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+
+    # nothing was committed or branched, and the marker stays off
+    assert_default_branch_clean(repo_root)

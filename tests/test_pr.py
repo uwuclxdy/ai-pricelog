@@ -124,6 +124,50 @@ def test_spec_body_peak_row():
     assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
 
 
+def test_spec_body_quoted_line_for_non_usd_row():
+    row = {
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "2026-08-28",
+        "input_mtok": 1.0,
+        "output_mtok": 2.0,
+        "currency": "EUR",
+        "currency_rate": 2.0,
+        "currency_rate_date": "2026-08-28",
+    }
+    body = spec(
+        source="scaleway", model_id="m", provider="Scaleway", source_url="", rows=(row,)
+    ).body
+    assert "| scaleway | `m` | 2026-08-28 | 1 | — | — | 2 | — |" in body
+    assert "quoted `0.5 EUR per 1M tokens`, rate `2` on `2026-08-28`" in body
+
+
+def test_spec_body_quoted_line_uses_the_row_unit():
+    row = {
+        "source": "databricks",
+        "model_id": "m",
+        "observed_at": "2026-08-28",
+        "input_mtok": 0.385,
+        "output_mtok": 0.77,
+        "currency": "DBU",
+        "unit": "dbu",
+        "currency_rate": 0.55,
+        "currency_rate_date": "2026-08-28",
+    }
+    body = spec(
+        source="databricks",
+        model_id="m",
+        provider="Databricks",
+        source_url="",
+        rows=(row,),
+    ).body
+    assert "quoted `0.7 DBU per 1M dbus`, rate `0.55` on `2026-08-28`" in body
+
+
+def test_spec_body_has_no_quoted_line_without_currency():
+    assert "quoted `" not in spec().body
+
+
 def test_spec_body_announcement_channels():
     change = announce.ChannelChange(
         "deepseek", "https://example.com/updates", "a" * 64, "b" * 64, "old prose", "new prose"

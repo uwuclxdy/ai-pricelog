@@ -2,15 +2,16 @@
 
 The history is append-only, so a bad row lands forever. Only what our own
 emission could corrupt is checked here: the model id (rows are keyed by
-(source, model_id)), the price values, the peak-pricing shape, and the
-removal-row shape (removed=true only, never alongside price fields). The
-producers are the store's build_row, build_removal_row, and
-openrouter.build_row.
+(source, model_id)), the price values, the quote provenance (currency, unit,
+currency_rate), the peak-pricing shape, and the removal-row shape
+(removed=true only, never alongside price fields). The producers are the
+store's build_row, build_removal_row, and openrouter.build_row.
 """
 
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 
@@ -37,6 +38,10 @@ _REMOVAL_FORBIDDEN = (
     "peak_input_mtok",
     "peak_output_mtok",
     "peak_cache_read_mtok",
+    "currency",
+    "unit",
+    "currency_rate",
+    "currency_rate_date",
 )
 
 
@@ -56,6 +61,43 @@ def validate_row(row: dict[str, Any]) -> None:
                     f"row field '{field}' is not allowed on a removed row; fix: drop it"
                 )
         return
+    currency = row.get("currency")
+    if currency is not None and (
+        not isinstance(currency, str) or re.fullmatch(r"[A-Z]{3}", currency) is None
+    ):
+        raise ValidationError(
+            f"row field 'currency' has bad value {currency!r}; fix: a 3-letter uppercase code"
+        )
+    unit = row.get("unit")
+    if unit is not None and (not isinstance(unit, str) or re.fullmatch(r"[a-z-]+", unit) is None):
+        raise ValidationError(
+            f"row field 'unit' has bad value {unit!r}; fix: lowercase letters and dashes"
+        )
+    non_usd = currency is not None and currency != "USD"
+    rate = row.get("currency_rate")
+    rate_date = row.get("currency_rate_date")
+    if non_usd:
+        if (
+            isinstance(rate, bool)
+            or not isinstance(rate, (int, float))
+            or not math.isfinite(rate)
+            or rate <= 0
+        ):
+            raise ValidationError(
+                f"row field 'currency_rate' has bad value {rate!r} for currency"
+                f" {currency!r}; fix: a finite float > 0"
+            )
+    elif rate is not None or rate_date is not None:
+        raise ValidationError(
+            "row field 'currency_rate' and 'currency_rate_date' are only valid"
+            " with a non-USD 'currency'; fix: drop them or set currency"
+        )
+    if rate_date is not None and (
+        not isinstance(rate_date, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", rate_date) is None
+    ):
+        raise ValidationError(
+            f"row field 'currency_rate_date' has bad value {rate_date!r}; fix: YYYY-MM-DD"
+        )
     for field in _PRICE_FIELDS:
         value = row.get(field)
         if value is None:

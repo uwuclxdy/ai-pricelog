@@ -48,7 +48,37 @@ def test_config_holds_no_repo(tmp_path):
         "scraper",
         "scraper_url",
         "announce_urls",
+        "currency_rate",
     }
+
+
+def test_load_currency_rate(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        '[deepseek]\nprovider = "DeepSeek"\ndetector = "deepseek_page"\n'
+        'detector_url = "https://x"\nscraper = "deepseek_page"\nscraper_url = "https://x"\n'
+        "currency_rate = 0.55\n"
+    )
+    cfg = config.load(providers_path=path)
+    assert cfg.providers[0].currency_rate == 0.55
+
+
+def test_load_missing_currency_rate_defaults_none(tmp_path):
+    path = tmp_path / "providers.toml"
+    path.write_text(HAPPY_TOML)
+    assert config.load(providers_path=path).providers[0].currency_rate is None
+
+
+@pytest.mark.parametrize("bad", ['"x"', "true", "-1.0", "0", "[]", "inf", "nan"])
+def test_load_rejects_bad_currency_rate(tmp_path, bad):
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        '[deepseek]\nprovider = "DeepSeek"\ndetector = "deepseek_page"\n'
+        'detector_url = "https://x"\nscraper = "deepseek_page"\nscraper_url = "https://x"\n'
+        f"currency_rate = {bad}\n"
+    )
+    with pytest.raises(config.ConfigError, match="currency_rate"):
+        config.load_providers(path)
 
 
 def test_load_default_cap(tmp_path):

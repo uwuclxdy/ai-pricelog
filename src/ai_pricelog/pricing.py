@@ -1,4 +1,8 @@
-"""the Pricing dataclass scrapers return, and per-token conversion helpers."""
+"""the Pricing dataclass scrapers return, and per-token conversion helpers.
+
+The per-token costs are quoted in `currency` per `unit`; store.build_row
+converts non-USD quotes into the USD mtok row fields.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +31,8 @@ class Pricing:
     # constructions of the pre-existing prefix keep their meaning
     cache_write_cost_per_token: float | None = None
     cache_write_1h_cost_per_token: float | None = None
+    currency: str = "USD"
+    unit: str = "tokens"
 
 
 def to_mtok(per_token: float) -> float:

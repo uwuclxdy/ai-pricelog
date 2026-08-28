@@ -26,9 +26,10 @@ from __future__ import annotations
 
 import logging
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,7 @@ log = logging.getLogger(__name__)
 
 HISTORY_FILE = "data/history.ndjson"
 INDEX_FILE = "data/index.json"
+FX_FILE = "data/fx-rates.json"
 README_FILE = "README.md"
 MARKER_FILE = ".run-changed"
 
@@ -87,6 +89,7 @@ def run(
     marker_path.unlink(missing_ok=True)
 
     rows = store.load(history_path)
+    fx = store.load_fx(repo_root / FX_FILE)
     seed = not rows
     report = RunReport()
     run_url = pr.run_url_from_env()
@@ -147,6 +150,7 @@ def run(
             provider_report.errors.append(_describe(exc))
             continue
         dedup_keys = getattr(scraper, "dedup_keys", None)
+        resolve = partial(store.resolve_rate, fx, pcfg.currency_rate)
 
         absence_ids = detected
         detect_priced = getattr(detector, "detect_priced", None)
@@ -159,10 +163,28 @@ def run(
                 absence_ids = None
 
         _add_candidates(
-            pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, open_prs, today
+            pcfg,
+            scraper,
+            dedup_keys,
+            detected,
+            rows,
+            plan,
+            provider_report,
+            open_prs,
+            today,
+            resolve,
         )
         _refresh_drift(
-            pcfg, scraper, dedup_keys, detected, rows, plan, provider_report, open_prs, today
+            pcfg,
+            scraper,
+            dedup_keys,
+            detected,
+            rows,
+            plan,
+            provider_report,
+            open_prs,
+            today,
+            resolve,
         )
         _track_provider_absence(
             pcfg, dedup_keys, absence_ids, rows, fresh_absence, removal_groups, open_prs, today
@@ -342,6 +364,7 @@ def _add_candidates(
     provider_report: ProviderReport,
     open_prs: Sequence[pr.OpenPr],
     today: str,
+    resolve: Callable[[str, str], tuple[float, str] | None],
 ) -> None:
     """First rows for ids the store has never seen under any spelling.
 
@@ -372,7 +395,9 @@ def _add_candidates(
             provider_report.skipped_no_pricing.append(model_id)
             continue
         try:
-            row = store.build_row(pcfg.key, model_id, pricing, today, pcfg.scraper_url)
+            row = store.build_row(
+                pcfg.key, model_id, pricing, today, pcfg.scraper_url, resolve=resolve
+            )
             validate.validate_row(row)
         except validate.ValidationError as exc:
             log.warning("entry %s failed validation: %s", model_id, exc)
@@ -395,6 +420,7 @@ def _refresh_drift(
     provider_report: ProviderReport,
     open_prs: Sequence[pr.OpenPr],
     today: str,
+    resolve: Callable[[str, str], tuple[float, str] | None],
 ) -> None:
     """Drift-check every detected page id against its stored rows.
 
@@ -423,7 +449,9 @@ def _refresh_drift(
             provider_report.skipped_no_pricing.append(stored)
             continue
         try:
-            row = store.build_row(pcfg.key, stored, pricing, today, pcfg.scraper_url)
+            row = store.build_row(
+                pcfg.key, stored, pricing, today, pcfg.scraper_url, resolve=resolve
+            )
             validate.validate_row(row)
         except validate.ValidationError as exc:
             log.warning("refresh for %s skipped: %s", stored, exc)

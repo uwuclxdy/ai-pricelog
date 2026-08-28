@@ -160,3 +160,101 @@ def test_removed_row_with_peak_windows_rejected():
                 "peak_windows": [["01:00:00Z", "04:00:00Z"]],
             }
         )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["currency", "unit", "currency_rate", "currency_rate_date"],
+)
+def test_removed_row_with_quote_field_rejected(field):
+    with pytest.raises(ValidationError, match=field):
+        validate_row(
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "removed": True,
+                field: "EUR",
+            }
+        )
+
+
+def eur_row(**overrides) -> dict:
+    values = {
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "2026-08-28",
+        "input_mtok": 1.1643,
+        "output_mtok": 2.3286,
+        "currency": "EUR",
+        "currency_rate": 1.1643,
+        "currency_rate_date": "2026-08-28",
+    }
+    values.update(overrides)
+    return values
+
+
+def test_valid_eur_row_passes():
+    validate_row(eur_row())
+
+
+def test_valid_dbu_row_passes():
+    validate_row(eur_row(currency="DBU", currency_rate=0.55))
+
+
+@pytest.mark.parametrize("bad", ["eur", "EURO", "EU R", "EU1", "E", "", 5, True])
+def test_bad_currency_rejected(bad):
+    with pytest.raises(ValidationError, match="currency"):
+        validate_row(eur_row(currency=bad))
+
+
+@pytest.mark.parametrize("good", ["EUR", "DBU"])
+def test_valid_non_usd_currency_passes(good):
+    validate_row(eur_row(currency=good, currency_rate=0.55))
+
+
+def test_explicit_usd_currency_without_rate_passes():
+    validate_row(row(currency="USD"))
+
+
+def test_non_usd_currency_requires_rate():
+    with pytest.raises(ValidationError, match="currency_rate"):
+        validate_row(eur_row(currency_rate=None))
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0, float("inf"), float("nan"), True, "1.1643"])
+def test_non_usd_currency_rejects_bad_rate(bad):
+    with pytest.raises(ValidationError, match="currency_rate"):
+        validate_row(eur_row(currency_rate=bad))
+
+
+def test_rate_without_non_usd_currency_rejected():
+    with pytest.raises(ValidationError, match="currency_rate"):
+        validate_row(row(currency_rate=1.1643))
+
+
+def test_rate_with_usd_currency_rejected():
+    with pytest.raises(ValidationError, match="currency_rate"):
+        validate_row(row(currency="USD", currency_rate=1.1643))
+
+
+def test_rate_date_without_non_usd_currency_rejected():
+    with pytest.raises(ValidationError, match="currency_rate"):
+        validate_row(row(currency_rate_date="2026-08-28"))
+
+
+@pytest.mark.parametrize("bad", ["28-08-2026", "2026/08/28", "2026-8-28", "", 20260828, True])
+def test_bad_rate_date_rejected(bad):
+    with pytest.raises(ValidationError, match="currency_rate_date"):
+        validate_row(eur_row(currency_rate_date=bad))
+
+
+@pytest.mark.parametrize("bad", ["Tokens", "TOKENS", "tokens!", " tokens", "", 5, True])
+def test_bad_unit_rejected(bad):
+    with pytest.raises(ValidationError, match="unit"):
+        validate_row(eur_row(unit=bad))
+
+
+@pytest.mark.parametrize("good", ["tokens", "dbu", "dbu-hours"])
+def test_valid_unit_passes(good):
+    validate_row(eur_row(unit=good))
