@@ -124,6 +124,63 @@ def test_spec_body_peak_row():
     assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
 
 
+def test_spec_body_windowed_rates_table():
+    row = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "2026-08-28",
+        "input_mtok": 0.66,
+        "output_mtok": 1.98,
+        "window_rates": [
+            {
+                "days": ["saturday", "sunday"],
+                "input_mtok": 0.66,
+                "output_mtok": 1.98,
+                "cache_read_mtok": 0.022,
+            },
+            {
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "window": [100, 400],
+                "input_mtok": 1.32,
+                "output_mtok": 3.96,
+                "cache_read_mtok": 0.044,
+                "cache_write_mtok": 12.5,
+                "cache_write_1h_mtok": 20.0,
+            },
+            {
+                "window": [1600, 2400],
+                "input_mtok": 0.0825,
+                "output_mtok": 0.33,
+                "cache_read_mtok": 0.020625,
+            },
+        ],
+    }
+    body = spec(
+        source="openrouter",
+        model_id="deepseek/deepseek-v4-pro-0813",
+        provider="OpenRouter",
+        source_url="",
+        rows=(row,),
+    ).body
+    assert "## windowed rates" in body
+    assert (
+        "| `deepseek/deepseek-v4-pro-0813` | saturday, sunday | — "
+        "| 0.66 | 0.022 | — | 1.98 |" in body
+    )
+    assert (
+        "| `deepseek/deepseek-v4-pro-0813` | monday, tuesday, wednesday, thursday,"
+        " friday | 01:00 - 04:00 | 1.32 | 0.044 | 12.5/20 | 3.96 |" in body
+    )
+    assert (
+        "| `deepseek/deepseek-v4-pro-0813` | every day | 16:00 - 24:00 "
+        "| 0.0825 | 0.020625 | — | 0.33 |" in body
+    )
+
+
+def test_spec_body_without_window_rates_has_no_window_section():
+    assert "## windowed rates" not in spec().body
+
+
 def test_spec_body_quoted_line_for_non_usd_row():
     row = {
         "source": "scaleway",

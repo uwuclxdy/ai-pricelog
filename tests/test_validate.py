@@ -99,6 +99,133 @@ def test_bad_peak_window_shape_rejected(bad_window):
         validate_row(row(peak_input_mtok=0.44, peak_windows=[bad_window]))
 
 
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+
+
+def window_row(**overrides) -> dict:
+    values = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "2026-08-28",
+        "input_mtok": 0.66,
+        "output_mtok": 1.98,
+        "window_rates": [
+            {
+                "days": ["saturday", "sunday"],
+                "input_mtok": 0.66,
+                "output_mtok": 1.98,
+                "cache_read_mtok": 0.022,
+            },
+            {
+                "days": _WEEKDAYS,
+                "window": [100, 400],
+                "input_mtok": 1.32,
+                "output_mtok": 3.96,
+                "cache_read_mtok": 0.044,
+                "cache_write_mtok": 12.5,
+                "cache_write_1h_mtok": 20.0,
+            },
+        ],
+    }
+    values.update(overrides)
+    return values
+
+
+def test_valid_window_rates_row_passes():
+    validate_row(window_row())
+
+
+def test_window_only_entry_without_days_passes():
+    validate_row(window_row(window_rates=[{"window": [1600, 2400], "input_mtok": 0.0825}]))
+
+
+def test_days_only_entry_without_window_passes():
+    validate_row(window_row(window_rates=[{"days": ["saturday"], "input_mtok": 0.66}]))
+
+
+@pytest.mark.parametrize(
+    "bad_days", [[], "monday", ["monday", "funday"], ["MONDAY"], [1, 2], 5, True]
+)
+def test_bad_window_days_rejected(bad_days):
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(window_row(window_rates=[{"days": bad_days, "input_mtok": 0.66}]))
+
+
+@pytest.mark.parametrize(
+    "bad_window",
+    [
+        [100],
+        [100, 400, 600],
+        [400, 100],
+        [100, 2401],
+        [-1, 100],
+        [100, "400"],
+        [100.5, 400],
+        [True, 100],
+        [100, True],
+        "100-400",
+        [100, 100],
+        [199, 400],
+        [100, 199],
+    ],
+)
+def test_bad_window_rejected(bad_window):
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(window_row(window_rates=[{"window": bad_window, "input_mtok": 0.66}]))
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["input_mtok", "output_mtok", "cache_read_mtok", "cache_write_mtok", "cache_write_1h_mtok"],
+)
+@pytest.mark.parametrize("bad", [0.0, -1.0, float("inf"), float("nan"), True, 5, "0.66"])
+def test_bad_window_rate_rejected(field, bad):
+    entry = {"window": [100, 400], field: bad}
+    with pytest.raises(ValidationError, match=field):
+        validate_row(window_row(window_rates=[entry]))
+
+
+def test_window_entry_without_rates_rejected():
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(window_row(window_rates=[{"days": ["monday"], "window": [100, 400]}]))
+
+
+def test_window_entry_without_days_or_window_rejected():
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(window_row(window_rates=[{"input_mtok": 0.66}]))
+
+
+def test_window_entry_with_unknown_key_rejected():
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(
+            window_row(window_rates=[{"days": ["monday"], "input_mtok": 0.66, "audio": 1.0}])
+        )
+
+
+@pytest.mark.parametrize("bad_field", [{}, "not-a-list", 5])
+def test_window_rates_bad_field_shape_rejected(bad_field):
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(row(window_rates=bad_field))
+
+
+def test_empty_window_rates_list_rejected():
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(row(window_rates=[]))
+
+
+def test_removed_row_with_window_rates_rejected():
+    with pytest.raises(ValidationError, match="window_rates"):
+        validate_row(
+            {
+                "source": "openrouter",
+                "model_id": "deepseek/deepseek-v4-pro-0813",
+                "observed_at": "2026-08-28",
+                "removed": True,
+                "window_rates": [{"days": ["monday"], "input_mtok": 0.66}],
+            }
+        )
+
+
 def test_removed_row_passes():
     validate_row(
         {

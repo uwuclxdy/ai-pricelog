@@ -3,9 +3,10 @@
 The history is append-only, so a bad row lands forever. Only what our own
 emission could corrupt is checked here: the model id (rows are keyed by
 (source, model_id)), the price values, the quote provenance (currency, unit,
-currency_rate), the peak-pricing shape, and the removal-row shape
-(removed=true only, never alongside price fields). The producers are the
-store's build_row, build_removal_row, and openrouter.build_row.
+currency_rate), the peak-pricing shape, the scheduled window-rate shape, and
+the removal-row shape (removed=true only, never alongside price fields). The
+producers are the store's build_row, build_removal_row, and
+openrouter.build_row.
 """
 
 from __future__ import annotations
@@ -27,6 +28,10 @@ _PRICE_FIELDS = (
     "cache_write_1h_mtok",
 )
 _PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok")
+_WINDOW_DAYS = frozenset(
+    {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+)
+_WINDOW_ENTRY_KEYS = frozenset({*_PRICE_FIELDS, "days", "window"})
 # a removal row is provenance only: any pricing data beside it is junk
 _REMOVAL_FORBIDDEN = (
     "input_mtok",
@@ -38,6 +43,7 @@ _REMOVAL_FORBIDDEN = (
     "peak_input_mtok",
     "peak_output_mtok",
     "peak_cache_read_mtok",
+    "window_rates",
     "currency",
     "unit",
     "currency_rate",
@@ -123,6 +129,73 @@ def validate_row(row: dict[str, Any]) -> None:
             value = row.get(field)
             if value is not None:
                 _check_price(row, field, value)
+    if "window_rates" in row:
+        _check_window_rates(row)
+
+
+def _check_window_rates(row: dict[str, Any]) -> None:
+    entries = row.get("window_rates")
+    if not isinstance(entries, list) or not entries:
+        raise ValidationError(
+            "row field 'window_rates' must be a non-empty list of schedule entries"
+        )
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValidationError(
+                f"row field 'window_rates' has bad entry {entry!r}; fix: use an object"
+            )
+        unknown = set(entry) - _WINDOW_ENTRY_KEYS
+        if unknown:
+            raise ValidationError(
+                f"row field 'window_rates' has unknown key(s) {sorted(unknown)!r};"
+                " fix: drop them or extend the schema"
+            )
+        days = entry.get("days")
+        if days is not None and (
+            not isinstance(days, list)
+            or not days
+            or not all(isinstance(day, str) and day in _WINDOW_DAYS for day in days)
+        ):
+            raise ValidationError(
+                f"row field 'window_rates' has bad day-set {days!r};"
+                " fix: weekday names like ['monday', 'saturday']"
+            )
+        window = entry.get("window")
+        if window is not None and (
+            not isinstance(window, list)
+            or len(window) != 2
+            or any(isinstance(part, bool) or not isinstance(part, int) for part in window)
+            or not 0 <= window[0] < window[1] <= 2400
+            or window[0] % 100 > 59
+            or window[1] % 100 > 59
+        ):
+            raise ValidationError(
+                f"row field 'window_rates' has bad window {window!r};"
+                " fix: [start, end] HHMM clock numbers with minutes under 60,"
+                " start < end, end at most 2400"
+            )
+        if days is None and window is None:
+            raise ValidationError(
+                "row field 'window_rates' entry needs a 'days' set or a 'window';"
+                " fix: keep at least one schedule condition"
+            )
+        rates = {field: entry[field] for field in _PRICE_FIELDS if field in entry}
+        if not rates:
+            raise ValidationError(
+                "row field 'window_rates' entry carries no rates;"
+                " fix: map at least one override price key"
+            )
+        for field, value in rates.items():
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, float)
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise ValidationError(
+                    f"row field 'window_rates' entry rate '{field}' has bad value"
+                    f" {value!r}; fix: use a finite float > 0"
+                )
 
 
 def _check_price(row: dict[str, Any], field: str, value: Any) -> None:

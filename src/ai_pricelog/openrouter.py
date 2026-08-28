@@ -2,6 +2,8 @@
 
 https://openrouter.ai/api/v1/models is keyless. Per-token price strings are
 converted to per-megatoken floats with the same rounding as pricing.py.
+Scheduled overrides (utc_days / utc_start / utc_end) map to `window_rates`;
+volume-threshold overrides (min_prompt_tokens) stay verbatim under `extra`.
 """
 
 from __future__ import annotations
@@ -44,6 +46,33 @@ OBSERVED_KEYS = frozenset(
     {"prompt", "completion", "input_cache_read", "input_cache_write", "input_cache_write_1h"}
 )
 
+# source pricing key -> row mtok field, shared by the base mapping and the
+# per-window rates so the two can never drift apart
+_PRICE_KEYS = (
+    ("prompt", "input_mtok"),
+    ("completion", "output_mtok"),
+    ("input_cache_read", "cache_read_mtok"),
+    ("input_cache_write", "cache_write_mtok"),
+    ("input_cache_write_1h", "cache_write_1h_mtok"),
+)
+
+# the override keys that make an override a schedule rather than a threshold;
+# any override carrying one of them maps to window_rates, everything else
+# stays verbatim under extra
+_SCHEDULE_KEYS = frozenset({"utc_days", "utc_start", "utc_end"})
+
+_WINDOW_ENTRY_KEYS = frozenset({*_SCHEDULE_KEYS, *(key for key, _ in _PRICE_KEYS)})
+
+_WEEKDAYS = (
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+)
+
 
 def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
     if model.alias_target or model.variant_snapshot:
@@ -55,13 +84,7 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
     }
     if model.name:
         row["name"] = model.name
-    for key, field_name in (
-        ("prompt", "input_mtok"),
-        ("completion", "output_mtok"),
-        ("input_cache_read", "cache_read_mtok"),
-        ("input_cache_write", "cache_write_mtok"),
-        ("input_cache_write_1h", "cache_write_1h_mtok"),
-    ):
+    for key, field_name in _PRICE_KEYS:
         value = model.pricing.get(key)
         if value is None:
             continue
@@ -76,10 +99,133 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
             row[field_name] = to_mtok(rate)
     if model.context_length > 0:
         row["max_tokens_in"] = model.context_length
-    extra = {key: value for key, value in model.pricing.items() if key not in OBSERVED_KEYS}
+    overrides = model.pricing.get("overrides")
+    window_rates: list[dict[str, object]] = []
+    leftover_overrides: list[dict[str, object]] = []
+    if overrides is not None:
+        if not isinstance(overrides, list) or not all(
+            isinstance(override, dict) for override in overrides
+        ):
+            raise ValueError(f"model {model.id!r}: pricing 'overrides' must be a list of objects")
+        for override in overrides:
+            if _SCHEDULE_KEYS.isdisjoint(override):
+                leftover_overrides.append(override)
+                continue
+            window_rates.extend(_window_entry(model.id, override))
+    if window_rates:
+        row["window_rates"] = window_rates
+    extra = {
+        key: value
+        for key, value in model.pricing.items()
+        if key not in OBSERVED_KEYS and key != "overrides"
+    }
+    if leftover_overrides:
+        extra["overrides"] = leftover_overrides
     if extra:
         row["extra"] = extra
     return row
+
+
+def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, object]]:
+    """One scheduled override as window_rates entries (a wrap window splits into two).
+
+    The entries keep the source encoding: days are the lowercase weekday
+    names in calendar order, the window is the [utc_start, utc_end] HHMM
+    clock pair with a utc_end of 0 normalized to 2400 (midnight as the END
+    of the day). Absent utc_days (every day) and absent bounds (whole day)
+    stay absent.
+    """
+    entry: dict[str, object] = {}
+    days = override.get("utc_days")
+    if days is not None:
+        if not isinstance(days, list) or not days or not all(isinstance(day, str) for day in days):
+            raise ValueError(
+                f"model {model_id!r}: override utc_days must be a non-empty list of"
+                f" weekday names, got {days!r}"
+            )
+        unknown = [day for day in days if day not in _WEEKDAYS]
+        if unknown:
+            raise ValueError(
+                f"model {model_id!r}: override utc_days weekday(s) {unknown!r} unknown;"
+                " fix: use names like 'monday'"
+            )
+        # calendar order, deduped: a repeated day adds no information, and
+        # the order is stable across source reorderings
+        entry["days"] = sorted(set(days), key=_WEEKDAYS.index)
+    start = override.get("utc_start")
+    end = override.get("utc_end")
+    if (start is None) != (end is None):
+        raise ValueError(
+            f"model {model_id!r}: override utc_start without utc_end (or the reverse)"
+            " is not a time window; fix: ship both bounds or neither"
+        )
+    windows: list[list[int]] | None = None
+    if start is not None:
+        start_clock = _clock(model_id, "utc_start", start)
+        end_clock = _clock(model_id, "utc_end", end)
+        if start_clock > end_clock:
+            # the source window is half-open and may wrap past midnight; a
+            # wrap splits into two plain same-day windows so validation
+            # never sees a start-after-end pair
+            windows = [[start_clock, 2400], [0, end_clock]]
+        else:
+            windows = [[start_clock, end_clock]]
+    for key, field_name in _PRICE_KEYS:
+        value = override.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ValueError(
+                f"model {model_id!r}: override pricing value for {key} must be a"
+                f" per-token string, got {type(value).__name__}"
+            )
+        try:
+            rate = float(value)
+        except ValueError as exc:
+            raise ValueError(
+                f"model {model_id!r}: override pricing value for {key} must be a"
+                f" per-token number string, got {value!r}"
+            ) from exc
+        if rate > 0:
+            # zero (free) and negative ("no fixed price") keys inherit the
+            # base price, mirroring _price: the key drops from the entry
+            entry[field_name] = to_mtok(rate)
+    unknown = set(override) - _WINDOW_ENTRY_KEYS
+    if unknown:
+        raise ValueError(
+            f"model {model_id!r}: scheduled override key(s) {sorted(unknown)!r} are"
+            " not mapped; fix: extend the window mapping or drop the key"
+        )
+    if windows is None:
+        return [entry]
+    return [{**entry, "window": window} for window in windows]
+
+
+def _clock(model_id: str, key: str, value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"model {model_id!r}: override {key} must be an HHMM clock number, got {value!r}"
+        )
+    number = float(value)
+    if not number.is_integer() or not 0 <= number <= 2400:
+        raise ValueError(
+            f"model {model_id!r}: override {key} must be a whole HHMM clock number"
+            f" between 0 and 2400, got {value!r}"
+        )
+    clock = int(number)
+    if clock % 100 > 59:
+        raise ValueError(
+            f"model {model_id!r}: override {key} {clock} is not a clock time;"
+            " fix: HHMM with minutes under 60"
+        )
+    if key == "utc_start" and clock == 2400:
+        raise ValueError(
+            f"model {model_id!r}: override utc_start 2400 is past the day;"
+            " fix: use a start before 2400"
+        )
+    if key == "utc_end" and clock == 0:
+        return 2400
+    return clock
 
 
 def _parse_models(data: object, source: str) -> list[OpenrouterModel]:

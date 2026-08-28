@@ -158,6 +158,41 @@ def test_changed_detects_legacy_max_tokens_value_difference():
     assert changed(row, prev) is True
 
 
+def test_changed_detects_window_rates_value_difference():
+    row = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "t2",
+        "input_mtok": 0.66,
+        "window_rates": [{"window": [100, 400], "input_mtok": 1.32}],
+    }
+    prev = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "t1",
+        "input_mtok": 0.66,
+        "window_rates": [{"window": [100, 400], "input_mtok": 0.66}],
+    }
+    assert changed(row, prev) is True
+
+
+def test_changed_detects_window_rates_appearance():
+    row = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "t2",
+        "input_mtok": 0.66,
+        "window_rates": [{"window": [100, 400], "input_mtok": 1.32}],
+    }
+    prev = {
+        "source": "openrouter",
+        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "observed_at": "t1",
+        "input_mtok": 0.66,
+    }
+    assert changed(row, prev) is True
+
+
 def test_changed_fires_when_an_extra_key_moves_to_a_standard_field():
     # the 2026-08-28 key migration: stored openrouter rows carry the write
     # rate verbatim under extra; the next row moves it to cache_write_mtok,

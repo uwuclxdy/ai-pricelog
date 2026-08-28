@@ -28,18 +28,18 @@ def test_fetch_models_parses_fixture(fake_fetch: list[str]) -> None:
     glm53 = by_id["z-ai/glm-5.3"]
     assert glm53 == OpenrouterModel("z-ai/glm-5.3", "GLM 5.3", 1.4, 4.4, 0.26)
     v4pro = by_id["deepseek/deepseek-v4-pro"]
-    assert v4pro.input_mtok == 1.44
-    assert v4pro.cache_read_mtok == 0.1215
-    assert v4pro.output_mtok == 2.88
+    assert v4pro.input_mtok == 0.741588
+    assert v4pro.cache_read_mtok == 0.061799
+    assert v4pro.output_mtok == 1.483176
     assert by_id["minimax/minimax-m3"].cache_read_mtok == 0.06
-    # extra pricing keys (overrides, web_search) are ignored
+    # unconsumed pricing keys (web_search) do not leak into the price fields
     assert by_id["x-ai/grok-4.5"].input_mtok == 2.0
 
 
 def test_fetch_models_skips_alias_entries(fake_fetch: list[str]) -> None:
     ids = [m.id for m in fetch_models()]
     assert "~z-ai/glm-latest" not in ids
-    assert len(ids) == 15
+    assert len(ids) == 386
 
 
 def test_fetch_models_free_model_and_missing_cache_read(fake_fetch: list[str]) -> None:
@@ -202,6 +202,7 @@ def test_build_row_passes_unconsumed_pricing_keys_through_extra():
     )
     row = build_row(model, "t")
     assert row is not None
+    # a volume-threshold override is not a schedule: it stays verbatim
     assert row["extra"] == {
         "web_search": "0.005",
         "overrides": [{"min_prompt_tokens": 200000, "prompt": "0.000004"}],
@@ -330,26 +331,401 @@ def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) ->
         row = build_row(model, "2026-08-26T00:00:00Z")
         if row is not None:
             rows.append(row)
-    assert [row["model_id"] for row in rows] == [
-        "z-ai/glm-5.3",
-        "z-ai/glm-5.2",
-        "deepseek/deepseek-v4-pro",
-        "deepseek/deepseek-v4-flash",
-        "minimax/minimax-m3",
-        "minimax/minimax-m1",
-        "dots-studio/dots-3-note-preview:free",
-        "bytedance-seed/seed-2-1-turbo",
-        "x-ai/grok-4.5",
-        "x-ai/grok-4.3",
-        "moonshotai/kimi-k3",
-        "perplexity/sonar-pro",
-        "mistralai/codestral-2508",
-        "mistralai/mistral-small-3.2-24b-instruct",
-        "anthropic/claude-opus-5-fast",
-    ]
-    sonar = rows[11]
+    # 398 listed minus 12 alias entries minus 10 dated-canonical variants
+    assert len(rows) == 376
+    by_id = {row["model_id"]: row for row in rows}
+    sonar = by_id["perplexity/sonar-pro"]
     assert sonar["name"] == "Sonar Pro"
     assert sonar["extra"] == {"web_search": "0.005"}
-    assert [row["model_id"] for row in rows if "max_tokens_in" in row] == [
-        "anthropic/claude-opus-5-fast"
+    assert len(by_id["deepseek/deepseek-v4-flash-vision-exp"]["window_rates"]) == 6
+    # every rowable model ships a context window in this capture
+    assert all("max_tokens_in" in row for row in rows)
+
+
+def test_build_row_maps_scheduled_overrides_to_window_rates(fake_fetch: list[str]) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    row = build_row(by_id["deepseek/deepseek-v4-pro-0813"], "2026-08-28")
+    assert row is not None
+    weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    assert row["window_rates"] == [
+        {
+            "days": ["saturday", "sunday"],
+            "input_mtok": 0.66,
+            "output_mtok": 1.98,
+            "cache_read_mtok": 0.022,
+        },
+        {
+            "days": weekdays,
+            "window": [0, 100],
+            "input_mtok": 0.66,
+            "output_mtok": 1.98,
+            "cache_read_mtok": 0.022,
+        },
+        {
+            "days": weekdays,
+            "window": [100, 400],
+            "input_mtok": 1.32,
+            "output_mtok": 3.96,
+            "cache_read_mtok": 0.044,
+        },
+        {
+            "days": weekdays,
+            "window": [400, 600],
+            "input_mtok": 0.66,
+            "output_mtok": 1.98,
+            "cache_read_mtok": 0.022,
+        },
+        {
+            "days": weekdays,
+            "window": [600, 1000],
+            "input_mtok": 1.32,
+            "output_mtok": 3.96,
+            "cache_read_mtok": 0.044,
+        },
+        {
+            "days": weekdays,
+            "window": [1000, 2400],
+            "input_mtok": 0.66,
+            "output_mtok": 1.98,
+            "cache_read_mtok": 0.022,
+        },
     ]
+    # the override key is consumed: nothing rides extra on this model
+    assert "extra" not in row
+
+
+def test_build_row_maps_window_only_override_and_wraps_midnight_end(
+    fake_fetch: list[str],
+) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    row = build_row(by_id["tencent/hy3"], "2026-08-28")
+    assert row is not None
+    # utc_end 0 means midnight as the END of the day: normalized to 2400,
+    # and an override without utc_days applies every day (no days key)
+    assert row["window_rates"] == [
+        {
+            "window": [0, 1600],
+            "input_mtok": 0.132,
+            "output_mtok": 0.528,
+            "cache_read_mtok": 0.033,
+        },
+        {
+            "window": [1600, 2400],
+            "input_mtok": 0.0825,
+            "output_mtok": 0.33,
+            "cache_read_mtok": 0.020625,
+        },
+    ]
+    assert "extra" not in row
+
+
+def test_build_row_keeps_volume_overrides_verbatim_in_extra(fake_fetch: list[str]) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    row = build_row(by_id["qwen/qwen3.7-flash"], "2026-08-28")
+    assert row is not None
+    # min_prompt_tokens is a volume threshold, not a schedule: whole objects
+    # stay under extra exactly as before
+    assert "window_rates" not in row
+    assert row["extra"]["overrides"] == [
+        {
+            "min_prompt_tokens": 32000,
+            "prompt": "0.0000001",
+            "completion": "0.0000004",
+            "input_cache_read": "0.00000002",
+            "input_cache_write": "0.000000125",
+        },
+        {
+            "min_prompt_tokens": 256000,
+            "prompt": "0.0000002",
+            "completion": "0.0000008",
+            "input_cache_read": "0.00000004",
+            "input_cache_write": "0.00000025",
+        },
+    ]
+
+
+def test_build_row_rounds_window_rates_to_six_decimals():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "completion": "0.000002",
+            "overrides": [{"utc_start": 100, "utc_end": 400, "prompt": "0.0000001234567"}],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["window_rates"] == [{"window": [100, 400], "input_mtok": 0.123457}]
+
+
+def test_build_row_sorts_window_days():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [
+                {"utc_days": ["sunday", "saturday"], "prompt": "0.000002"},
+            ],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["window_rates"][0]["days"] == ["saturday", "sunday"]
+
+
+def test_build_row_splits_wrap_window_into_two_entries():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [
+                {
+                    "utc_start": 1600,
+                    "utc_end": 800,
+                    "prompt": "0.000002",
+                    "completion": "0.000004",
+                }
+            ],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    # a window wrapping past midnight splits into two plain same-day halves
+    assert row["window_rates"] == [
+        {"window": [1600, 2400], "input_mtok": 2.0, "output_mtok": 4.0},
+        {"window": [0, 800], "input_mtok": 2.0, "output_mtok": 4.0},
+    ]
+
+
+def test_build_row_drops_zero_window_rate_keys():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [
+                {"utc_start": 100, "utc_end": 400, "prompt": "0", "completion": "0.000002"}
+            ],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    # a zero (free) key inherits the base price: it drops from the entry
+    assert row["window_rates"] == [{"window": [100, 400], "output_mtok": 2.0}]
+
+
+def test_build_row_drops_negative_window_rate_keys():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [
+                {"utc_start": 100, "utc_end": 400, "prompt": "-1", "completion": "0.000002"}
+            ],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    # a negative ("no fixed price") key inherits the base price, like _price
+    assert row["window_rates"] == [{"window": [100, 400], "output_mtok": 2.0}]
+
+
+def test_build_row_dedupes_window_days():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [
+                {"utc_days": ["monday", "monday", "sunday"], "prompt": "0.000002"},
+            ],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["window_rates"][0]["days"] == ["monday", "sunday"]
+
+
+@pytest.mark.parametrize("bad", [100.5, 2401, "100", True, 199])
+def test_build_row_rejects_bad_clock_values(bad):
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_start": bad, "utc_end": 400, "prompt": "0.000002"}],
+        },
+    )
+    with pytest.raises(ValueError, match="HHMM"):
+        build_row(model, "t")
+
+
+def test_build_row_rejects_utc_start_2400():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_start": 2400, "utc_end": 100, "prompt": "0.000002"}],
+        },
+    )
+    with pytest.raises(ValueError, match="2400"):
+        build_row(model, "t")
+
+
+def test_build_row_rejects_bool_window_rate_value():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_start": 0, "utc_end": 100, "prompt": True}],
+        },
+    )
+    with pytest.raises(ValueError, match="per-token string"):
+        build_row(model, "t")
+
+
+def test_build_row_maps_flash_vision_exp_schedule_exactly(fake_fetch: list[str]) -> None:
+    by_id = {m.id: m for m in fetch_models()}
+    row = build_row(by_id["deepseek/deepseek-v4-flash-vision-exp"], "2026-08-28")
+    assert row is not None
+    weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    assert row["window_rates"] == [
+        {
+            "days": ["saturday", "sunday"],
+            "input_mtok": 0.22,
+            "output_mtok": 0.66,
+            "cache_read_mtok": 0.007,
+        },
+        {
+            "days": weekdays,
+            "window": [0, 100],
+            "input_mtok": 0.22,
+            "output_mtok": 0.66,
+            "cache_read_mtok": 0.007,
+        },
+        {
+            "days": weekdays,
+            "window": [100, 400],
+            "input_mtok": 0.44,
+            "output_mtok": 1.32,
+            "cache_read_mtok": 0.014,
+        },
+        {
+            "days": weekdays,
+            "window": [400, 600],
+            "input_mtok": 0.22,
+            "output_mtok": 0.66,
+            "cache_read_mtok": 0.007,
+        },
+        {
+            "days": weekdays,
+            "window": [600, 1000],
+            "input_mtok": 0.44,
+            "output_mtok": 1.32,
+            "cache_read_mtok": 0.014,
+        },
+        {
+            "days": weekdays,
+            "window": [1000, 2400],
+            "input_mtok": 0.22,
+            "output_mtok": 0.66,
+            "cache_read_mtok": 0.007,
+        },
+    ]
+
+
+def test_build_row_rejects_unknown_weekday_name():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_days": ["monday", "funday"], "prompt": "0.000002"}],
+        },
+    )
+    with pytest.raises(ValueError, match="funday"):
+        build_row(model, "t")
+
+
+def test_build_row_rejects_unknown_key_in_scheduled_override():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_days": ["monday"], "audio": "0.5"}],
+        },
+    )
+    with pytest.raises(ValueError, match="audio"):
+        build_row(model, "t")
+
+
+def test_build_row_rejects_unpaired_window_bounds():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_start": 100, "prompt": "0.000002"}],
+        },
+    )
+    with pytest.raises(ValueError, match="utc_end"):
+        build_row(model, "t")
+
+
+def test_build_row_names_non_string_override_pricing_values():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_start": 0, "utc_end": 100, "prompt": {"x": 1}}],
+        },
+    )
+    with pytest.raises(ValueError, match="per-token string"):
+        build_row(model, "t")

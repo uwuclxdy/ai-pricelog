@@ -105,6 +105,8 @@ class PrSpec:
             lines += [""]
         else:
             lines += self._rows_table()
+        if not self.removed:
+            lines += self._window_rates_table()
         if self.source_url:
             lines += ["", f"source: {self.source_url}"]
         if self.announce:
@@ -144,6 +146,27 @@ class PrSpec:
             "|---|---|---|---|---|---|---|---|",
         ]
         lines.extend(self._row_line(row) for row in self.rows)
+        return lines
+
+    def _window_rates_table(self) -> list[str]:
+        """One line per windowed-rate entry: the scheduled rates a reviewer checks."""
+        lines: list[str] = []
+        for row in self.rows:
+            for entry in row.get("window_rates") or []:
+                if not lines:
+                    lines = [
+                        "",
+                        "## windowed rates",
+                        "",
+                        "| model | days | window (UTC) | input (/1M) | cache read (/1M) |"
+                        " cache write 5m/1h (/1M) | output (/1M) |",
+                        "|---|---|---|---|---|---|---|",
+                    ]
+                lines.append(
+                    f"| `{row['model_id']}` | {_days(entry)} | {_window(entry)} | "
+                    f"{_fmt(entry.get('input_mtok'))} | {_fmt(entry.get('cache_read_mtok'))} | "
+                    f"{_cache_write(entry)} | {_fmt(entry.get('output_mtok'))} |"
+                )
         return lines
 
     def _row_line(self, row: dict[str, object]) -> str:
@@ -222,6 +245,28 @@ def _cache_write(row: dict[str, object]) -> str:
     if one_h is None:
         return _fmt(five)
     return f"{_fmt(five)}/{_fmt(one_h)}"
+
+
+def _days(entry: dict[str, object]) -> str:
+    days = entry.get("days")
+    if not isinstance(days, list):
+        return "every day"
+    return ", ".join(str(day) for day in days)
+
+
+def _window(entry: dict[str, object]) -> str:
+    window = entry.get("window")
+    if not isinstance(window, list) or len(window) != 2:
+        return "—"
+    start, end = window
+    if not isinstance(start, int) or not isinstance(end, int):
+        return "—"
+    return f"{_hhmm(start)} - {_hhmm(end)}"
+
+
+def _hhmm(clock: int) -> str:
+    """An HHMM clock number rendered as HH:MM (100 -> 01:00, 2400 -> 24:00)."""
+    return f"{clock // 100:02d}:{clock % 100:02d}"
 
 
 def default_branch(runner: PrRunner, cwd: Path) -> str:
