@@ -36,7 +36,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 2
+    assert len(rules) == 3
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -48,6 +48,13 @@ def test_committed_billing_rules_pass_schema():
     assert promo["id"] == "zai-glm-5.3-flash-promo"
     assert promo["provider"] == "zai"
     assert promo["timezone"] == "Asia/Singapore"
+    uplift = rules[2]
+    assert uplift["id"] == "openai-regional-processing-uplift"
+    assert uplift["provider"] == "openai"
+    assert uplift["effective"] == "2026-03-05"
+    assert uplift["timezone"] == "UTC"
+    assert "10%" in uplift["statement"]
+    assert "https://platform.openai.com/docs/pricing" in uplift["citation"]
 
 
 @pytest.mark.parametrize(

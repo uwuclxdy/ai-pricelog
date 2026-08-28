@@ -22,6 +22,16 @@
       "citation": [
         "https://docs.z.ai/guides/overview/pricing"
       ]
+    },
+    {
+      "id": "openai-regional-processing-uplift",
+      "provider": "openai",
+      "effective": "2026-03-05",
+      "timezone": "UTC",
+      "statement": "Regional processing (data residency) endpoints are charged a 10% uplift for models released on or after March 5, 2026, that are eligible for data residency; the index stores the base rates",
+      "citation": [
+        "https://platform.openai.com/docs/pricing"
+      ]
     }
   ]
 }
