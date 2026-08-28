@@ -1147,3 +1147,4 @@
 {"source":"mistral","model_id":"pixtral-large-24-11","observed_at":"2026-08-27","removed":true}
 {"source":"perplexity","model_id":"llama-3.1-sonar-huge-128k-online","observed_at":"2026-08-27","removed":true}
 {"source":"perplexity","model_id":"llama-3.1-sonar-large-128k-chat","observed_at":"2026-08-27","removed":true}
+{"source":"perplexity","model_id":"llama-3.1-sonar-large-128k-online","observed_at":"2026-08-27","removed":true}
