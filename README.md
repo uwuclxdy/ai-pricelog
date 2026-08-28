@@ -48,7 +48,7 @@ git history is the changelog. every price a model ever had stays in the history 
 |---|---|
 | detect | each provider's page is parsed for its current model list (no api keys, all sources are static pages) |
 | diff | new ids vs the store + open PRs |
-| scrape | input/output price per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
+| scrape | input/output + cache-tier prices per token from the provider's pricing page (deepseek's peak/off-peak schedule included); missing price = retry next run |
 | store | a row appends only when the price differs from the last stored row for that model |
 | delist | a stored model absent from its source twice, both observations merged, gets a removal row and a `Mark ... delisted` draft PR |
 | pr | one draft PR per changed model, max 10 open drafts per run; nothing merges without a human reading the prices |
@@ -71,9 +71,22 @@ the openrouter source stores the full keyless model list the same way. the first
 | cohere | cohere.com pricing |
 | google | ai.google.dev gemini pricing docs |
 | avian | avian.io pricing |
+| fireworks | docs.fireworks.ai serverless pricing |
+| deepinfra | deepinfra.com pricing |
+| cloudflare | developers.cloudflare.com workers-ai pricing |
+| watsonx | ibm.com watsonx.ai pricing |
+| baseten | baseten.co pricing |
+| digitalocean | docs.digitalocean.com inference pricing |
+| sambanova | cloud.sambanova.ai pricing |
+| publicai | platform.publicai.co models |
+| ai21 | ai21.com pricing |
+| openai | platform.openai.com docs pricing |
+| anthropic | platform.claude.com docs pricing markdown twin |
+| cerebras | api.cerebras.ai public models api |
+| dashscope | alibabacloud model-studio intl pricing + CN model list |
 | openrouter | openrouter.ai public models api (all models) |
 
-dormant, commented out in `providers.toml`: dashscope, volcengine (CNY-only).
+dormant, commented out in `providers.toml`: volcengine (CNY-only).
 
 ## Setup
 
