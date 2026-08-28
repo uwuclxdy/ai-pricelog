@@ -1156,3 +1156,4 @@
 {"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-28","removed":true}
 {"source":"cohere","model_id":"command-r-08-2024","observed_at":"2026-08-28","removed":true}
 {"source":"google","model_id":"gemini-3-pro-image-preview","observed_at":"2026-08-28","removed":true}
+{"source":"google","model_id":"gemini-3-pro-preview","observed_at":"2026-08-28","removed":true}
