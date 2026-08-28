@@ -27,6 +27,9 @@ def payload_entries(text: str, url: str) -> list[dict]:
     for entry in data["data"]:
         if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
             raise FetchError(f"model entry without an id string on {url}")
+        pricing = entry.get("pricing")
+        if pricing is not None and not isinstance(pricing, dict):
+            raise FetchError(f"model entry {entry['id']!r} on {url}: pricing must be an object")
         entries.append(entry)
     return entries
 

@@ -80,6 +80,13 @@ def test_detect_bad_json_raises(monkeypatch: pytest.MonkeyPatch):
         detector.detect(cfg())
 
 
+def test_non_dict_pricing_raises_named_error(monkeypatch: pytest.MonkeyPatch):
+    payload = '{"data": [{"id": "x", "pricing": "0.000001"}]}'
+    feed(monkeypatch, payload)
+    with pytest.raises(FetchError, match="pricing must be an object"):
+        scraper.scrape(cfg(), "x")
+
+
 def test_detect_non_object_root_raises(monkeypatch: pytest.MonkeyPatch):
     feed(monkeypatch, "[1, 2]")
     with pytest.raises(FetchError, match="root"):

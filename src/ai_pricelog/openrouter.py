@@ -63,8 +63,17 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         ("input_cache_write_1h", "cache_write_1h_mtok"),
     ):
         value = model.pricing.get(key)
-        if value is not None and float(value) >= 0:
-            row[field_name] = to_mtok(float(value))
+        if value is None:
+            continue
+        try:
+            rate = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"model {model.id!r}: pricing value for {key} must be a"
+                f" per-token string, got {type(value).__name__}"
+            ) from exc
+        if rate >= 0:
+            row[field_name] = to_mtok(rate)
     if model.context_length > 0:
         row["max_tokens_in"] = model.context_length
     extra = {key: value for key, value in model.pricing.items() if key not in OBSERVED_KEYS}

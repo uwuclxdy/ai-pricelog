@@ -228,6 +228,15 @@ def test_build_row_keeps_zero_pricing_strings():
     assert row["output_mtok"] == 0.0
 
 
+@pytest.mark.parametrize("bad", [{"x": 1}, "abc"])
+def test_build_row_names_non_string_pricing_values(bad):
+    # the read keys get _price's type check at parse; the write keys go
+    # through the build loop only, so a shape change must name itself
+    model = OpenrouterModel("a/b", "A", None, None, None, pricing={"input_cache_write": bad})
+    with pytest.raises(ValueError, match="per-token string"):
+        build_row(model, "t")
+
+
 def test_build_row_skips_negative_pricing_strings():
     # router models ship "-1" pricing strings ("no fixed price"); a row must
     # not carry a negative price

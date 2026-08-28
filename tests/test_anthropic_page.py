@@ -108,6 +108,21 @@ def test_detect_row_outside_shape_raises(monkeypatch: pytest.MonkeyPatch):
         detector.detect(cfg())
 
 
+def test_detect_annotation_only_name_raises(monkeypatch: pytest.MonkeyPatch):
+    # a cell that is only a link annotation strips to no id; emitting an
+    # empty id is worse than failing the run
+    annotation_only = (
+        "| Model | Base Input Tokens | 5m Cache Writes | 1h Cache Writes"
+        " | Cache Hits & Refreshes | Output Tokens |\n"
+        "| --- | --- | --- | --- | --- | --- |\n"
+        "| ([retired](https://x)) | $1 / MTok | $1 / MTok | $1 / MTok"
+        " | $1 / MTok | $1 / MTok |\n"
+    )
+    feed(monkeypatch, annotation_only)
+    with pytest.raises(FetchError, match="unreadable model name"):
+        detector.detect(cfg())
+
+
 def test_detect_missing_model_table_raises(monkeypatch: pytest.MonkeyPatch):
     feed(monkeypatch, "| Concept | Details |\n| --- | --- |\n| a | b |\n")
     with pytest.raises(FetchError, match="model pricing table"):

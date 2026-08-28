@@ -61,6 +61,8 @@ def detect(cfg: ProviderCfg) -> list[str]:
     for row in model_table(text, cfg.detector_url)[2:]:
         check_row(row, cfg.detector_url)
         model_id = _slug(row[0])
+        if not model_id:
+            raise FetchError(f"unreadable model name {row[0]!r} on {cfg.detector_url}")
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)
