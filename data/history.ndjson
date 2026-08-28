@@ -1158,3 +1158,4 @@
 {"source":"google","model_id":"gemini-3-pro-image-preview","observed_at":"2026-08-28","removed":true}
 {"source":"google","model_id":"gemini-3-pro-preview","observed_at":"2026-08-28","removed":true}
 {"source":"google","model_id":"gemini-3.1-flash-lite-preview","observed_at":"2026-08-28","removed":true}
+{"source":"google","model_id":"gemini-robotics-er-1.5-preview","observed_at":"2026-08-28","removed":true}
