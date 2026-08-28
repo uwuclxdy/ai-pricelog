@@ -18,6 +18,7 @@ SECTIONS = [
     "deepseek page move",
     "deepseek peak schedule",
     "announce channels",
+    "scaleway + databricks (added 2026-08-29, todo #17)",
 ]
 
 

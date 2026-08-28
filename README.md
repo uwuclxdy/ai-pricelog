@@ -85,6 +85,8 @@ the openrouter source stores the full keyless model list the same way. the first
 | cerebras | api.cerebras.ai public models api |
 | dashscope | alibabacloud model-studio intl pricing + CN model list |
 | groq | console.groq.com models markdown twin |
+| scaleway | scaleway.com model-as-a-service pricing (EUR via fx) |
+| databricks | databricks.com foundation model serving pricing (DBU) |
 | openrouter | openrouter.ai public models api (all models) |
 
 dormant, commented out in `providers.toml`: volcengine (CNY-only).
