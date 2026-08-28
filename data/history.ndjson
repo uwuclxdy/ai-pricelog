@@ -1153,3 +1153,4 @@
 {"source":"perplexity","model_id":"sonar-medium-online","observed_at":"2026-08-27","removed":true}
 {"source":"perplexity","model_id":"sonar-reasoning","observed_at":"2026-08-27","removed":true}
 {"source":"perplexity","model_id":"sonar-small-online","observed_at":"2026-08-28","removed":true}
+{"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-28","removed":true}
