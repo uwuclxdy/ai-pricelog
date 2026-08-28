@@ -269,3 +269,16 @@ detector = "cerebras_page"
 detector_url = "https://api.cerebras.ai/public/v1/models"
 scraper = "cerebras_page"
 scraper_url = "https://api.cerebras.ai/public/v1/models"
+
+# ungated 2026-08-28 (todo 17): the supported-models markdown twin serves
+# the per-token price table statically (llms.txt advertises it). no
+# watchable announce surface: llms.txt lists only the frozen legacy
+# changelog (newest entry 2025-04-05), so the section carries no
+# announce_urls key.
+
+[groq]
+provider = "Groq"
+detector = "groq_page"
+detector_url = "https://console.groq.com/docs/models.md"
+scraper = "groq_page"
+scraper_url = "https://console.groq.com/docs/models.md"
