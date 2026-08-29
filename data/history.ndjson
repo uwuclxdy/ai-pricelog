@@ -1182,3 +1182,6 @@
 {"source":"openrouter","model_id":"openai/gpt-4.1:batch","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"openai/gpt-5-codex:batch","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"openai/gpt-5-mini:batch","observed_at":"2026-08-29","removed":true}
+{"source":"cohere","model_id":"command-r","observed_at":"2026-08-29","input_mtok":0.15,"output_mtok":0.6,"url":"https://cohere.com/pricing"}
+{"source":"cohere","model_id":"command-r7b","observed_at":"2026-08-29","input_mtok":0.0375,"output_mtok":0.15,"url":"https://cohere.com/pricing"}
+{"source":"cohere","model_id":"embed-4","observed_at":"2026-08-29","input_mtok":0.12,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
