@@ -58,7 +58,45 @@ def test_extract_prose_xml_feed():
         "<item><title>A</title><pubDate>2026-08-26</pubDate></item>"
         "</channel></rss>"
     )
-    assert announce.extract_prose("https://example.com/rss.xml", text) == "Blog A 2026-08-26"
+    assert announce.extract_prose("https://example.com/rss.xml", text) == "Blog A"
+
+
+def test_extract_prose_feed_strips_date_metadata():
+    text = (
+        "<rss><channel><title>Blog</title>"
+        "<lastBuildDate>2026-08-29T08:31:47Z</lastBuildDate>"
+        "<item><title>A</title><pubDate>2026-08-26</pubDate>"
+        "<dc:date>2026-08-26</dc:date></item>"
+        "</channel></rss>"
+    )
+    assert announce.extract_prose("https://example.com/rss", text) == "Blog A"
+
+
+def test_extract_prose_atom_feed_strips_timestamps():
+    text = (
+        "<feed><title>T</title><updated>2026-08-29T00:00:00Z</updated>"
+        "<entry><title>E</title><published>2026-08-26</published>"
+        "<updated>2026-08-26</updated></entry></feed>"
+    )
+    assert announce.extract_prose("https://example.com/feeds/x", text) == "T E"
+
+
+def test_extract_prose_feed_rebuild_dates_do_not_change_prose():
+    template = (
+        "<rss><channel><title>Blog</title><lastBuildDate>{build}</lastBuildDate>"
+        "<item><title>A</title><pubDate>{published}</pubDate></item>"
+        "</channel></rss>"
+    )
+    yesterday = template.format(build="2026-08-28", published="2026-08-26")
+    today = template.format(build="2026-08-29", published="2026-08-26")
+    assert announce.extract_prose("https://example.com/rss", yesterday) == announce.extract_prose(
+        "https://example.com/rss", today
+    )
+
+
+def test_extract_prose_html_keeps_dates_as_content():
+    text = "<html><body><time>2026-08-26</time><p>New price</p></body></html>"
+    assert announce.extract_prose("https://example.com/updates", text) == "2026-08-26 New price"
 
 
 def test_extract_prose_feed_without_xml_suffix():

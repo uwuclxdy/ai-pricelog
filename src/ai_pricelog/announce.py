@@ -52,14 +52,20 @@ class FetchResult:
     errors: tuple[str, ...]
 
 
+_FEED_ROOTS = frozenset({"rss", "feed"})
+_FEED_DATE_TAGS = ("lastbuilddate", "pubdate", "published", "updated", "dc:date")
+
+
 def extract_prose(url: str, text: str) -> str:
     """The normalized prose of a channel fetch: visible text, one spacing.
 
     Markdown mirrors pass through with whitespace collapsed; html and feed
     pages lose markup, script, and style blocks (html.parser tolerates feed
-    xml fine, and lxml is not a dependency). Hashing the prose rather than
-    the raw bytes keeps rebuild noise (lastmod attributes, timestamps outside
-    prose) from faking changes.
+    xml fine, and lxml is not a dependency). A feed document (root rss or
+    feed) also drops its date metadata elements; a re-publish re-dates the
+    feed with zero content change, and the dates would fake a change.
+    Hashing the prose rather than the raw bytes keeps rebuild noise (lastmod
+    attributes, timestamps outside prose) from faking changes.
     """
     if urllib.parse.urlsplit(url).path.lower().endswith((".md", ".txt")):
         return " ".join(text.split())
@@ -68,6 +74,10 @@ def extract_prose(url: str, text: str) -> str:
         soup = BeautifulSoup(text, "html.parser")
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
+    root = soup.find()
+    if root is not None and root.name in _FEED_ROOTS:
+        for tag in soup(_FEED_DATE_TAGS):
+            tag.decompose()
     return " ".join(soup.get_text(" ", strip=True).split())
 
 
