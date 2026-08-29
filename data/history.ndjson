@@ -1172,3 +1172,4 @@
 {"source":"together","model_id":"gemma-4-31b-it-pearl","observed_at":"2026-08-28","removed":true}
 {"source":"together","model_id":"kimi-k2.7-code","observed_at":"2026-08-28","removed":true}
 {"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-28","removed":true}
+{"source":"novita","model_id":"inclusionai/ling-3.0-flash-fast","observed_at":"2026-08-29","removed":true}
