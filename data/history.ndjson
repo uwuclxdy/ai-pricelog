@@ -1236,13 +1236,13 @@
 {"source":"dashscope","model_id":"qwen-plus-character","observed_at":"2026-08-29","input_mtok":0.5,"output_mtok":1.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-plus-character-ja","observed_at":"2026-08-29","input_mtok":0.5,"output_mtok":1.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-flash-character","observed_at":"2026-08-29","input_mtok":0.05,"output_mtok":0.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
-{"source":"dashscope","model_id":"qwen2.5-omni-7b","observed_at":"2026-08-29","input_mtok":0.1,"output_mtok":6.76,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
+{"source":"dashscope","model_id":"qwen2.5-omni-7b","observed_at":"2026-08-29","input_mtok":0.1,"output_mtok":0.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-plus","observed_at":"2026-08-29","input_mtok":0.4,"output_mtok":1.2,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-max","observed_at":"2026-08-29","input_mtok":1.6,"output_mtok":6.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-flash","observed_at":"2026-08-29","input_mtok":0.05,"output_mtok":0.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwen-turbo","observed_at":"2026-08-29","input_mtok":0.05,"output_mtok":0.2,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qwq-plus","observed_at":"2026-08-29","input_mtok":0.8,"output_mtok":2.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"qvq-max","observed_at":"2026-08-29","input_mtok":1.2,"output_mtok":4.8,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
-{"source":"dashscope","model_id":"qwen-omni-turbo","observed_at":"2026-08-29","input_mtok":0.07,"output_mtok":4.44,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
+{"source":"dashscope","model_id":"qwen-omni-turbo","observed_at":"2026-08-29","input_mtok":0.07,"output_mtok":0.27,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"glm-5.1","observed_at":"2026-08-29","input_mtok":1.4,"output_mtok":4.4,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"dashscope","model_id":"deepseek-v3.2","observed_at":"2026-08-29","input_mtok":0.57,"output_mtok":1.71,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
