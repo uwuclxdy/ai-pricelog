@@ -1177,3 +1177,4 @@
 {"source":"openrouter","model_id":"microsoft/wizardlm-2-7b","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"mistralai/ministral-8b","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-29","removed":true}
+{"source":"openrouter","model_id":"openai/gpt-4.1-mini:batch","observed_at":"2026-08-29","removed":true}
