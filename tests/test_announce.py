@@ -18,7 +18,7 @@ def make_provider_cfg(key: str, urls: tuple[str, ...] = ()) -> config.ProviderCf
 
 
 def make_cfg(*providers: config.ProviderCfg) -> config.Config:
-    return config.Config(providers=providers, cap=3)
+    return config.Config(providers=providers)
 
 
 @pytest.fixture

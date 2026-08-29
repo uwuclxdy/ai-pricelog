@@ -8,9 +8,6 @@ from ai_pricelog import config
 from conftest import register_fake_module
 
 HAPPY_TOML = """
-[settings]
-cap = 5
-
 [deepseek]
 provider = "DeepSeek"
 detector = "deepseek_page"
@@ -24,7 +21,6 @@ def test_load_happy_path(tmp_path):
     path = tmp_path / "providers.toml"
     path.write_text(HAPPY_TOML)
     cfg = config.load(providers_path=path)
-    assert cfg.cap == 5
     assert len(cfg.providers) == 1
     pcfg = cfg.providers[0]
     assert pcfg.key == "deepseek"
@@ -39,17 +35,7 @@ def test_config_holds_no_repo(tmp_path):
     path = tmp_path / "providers.toml"
     path.write_text(HAPPY_TOML)
     cfg = config.load(providers_path=path)
-    assert set(vars(cfg)) == {"providers", "cap"}
-    assert set(vars(cfg.providers[0])) == {
-        "key",
-        "provider",
-        "detector",
-        "detector_url",
-        "scraper",
-        "scraper_url",
-        "announce_urls",
-        "currency_rate",
-    }
+    assert set(vars(cfg)) == {"providers"}
 
 
 def test_load_currency_rate(tmp_path):
@@ -79,13 +65,6 @@ def test_load_rejects_bad_currency_rate(tmp_path, bad):
     )
     with pytest.raises(config.ConfigError, match="currency_rate"):
         config.load_providers(path)
-
-
-def test_load_default_cap(tmp_path):
-    path = tmp_path / "providers.toml"
-    path.write_text(HAPPY_TOML.replace("[settings]\ncap = 5\n", ""))
-    cfg = config.load(providers_path=path)
-    assert cfg.cap == 3
 
 
 def test_load_announce_urls(tmp_path):
@@ -150,10 +129,12 @@ def test_load_unknown_provider_key(tmp_path):
         config.load_providers(path)
 
 
-def test_load_unknown_settings_key(tmp_path):
+def test_load_rejects_stale_settings_section(tmp_path):
+    # the cap-era [settings] section is gone; a stale toml must fail loudly
+    # instead of silently ignoring the keys
     path = tmp_path / "providers.toml"
-    path.write_text("[settings]\ncap = 3\nbogus = 1\n")
-    with pytest.raises(config.ConfigError, match="bogus"):
+    path.write_text("[settings]\ncap = 3\n")
+    with pytest.raises(config.ConfigError, match="cap"):
         config.load_providers(path)
 
 
@@ -193,19 +174,6 @@ def test_load_bad_toml_names_the_file(tmp_path):
         config.load_providers(path)
 
 
-@pytest.mark.parametrize("cap", [0, -3])
-def test_load_rejects_cap_below_one(tmp_path, cap):
-    path = tmp_path / "providers.toml"
-    path.write_text(f"[settings]\ncap = {cap}\n")
-    with pytest.raises(config.ConfigError, match="cap"):
-        config.load_providers(path)
-
-
-def test_load_rejects_injected_cap_below_one():
-    with pytest.raises(config.ConfigError, match="cap"):
-        config.load(providers=(), cap=0)
-
-
-def test_load_injected_providers_missing_file_defaults_cap(tmp_path):
+def test_load_injected_providers_missing_file_is_ok(tmp_path):
     cfg = config.load(providers=(), providers_path=tmp_path / "nope.toml")
-    assert cfg.cap == 3
+    assert cfg.providers == ()

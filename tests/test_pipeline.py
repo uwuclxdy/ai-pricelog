@@ -35,8 +35,12 @@ def make_provider_cfg(
     )
 
 
-def make_cfg(cap: int, *keys: str) -> config.Config:
-    return config.Config(providers=tuple(make_provider_cfg(k) for k in keys), cap=cap)
+def make_cfg(*keys: str) -> config.Config:
+    return config.Config(providers=tuple(make_provider_cfg(k) for k in keys))
+
+
+def batch_branch(source: str, today: str = TODAY, stamp: str = "000000") -> str:
+    return pr.branch_name(f"{source}@{today}-{stamp}")
 
 
 class PipelineRunner:
@@ -51,7 +55,7 @@ class PipelineRunner:
         self.real = pr.PrRunner()
         self.calls: list[tuple[list[str], Path]] = []
         self.pr_urls: list[str] = []
-        self.created: list[tuple[str, str]] = []
+        self.created: list[tuple[str, str, str]] = []
         self.open_prs = open_prs or []
         self.failures = failures or {}
         self.base = base
@@ -74,7 +78,13 @@ class PipelineRunner:
             if cmd[1] == "pr" and cmd[2] == "create":
                 url = f"https://github.com/uwuclxdy/ai-pricelog/pull/{len(self.pr_urls) + 1}"
                 self.pr_urls.append(url)
-                self.created.append((cmd[cmd.index("--title") + 1], cmd[cmd.index("--body") + 1]))
+                self.created.append(
+                    (
+                        cmd[cmd.index("--title") + 1],
+                        cmd[cmd.index("--body") + 1],
+                        cmd[cmd.index("--head") + 1],
+                    )
+                )
                 return url + "\n"
         if cmd[:3] == ["git", "config", "user.email"] and len(cmd) == 3:
             return ""
@@ -158,7 +168,7 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     # a non-empty store at load: the run takes the per-change path, not the seed
     legacy = store.build_row(
         "deepseek",
@@ -170,7 +180,7 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     seed_store(repo_root, [legacy])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     provider_report = report.providers["deepseek"]
     assert provider_report.detected == ["deepseek-chat"]
@@ -179,14 +189,11 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert provider_report.rows == ["deepseek-chat"]
     assert provider_report.skipped_pending == []
     assert provider_report.skipped_no_pricing == []
-    assert provider_report.skipped_cap == []
     assert provider_report.errors == []
 
     # the row rides the pr branch only; the branch carries the full store
     # (the loaded legacy row plus the new one)
-    branch_history = git(
-        repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
-    )
+    branch_history = git(repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert len(rows) == 2
     row = rows[1]
@@ -198,13 +205,19 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert row["url"] == "https://example.com/pricing"
 
     # the branch also carries the README with the recomputed stats
-    branch_readme = git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:README.md")
+    branch_readme = git(repo_root, "show", f"{batch_branch('deepseek')}:README.md")
     assert "**2** tracked across 1 sources" in branch_readme
 
-    # the open pr names the id, so the next run skips it as pending: the store
-    # on the default branch is still empty (no row)
+    # the open pr names the id in its body, so the next run skips it as
+    # pending: the store on the default branch is still empty (no row)
     assert_default_branch_clean(repo_root, tip="seed store")
-    runner.open_prs = [{"title": runner.created[0][0], "body": ""}]
+    runner.open_prs = [
+        {
+            "title": runner.created[0][0],
+            "body": runner.created[0][1],
+            "headRefName": runner.created[0][2],
+        }
+    ]
     second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
     assert second.providers["deepseek"].skipped_pending == ["deepseek-chat"]
     assert second.providers["deepseek"].candidates == []
@@ -215,7 +228,7 @@ def test_pending_pr_skip_fires_before_scrape(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {}  # any scrape call would raise AssertionError
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner(
         open_prs=[{"title": "Add DEEPSEEK-CHAT pricing for DeepSeek", "body": ""}]
     )
@@ -234,7 +247,7 @@ def test_missing_pricing_skips_and_retries(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-x"]
     scrape["deepseek"] = {"deepseek-x": None}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner)
@@ -249,11 +262,11 @@ def test_missing_pricing_skips_and_retries(tmp_path, fake_modules, repo_root):
     assert second.providers["deepseek"].skipped_no_pricing == ["deepseek-x"]
 
 
-def test_cap_skips_extra_candidates(tmp_path, fake_modules, repo_root):
+def test_candidates_batch_into_one_pr_per_source(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
-    detect["deepseek"] = ["a", "b"]
-    scrape["deepseek"] = {"a": pricing(), "b": pricing()}
-    cfg = make_cfg(1, "deepseek")
+    detect["deepseek"] = ["model-a", "model-b"]
+    scrape["deepseek"] = {"model-a": pricing(), "model-b": pricing()}
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -264,36 +277,55 @@ def test_cap_skips_extra_candidates(tmp_path, fake_modules, repo_root):
     seed_store(repo_root, [legacy])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
     provider_report = report.providers["deepseek"]
-    assert [model_id for model_id, _url in provider_report.prs] == ["a"]
-    assert provider_report.skipped_cap == ["b"]
+    assert [model_id for model_id, _url in provider_report.prs] == ["model-a", "model-b"]
     assert len(runner.pr_urls) == 1
+    assert runner.created[0][0] == "Update Deepseek price history (2 rows)"
+    assert runner.created[0][2] == batch_branch("deepseek")
 
-    # b got no pr, so its row may not ride a's branch
+    # both rows ride the one source branch
     branch_rows = [
         json.loads(line)
         for line in git(
-            repo_root, "show", f"{pr.branch_name('a')}:data/history.ndjson"
+            repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson"
         ).splitlines()
     ]
-    assert [row["model_id"] for row in branch_rows] == ["deepseek-legacy", "a"]
+    assert [row["model_id"] for row in branch_rows] == [
+        "deepseek-legacy",
+        "model-a",
+        "model-b",
+    ]
     assert_default_branch_clean(repo_root, tip="seed store")
 
-    # next run: a is settled by its open pr, b re-candidates against the
-    # landed store and gets its own pr with its own row
+    # next run: model-a and model-b are settled by the open pr; a new
+    # candidate gets a new batch pr for the same source on a distinct branch
+    # (no force-push over the still-open pr's branch)
+    detect["deepseek"] = ["model-a", "model-b", "model-c"]
+    scrape["deepseek"]["model-c"] = pricing()
     runner.open_prs = [
-        {"title": runner.created[0][0], "body": "", "headRefName": pr.branch_name("a")}
+        {
+            "title": runner.created[0][0],
+            "body": runner.created[0][1],
+            "headRefName": runner.created[0][2],
+        }
     ]
-    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
-    assert [model_id for model_id, _url in second.providers["deepseek"].prs] == ["b"]
+    second = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000001")
+    assert [model_id for model_id, _url in second.providers["deepseek"].prs] == ["model-c"]
+    assert runner.created[1][2] == batch_branch("deepseek", stamp="000001")
+    assert runner.created[1][2] != runner.created[0][2]
     branch_rows = [
         json.loads(line)
         for line in git(
-            repo_root, "show", f"{pr.branch_name('b')}:data/history.ndjson"
+            repo_root, "show", f"{batch_branch('deepseek', stamp='000001')}:data/history.ndjson"
         ).splitlines()
     ]
-    assert [row["model_id"] for row in branch_rows] == ["deepseek-legacy", "a", "b"]
+    assert [row["model_id"] for row in branch_rows] == [
+        "deepseek-legacy",
+        "model-a",
+        "model-b",
+        "model-c",
+    ]
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -313,13 +345,13 @@ def test_seed_pr_carries_all_rows_without_cap(tmp_path, fake_modules, repo_root,
             pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
         )
     )
-    cfg = make_cfg(1, "deepseek", "zai")
+    cfg = make_cfg("deepseek", "zai")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     assert len(runner.pr_urls) == 1
-    (title, body) = runner.created[0]
+    (title, body, _head) = runner.created[0]
     assert title == "Seed price history"
     assert "first price-history snapshot: 4 rows across 3 sources." in body
     assert report.providers["deepseek"].prs == [
@@ -328,8 +360,6 @@ def test_seed_pr_carries_all_rows_without_cap(tmp_path, fake_modules, repo_root,
     ]
     assert report.providers["zai"].prs == [("c", runner.pr_urls[0])]
     assert report.providers["openrouter"].prs == [("deepseek/deepseek-chat", runner.pr_urls[0])]
-    assert report.providers["deepseek"].skipped_cap == []
-    assert report.providers["zai"].skipped_cap == []
 
     branch_history = git(repo_root, "show", "pricelog/seed:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
@@ -337,11 +367,31 @@ def test_seed_pr_carries_all_rows_without_cap(tmp_path, fake_modules, repo_root,
     assert_default_branch_clean(repo_root)
 
 
+def test_seed_pr_open_failure_records_errors_per_model(tmp_path, fake_modules, repo_root):
+    # the seed pr fails to open: the run records one error per model instead
+    # of crashing, and nothing lands
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["model-a", "model-b"]
+    scrape["deepseek"] = {"model-a": pricing(), "model-b": pricing()}
+    cfg = make_cfg("deepseek")
+    runner = PipelineRunner(failures={"gh pr create": pr.PrError("create boom")})
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    assert report.providers["deepseek"].errors == [
+        "seed pr failed for model-a",
+        "seed pr failed for model-b",
+    ]
+    assert runner.pr_urls == []
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+    assert_default_branch_clean(repo_root)
+
+
 def test_refresh_drift_appends_and_opens_update_pr(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}  # 0.27/1.1 vs stored 0.2/0.4
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     prior = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -352,17 +402,15 @@ def test_refresh_drift_appends_and_opens_update_pr(tmp_path, fake_modules, repo_
     seed_store(repo_root, [prior])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     provider_report = report.providers["deepseek"]
     assert provider_report.candidates == []
     assert [model_id for model_id, _url in provider_report.prs] == ["deepseek-chat"]
     assert provider_report.rows == ["deepseek-chat"]
-    assert runner.created[0][0] == "Update deepseek-chat pricing for Deepseek"
+    assert runner.created[0][0] == "Update Deepseek price history (1 row)"
 
-    branch_history = git(
-        repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
-    )
+    branch_history = git(repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert len(rows) == 2
     assert rows[1]["model_id"] == "deepseek-chat"
@@ -375,7 +423,7 @@ def test_refresh_unchanged_appends_nothing(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": Pricing(0.2e-6, 0.4e-6, "chat")}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     prior = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -403,7 +451,7 @@ def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, rep
     scrape["mistral"] = {"codestral-25-08": pricing()}
     scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
     scr.dedup_keys = lambda model_id: [model_id.replace("-25-08", "-2508")]
-    cfg = make_cfg(3, "mistral")
+    cfg = make_cfg("mistral")
     prior = store.build_row(
         "mistral",
         "codestral-2508",
@@ -413,14 +461,12 @@ def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, rep
     )
     seed_store(repo_root, [prior])
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
 
     provider_report = report.providers["mistral"]
     assert provider_report.candidates == []
     assert [model_id for model_id, _url in provider_report.prs] == ["codestral-2508"]
-    branch_history = git(
-        repo_root, "show", f"{pr.branch_name('codestral-2508')}:data/history.ndjson"
-    )
+    branch_history = git(repo_root, "show", f"{batch_branch('mistral')}:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert rows[1]["model_id"] == "codestral-2508"
 
@@ -434,7 +480,7 @@ def test_dedup_spelling_row_settles_detected_id(tmp_path, fake_modules, repo_roo
     scrape["mistral"] = {"codestral-25-08": Pricing(0.2e-6, 0.4e-6, "chat")}
     scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
     scr.dedup_keys = lambda model_id: [model_id.replace("-25-08", "-2508")]
-    cfg = make_cfg(3, "mistral")
+    cfg = make_cfg("mistral")
     prior = store.build_row(
         "mistral",
         "codestral-2508",
@@ -467,7 +513,7 @@ def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, o
             pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
         )
     )
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     # a non-empty store at load: the openrouter row takes the per-change path
     legacy = store.build_row(
         "deepseek",
@@ -479,17 +525,15 @@ def test_openrouter_rows_append_and_open_pr(tmp_path, fake_modules, repo_root, o
     seed_store(repo_root, [legacy])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     or_report = report.providers["openrouter"]
     assert or_report.detected == ["deepseek/deepseek-chat"]
     assert or_report.candidates == ["deepseek/deepseek-chat"]
     assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
-    assert runner.created[0][0] == "Add deepseek/deepseek-chat pricing for OpenRouter"
+    assert runner.created[0][0] == "Update OpenRouter price history (1 row)"
 
-    branch_history = git(
-        repo_root, "show", f"{pr.branch_name('deepseek/deepseek-chat')}:data/history.ndjson"
-    )
+    branch_history = git(repo_root, "show", f"{batch_branch('openrouter')}:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     # the branch carries the full store: the loaded rows plus the new one
     assert len(rows) == 2
@@ -515,7 +559,7 @@ def test_openrouter_unchanged_appends_nothing(tmp_path, fake_modules, repo_root,
     prior = openrouter.build_row(model, "2026-08-19")
     assert prior is not None
     seed_store(repo_root, [prior])
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
@@ -540,7 +584,7 @@ def test_openrouter_negative_pricing_builds_row_without_prices(
             pricing={"prompt": "-1", "completion": "-1"},
         )
     )
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -551,14 +595,12 @@ def test_openrouter_negative_pricing_builds_row_without_prices(
     seed_store(repo_root, [legacy])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     or_report = report.providers["openrouter"]
     assert or_report.candidates == ["openrouter/auto"]
     assert or_report.errors == []
-    branch_history = git(
-        repo_root, "show", f"{pr.branch_name('openrouter/auto')}:data/history.ndjson"
-    )
+    branch_history = git(repo_root, "show", f"{batch_branch('openrouter')}:data/history.ndjson")
     rows = [json.loads(line) for line in branch_history.splitlines()]
     assert len(rows) == 2
     row = rows[1]
@@ -573,7 +615,7 @@ def test_detector_error_does_not_block_next_provider(tmp_path, fake_modules, rep
     detect["deepseek"] = RuntimeError("detector boom")
     detect["zai"] = ["zai-x"]
     scrape["zai"] = {"zai-x": pricing()}
-    cfg = make_cfg(3, "deepseek", "zai")
+    cfg = make_cfg("deepseek", "zai")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner)
@@ -590,7 +632,7 @@ def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["a", "b"]
     scrape["deepseek"] = {"a": RuntimeError("page broke"), "b": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner)
@@ -607,7 +649,7 @@ def test_validation_failure_skips_candidate_and_continues(tmp_path, fake_modules
     detect, scrape = fake_modules
     detect["deepseek"] = ["a", "b"]
     scrape["deepseek"] = {"a": Pricing(-1.0, 1.1e-06, "chat", 65536), "b": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
 
     report = pipeline.run(cfg, repo_root, PipelineRunner())
 
@@ -623,12 +665,12 @@ def test_run_url_threads_into_pr_body(tmp_path, fake_modules, repo_root, monkeyp
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner()
 
     pipeline.run(cfg, repo_root, runner)
 
-    (_title, body) = runner.created[0]
+    (_title, body, _head) = runner.created[0]
     assert "[GitHub Action](https://github.com/uwuclxdy/ai-pricelog/actions/runs/123)" in body
 
 
@@ -638,7 +680,7 @@ def test_branch_commit_sets_identity_when_missing(tmp_path, fake_modules, repo_r
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
 
     pipeline.run(cfg, repo_root, PipelineRunner())
 
@@ -652,7 +694,7 @@ def test_push_uses_force_with_lease(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -663,12 +705,10 @@ def test_push_uses_force_with_lease(tmp_path, fake_modules, repo_root):
     seed_store(repo_root, [legacy])
     runner = PipelineRunner()
 
-    pipeline.run(cfg, repo_root, runner, today=TODAY)
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
-    assert pushes == [
-        ["git", "push", "--force-with-lease", "origin", pr.branch_name("deepseek-chat")]
-    ]
+    assert pushes == [["git", "push", "--force-with-lease", "origin", batch_branch("deepseek")]]
 
 
 def test_push_failure_does_not_delete_remote_branch(tmp_path, fake_modules, repo_root):
@@ -677,7 +717,7 @@ def test_push_failure_does_not_delete_remote_branch(tmp_path, fake_modules, repo
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -688,11 +728,11 @@ def test_push_failure_does_not_delete_remote_branch(tmp_path, fake_modules, repo
     seed_store(repo_root, [legacy])
     runner = PipelineRunner(failures={"git push --force-with-lease": pr.PrError("push rejected")})
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert runner.pr_urls == []
-    assert "pr open failed for deepseek-chat" in report.providers["deepseek"].errors[0]
-    branch = pr.branch_name("deepseek-chat")
+    assert "pr open failed for 1 rows" in report.providers["deepseek"].errors[0]
+    branch = batch_branch("deepseek")
     pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
     assert ["git", "push", "--force-with-lease", "origin", branch] in pushes
     assert ["git", "push", "origin", "--delete", branch] not in pushes
@@ -704,7 +744,7 @@ def test_pr_create_failure_deletes_the_remote_branch(tmp_path, fake_modules, rep
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -715,11 +755,11 @@ def test_pr_create_failure_deletes_the_remote_branch(tmp_path, fake_modules, rep
     seed_store(repo_root, [legacy])
     runner = PipelineRunner(failures={"gh pr create": pr.PrError("pr create failed")})
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert runner.pr_urls == []
-    assert "pr open failed for deepseek-chat" in report.providers["deepseek"].errors[0]
-    branch = pr.branch_name("deepseek-chat")
+    assert "pr open failed for 1 rows" in report.providers["deepseek"].errors[0]
+    branch = batch_branch("deepseek")
     pushes = [cmd for cmd, _cwd in runner.calls if cmd[0:2] == ["git", "push"]]
     assert ["git", "push", "--force-with-lease", "origin", branch] in pushes
     assert ["git", "push", "origin", "--delete", branch] in pushes
@@ -732,7 +772,7 @@ def test_seed_rerun_skipped_while_seed_pr_open(tmp_path, fake_modules, repo_root
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     runner = PipelineRunner(
         open_prs=[{"title": "Seed price history", "body": "", "headRefName": "pricelog/seed"}]
     )
@@ -748,7 +788,7 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
     scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-new": pricing(3.0e-7, 1.2e-6)}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -792,7 +832,7 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
         ]
     )
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     # deepseek-chat is pending behind an open pr: the union diff stops a
     # duplicate row, and only the genuinely new model gets a pr
@@ -801,7 +841,7 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
     branch_rows = [
         json.loads(line)
         for line in git(
-            repo_root, "show", f"{pr.branch_name('deepseek-new')}:data/history.ndjson"
+            repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson"
         ).splitlines()
     ]
     assert [row["model_id"] for row in branch_rows] == [
@@ -822,7 +862,7 @@ def test_closed_pr_branch_contributes_no_rows(tmp_path, fake_modules, repo_root)
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
     scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-new": pricing(3.0e-7, 1.2e-6)}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -854,39 +894,29 @@ def test_closed_pr_branch_contributes_no_rows(tmp_path, fake_modules, repo_root)
     git(repo_root, "push", "origin", stale_branch)
     git(repo_root, "switch", "main")
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
 
     # the rejected row dropped out of the union: deepseek-chat drifts against
-    # the landed store and re-opens its own pr, alongside the new model
+    # the landed store and both models ride the one batch pr
     assert [model_id for model_id, _url in report.providers["deepseek"].prs] == [
         "deepseek-new",
         "deepseek-chat",
     ]
     assert report.providers["deepseek"].skipped_pending == []
-    new_rows = [
+    rows = [
         json.loads(line)
         for line in git(
-            repo_root, "show", f"{pr.branch_name('deepseek-new')}:data/history.ndjson"
+            repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson"
         ).splitlines()
     ]
-    assert [row["model_id"] for row in new_rows] == [
+    assert [row["model_id"] for row in rows] == [
         "deepseek-legacy",
         "deepseek-chat",
         "deepseek-new",
-    ]
-    chat_rows = [
-        json.loads(line)
-        for line in git(
-            repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/history.ndjson"
-        ).splitlines()
-    ]
-    assert [row["model_id"] for row in chat_rows] == [
-        "deepseek-legacy",
-        "deepseek-chat",
         "deepseek-chat",
     ]
-    # the rejected 2026-08-25 row appears on neither branch
-    assert all(row["observed_at"] != "2026-08-25" for row in new_rows + chat_rows)
+    # the rejected 2026-08-25 row appears on no branch
+    assert all(row["observed_at"] != "2026-08-25" for row in rows)
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -894,7 +924,7 @@ def test_open_pr_list_fetched_once_per_run(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-a", "deepseek-b"]
     scrape["deepseek"] = {"deepseek-a": pricing(), "deepseek-b": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -945,7 +975,7 @@ def test_announce_change_rides_the_pr_branch_and_body(
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -963,15 +993,15 @@ def test_announce_change_rides_the_pr_branch_and_body(
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert report.announce == [change]
     assert report.announce_errors == []
-    (_title, body) = runner.created[0]
+    (_title, body, _head) = runner.created[0]
     assert "## announcement channels" in body
     assert "| deepseek | https://example.com/updates | `aaaaaaaa` -> `bbbbbbbb` |" in body
     branch_snapshot = json.loads(
-        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/announce.json")
+        git(repo_root, "show", f"{batch_branch('deepseek')}:data/announce.json")
     )
     assert branch_snapshot == snapshot
     # the snapshot settled on the branch only; the default branch keeps none
@@ -984,7 +1014,7 @@ def test_announce_change_without_pr_stays_stale(tmp_path, fake_modules, repo_roo
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     change = announce_change()
     monkeypatch.setattr(
         pipeline.announce,
@@ -1010,7 +1040,7 @@ def test_announce_fetch_error_does_not_block_rows(tmp_path, fake_modules, repo_r
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -1026,13 +1056,13 @@ def test_announce_fetch_error_does_not_block_rows(tmp_path, fake_modules, repo_r
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert report.announce_errors == ["deepseek https://x: FetchError: boom"]
     assert report.announce == []
     assert report.providers["deepseek"].errors == []
     assert len(runner.pr_urls) == 1
-    (_title, body) = runner.created[0]
+    (_title, body, _head) = runner.created[0]
     assert "## announcement channels" not in body
 
 
@@ -1043,7 +1073,7 @@ def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
     pcfg = make_provider_cfg("deepseek", announce_urls=("https://example.com/updates",))
-    cfg = config.Config(providers=(pcfg,), cap=3)
+    cfg = config.Config(providers=(pcfg,))
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -1060,12 +1090,12 @@ def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert fetched == ["https://example.com/updates"]
     assert report.announce == []
     branch_snapshot = json.loads(
-        git(repo_root, "show", f"{pr.branch_name('deepseek-chat')}:data/announce.json")
+        git(repo_root, "show", f"{batch_branch('deepseek')}:data/announce.json")
     )
     assert branch_snapshot["deepseek"]["https://example.com/updates"]["text"] == "one"
 
@@ -1106,15 +1136,15 @@ def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
     detect["zai"] = ["zai-chat"]
     scrape["deepseek"] = {}
     scrape["zai"] = {"zai-chat": pricing()}
-    cfg = make_cfg(3, "deepseek", "zai")
+    cfg = make_cfg("deepseek", "zai")
     seed_store(repo_root, [deepseek_prior()])
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
-    assert runner.created[0][0] == "Add zai-chat pricing for Zai"
-    zai_branch = pr.branch_name("zai-chat")
+    assert runner.created[0][0] == "Update Zai price history (1 row)"
+    zai_branch = batch_branch("zai")
     state = branch_absence(repo_root, zai_branch)
     assert state == {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": TODAY}}}
     rows = branch_rows(repo_root, zai_branch)
@@ -1132,30 +1162,33 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
     detect["zai"] = ["zai-chat"]
     scrape["deepseek"] = {}
     scrape["zai"] = {"zai-chat": pricing()}
-    cfg = make_cfg(3, "deepseek", "zai")
+    cfg = make_cfg("deepseek", "zai")
     seed_store(repo_root, [deepseek_prior()])
     runner = PipelineRunner()
 
-    pipeline.run(cfg, repo_root, runner, today=TODAY)
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     # the human merges the first pr: the counter at 1 lands with it
-    git(repo_root, "merge", "--no-ff", pr.branch_name("zai-chat"), "-m", "merge zai pr")
+    git(repo_root, "merge", "--no-ff", batch_branch("zai"), "-m", "merge zai pr")
     runner.open_prs = []
 
-    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27", now="000000")
 
     deepseek_report = second.providers["deepseek"]
     assert [model_id for model_id, _url in deepseek_report.prs] == ["deepseek-chat"]
-    assert deepseek_report.skipped_cap == []
     assert runner.created[1][0] == "Mark deepseek-chat delisted from Deepseek"
-    removal_branch = pr.branch_name("deepseek-chat")
+    removal_branch = batch_branch("deepseek", today="2026-08-27")
     rows = branch_rows(repo_root, removal_branch)
     assert [row["model_id"] for row in rows] == ["deepseek-chat", "zai-chat", "deepseek-chat"]
     removal = rows[-1]
     assert removal["removed"] is True
     assert removal["observed_at"] == "2026-08-27"
     assert list(removal) == ["source", "model_id", "observed_at", "removed"]
-    assert branch_absence(repo_root, removal_branch) == {}
+    # the counter stays at 2 on the branch; the landed-removal cleanup drops
+    # it once the row reaches the store
+    assert branch_absence(repo_root, removal_branch) == {
+        "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
+    }
     assert (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root, tip="merge zai pr")
 
@@ -1166,7 +1199,7 @@ def test_flaky_absent_run_without_pr_leaves_no_trace(tmp_path, fake_modules, rep
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     seed_store(repo_root, [deepseek_prior()])
     runner = PipelineRunner()
 
@@ -1195,7 +1228,7 @@ def test_absence_keys_on_priced_set_when_detect_priced_exists(tmp_path, fake_mod
     }
     detect["zai"] = ["zai-chat"]
     scrape["zai"] = {"zai-chat": pricing()}
-    cfg = make_cfg(3, "mistral", "zai")
+    cfg = make_cfg("mistral", "zai")
     seed_store(
         repo_root,
         [
@@ -1216,10 +1249,10 @@ def test_absence_keys_on_priced_set_when_detect_priced_exists(tmp_path, fake_mod
         ],
     )
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
 
     assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
-    zai_branch = pr.branch_name("zai-chat")
+    zai_branch = batch_branch("zai")
     assert branch_absence(repo_root, zai_branch) == {
         "mistral": {"devstral-2-25-12": {"absent_runs": 1, "since": TODAY}}
     }
@@ -1241,7 +1274,7 @@ def test_absence_skips_when_priced_detection_fails(tmp_path, fake_modules, repo_
     scrape["mistral"] = {"ministral-3-14b-25-12": pricing()}
     detect["zai"] = ["zai-chat"]
     scrape["zai"] = {"zai-chat": pricing()}
-    cfg = make_cfg(3, "mistral", "zai")
+    cfg = make_cfg("mistral", "zai")
     seed_store(
         repo_root,
         [
@@ -1255,22 +1288,22 @@ def test_absence_skips_when_priced_detection_fails(tmp_path, fake_modules, repo_
         ],
     )
 
-    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
 
     assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
     # no counter landed on the branch: the pr carries no absence state at all
-    tree = git(repo_root, "ls-tree", "-r", "--name-only", pr.branch_name("zai-chat"))
+    tree = git(repo_root, "ls-tree", "-r", "--name-only", batch_branch("zai"))
     assert "data/absence.json" not in tree.splitlines()
     assert report.providers["mistral"].errors
 
 
-def test_capped_removal_pr_keeps_entry_at_two(tmp_path, fake_modules, repo_root):
-    # a removal pr that cannot open (cap) keeps its entry at 2 so the next
-    # run re-derives it; removal prs consume the cap before price prs
+def test_removals_batch_without_cap(tmp_path, fake_modules, repo_root):
+    # two removals from one source ride one pr; the counter entries stay at 2
+    # on the branch and the landed-removal cleanup drops them after the merge
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(1, "deepseek")
+    cfg = make_cfg("deepseek")
     prior_a = store.build_row(
         "deepseek", "a", pricing(), "2026-08-19", "https://example.com/pricing"
     )
@@ -1289,18 +1322,65 @@ def test_capped_removal_pr_keeps_entry_at_two(tmp_path, fake_modules, repo_root)
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
-    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["a"]
-    assert report.providers["deepseek"].skipped_cap == ["b"]
-    assert runner.created[0][0] == "Mark a delisted from Deepseek"
-    branch = pr.branch_name("a")
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["a", "b"]
+    assert runner.created[0][0] == "Mark 2 models delisted from Deepseek"
+    branch = batch_branch("deepseek")
     rows = branch_rows(repo_root, branch)
-    assert [row["model_id"] for row in rows] == ["a", "b", "a"]
+    assert [row["model_id"] for row in rows] == ["a", "b", "a", "b"]
+    assert rows[-2]["removed"] is True
     assert rows[-1]["removed"] is True
-    # a's entry is gone; b's stays at 2 for the next run
     assert branch_absence(repo_root, branch) == {
-        "deepseek": {"b": {"absent_runs": 2, "since": "2026-08-19"}}
+        "deepseek": {
+            "a": {"absent_runs": 2, "since": "2026-08-19"},
+            "b": {"absent_runs": 2, "since": "2026-08-19"},
+        }
+    }
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_failed_batch_pr_keeps_counter_on_sibling_branch(tmp_path, fake_modules, repo_root):
+    # a failed pr open commits nothing; the raised counters ride the
+    # successful sibling branch at 2, so the next run re-derives the rows
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    detect["zai"] = ["zai-chat"]
+    scrape["deepseek"] = {}
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg("deepseek", "zai")
+    prior_a = store.build_row(
+        "deepseek", "a", pricing(), "2026-08-19", "https://example.com/pricing"
+    )
+    seed_store(repo_root, [prior_a])
+    seed_absence(
+        repo_root,
+        {"deepseek": {"a": {"absent_runs": 1, "since": "2026-08-19"}}},
+    )
+    runner = PipelineRunner(failures={"gh pr create": pr.PrError("create boom")})
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    # every batch pr failed to open; nothing lands and the committed state is
+    # untouched, so the next run re-derives from the baseline
+    assert [model_id for model_id, _url in report.providers["zai"].prs] == []
+    assert report.providers["deepseek"].errors
+    assert report.providers["zai"].errors
+    assert runner.pr_urls == []
+    assert not (repo_root / pipeline.MARKER_FILE).exists()
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+    # one source opens, the other fails: the raised counter rides the
+    # successful branch at 2
+    runner.failures = {
+        "gh pr create --draft --base main --head pricelog/deepseek": pr.PrError("boom")
+    }
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27", now="000000")
+    assert [model_id for model_id, _url in second.providers["zai"].prs] == ["zai-chat"]
+    zai_branch = runner.created[0][2]
+    assert zai_branch == batch_branch("zai", today="2026-08-27")
+    assert branch_absence(repo_root, zai_branch) == {
+        "deepseek": {"a": {"absent_runs": 2, "since": "2026-08-19"}}
     }
     assert_default_branch_clean(repo_root, tip="land absence state")
 
@@ -1311,7 +1391,7 @@ def test_reappearance_appends_fresh_row_and_clears_counter(tmp_path, fake_module
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     prior = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -1327,12 +1407,12 @@ def test_reappearance_appends_fresh_row_and_clears_counter(tmp_path, fake_module
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     provider_report = report.providers["deepseek"]
     assert [model_id for model_id, _url in provider_report.prs] == ["deepseek-chat"]
-    assert runner.created[0][0] == "Update deepseek-chat pricing for Deepseek"
-    branch = pr.branch_name("deepseek-chat")
+    assert runner.created[0][0] == "Update Deepseek price history (1 row)"
+    branch = batch_branch("deepseek")
     rows = branch_rows(repo_root, branch)
     assert [row["model_id"] for row in rows] == ["deepseek-chat", "deepseek-chat", "deepseek-chat"]
     assert rows[-1]["observed_at"] == TODAY
@@ -1346,7 +1426,7 @@ def test_openrouter_absence_appends_removal_row(tmp_path, fake_modules, repo_roo
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     model = openrouter.OpenrouterModel(
         id="deepseek/deepseek-chat",
         name="DeepSeek Chat",
@@ -1364,17 +1444,19 @@ def test_openrouter_absence_appends_removal_row(tmp_path, fake_modules, repo_roo
     )
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     or_report = report.providers["openrouter"]
     assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
     assert runner.created[0][0] == "Mark deepseek/deepseek-chat delisted from OpenRouter"
-    branch = pr.branch_name("deepseek/deepseek-chat")
+    branch = batch_branch("openrouter")
     rows = branch_rows(repo_root, branch)
     assert len(rows) == 2
     assert rows[-1]["removed"] is True
     assert rows[-1]["source"] == "openrouter"
-    assert branch_absence(repo_root, branch) == {}
+    assert branch_absence(repo_root, branch) == {
+        "openrouter": {"deepseek/deepseek-chat": {"absent_runs": 2, "since": "2026-08-20"}}
+    }
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
@@ -1386,7 +1468,7 @@ def test_openrouter_validation_failure_still_counts_present(
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     model = openrouter.OpenrouterModel(
         id="deepseek/deepseek-chat",
         name="DeepSeek Chat",
@@ -1429,7 +1511,7 @@ def test_dedup_twin_counts_present(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat-v2"]
     scrape["deepseek"] = {"deepseek-chat-v2": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
     scr.dedup_keys = lambda model_id: ["deepseek-chat"] if model_id == "deepseek-chat-v2" else []
     stored = store.build_row(
@@ -1458,7 +1540,7 @@ def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, re
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     prior = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -1481,13 +1563,44 @@ def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, re
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
+def test_landed_removal_cleanup_drops_the_entry_at_two(tmp_path, fake_modules, repo_root):
+    # a merged removal branch lands the counter at 2; the next run's cleanup
+    # drops it (the row is the record), visible on the next pr branch
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    detect["zai"] = ["zai-chat"]
+    scrape["deepseek"] = {}
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg("deepseek", "zai")
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    removal = store.build_removal_row("deepseek", "deepseek-chat", "2026-08-20")
+    seed_store(repo_root, [prior, removal])
+    seed_absence(
+        repo_root,
+        {"deepseek": {"deepseek-chat": {"absent_runs": 2, "since": "2026-08-19"}}},
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert [model_id for model_id, _url in report.providers["zai"].prs] == ["zai-chat"]
+    assert branch_absence(repo_root, batch_branch("zai")) == {}
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
 def test_absent_removed_model_does_not_churn_state(tmp_path, fake_modules, repo_root):
     # a landed removal ends absence tracking: later quiet runs recreate no
     # counter, so the state stays equal and the CI marker stays untouched
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     prior = store.build_row(
         "deepseek",
         "deepseek-chat",
@@ -1511,7 +1624,7 @@ def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -1526,7 +1639,13 @@ def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
     pipeline.run(cfg, repo_root, runner, today=TODAY)
     assert (repo_root / pipeline.MARKER_FILE).exists()
 
-    runner.open_prs = [{"title": runner.created[0][0], "body": ""}]
+    runner.open_prs = [
+        {
+            "title": runner.created[0][0],
+            "body": runner.created[0][1],
+            "headRefName": runner.created[0][2],
+        }
+    ]
     detect["deepseek"] = ["deepseek-chat", "deepseek-legacy"]
     scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-legacy": pricing()}
     pipeline.run(cfg, repo_root, runner, today="2026-08-27")
@@ -1540,7 +1659,7 @@ def test_run_changed_marker_stays_off_on_state_only_change(
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-legacy"]
     scrape["deepseek"] = {"deepseek-legacy": pricing()}
-    cfg = make_cfg(3, "deepseek")
+    cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
         "deepseek-legacy",
@@ -1576,7 +1695,7 @@ def test_eur_quote_row_converts_and_opens_pr(tmp_path, fake_modules, repo_root):
         "m": Pricing(1e-6, 2e-6, "chat", 65536, currency="EUR"),
     }
     commit_fx(repo_root, {"EUR": {"2026-08-26": 1.1643}})
-    cfg = make_cfg(3, "scaleway")
+    cfg = make_cfg("scaleway")
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
@@ -1615,16 +1734,16 @@ def test_eur_refresh_converts_against_the_dated_rate(tmp_path, fake_modules, rep
         "currency_rate_date": "2026-08-19",
     }
     seed_store(repo_root, [prior])
-    cfg = make_cfg(3, "scaleway")
+    cfg = make_cfg("scaleway")
     runner = PipelineRunner()
 
-    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert [model_id for model_id, _url in report.providers["scaleway"].prs] == ["m"]
     branch_rows = [
         json.loads(line)
         for line in git(
-            repo_root, "show", f"{pr.branch_name('m')}:data/history.ndjson"
+            repo_root, "show", f"{batch_branch('scaleway')}:data/history.ndjson"
         ).splitlines()
     ]
     assert len(branch_rows) == 2
@@ -1640,7 +1759,7 @@ def test_dbu_provider_uses_the_configured_rate(tmp_path, fake_modules, repo_root
     detect, scrape = fake_modules
     detect["databricks"] = ["m"]
     scrape["databricks"] = {"m": Pricing(7e-8, 1.4e-7, "chat", 65536, currency="DBU")}
-    cfg = config.Config(providers=(make_provider_cfg("databricks", currency_rate=0.55),), cap=3)
+    cfg = config.Config(providers=(make_provider_cfg("databricks", currency_rate=0.55),))
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
@@ -1664,7 +1783,7 @@ def test_missing_fx_rate_fails_the_run_loudly(tmp_path, fake_modules, repo_root)
     detect, scrape = fake_modules
     detect["scaleway"] = ["m"]
     scrape["scaleway"] = {"m": Pricing(1e-6, 2e-6, "chat", 65536, currency="EUR")}
-    cfg = make_cfg(3, "scaleway")
+    cfg = make_cfg("scaleway")
 
     with pytest.raises(store.FxError, match="EUR"):
         pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)

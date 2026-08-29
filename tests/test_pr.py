@@ -9,6 +9,8 @@ import pytest
 from ai_pricelog import announce, pr
 from conftest import FakeRunner
 
+BATCH_KEY = "deepseek@2026-08-26-000000"
+
 
 def _sha8(key: str) -> str:
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
@@ -17,7 +19,6 @@ def _sha8(key: str) -> str:
 def spec(**overrides) -> pr.PrSpec:
     values = dict(
         source="deepseek",
-        model_id="deepseek-chat",
         provider="DeepSeek",
         source_url="https://api-docs.deepseek.com/quick_start/pricing/",
         rows=(
@@ -29,9 +30,19 @@ def spec(**overrides) -> pr.PrSpec:
                 "output_mtok": 1.1,
             },
         ),
+        batch_key=BATCH_KEY,
     )
     values.update(overrides)
     return pr.PrSpec(**values)
+
+
+def removal_row(model_id: str = "deepseek-chat") -> dict:
+    return {
+        "source": "deepseek",
+        "model_id": model_id,
+        "observed_at": "2026-08-26",
+        "removed": True,
+    }
 
 
 def test_branch_name_slug_and_sha8():
@@ -55,14 +66,32 @@ def test_branch_name_digest_disambiguates_slug_collisions():
 
 
 def test_spec_branch():
-    assert spec().branch == pr.branch_name("deepseek-chat")
+    assert spec().branch == pr.branch_name(BATCH_KEY)
     assert spec(seed=True).branch == "pricelog/seed"
 
 
 def test_spec_titles():
-    assert spec().title == "Add deepseek-chat pricing for DeepSeek"
-    assert spec(update=True).title == "Update deepseek-chat pricing for DeepSeek"
+    assert spec().title == "Update DeepSeek price history (1 row)"
+    assert spec(rows=(removal_row(),)).title == "Mark deepseek-chat delisted from DeepSeek"
+    assert (
+        spec(rows=(removal_row("a"), removal_row("b"))).title
+        == "Mark 2 models delisted from DeepSeek"
+    )
     assert spec(seed=True).title == "Seed price history"
+
+
+def test_spec_mixed_title_counts_both():
+    rows = (
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "input_mtok": 0.27,
+            "output_mtok": 1.1,
+        },
+        removal_row("deepseek-old"),
+    )
+    assert spec(rows=rows).title == "Update DeepSeek price history (1 row, 1 removal)"
 
 
 def test_spec_body_disclosure_is_first_and_linked_to_the_run():
@@ -85,6 +114,10 @@ def test_spec_body_flat_row_table():
     assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
 
 
+def test_spec_body_summary_line():
+    assert "this branch carries 1 price row and 0 removals." in spec().body
+
+
 def test_spec_body_cache_write_column():
     row = {
         "source": "openrouter",
@@ -98,7 +131,6 @@ def test_spec_body_cache_write_column():
     }
     body = spec(
         source="openrouter",
-        model_id="anthropic/claude-opus-5-fast",
         provider="OpenRouter",
         source_url="",
         rows=(row,),
@@ -120,7 +152,7 @@ def test_spec_body_peak_row():
         "peak_output_mtok": 1.32,
         "peak_windows": [["01:00:00Z", "04:00:00Z"]],
     }
-    body = spec(model_id="deepseek-v4-flash", rows=(row,)).body
+    body = spec(rows=(row,)).body
     assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
 
 
@@ -157,7 +189,6 @@ def test_spec_body_windowed_rates_table():
     }
     body = spec(
         source="openrouter",
-        model_id="deepseek/deepseek-v4-pro-0813",
         provider="OpenRouter",
         source_url="",
         rows=(row,),
@@ -192,9 +223,7 @@ def test_spec_body_quoted_line_for_non_usd_row():
         "currency_rate": 2.0,
         "currency_rate_date": "2026-08-28",
     }
-    body = spec(
-        source="scaleway", model_id="m", provider="Scaleway", source_url="", rows=(row,)
-    ).body
+    body = spec(source="scaleway", provider="Scaleway", source_url="", rows=(row,)).body
     assert "| scaleway | `m` | 2026-08-28 | 1 | — | — | 2 | — |" in body
     assert "quoted `0.5 EUR per 1M tokens`, rate `2` on `2026-08-28`" in body
 
@@ -211,13 +240,7 @@ def test_spec_body_quoted_line_uses_the_row_unit():
         "currency_rate": 0.55,
         "currency_rate_date": "2026-08-28",
     }
-    body = spec(
-        source="databricks",
-        model_id="m",
-        provider="Databricks",
-        source_url="",
-        rows=(row,),
-    ).body
+    body = spec(source="databricks", provider="Databricks", source_url="", rows=(row,)).body
     assert "quoted `0.7 DBU per 1M dbus`, rate `0.55` on `2026-08-28`" in body
 
 
@@ -266,7 +289,46 @@ def test_spec_body_seed_snapshot_line():
     )
     body = spec(seed=True, source_url="", rows=rows).body
     assert "first price-history snapshot: 2 rows across 2 sources." in body
+    assert "this branch carries" not in body
     assert "source: " not in body
+
+
+def test_removal_spec_title_and_branch():
+    s = spec(rows=(removal_row(),))
+    assert s.title == "Mark deepseek-chat delisted from DeepSeek"
+    assert s.branch == pr.branch_name(BATCH_KEY)
+
+
+def test_removal_spec_body_lists_the_removal_without_prices():
+    body = spec(rows=(removal_row(),)).body
+    assert "## removals" in body
+    assert "`deepseek-chat` no longer listed by DeepSeek as of 2026-08-26." in body
+    assert "this branch carries 0 price rows and 1 removal." in body
+    assert "## new rows" not in body
+    assert "| input (/1M)" not in body
+    assert "- [ ] each removal: model no longer listed on the source page" in body
+    assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
+
+
+def test_mixed_spec_body_renders_both_sections():
+    rows = (
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "input_mtok": 0.27,
+            "output_mtok": 1.1,
+        },
+        removal_row("deepseek-old"),
+    )
+    body = spec(rows=rows).body
+    assert "## removals" in body
+    assert "`deepseek-old` no longer listed by DeepSeek as of 2026-08-26." in body
+    assert "## new rows" in body
+    assert "| deepseek | `deepseek-chat` |" in body
+    assert "this branch carries 1 price row and 1 removal." in body
+    assert "- [ ] each removal: model no longer listed on the source page" in body
+    assert "- [ ] prices verified against the source page" in body
 
 
 def test_run_url_from_env(monkeypatch):
@@ -419,31 +481,6 @@ def test_open_pr_uses_spec_title_and_body():
     assert cmd[0:3] == ["gh", "pr", "create"]
     assert "--draft" in cmd
     assert cmd[cmd.index("--base") + 1] == "main"
-    assert cmd[cmd.index("--head") + 1] == pr.branch_name("deepseek-chat")
+    assert cmd[cmd.index("--head") + 1] == pr.branch_name(BATCH_KEY)
     assert cmd[cmd.index("--title") + 1] == s.title
     assert cmd[cmd.index("--body") + 1] == s.body
-
-
-def removal_row():
-    return {
-        "source": "deepseek",
-        "model_id": "deepseek-chat",
-        "observed_at": "2026-08-26",
-        "removed": True,
-    }
-
-
-def test_removal_spec_title_and_branch():
-    s = spec(removed=True, rows=(removal_row(),))
-    assert s.title == "Mark deepseek-chat delisted from DeepSeek"
-    assert s.branch == pr.branch_name("deepseek-chat")
-
-
-def test_removal_spec_body_lists_the_removal_without_prices():
-    body = spec(removed=True, rows=(removal_row(),)).body
-    assert "## removal" in body
-    assert "`deepseek-chat` no longer listed by DeepSeek as of 2026-08-26." in body
-    assert "## new rows" not in body
-    assert "| input (/1M)" not in body
-    assert "- [ ] model no longer listed on the source page" in body
-    assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body

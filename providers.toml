@@ -7,9 +7,6 @@
 # surface. status feeds stay out (incidents only). channel choice evidence:
 # docs/research/announce-channels/.
 
-[settings]
-cap = 10
-
 [deepseek]
 provider = "DeepSeek"
 detector = "deepseek_page"

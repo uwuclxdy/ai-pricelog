@@ -1,25 +1,25 @@
-"""The 6-hourly run: append observed price and removal rows, open one draft PR per change.
+"""The 6-hourly run: append observed price and removal rows, open one draft PR per source.
 
 Watches the provider pages through the detector/scraper pairs, plus the
-OpenRouter models API. Every PR branch carries the landed store (the
-load-time rows plus the open PRs' pending branches' rows) plus only the rows
-its own PR covers, on a `pricelog/<slug>-<sha8>` branch (never the default
-branch). Rows for models that got no PR (draft cap or failed open) stay out
-of every branch: the human review of each draft PR is the only guard against
-a misread price, so a row lands only under its own PR or the seed, and a
-capped-out model re-candidates against the landed store on the next run. The
-index and the recomputed README stats ride the same branch commit, and one
-human-reviewed draft PR is opened per (source, model_id) pair. The tree is
-restored to HEAD after each PR, so every PR branch starts from the default
-branch tip. When the store was empty at load, one seed PR carries all rows
-with no draft cap; while that seed PR is still open, the run skips itself.
+OpenRouter models API. A run groups its new rows into one draft pr per
+source (removal rows included), with no cap: every pr branch carries the
+landed store (the load-time rows plus the open prs' pending branches' rows)
+plus only the rows its own pr covers, on a `pricelog/<slug>-<sha8>` batch
+branch (never the default branch). Rows for models whose pr cannot open stay
+out of every branch: the human review of each draft pr is the only guard
+against a misread price, so a row lands only under its own pr or the seed,
+and a skipped model re-candidates against the landed store on the next run.
+The index and the recomputed README stats ride the same branch commit. The
+tree is restored to HEAD after each pr, so every pr branch starts from the
+default branch tip. When the store was empty at load, one seed pr carries
+all rows; while that seed pr is still open, the run skips itself.
 
 A stored model absent from its source's page twice (both observations landed
-through PRs) gets a removal row and a `Mark <id> delisted` PR; the counters
-live in data/absence.json, which only ever lands on PR branches, so a flaky
-page never fakes a delisting. When the run opens a PR it touches
-`.run-changed` for the CI step that reads it; a state-only diff with no PR
-opens nothing reviewable and leaves the marker alone.
+through prs) gets a removal row; the counters live in data/absence.json,
+which only ever lands on pr branches, so a flaky page never fakes a
+delisting. When the run opens a pr it touches `.run-changed` for the CI step
+that reads it; a state-only diff with no pr opens nothing reviewable and
+leaves the marker alone.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import logging
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -52,7 +52,6 @@ class ProviderReport:
     prs: list[tuple[str, str]] = field(default_factory=list)
     skipped_pending: list[str] = field(default_factory=list)
     skipped_no_pricing: list[str] = field(default_factory=list)
-    skipped_cap: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
 
@@ -65,15 +64,12 @@ class RunReport:
 
 @dataclass
 class _PrGroup:
-    """The new rows one PR carries, keyed by (source, model_id)."""
+    """The new rows one pr carries, grouped per source."""
 
     source: str
-    model_id: str
     provider: str
     source_url: str
     rows: list[dict[str, object]] = field(default_factory=list)
-    update: bool = False
-    removed: bool = False
 
 
 def run(
@@ -81,9 +77,11 @@ def run(
     repo_root: Path,
     runner: pr.PrRunner | None = None,
     today: str | None = None,
+    now: str | None = None,
 ) -> RunReport:
     runner = runner or pr.PrRunner()
     today = today or date.today().isoformat()
+    stamp = now or datetime.now().strftime("%H%M%S")
     history_path = repo_root / HISTORY_FILE
     marker_path = repo_root / MARKER_FILE
     marker_path.unlink(missing_ok=True)
@@ -131,7 +129,7 @@ def run(
     }
 
     plan: dict[tuple[str, str], _PrGroup] = {}
-    removal_groups: list[tuple[_PrGroup, dict[str, object]]] = []
+    removal_groups: list[_PrGroup] = []
 
     for pcfg in cfg.providers:
         provider_report = report.providers[pcfg.key] = ProviderReport()
@@ -204,7 +202,6 @@ def run(
         run_rows = [row for group in plan.values() for row in group.rows]
         spec = pr.PrSpec(
             source="seed",
-            model_id="seed",
             provider="",
             source_url="",
             rows=tuple(run_rows),
@@ -227,86 +224,41 @@ def run(
         )
         if url is None:
             for group in plan.values():
-                _record_error(report, group.source, f"seed pr failed for {group.model_id}")
+                for row in group.rows:
+                    _record_error(report, group.source, f"seed pr failed for {row['model_id']}")
             return report
         for group in plan.values():
             _record_pr(report, group, url)
         _touch_marker(marker_path)
         return report
 
-    # removal prs open before price prs and consume the cap in plan order; a
-    # removal whose pr cannot open keeps its counter entry at 2 in the state
-    # every branch carries, so the next run re-derives it
-    opened = 0
-    kept: dict[tuple[str, str], dict[str, object]] = {}
-    for group, entry in removal_groups:
-        if opened >= cfg.cap:
-            report.providers[group.source].skipped_cap.append(group.model_id)
-            kept[(group.source, group.model_id)] = entry
-            log.info("removal pr for %s skipped: draft cap", group.model_id)
-        else:
-            opened += 1
-
-    def state_for_branch() -> dict[str, dict[str, dict[str, object]]]:
-        merged = {source: dict(entries) for source, entries in fresh_absence.items()}
-        for (source, model_id), entry in kept.items():
-            merged.setdefault(source, {})[model_id] = dict(entry)
-        return merged
-
-    opened = 0
-    for group, entry in removal_groups:
-        if (group.source, group.model_id) in kept:
-            continue  # capped above
-        spec = pr.PrSpec(
-            source=group.source,
-            model_id=group.model_id,
-            provider=group.provider,
-            source_url=group.source_url,
-            rows=tuple(group.rows),
-            removed=True,
-            run_url=run_url,
-            announce=fetch.changes,
-            absence_update=absence_diff or bool(kept),
-        )
-        url = _open_group_pr(
-            repo_root,
-            base,
-            base_sha,
-            original_branch,
-            spec,
-            rows + group.rows,
-            f"feat: mark {group.model_id} delisted",
-            runner,
-            announce_updates,
-            state_for_branch() if absence_diff or kept else None,
-        )
-        if url is None:
-            _record_error(report, group.source, f"pr open failed for {group.model_id}")
-            kept[(group.source, group.model_id)] = entry
-            continue
-        _record_pr(report, group, url)
-        opened += 1
-        log.info("opened removal pr for %s: %s", group.model_id, url)
-
+    # one pr per source per run: a source's removal rows and price rows ride
+    # the same pr, so a burst groups into a handful of prs and nothing is
+    # capped (the pending scan still settles models behind open prs)
+    batches: dict[str, _PrGroup] = {}
     for group in plan.values():
-        if opened >= cfg.cap:
-            report.providers[group.source].skipped_cap.append(group.model_id)
-            log.info("pr for %s skipped: draft cap", group.model_id)
-            continue
+        target = batches.setdefault(
+            group.source, _PrGroup(group.source, group.provider, group.source_url)
+        )
+        target.rows.extend(group.rows)
+    for group in removal_groups:
+        target = batches.setdefault(
+            group.source, _PrGroup(group.source, group.provider, group.source_url)
+        )
+        target.rows.extend(group.rows)
+
+    opened = 0
+    for group in batches.values():
         spec = pr.PrSpec(
             source=group.source,
-            model_id=group.model_id,
             provider=group.provider,
             source_url=group.source_url,
             rows=tuple(group.rows),
-            update=group.update,
             run_url=run_url,
             announce=fetch.changes,
-            absence_update=absence_diff or bool(kept),
+            absence_update=absence_diff,
+            batch_key=f"{group.source}@{today}-{stamp}",
         )
-        # rows land only under the pr that reviews them, so a capped-out or
-        # failed group settles nothing and re-candidates next run
-        verb = "update" if group.update else "add"
         url = _open_group_pr(
             repo_root,
             base,
@@ -314,17 +266,20 @@ def run(
             original_branch,
             spec,
             rows + group.rows,
-            f"feat: {verb} {group.model_id} price history",
+            _commit_message(spec),
             runner,
             announce_updates,
-            state_for_branch() if absence_diff or kept else None,
+            fresh_absence if absence_diff else None,
         )
         if url is None:
-            _record_error(report, group.source, f"pr open failed for {group.model_id}")
+            # a failed open commits nothing: the rows re-derive against the
+            # landed store on the next run, the counters against the
+            # committed baseline (skip-and-retry)
+            _record_error(report, group.source, f"pr open failed for {len(group.rows)} rows")
             continue
         _record_pr(report, group, url)
         opened += 1
-        log.info("opened pr for %s: %s", group.model_id, url)
+        log.info("opened pr for %s: %s", group.source, url)
     if opened > 0:
         _touch_marker(marker_path)
     return report
@@ -405,7 +360,7 @@ def _add_candidates(
             continue
         group = plan.setdefault(
             (pcfg.key, model_id),
-            _PrGroup(pcfg.key, model_id, pcfg.provider, pcfg.scraper_url),
+            _PrGroup(pcfg.key, pcfg.provider, pcfg.scraper_url),
         )
         group.rows.append(row)
 
@@ -467,7 +422,7 @@ def _refresh_drift(
         # the fresh row even at unchanged prices so the index drops removed_at
         group = plan.setdefault(
             (pcfg.key, stored),
-            _PrGroup(pcfg.key, stored, pcfg.provider, pcfg.scraper_url, update=True),
+            _PrGroup(pcfg.key, pcfg.provider, pcfg.scraper_url),
         )
         group.rows.append(row)
 
@@ -479,7 +434,7 @@ def _openrouter_rows(
     open_prs: Sequence[pr.OpenPr],
     today: str,
     state: dict[str, dict[str, dict[str, object]]],
-    removal_groups: list[tuple[_PrGroup, dict[str, object]]],
+    removal_groups: list[_PrGroup],
 ) -> None:
     """OpenRouter rows: the API is the source, store membership settles ids."""
     or_report = report.providers["openrouter"] = ProviderReport()
@@ -517,13 +472,7 @@ def _openrouter_rows(
         or_report.candidates.append(model_id)
         group = plan.setdefault(
             ("openrouter", model_id),
-            _PrGroup(
-                "openrouter",
-                model_id,
-                "OpenRouter",
-                openrouter.OPENROUTER_MODELS_URL,
-                update=last_row is not None,
-            ),
+            _PrGroup("openrouter", "OpenRouter", openrouter.OPENROUTER_MODELS_URL),
         )
         group.rows.append(row)
     stored_ids = {entry["model_id"] for entry in rows if entry.get("source") == "openrouter"}
@@ -547,7 +496,7 @@ def _track_provider_absence(
     absence_ids: list[str] | None,
     rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
-    removal_groups: list[tuple[_PrGroup, dict[str, object]]],
+    removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
     today: str,
 ) -> None:
@@ -593,15 +542,18 @@ def _track_absence(
     present_ids: set[str],
     rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
-    removal_groups: list[tuple[_PrGroup, dict[str, object]]],
+    removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
     today: str,
 ) -> None:
     """Move the per-model absence counters and plan removal rows.
 
     A present id clears its entry; an absent id raises its counter, and the
-    second landed absent observation plans a removal row whose PR opens like
-    any price PR (cap shared). Ids behind an open PR are skipped entirely.
+    second landed absent observation plans a removal row whose pr opens like
+    any price row (same per-source batch). The raised entry stays in the
+    state: the landed-removal cleanup drops it once the row reaches the
+    store, and a rejected pr leaves the committed baseline untouched for the
+    next run to re-derive. Ids behind an open pr are skipped entirely.
     """
     source_state = state.setdefault(source, {})
     # entries only ever describe stored ids; drop anything else
@@ -637,10 +589,9 @@ def _track_absence(
             continue
         row = store.build_removal_row(source, model_id, today)
         validate.validate_row(row)
-        group = _PrGroup(source, model_id, provider, source_url, removed=True)
+        group = _PrGroup(source, provider, source_url)
         group.rows.append(row)
-        removal_groups.append((group, dict(entry)))
-        del source_state[model_id]
+        removal_groups.append(group)
 
 
 def _open_group_pr(
@@ -740,8 +691,13 @@ def _restore(repo_root: Path, original_branch: str, base_sha: str, runner: pr.Pr
 
 def _record_pr(report: RunReport, group: _PrGroup, url: str) -> None:
     provider_report = report.providers[group.source]
-    provider_report.rows.extend([group.model_id] * len(group.rows))
-    provider_report.prs.append((group.model_id, url))
+    provider_report.rows.extend(row["model_id"] for row in group.rows)
+    provider_report.prs.extend((row["model_id"], url) for row in group.rows)
+
+
+def _commit_message(spec: pr.PrSpec) -> str:
+    """The branch commit subject: the pr title as a feat line."""
+    return f"feat: {spec.title[0].lower()}{spec.title[1:]}"
 
 
 def _record_error(report: RunReport, source: str, message: str) -> None:

@@ -56,37 +56,50 @@ class PrRunner:
 class PrSpec:
     """One history PR: the new rows, the branch, the title and body.
 
-    Price rows render as a price table; a removal spec renders the
-    delisting with no price columns.
+    A batch spec carries one source's rows from one run, removal rows
+    included; the body renders removals and price rows as separate sections.
+    A seed spec carries every source's first rows.
     """
 
     source: str
-    model_id: str
     provider: str
     source_url: str
     rows: tuple[dict[str, object], ...]
-    update: bool = False
-    removed: bool = False
     seed: bool = False
     run_url: str | None = None
     announce: tuple[announce.ChannelChange, ...] = ()
     absence_update: bool = False
+    batch_key: str = ""
 
     @property
     def branch(self) -> str:
-        return SEED_BRANCH if self.seed else branch_name(self.model_id)
+        return SEED_BRANCH if self.seed else branch_name(self.batch_key)
+
+    def _prices(self) -> list[dict[str, object]]:
+        return [row for row in self.rows if row.get("removed") is not True]
+
+    def _removals(self) -> list[dict[str, object]]:
+        return [row for row in self.rows if row.get("removed") is True]
 
     @property
     def title(self) -> str:
         if self.seed:
             return "Seed price history"
-        if self.removed:
-            return f"Mark {self.model_id} delisted from {self.provider}"
-        verb = "Update" if self.update else "Add"
-        return f"{verb} {self.model_id} pricing for {self.provider}"
+        prices, removals = self._prices(), self._removals()
+        if not prices:
+            if len(removals) == 1:
+                return f"Mark {removals[0]['model_id']} delisted from {self.provider}"
+            return f"Mark {len(removals)} models delisted from {self.provider}"
+        row_noun = "row" if len(prices) == 1 else "rows"
+        suffix = f" ({len(prices)} {row_noun}"
+        if removals:
+            removal_noun = "removal" if len(removals) == 1 else "removals"
+            suffix += f", {len(removals)} {removal_noun}"
+        return f"Update {self.provider} price history{suffix})"
 
     @property
     def body(self) -> str:
+        prices, removals = self._prices(), self._removals()
         lines = [self._disclaimer(), ""]
         if self.seed:
             lines += [
@@ -94,19 +107,25 @@ class PrSpec:
                 f"across {len({row['source'] for row in self.rows})} sources.",
                 "",
             ]
-            lines += self._rows_table()
-        elif self.removed:
-            lines += ["## removal", ""]
-            for row in self.rows:
+        else:
+            price_noun = "price row" + ("s" if len(prices) != 1 else "")
+            removal_noun = "removal" + ("s" if len(removals) != 1 else "")
+            lines += [
+                f"this branch carries {len(prices)} {price_noun} and "
+                f"{len(removals)} {removal_noun}.",
+                "",
+            ]
+        if removals:
+            lines += ["## removals", ""]
+            for row in removals:
                 lines.append(
                     f"`{row['model_id']}` no longer listed by {self.provider} "
                     f"as of {row['observed_at']}."
                 )
             lines += [""]
-        else:
-            lines += self._rows_table()
-        if not self.removed:
-            lines += self._window_rates_table()
+        if prices:
+            lines += self._rows_table(prices)
+            lines += self._window_rates_table(prices)
         if self.source_url:
             lines += ["", f"source: {self.source_url}"]
         if self.announce:
@@ -137,7 +156,7 @@ class PrSpec:
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 
-    def _rows_table(self) -> list[str]:
+    def _rows_table(self, rows: list[dict[str, object]]) -> list[str]:
         lines = [
             "## new rows",
             "",
@@ -145,13 +164,13 @@ class PrSpec:
             " cache write 5m/1h (/1M) | output (/1M) | peak (/1M) |",
             "|---|---|---|---|---|---|---|---|",
         ]
-        lines.extend(self._row_line(row) for row in self.rows)
+        lines.extend(self._row_line(row) for row in rows)
         return lines
 
-    def _window_rates_table(self) -> list[str]:
+    def _window_rates_table(self, rows: list[dict[str, object]]) -> list[str]:
         """One line per windowed-rate entry: the scheduled rates a reviewer checks."""
         lines: list[str] = []
-        for row in self.rows:
+        for row in rows:
             for entry in row.get("window_rates") or []:
                 if not lines:
                     lines = [
@@ -199,28 +218,19 @@ class PrSpec:
         return f"- **opened automatically by the [GitHub Action]({link}).**"
 
     def _review_section(self) -> list[str]:
-        if self.removed:
-            return [
-                "",
-                "## review checklist",
-                "",
-                "- [ ] model no longer listed on the source page",
-                "- [ ] provider name correct",
-                "- [ ] a sibling merge conflict: concatenate both histories, dedupe"
-                " exact lines only (a key-based union drops same-day updates);"
-                " index.json heals on the next push",
-            ]
-        return [
-            "",
-            "## review checklist",
-            "",
-            "- [ ] prices verified against the source page",
+        lines = ["", "## review checklist", ""]
+        if self._removals():
+            lines.append("- [ ] each removal: model no longer listed on the source page")
+        if self._prices():
+            lines.append("- [ ] prices verified against the source page")
+            lines.append("- [ ] peak/off-peak rates match the page")
+        lines += [
             "- [ ] provider name correct",
-            "- [ ] peak/off-peak rates match the page",
             "- [ ] a sibling merge conflict: concatenate both histories, dedupe"
             " exact lines only (a key-based union drops same-day updates);"
             " index.json heals on the next push",
         ]
+        return lines
 
 
 def _fmt(value: object) -> str:
