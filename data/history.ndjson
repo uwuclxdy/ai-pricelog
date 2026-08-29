@@ -1174,3 +1174,4 @@
 {"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-28","removed":true}
 {"source":"novita","model_id":"inclusionai/ling-3.0-flash-fast","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"gryphe/mythomist-7b","observed_at":"2026-08-29","removed":true}
+{"source":"openrouter","model_id":"microsoft/wizardlm-2-7b","observed_at":"2026-08-29","removed":true}
