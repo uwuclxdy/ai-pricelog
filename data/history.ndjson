@@ -1167,3 +1167,4 @@
 {"source":"mistral","model_id":"codestral-2405","observed_at":"2026-08-28","removed":true}
 {"source":"mistral","model_id":"devstral-small-2505","observed_at":"2026-08-28","removed":true}
 {"source":"mistral","model_id":"ministral-8b-24-1","observed_at":"2026-08-28","removed":true}
+{"source":"mistral","model_id":"pixtral-12b-2409","observed_at":"2026-08-28","removed":true}
