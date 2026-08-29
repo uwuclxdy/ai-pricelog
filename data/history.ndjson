@@ -1165,3 +1165,4 @@
 {"source":"zai","model_id":"glm-5-turbo","observed_at":"2026-08-28","removed":true}
 {"source":"zai","model_id":"glm-5v-turbo","observed_at":"2026-08-28","removed":true}
 {"source":"mistral","model_id":"codestral-2405","observed_at":"2026-08-28","removed":true}
+{"source":"mistral","model_id":"devstral-small-2505","observed_at":"2026-08-28","removed":true}
