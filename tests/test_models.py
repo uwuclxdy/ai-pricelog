@@ -75,6 +75,15 @@ def test_committed_deepseek_alias_chains_are_dated_and_contiguous():
         )
 
 
+def test_committed_alias_records_are_ordered_and_non_overlapping():
+    data = json.loads((DATA / "models.json").read_text(encoding="utf-8"))
+    for alias, chain in data["aliases"].items():
+        assert chain, alias
+        for a, b in zip(chain, chain[1:], strict=False):
+            assert a["to"] is not None, f"{alias}: an open-ended record must end the chain"
+            assert a["to"] <= b["from"], f"{alias}: {a} overlaps or reorders against {b}"
+
+
 def test_load_models_normalizes_source_spellings_to_lists(tmp_path):
     path = models_file(
         tmp_path,
