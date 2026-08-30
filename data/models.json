@@ -131,6 +131,7 @@
     },
     "deepseek-r1": {
       "sources": {
+        "deepseek": "deepseek-r1",
         "openrouter": "deepseek/deepseek-r1"
       },
       "name": "R1"
@@ -138,6 +139,7 @@
     "deepseek-r1-0528": {
       "sources": {
         "deepinfra": "deepseek-r1-0528",
+        "deepseek": "deepseek-r1-0528",
         "novita": "deepseek/deepseek-r1-0528",
         "openrouter": "deepseek/deepseek-r1-0528"
       },
@@ -153,6 +155,7 @@
     "deepseek-v3": {
       "sources": {
         "deepinfra": "deepseek-v3",
+        "deepseek": "deepseek-v3",
         "openrouter": "deepseek/deepseek-chat"
       },
       "name": "DeepSeek V3"
@@ -160,18 +163,21 @@
     "deepseek-v3-0324": {
       "sources": {
         "deepinfra": "deepseek-v3-0324",
+        "deepseek": "deepseek-v3-0324",
         "novita": "deepseek/deepseek-v3-0324"
       }
     },
     "deepseek-v3.1": {
       "sources": {
         "deepinfra": "deepseek-v3.1",
+        "deepseek": "deepseek-v3.1",
         "novita": "deepseek/deepseek-v3.1",
         "sambanova": "deepseek-v3.1"
       }
     },
     "deepseek-v3.1-terminus": {
       "sources": {
+        "deepseek": "deepseek-v3.1-terminus",
         "novita": "deepseek/deepseek-v3.1-terminus",
         "openrouter": "deepseek/deepseek-v3.1-terminus"
       },
@@ -181,6 +187,7 @@
       "sources": {
         "dashscope": "deepseek-v3.2",
         "deepinfra": "deepseek-v3.2",
+        "deepseek": "deepseek-v3.2",
         "digitalocean": "deepseek-v3.2",
         "novita": "deepseek/deepseek-v3.2",
         "openrouter": "deepseek/deepseek-v3.2",
@@ -190,6 +197,7 @@
     },
     "deepseek-v3.2-exp": {
       "sources": {
+        "deepseek": "deepseek-v3.2-exp",
         "novita": "deepseek/deepseek-v3.2-exp",
         "openrouter": "deepseek/deepseek-v3.2-exp"
       },
