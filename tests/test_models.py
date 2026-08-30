@@ -13,7 +13,7 @@ DATA = Path(__file__).resolve().parents[1] / "data"
 def models_file(tmp_path: Path, **overrides) -> Path:
     path = tmp_path / "models-test.json"
     data = {
-        "version": 1,
+        "version": 2,
         "models": {
             "m1": {"name": "M1", "sources": {"a": "m1", "b": "vendor/m1"}},
         },
@@ -25,8 +25,22 @@ def models_file(tmp_path: Path, **overrides) -> Path:
 
 def test_committed_models_file_passes_schema():
     mapping = load_models(DATA / "models.json")
-    assert mapping["deepseek-v4-pro"]["sources"]["openrouter"] == "deepseek/deepseek-v4-pro"
+    assert mapping["deepseek-v4-pro"]["sources"]["openrouter"] == ["deepseek/deepseek-v4-pro"]
     assert mapping["deepseek-v4-pro"]["name"] == "DeepSeek V4 Pro"
+    assert mapping["deepseek-v4-flash"]["sources"]["deepseek"] == [
+        "deepseek-v4-flash",
+        "deepseek-chat",
+        "deepseek-reasoner",
+    ]
+
+
+def test_load_models_normalizes_source_spellings_to_lists(tmp_path):
+    path = models_file(
+        tmp_path,
+        models={"m1": {"sources": {"a": "m1", "b": ["vendor/m1", "vendor/m1-alias"]}}},
+    )
+    mapping = load_models(path)
+    assert mapping["m1"]["sources"] == {"a": ["m1"], "b": ["vendor/m1", "vendor/m1-alias"]}
 
 
 def test_load_models_accepts_a_missing_file():
@@ -36,7 +50,8 @@ def test_load_models_accepts_a_missing_file():
 @pytest.mark.parametrize(
     ("overrides", "match"),
     [
-        ({"version": 2}, "version"),
+        ({"version": 1}, "version"),
+        ({"version": 3}, "version"),
         ({"version": True}, "version"),
         ({"models": []}, "'models'"),
         ({"models": {"": {"sources": {"a": "m1"}}}}, "canonical id"),
@@ -44,6 +59,10 @@ def test_load_models_accepts_a_missing_file():
         ({"models": {"m1": {"name": ""}}}, "name"),
         ({"models": {"m1": {"sources": {}}}}, "sources"),
         ({"models": {"m1": {"sources": {"a": ""}}}}, "sources"),
+        ({"models": {"m1": {"sources": {"a": []}}}}, "sources"),
+        ({"models": {"m1": {"sources": {"a": [""]}}}}, "sources"),
+        ({"models": {"m1": {"sources": {"a": [1]}}}}, "sources"),
+        ({"models": {"m1": {"sources": {"a": {"b": 1}}}}}, "sources"),
     ],
 )
 def test_bad_models_file_rejected(tmp_path, overrides, match):
@@ -77,6 +96,17 @@ def test_hint_candidates_skip_mapped_pairs():
         }
     }
     assert hint_candidates(rows, mapping, {("deepseek", "deepseek-v4-pro")}) == []
+
+
+def test_hint_candidates_skip_pairs_mapped_through_a_list():
+    rows = [
+        {"source": "deepseek", "model_id": "deepseek-chat", "observed_at": "t"},
+        {"source": "openrouter", "model_id": "deepseek-chat", "observed_at": "t"},
+    ]
+    mapping = {
+        "deepseek-v4-flash": {"sources": {"deepseek": ["deepseek-v4-flash", "deepseek-chat"]}}
+    }
+    assert hint_candidates(rows, mapping, {("deepseek", "deepseek-chat")}) == []
 
 
 def test_hint_candidates_ignore_same_source_and_unrelated_spellings():

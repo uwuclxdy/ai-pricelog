@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "models": {
     "claude-fable-5": {
       "sources": {
@@ -187,7 +187,7 @@
         "avian": "deepseek-v4-flash",
         "dashscope": "deepseek-v4-flash",
         "deepinfra": "deepseek-v4-flash",
-        "deepseek": "deepseek-v4-flash",
+        "deepseek": ["deepseek-v4-flash", "deepseek-chat", "deepseek-reasoner"],
         "digitalocean": "deepseek-v4-flash",
         "novita": "deepseek/deepseek-v4-flash",
         "openrouter": "deepseek/deepseek-v4-flash"

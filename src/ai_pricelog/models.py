@@ -30,8 +30,8 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
     if not isinstance(data, dict):
         raise MappingError(f"models file '{path}': must be an object")
     version = data.get("version")
-    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
-        raise MappingError(f"models file '{path}': version must be the integer 1")
+    if isinstance(version, bool) or not isinstance(version, int) or version != 2:
+        raise MappingError(f"models file '{path}': version must be the integer 2")
     models = data.get("models")
     if not isinstance(models, dict):
         raise MappingError(f"models file '{path}': 'models' must be an object")
@@ -55,17 +55,29 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
             raise MappingError(
                 f"models file '{path}': model '{canonical}' sources must be a non-empty object"
             )
-        for source, model_id in sources.items():
-            if (
-                not isinstance(source, str)
-                or not source
-                or not isinstance(model_id, str)
-                or not model_id
-            ):
+        normalized: dict[str, list[str]] = {}
+        for source, model_ids in sources.items():
+            if not isinstance(source, str) or not source:
                 raise MappingError(
                     f"models file '{path}': model '{canonical}' sources must map"
                     " non-empty source names to non-empty ids"
                 )
+            if isinstance(model_ids, str):
+                ids = [model_ids]
+            elif isinstance(model_ids, list) and model_ids:
+                ids = model_ids
+            else:
+                raise MappingError(
+                    f"models file '{path}': model '{canonical}' sources entry"
+                    f" '{source}' must map to one id or a non-empty list of ids"
+                )
+            if not all(isinstance(model_id, str) and model_id for model_id in ids):
+                raise MappingError(
+                    f"models file '{path}': model '{canonical}' sources entry"
+                    f" '{source}' ids must be non-empty strings"
+                )
+            normalized[source] = ids
+        entry["sources"] = normalized
     return models
 
 
@@ -92,11 +104,14 @@ def hint_candidates(
         model_id = row.get("model_id")
         if isinstance(source, str) and isinstance(model_id, str):
             by_spelling.setdefault((canonical_spelling(model_id), source), set()).add(model_id)
-    mapped = {
-        (source, model_id)
-        for entry in mapping.values()
-        for source, model_id in entry.get("sources", {}).items()
-    }
+    mapped: set[tuple[str, str]] = set()
+    for entry in mapping.values():
+        for source, model_ids in entry.get("sources", {}).items():
+            if not isinstance(model_ids, list):
+                model_ids = [model_ids]
+            for model_id in model_ids:
+                if isinstance(model_id, str):
+                    mapped.add((source, model_id))
     hints: list[tuple[str, str, str]] = []
     for source, model_id in sorted(landed_ids):
         spelling = canonical_spelling(model_id)
