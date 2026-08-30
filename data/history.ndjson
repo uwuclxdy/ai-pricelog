@@ -1199,3 +1199,10 @@
 {"source":"minimax","model_id":"MiniMax-M3","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.06,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
 {"source":"minimax","model_id":"MiniMax-M2.5","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.03,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
 {"source":"minimax","model_id":"MiniMax-M2","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.03,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
+{"source":"xai","model_id":"grok-4.20-0309-reasoning","observed_at":"2026-08-29","input_mtok":1.25,"output_mtok":2.5,"cache_read_mtok":0.2,"max_tokens_in":1000000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-4.20-0309-non-reasoning","observed_at":"2026-08-29","input_mtok":1.25,"output_mtok":2.5,"cache_read_mtok":0.2,"max_tokens_in":1000000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-4.20-multi-agent-0309","observed_at":"2026-08-29","input_mtok":1.25,"output_mtok":2.5,"cache_read_mtok":0.2,"max_tokens_in":1000000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-build-0.1","observed_at":"2026-08-29","input_mtok":1.0,"output_mtok":2.0,"cache_read_mtok":0.2,"max_tokens_in":256000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-4.3","observed_at":"2026-08-29","input_mtok":1.25,"output_mtok":2.5,"cache_read_mtok":0.2,"max_tokens_in":1000000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-4.6","observed_at":"2026-08-29","input_mtok":2.0,"output_mtok":6.0,"cache_read_mtok":0.5,"max_tokens_in":500000,"url":"https://docs.x.ai/docs/models"}
+{"source":"xai","model_id":"grok-4.5","observed_at":"2026-08-29","input_mtok":2.0,"output_mtok":6.0,"cache_read_mtok":0.3,"max_tokens_in":500000,"url":"https://docs.x.ai/docs/models"}
