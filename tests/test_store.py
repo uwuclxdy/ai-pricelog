@@ -474,6 +474,99 @@ def _schedule_rate(row: dict[str, object], day: str, clock: int) -> tuple[object
     return base
 
 
+def test_write_index_normalizes_legacy_shapes(tmp_path):
+    # legacy rows normalize at index build only: max_tokens renames, flat
+    # peak fields become window_rates entries, extra modality keys become
+    # typed fields; the history file itself stays append-only
+    rows = [
+        {
+            "source": "openrouter",
+            "model_id": "a/b",
+            "observed_at": "2026-08-26",
+            "input_mtok": 1.0,
+            "output_mtok": 2.0,
+            "max_tokens": 1000000,
+            "name": "A",
+            "extra": {
+                "web_search": "0.01",
+                "image": "0.0000005",
+                "some_unknown_key": "0.005",
+                "overrides": [{"min_prompt_tokens": 100}],
+            },
+        },
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "input_mtok": 0.27,
+            "output_mtok": 1.1,
+            "peak_input_mtok": 0.54,
+            "peak_output_mtok": 2.2,
+            "peak_windows": [["01:00:00Z", "04:00:00Z"], ["06:00:00Z", "10:00:00Z"]],
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    index = json.loads(path.read_text(encoding="utf-8"))
+    entry = index["sources"]["openrouter"]["a/b"]
+    assert entry["max_tokens_in"] == 1000000
+    assert "max_tokens" not in entry
+    assert entry["web_search_usd"] == 0.01
+    assert entry["image_mtok"] == 0.5
+    # consumed keys leave extra; unknown keys and the legacy overrides stay
+    assert entry["extra"] == {
+        "some_unknown_key": "0.005",
+        "overrides": [{"min_prompt_tokens": 100}],
+    }
+    deepseek = index["sources"]["deepseek"]["deepseek-chat"]
+    assert deepseek["input_mtok"] == 0.27
+    assert deepseek["window_rates"] == [
+        {"window": [100, 400], "input_mtok": 0.54, "output_mtok": 2.2},
+        {"window": [600, 1000], "input_mtok": 0.54, "output_mtok": 2.2},
+    ]
+    assert "peak_input_mtok" not in deepseek
+    assert "peak_windows" not in deepseek
+    # the input rows are untouched: history stays append-only
+    assert "max_tokens" in rows[0]
+    assert "peak_windows" in rows[1]
+    assert rows[0]["extra"]["web_search"] == "0.01"
+
+
+def test_write_index_normalization_prefers_an_existing_typed_field(tmp_path):
+    # a row already carrying the typed field keeps it: the newer shape wins
+    rows = [
+        {
+            "source": "openrouter",
+            "model_id": "a/b",
+            "observed_at": "2026-08-26",
+            "input_mtok": 1.0,
+            "image_mtok": 9.0,
+            "extra": {"image": "0.0000005"},
+        }
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    index = json.loads(path.read_text(encoding="utf-8"))
+    entry = index["sources"]["openrouter"]["a/b"]
+    assert entry["image_mtok"] == 9.0
+    assert "extra" not in entry
+
+
+def test_write_index_normalization_rejects_a_bad_peak_window(tmp_path):
+    rows = [
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "input_mtok": 0.27,
+            "peak_input_mtok": 0.54,
+            "peak_windows": [["01:00:00Z", "99:99:99Z"]],
+        }
+    ]
+    with pytest.raises(ValueError, match="peak window"):
+        write_index(rows, tmp_path / "index.json")
+
+
 def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
     rows = [
         {

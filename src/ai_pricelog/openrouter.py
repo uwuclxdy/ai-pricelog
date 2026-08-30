@@ -3,12 +3,14 @@
 https://openrouter.ai/api/v1/models is keyless. Per-token price strings are
 converted to per-megatoken floats with the same rounding as pricing.py.
 Scheduled overrides (utc_days / utc_start / utc_end) map to `window_rates`;
-volume-threshold overrides (min_prompt_tokens) stay verbatim under `extra`.
+volume-threshold overrides (min_prompt_tokens) map to `volume_rates`;
+unmapped pricing keys stay verbatim under `extra`.
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from ai_pricelog.pricing import to_mtok
@@ -72,6 +74,12 @@ _MODALITY_SOURCE_KEYS = frozenset(key for key, _ in _MODALITY_KEYS)
 # per-request fee keys, typed as plain USD fields (never per-token)
 _FEE_SOURCE_KEYS = frozenset({"web_search"})
 
+# every source pricing key the typed mapping consumes; the one mapping table
+# shared by the row builder and the store's index normalization
+SOURCE_KEYS = frozenset(
+    {*(key for key, _ in _PRICE_KEYS), *_MODALITY_SOURCE_KEYS, *_FEE_SOURCE_KEYS}
+)
+
 # the override keys that make an override a schedule rather than a threshold;
 # any override carrying one of them maps to window_rates
 _SCHEDULE_KEYS = frozenset({"utc_days", "utc_start", "utc_end"})
@@ -93,6 +101,41 @@ _WEEKDAYS = (
 )
 
 
+def map_typed_fields(source_pricing: Mapping[str, object], label: str) -> dict[str, object]:
+    """source pricing keys -> typed row fields, via the one shared mapping.
+
+    per-token strings convert to mtok (round 6); web_search is a per-request
+    USD fee and lands verbatim. zero (free) keys stay; negative ("no fixed
+    price") keys drop. a non-numeric value is a shape break.
+    """
+    fields: dict[str, object] = {}
+    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
+        value = source_pricing.get(key)
+        if value is None:
+            continue
+        try:
+            rate = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"model {label!r}: pricing value for {key} must be a"
+                f" per-token string, got {type(value).__name__}"
+            ) from exc
+        if rate >= 0:
+            fields[field_name] = to_mtok(rate)
+    web_search = source_pricing.get("web_search")
+    if web_search is not None:
+        try:
+            fee = float(web_search)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"model {label!r}: pricing value for web_search must be a"
+                f" per-request dollar string, got {type(web_search).__name__}"
+            ) from exc
+        if fee >= 0:
+            fields["web_search_usd"] = fee
+    return fields
+
+
 def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
     if model.alias_target or model.variant_snapshot:
         return None
@@ -103,30 +146,7 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
     }
     if model.name:
         row["name"] = model.name
-    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
-        value = model.pricing.get(key)
-        if value is None:
-            continue
-        try:
-            rate = float(value)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"model {model.id!r}: pricing value for {key} must be a"
-                f" per-token string, got {type(value).__name__}"
-            ) from exc
-        if rate >= 0:
-            row[field_name] = to_mtok(rate)
-    web_search = model.pricing.get("web_search")
-    if web_search is not None:
-        try:
-            fee = float(web_search)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"model {model.id!r}: pricing value for web_search must be a"
-                f" per-request dollar string, got {type(web_search).__name__}"
-            ) from exc
-        if fee >= 0:
-            row["web_search_usd"] = fee
+    row.update(map_typed_fields(model.pricing, model.id))
     if model.context_length > 0:
         row["max_tokens_in"] = model.context_length
     overrides = model.pricing.get("overrides")

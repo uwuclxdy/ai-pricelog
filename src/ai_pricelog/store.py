@@ -17,8 +17,8 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+from ai_pricelog import openrouter, validate
 from ai_pricelog.pricing import Pricing, to_mtok
-from ai_pricelog.validate import SCHEMA_VERSION
 
 
 class FxError(ValueError):
@@ -208,6 +208,73 @@ def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
     return _comparable(row) != _comparable(last_row)
 
 
+_WINDOW_STR_RE = re.compile(r"^(\d{2}):(\d{2}):\d{2}Z$")
+_PEAK_TO_BASE = {field: field.removeprefix("peak_") for field in validate._PEAK_PRICE_FIELDS}
+
+
+def _window_hhmm(window: object, model_id: str) -> list[int]:
+    """a legacy `["HH:MM:SSZ", "HH:MM:SSZ"]` pair -> `[start, end]` HHMM ints."""
+    if (
+        not isinstance(window, list)
+        or len(window) != 2
+        or not all(isinstance(part, str) for part in window)
+    ):
+        raise ValueError(
+            f"row {model_id!r}: peak window {window!r} outside the [start, end]"
+            " string-pair shape; fix: the row or extend the normalization"
+        )
+    parts: list[int] = []
+    for part in window:
+        match = _WINDOW_STR_RE.fullmatch(part)
+        if match is None or int(match.group(2)) > 59:
+            raise ValueError(
+                f"row {model_id!r}: peak window {part!r} outside the HH:MM:SSZ shape;"
+                " fix: the row or extend the normalization"
+            )
+        parts.append(int(match.group(1)) * 100 + int(match.group(2)))
+    return parts
+
+
+def _normalize_entry(row: dict[str, object], model_id: str) -> dict[str, object]:
+    """The index entry's typed shape; the history stays append-only.
+
+    legacy shapes normalize at index build only, so index consumers need no
+    shims: `max_tokens` -> `max_tokens_in`, flat `peak_*` fields ->
+    `window_rates` entries (the base fields stay off-peak), and `extra`
+    modality keys -> typed fields via the shared openrouter mapping. a
+    consumed key leaves `extra`, and an empty `extra` drops entirely.
+    """
+    entry = dict(row)
+    if "max_tokens" in entry and "max_tokens_in" not in entry:
+        entry["max_tokens_in"] = entry.pop("max_tokens")
+    if any(field in entry for field in validate._PEAK_PRICE_FIELDS):
+        rates = {
+            _PEAK_TO_BASE[field]: entry.pop(field)
+            for field in validate._PEAK_PRICE_FIELDS
+            if field in entry
+        }
+        entries = list(entry.get("window_rates") or [])
+        for window in entry.pop("peak_windows", []) or []:
+            entries.append({"window": _window_hhmm(window, model_id), **rates})
+        if entries:
+            entry["window_rates"] = entries
+    extra = entry.get("extra")
+    if isinstance(extra, dict) and extra:
+        source = {key: extra[key] for key in extra if key in openrouter.SOURCE_KEYS}
+        if source:
+            mapped = openrouter.map_typed_fields(source, model_id)
+            for field, value in mapped.items():
+                # an existing typed field wins: the newer shape already rode
+                # the row
+                entry.setdefault(field, value)
+            extra = {key: value for key, value in extra.items() if key not in source}
+            if extra:
+                entry["extra"] = extra
+            else:
+                del entry["extra"]
+    return entry
+
+
 def write_index(rows: list[dict[str, object]], path: Path) -> None:
     first_seen: dict[tuple[str, str], str] = {}
     priced: dict[tuple[str, str], dict[str, object]] = {}
@@ -238,13 +305,14 @@ def write_index(rows: list[dict[str, object]], path: Path) -> None:
             # removal rows only ever follow a priced row for the key; fall
             # back to the removal's own provenance fields if one sneaks in
             base = {k: v for k, v in row.items() if k != "removed"}
-        entry = dict(base)
+        entry = _normalize_entry(base, str(model_id))
         entry["first_seen"] = first_seen[(source, model_id)]
         if row.get("removed") is True:
             entry["removed_at"] = row["observed_at"]
         sources.setdefault(source, {})[model_id] = entry
     _atomic_write(
-        json.dumps({"sources": sources, "version": SCHEMA_VERSION}, ensure_ascii=False) + "\n",
+        json.dumps({"sources": sources, "version": validate.SCHEMA_VERSION}, ensure_ascii=False)
+        + "\n",
         path,
     )
 
