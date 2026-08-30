@@ -135,16 +135,6 @@ def test_load_models_accepts_a_missing_file():
         ({"aliases": {"a": [alias_record(start="20240101")]}}, "'from'"),
         ({"aliases": {"a": [alias_record(end="2024-02-30")]}}, "'to'"),
         (
-            {
-                "aliases": {
-                    "a": [
-                        {"from": None, "to": None, "canonical": "m1", "citation": "https://e.com"}
-                    ]
-                }
-            },
-            "carry a 'from' or 'to'",
-        ),
-        (
             {"aliases": {"a": [alias_record(start="2025-01-02", end="2025-01-01")]}},
             "before 'to'",
         ),
@@ -180,6 +170,14 @@ def test_load_models_accepts_dated_alias_records(tmp_path):
                 }
             ],
             "alias-dated": [alias_record()],
+            "alias-open-both": [
+                {
+                    "from": None,
+                    "to": None,
+                    "canonical": "m1",
+                    "citation": "https://example.com/three",
+                }
+            ],
         },
     )
     mapping = load_models(path)

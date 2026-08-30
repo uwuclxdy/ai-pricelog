@@ -135,10 +135,6 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
                         " must be a YYYY-MM-DD date or null"
                     ) from None
             start, end = record["from"], record["to"]
-            if start is None and end is None:
-                raise MappingError(
-                    f"models file '{path}': alias '{alias}' record must carry a 'from' or 'to' date"
-                )
             if start is not None and end is not None and start >= end:
                 raise MappingError(
                     f"models file '{path}': alias '{alias}' record 'from' must be before 'to'"
