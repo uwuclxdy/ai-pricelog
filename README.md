@@ -31,7 +31,7 @@ one repo holds two files:
 a row:
 
 ```json
-{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-26","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.0036,"max_tokens_in":1048576,"max_tokens_out":393216,"window_rates":[{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"input_mtok":0.87,"output_mtok":1.74},{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000],"input_mtok":0.87,"output_mtok":1.74}],"effective_at":"2026-08-23","url":"https://api-docs.deepseek.com/quick_start/pricing"}
+{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.0036,"max_tokens_in":1048576,"max_tokens_out":393216,"window_rates":[{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"input_mtok":0.87,"output_mtok":1.74},{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000],"input_mtok":0.87,"output_mtok":1.74}],"effective_at":"2026-08-23","url":"https://api-docs.deepseek.com/quick_start/pricing"}
 ```
 
 a removal row (one per source/model ever; the index stamps the entry `removed_at` until the model reappears):

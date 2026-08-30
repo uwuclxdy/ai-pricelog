@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from ai_pricelog import announce
+from ai_pricelog.scrapers import deepseek_page
 
 DATA = Path(__file__).parents[1] / "data" / "billing-rules.json"
 
@@ -41,6 +42,8 @@ def test_committed_billing_rules_pass_schema():
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
     assert rule["effective"] == "2026-08-23"
+    # the scraper stamps the same date on weekday-schedule rows
+    assert rule["effective"] == deepseek_page._WEEKEND_RULE_EFFECTIVE
     assert rule["timezone"] == "Asia/Shanghai"
     assert "weekend" in rule["statement"].lower()
     assert len(rule["citation"]) == 4

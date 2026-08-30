@@ -17,7 +17,7 @@ a branch carries the landed store plus rows from still-open PR branches plus its
 `data/history.ndjson` is append-only, one json object per line:
 
 ```json
-{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-26","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.003625,"max_tokens_in":1048576,"max_tokens_out":393216,"window_rates":[{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"input_mtok":0.87,"output_mtok":1.74},{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000],"input_mtok":0.87,"output_mtok":1.74}],"effective_at":"2026-08-23","url":"https://api-docs.deepseek.com/quick_start/pricing/"}
+{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.003625,"max_tokens_in":1048576,"max_tokens_out":393216,"window_rates":[{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"input_mtok":0.87,"output_mtok":1.74},{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000],"input_mtok":0.87,"output_mtok":1.74}],"effective_at":"2026-08-23","url":"https://api-docs.deepseek.com/quick_start/pricing/"}
 ```
 
 - `input_mtok` / `output_mtok` derive from per-token strings x 1e6, rounded to 6 decimals.
@@ -57,7 +57,7 @@ measured 2026-08-26: the slash-less pricing url serves a ~46KB JS shell, but the
 
 the live pricing page carries v4 peak/off-peak subrows plus the footnote "Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC, Monday through Friday (all other hours are off-peak)". the scraper stores the split schedule as `window_rates` entries (landed 2026-08-30, todo 20): the base mtok fields hold the off-peak rates, one entry per peak window carries the peak rates, `days` = the weekday names, `window` = the [start, end] HHMM UTC pair. rows stored before the move keep flat `peak_*` fields (no history rewrite); the migration fires one refresh row per priced model.
 
-billing rule effective 2026-08-23 00:00 beijing time (billing-rules.json `deepseek-weekend-off-peak`; team email received 2026-08-22): weekdays (monday-friday, beijing time) keep the peak/off-peak split; weekends (saturday-sunday, beijing time) bill uniformly at the off-peak rate. the weekday day-set expresses the rule because every window ends before 16:00 UTC (beijing midnight), so each window's UTC weekday equals its beijing weekday. the scraper raises when a footnote window ends after 16:00 UTC, so a window move past the boundary fails loudly instead of mis-scheduling. rows carrying the weekday schedule stamp `effective_at` = the rule date, so consumers clamp sessions from 2026-08-23 on.
+billing rule effective 2026-08-23 00:00 beijing time (billing-rules.json `deepseek-weekend-off-peak`; team email received 2026-08-22): weekdays (monday-friday, beijing time) keep the peak/off-peak split; weekends (saturday-sunday, beijing time) bill uniformly at the off-peak rate. the weekday day-set expresses the rule because every window ends before 16:00 UTC (beijing midnight), so each window's UTC weekday equals its beijing weekday. with the weekday clause present, the scraper raises when a window ends after 16:00 UTC, so a window move past the boundary fails loudly instead of mis-scheduling; without the clause the windows stay expressible (every-day schedules need no weekday equivalence). rows carrying the weekday schedule stamp `effective_at` = the rule date, so consumers clamp sessions from 2026-08-23 on.
 
 ### announce channels
 

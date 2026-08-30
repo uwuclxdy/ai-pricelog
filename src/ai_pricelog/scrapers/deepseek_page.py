@@ -17,10 +17,12 @@ either row may span all model columns as one merged cell, in which case the
 single value applies to every model.
 
 the "Monday through Friday" clause turns into weekday day-sets on the
-windows; absent, the windows apply every day. the beijing-time weekend rule
+windows; absent, the windows apply every day, and any other weekday wording
+in the footnote paragraph raises. the beijing-time weekend rule
 (billing-rules id deepseek-weekend-off-peak, effective 2026-08-23) equals
 UTC-day weekdays only while every window ends by 16:00 UTC (beijing
-midnight); a window past that raises instead of silently mis-scheduling.
+midnight); with the clause present, a window past that raises instead of
+silently mis-scheduling.
 
 None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed or the page has no MODEL header table.
@@ -48,6 +50,14 @@ _FOOTNOTE_PATTERN = re.compile(
     r"Peak hours are (\d{2}:\d{2}) - (\d{2}:\d{2}) and (\d{2}:\d{2}) - (\d{2}:\d{2}) UTC"
 )
 _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+# any weekday mention that is not the recognized clause: full names (plural
+# forms included, so "weekdays" and "Tuesdays" raise too) plus abbreviations
+# so "Mon-Fri" spellings raise. \b keeps "thu" from matching inside words
+# like "thus"; full names match whole words, never their abbreviations alone
+_WEEKDAY_WORD = re.compile(
+    r"\b(mon|tue|wed|thu|fri|sat|sun|weekdays?|mondays?|tuesdays?|wednesdays?"
+    r"|thursdays?|fridays?|saturdays?|sundays?)\b"
+)
 # the weekend rule (billing-rules.json id deepseek-weekend-off-peak) bills
 # saturday-sunday beijing time at the off-peak rate; rows carrying the weekday
 # schedule stamp that date so consumers clamp historical sessions correctly
@@ -126,35 +136,41 @@ def _peak_schedule(
     """The footnote's peak windows as HHMM int pairs and their weekday days.
 
     "Monday through Friday" (or its absence) keys the day-set: weekdays, or
-    every day. any other weekday wording raises. the beijing-day equivalence
-    from the module docstring holds only while every window ends by 16:00
-    UTC; a window past that raises.
+    every day. any other weekday wording in the footnote paragraph raises.
+    the beijing-day equivalence from the module docstring holds only while
+    every window ends by 16:00 UTC; with the clause present, a window past
+    that raises. without it, windows past the boundary stay expressible
+    (every-day schedules need no weekday equivalence).
     """
-    text = soup.get_text(" ", strip=True)
-    match = _FOOTNOTE_PATTERN.search(text)
-    if match is None:
+    node = soup.find(string=_FOOTNOTE_PATTERN)
+    if node is None:
         raise FetchError(f"peak price rows without a schedule footnote on {url}")
+    paragraph = node.parent.get_text(" ", strip=True)
+    match = _FOOTNOTE_PATTERN.search(paragraph)
     first_start, first_end, second_start, second_end = match.groups()
     windows = (
         (_hhmm(first_start), _hhmm(first_end)),
         (_hhmm(second_start), _hhmm(second_end)),
     )
-    for start, end in windows:
-        if end > 1600:
-            raise FetchError(
-                f"peak window {start:04d}-{end:04d} on {url} ends after 16:00 UTC,"
-                " past the beijing-day boundary the weekday clause assumes;"
-                " fix: re-verify the schedule footnote"
-            )
-    tail = text[match.end() :].split(".")[0].casefold()
+    tail = paragraph[match.end() :].casefold()
     if "monday through friday" in tail:
-        return windows, _WEEKDAYS[:5]
-    if any(day in tail for day in _WEEKDAYS):
+        days = _WEEKDAYS[:5]
+    elif _WEEKDAY_WORD.search(tail) is not None:
         raise FetchError(
             f"unrecognized peak weekday clause on {url}: {tail.strip()!r};"
             " fix: re-verify the schedule footnote"
         )
-    return windows, ()
+    else:
+        days = ()
+    if days:
+        for start, end in windows:
+            if end > 1600:
+                raise FetchError(
+                    f"peak window {start:04d}-{end:04d} on {url} ends after 16:00 UTC,"
+                    " past the beijing-day boundary the weekday clause assumes;"
+                    " fix: re-verify the schedule footnote"
+                )
+    return windows, days
 
 
 def _hhmm(clock: str) -> int:

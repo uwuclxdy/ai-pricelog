@@ -167,6 +167,22 @@ def test_spec_body_deepseek_windowed_row():
     )
 
 
+def test_spec_body_legacy_peak_row():
+    # pre-move rows carry flat peak_* fields; their peak column still renders
+    row = {
+        "source": "deepseek",
+        "model_id": "deepseek-v4-flash",
+        "observed_at": "2026-08-26",
+        "input_mtok": 0.22,
+        "output_mtok": 0.66,
+        "peak_input_mtok": 0.44,
+        "peak_output_mtok": 1.32,
+        "peak_windows": [["01:00:00Z", "04:00:00Z"]],
+    }
+    body = spec(rows=(row,)).body
+    assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
+
+
 def test_spec_body_windowed_rates_table():
     row = {
         "source": "openrouter",
