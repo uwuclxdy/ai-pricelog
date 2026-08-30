@@ -66,7 +66,14 @@ def _cell_amount(cell: Tag | None) -> float | None:
 
 
 def _cache_amount(cell: Tag | None) -> float | None:
-    """the cache-read span amount, or None when the cell has no cache-read rate."""
+    """the cache-read span amount, or None when the cell has no cache-read rate.
+
+    the wrapper's titled spans render as (input, cache) pairs; the cache rate
+    is the second span. a promo card renders four spans (promo input, promo
+    cache, list input, list cache), so the last span would read the list
+    price while the input/output cells take the first span (the rate in
+    force).
+    """
     if cell is None:
         return None
     wrapper = cell.find(attrs={"data-pricing-key": "cache-read"})
@@ -75,7 +82,7 @@ def _cache_amount(cell: Tag | None) -> float | None:
     spans = wrapper.find_all("span", title=True)
     if len(spans) < 2:
         return None
-    return _amount(spans[-1])
+    return _amount(spans[1])
 
 
 def _dl_cell(card: Tag, key: str) -> Tag | None:

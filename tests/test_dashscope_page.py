@@ -108,6 +108,35 @@ def test_scrape_single_output_column_table(dashscope_cfg, feed_fixtures):
     assert pricing.output_cost_per_token == 4.4 / 1e6
 
 
+def test_scrape_omni_split_columns_take_first_sub_column(dashscope_cfg, monkeypatch):
+    # the omni tables split the input span into text/audio/image and the
+    # output span into three modes; the row cells follow the expanded grid,
+    # so the first input position is the text rate and the first output
+    # position the text-output rate (the base rates)
+    html = (
+        "<table><tr>"
+        "<th>Model ID</th><th>Deployment scope</th>"
+        "<th colspan='3'>Input price (per 1 million tokens)</th>"
+        "<th colspan='3'>Output price (per 1 million tokens)</th>"
+        "<th>Free quota</th></tr>"
+        "<tr><th>Text</th><th>Audio</th><th>Image/video</th>"
+        "<th>Text Text-only input</th><th>Text Multimodal input</th>"
+        "<th>Text + audio Audio only billed</th></tr>"
+        "<tr><td>qwen2.5-omni-7b</td><td>International</td>"
+        "<td>$0.10</td><td>$6.76</td><td>$0.28</td>"
+        "<td>$0.40</td><td>$0.84</td><td>$13.51</td>"
+        "<td>1 million tokens</td></tr>"
+        "</table>"
+    )
+    monkeypatch.setattr(
+        dashscope_scrape, "fetch_soup", lambda url: BeautifulSoup(html, "html.parser")
+    )
+    pricing = dashscope_scrape.scrape(dashscope_cfg, "qwen2.5-omni-7b")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.10 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.40 / 1e6)
+
+
 def test_scrape_global_only_scope_returns_none(dashscope_cfg, feed_fixtures):
     assert dashscope_scrape.scrape(dashscope_cfg, "qwen3.7-max") is None
 

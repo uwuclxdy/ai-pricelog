@@ -256,6 +256,36 @@ def test_scrape_cache_read_model_exact(live_page):
     assert pricing.peak_input_cost_per_token is None
 
 
+def test_scrape_promo_card_cache_read_takes_the_rate_in_force(monkeypatch):
+    # the promo card renders four titled spans in the input cell (promo
+    # input, promo cache, list input, list cache); the cache rate in force
+    # is the second span, matching the input/output first-span convention
+    card = (
+        "<article data-testid='model-section-mobile-card'>"
+        "<h4><a href='/models/model-detail/zai-org-glm-5.3-flash?from=pricing'>Model</a></h4>"
+        "<dl>"
+        "<dt>Input</dt><dd><span data-pricing-key='cache-read'>"
+        "<span title='0.075'>$0.075 /Mt</span>"
+        "<span>·</span> Cache Read <span title='0.015'>$0.015 /Mt</span>"
+        "<span title='0.15'>$0.15 /Mt</span>"
+        "<span title='0.03'>$0.03 /Mt</span></span></dd>"
+        "<dt>Output</dt><dd><span title='0.25'>$0.25 /Mt</span>"
+        "<span title='0.5'>$0.5 /Mt</span></dd>"
+        "</dl></article>"
+    )
+    flight = r'<script>self.__next_f.push([1,"{\"id\":\"zai-org/glm-5.3-flash\"}"])</script>'
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: synthetic_page(card, flight=flight),
+    )
+    pricing = scraper.scrape(make_cfg(), "zai-org/glm-5.3-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.075 / 1e6
+    assert pricing.cache_read_cost_per_token == 0.015 / 1e6
+    assert pricing.output_cost_per_token == 0.25 / 1e6
+
+
 def test_scrape_model_without_cache_read(live_page):
     pricing = scraper.scrape(make_cfg(), "deepseek/deepseek-v3.2-exp")
     assert pricing is not None
