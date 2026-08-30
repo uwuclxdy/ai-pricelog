@@ -1182,3 +1182,6 @@
 {"source":"openrouter","model_id":"openai/gpt-4.1:batch","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"openai/gpt-5-codex:batch","observed_at":"2026-08-29","removed":true}
 {"source":"openrouter","model_id":"openai/gpt-5-mini:batch","observed_at":"2026-08-29","removed":true}
+{"source":"zai","model_id":"glm-5","observed_at":"2026-08-29","input_mtok":1.0,"output_mtok":3.2,"cache_read_mtok":0.2,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"zai","model_id":"glm-4.7","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":2.2,"cache_read_mtok":0.11,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"zai","model_id":"glm-4.6","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":2.2,"cache_read_mtok":0.11,"url":"https://docs.z.ai/guides/overview/pricing"}
