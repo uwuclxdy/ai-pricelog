@@ -8,14 +8,16 @@ windows in these tables, so the max_tokens fields stay 0. a row without dollar
 amounts -> None; $0.00 prices as 0.0, since first-party rows may carry it
 as a real price.
 
-dedup_keys maps page spellings to the stale HF-style ids the store
-holds (measured 2026-08-24): the page spells "Llama 3.3 70B" (href
+dedup_keys maps the page spellings to their together api strings
+(measured 2026-08-24): the page spells "Llama 3.3 70B" (href
 /models/llama-3-3-70b) and "Llama 3 8B Instruct Lite" (href
-/models/llama-3-8b-instruct-lite); the store holds those endpoints by
-their together api strings meta-llama/Llama-3.3-70B-Instruct-Turbo and
-meta-llama/Meta-Llama-3-8B-Instruct-Lite. the stored Llama 4
-Maverick/Scout and Mixtral ids have no row on the per-token tables, so
-nothing maps to them.
+/models/llama-3-8b-instruct-lite); the api strings are
+meta-llama/Llama-3.3-70B-Instruct-Turbo and
+meta-llama/Meta-Llama-3-8B-Instruct-Lite. the store holds the page slugs
+(verified 2026-08-30), so the mapping is inert today and exists for a
+backfill that lands HF-spelled rows. the stored Llama 4 Maverick/Scout
+and Mixtral ids have no row on the per-token tables, so nothing maps to
+them.
 """
 
 from __future__ import annotations
