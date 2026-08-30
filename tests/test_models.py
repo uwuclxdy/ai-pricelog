@@ -75,6 +75,30 @@ def test_committed_deepseek_alias_chains_are_dated_and_contiguous():
         )
 
 
+def test_committed_vendor_alias_dates():
+    data = json.loads((DATA / "models.json").read_text(encoding="utf-8"))
+    assert data["aliases"]["gemini-2.5-pro-preview-03-25"][0]["from"] == "2025-06-26"
+    assert data["aliases"]["gemini-2.5-pro-preview-05-06"][0]["from"] == "2025-06-26"
+    pro = [(r["from"], r["to"], r["canonical"]) for r in data["aliases"]["gemini-pro-latest"]]
+    assert pro == [
+        ("2025-06-17", "2026-01-21", "gemini-2.5-pro"),
+        ("2026-01-21", "2026-03-09", "gemini-3-pro-preview"),
+        ("2026-03-09", None, "gemini-3.1-pro-preview"),
+    ]
+    flash = [(r["from"], r["to"], r["canonical"]) for r in data["aliases"]["gemini-flash-latest"]]
+    assert flash == [
+        ("2025-06-17", "2026-01-21", "gemini-2.5-flash"),
+        ("2026-01-21", "2026-05-19", "gemini-3-flash-preview"),
+        ("2026-05-19", None, "gemini-3.5-flash"),
+    ]
+    assert [
+        (r["from"], r["to"], r["canonical"]) for r in data["aliases"]["mistral-large-latest"]
+    ] == [
+        ("2024-07-24", "2024-11-18", "mistral-large-2407"),
+        ("2025-12-02", None, "mistral-large-2512"),
+    ]
+
+
 def test_committed_alias_records_are_ordered_and_non_overlapping():
     data = json.loads((DATA / "models.json").read_text(encoding="utf-8"))
     for alias, chain in data["aliases"].items():

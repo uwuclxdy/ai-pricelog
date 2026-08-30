@@ -160,8 +160,7 @@
     "deepseek-v3": {
       "sources": {
         "deepinfra": "deepseek-v3",
-        "deepseek": "deepseek-v3",
-        "openrouter": "deepseek/deepseek-chat"
+        "deepseek": "deepseek-v3"
       },
       "name": "DeepSeek V3"
     },
@@ -1618,7 +1617,7 @@
     ],
     "gemini-2.5-pro-preview-03-25": [
       {
-        "from": "2026-06-26",
+        "from": "2025-06-26",
         "to": null,
         "canonical": "gemini-2.5-pro",
         "citation": "https://ai.google.dev/gemini-api/docs/changelog"
@@ -1626,7 +1625,7 @@
     ],
     "gemini-2.5-pro-preview-05-06": [
       {
-        "from": "2026-06-26",
+        "from": "2025-06-26",
         "to": null,
         "canonical": "gemini-2.5-pro",
         "citation": "https://ai.google.dev/gemini-api/docs/changelog"
@@ -1642,7 +1641,7 @@
     ],
     "gemini-pro-latest": [
       {
-        "from": null,
+        "from": "2025-06-17",
         "to": "2026-01-21",
         "canonical": "gemini-2.5-pro",
         "citation": "https://ai.google.dev/gemini-api/docs/changelog"
@@ -1662,7 +1661,7 @@
     ],
     "gemini-flash-latest": [
       {
-        "from": null,
+        "from": "2025-06-17",
         "to": "2026-01-21",
         "canonical": "gemini-2.5-flash",
         "citation": "https://ai.google.dev/gemini-api/docs/changelog"
