@@ -13,9 +13,9 @@ detectors scrape provider pricing pages and the openrouter api daily. every obse
 <!-- stats:start -->
 | metric | value |
 |---|---|
-| models tracked | **884** |
-| sources | 19 |
-| dated rows | 1,472 |
+| models tracked | **891** |
+| sources | 20 |
+| dated rows | 1,479 |
 | history | since 2023-03-01 (1,278 days) |
 <!-- stats:end -->
 
@@ -139,7 +139,7 @@ rows carry `peak_windows` plus `peak_input_mtok`/`peak_output_mtok`. the plain `
 | what | dated price history repo | generated pricing dataset for python/js packages |
 | updates | automation + human review per change | human PRs into provider ymls |
 | history | every observed change since the first sighting | dated conditional entries where contributors add them |
-<!-- stats-row:start -->| models | **884** tracked across 19 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
+<!-- stats-row:start -->| models | **891** tracked across 20 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
 
 ## Development
 
