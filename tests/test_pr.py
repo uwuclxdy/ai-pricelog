@@ -118,6 +118,13 @@ def test_spec_body_summary_line():
     assert "this branch carries 1 price row and 0 removals." in spec().body
 
 
+def test_spec_body_mapping_candidates_section():
+    body = spec(hints=(("deepseek-chat", "deepseek-chat"),)).body
+    assert "## mapping candidates" in body
+    assert "`deepseek-chat` -> canonical `deepseek-chat`" in body
+    assert "mapping candidates" not in spec().body
+
+
 def test_spec_body_cache_write_column():
     row = {
         "source": "openrouter",

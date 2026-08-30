@@ -1130,6 +1130,33 @@ def test_announce_fetch_error_does_not_block_rows(tmp_path, fake_modules, repo_r
     assert "## announcement channels" not in body
 
 
+def test_landed_rows_hint_mapping_candidates(tmp_path, fake_modules, repo_root):
+    # a landed id whose stripped spelling matches a stored twin under another
+    # source rides the pr body as a mapping candidate for the human review
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    seed_store(
+        repo_root,
+        [
+            {
+                "source": "openrouter",
+                "model_id": "deepseek/deepseek-chat",
+                "observed_at": "2026-08-25",
+                "input_mtok": 1.0,
+            }
+        ],
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    (_title, body, _head) = runner.created[0]
+    assert body.count("## mapping candidates") == 1
+    assert "- `deepseek-chat` -> canonical `deepseek-chat`" in body
+
+
 def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_root, monkeypatch):
     # the real fetch_channels over a patched network: the configured url is
     # fetched, and the first-fetch baseline rides the branch for later diffs

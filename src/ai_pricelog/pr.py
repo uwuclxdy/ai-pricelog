@@ -70,6 +70,7 @@ class PrSpec:
     announce: tuple[announce.ChannelChange, ...] = ()
     absence_update: bool = False
     batch_key: str = ""
+    hints: tuple[tuple[str, str], ...] = ()
 
     @property
     def branch(self) -> str:
@@ -153,6 +154,17 @@ class PrSpec:
                 "`data/absence.json` updated on this branch; the diff names which "
                 "stored models this run counted absent.",
             ]
+        if self.hints:
+            lines += [
+                "",
+                "## mapping candidates",
+                "",
+                "the landed rows may extend the canonical model mapping. confirm"
+                " each pair into `data/models.json` during review, or drop it:",
+                "",
+            ]
+            for model_id, canonical in self.hints:
+                lines.append(f"- `{model_id}` -> canonical `{canonical}`")
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 

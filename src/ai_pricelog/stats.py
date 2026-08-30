@@ -23,10 +23,11 @@ class Stats:
     rows: int
     first_seen: str
     days: int
+    mapped: int
 
 
-def compute(rows: list[dict[str, object]]) -> Stats:
-    """Counts over the store rows: models, sources, rows, date span."""
+def compute(rows: list[dict[str, object]], mapping: dict[str, dict[str, object]]) -> Stats:
+    """Counts over the store rows: models, sources, rows, date span, mapping."""
     models = {(row["source"], row["model_id"]) for row in rows}
     sources = {row["source"] for row in rows}
     dates = sorted({str(row["observed_at"])[:10] for row in rows})
@@ -34,7 +35,7 @@ def compute(rows: list[dict[str, object]]) -> Stats:
     days = 0
     if len(dates) > 1:
         days = (date.fromisoformat(dates[-1]) - date.fromisoformat(dates[0])).days + 1
-    return Stats(len(models), len(sources), len(rows), first, days)
+    return Stats(len(models), len(sources), len(rows), first, days, len(mapping))
 
 
 def _table(stats: Stats) -> str:
@@ -45,6 +46,7 @@ def _table(stats: Stats) -> str:
         f"| models tracked | **{stats.models:,}** |\n"
         f"| sources | {stats.sources} |\n"
         f"| dated rows | {stats.rows:,} |\n"
+        f"| canonical models | {stats.mapped:,} |\n"
         f"| history | since {stats.first_seen} ({stats.days:,} days) |\n"
         "<!-- stats:end -->"
     )

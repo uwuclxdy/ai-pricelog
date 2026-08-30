@@ -33,7 +33,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from ai_pricelog import absence, announce, config, openrouter, pr, stats, store, validate
+from ai_pricelog import absence, announce, config, models, openrouter, pr, stats, store, validate
 
 log = logging.getLogger(__name__)
 
@@ -209,6 +209,24 @@ def run(
         # in-memory state diff says (skip-and-retry re-derives it next run)
         return report
 
+    mapping = models.load_models(repo_root / models.MODELS_FILE)
+    landed_ids = {
+        (group.source, row["model_id"])
+        for group in (*plan.values(), *removal_groups)
+        for row in group.rows
+    }
+    hint_by_key = {
+        (source, model_id): (model_id, canonical)
+        for source, model_id, canonical in models.hint_candidates(rows, mapping, landed_ids)
+    }
+
+    def batch_hints(group: _PrGroup) -> tuple[tuple[str, str], ...]:
+        return tuple(
+            hint_by_key[(group.source, row["model_id"])]
+            for row in group.rows
+            if (group.source, row["model_id"]) in hint_by_key
+        )
+
     if seed:
         run_rows = [row for group in plan.values() for row in group.rows]
         spec = pr.PrSpec(
@@ -220,6 +238,11 @@ def run(
             run_url=run_url,
             announce=fetch.changes,
             absence_update=absence_diff,
+            hints=tuple(
+                hint_by_key[(row["source"], row["model_id"])]
+                for row in run_rows
+                if (row["source"], row["model_id"]) in hint_by_key
+            ),
         )
         url = _open_group_pr(
             repo_root,
@@ -232,6 +255,7 @@ def run(
             runner,
             announce_updates,
             fresh_absence if absence_diff else None,
+            mapping,
         )
         if url is None:
             for group in plan.values():
@@ -269,6 +293,7 @@ def run(
             announce=fetch.changes,
             absence_update=absence_diff,
             batch_key=f"{group.source}@{today}-{stamp}",
+            hints=batch_hints(group),
         )
         url = _open_group_pr(
             repo_root,
@@ -281,6 +306,7 @@ def run(
             runner,
             announce_updates,
             fresh_absence if absence_diff else None,
+            mapping,
         )
         if url is None:
             # a failed open commits nothing: the rows re-derive against the
@@ -623,6 +649,7 @@ def _open_group_pr(
     runner: pr.PrRunner,
     announce_updates: dict[str, dict[str, dict[str, str]]] | None = None,
     absence_updates: dict[str, dict[str, dict[str, object]]] | None = None,
+    mapping: dict[str, dict[str, object]] | None = None,
 ) -> str | None:
     """Write the PR branch, push it, open the draft, restore the tree.
 
@@ -641,7 +668,10 @@ def _open_group_pr(
         store.write_index(full_rows, index_path)
         readme_path = repo_root / README_FILE
         readme_path.write_text(
-            stats.render(readme_path.read_text(encoding="utf-8"), stats.compute(full_rows)),
+            stats.render(
+                readme_path.read_text(encoding="utf-8"),
+                stats.compute(full_rows, mapping or {}),
+            ),
             encoding="utf-8",
         )
         add_cmd = ["git", "add", HISTORY_FILE, INDEX_FILE, README_FILE]
