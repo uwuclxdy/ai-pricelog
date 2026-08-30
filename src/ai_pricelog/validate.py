@@ -5,7 +5,7 @@ emission could corrupt is checked here: the model id (rows are keyed by
 (source, model_id)), the price values, the quote provenance (currency, unit,
 currency_rate), the peak-pricing shape, the scheduled window-rate shape, the
 volume-threshold shape, the schedule timezone, and the removal-row shape
-(removed=true, carrying the final price snapshot). The producers are the
+(removed=true; a carried price field stays checked, a bare row is legal). The producers are the
 store's build_row, build_removal_row, and openrouter.build_row.
 """
 
@@ -105,8 +105,8 @@ def validate_row(row: dict[str, Any]) -> None:
             raise ValidationError(
                 f"row field 'removed' has bad value {removed!r}; fix: only true is valid"
             )
-        # a removal row carries the final price snapshot; every price field
-        # it does carry must still be a valid one, so fall through
+        # a removal row may carry the final price snapshot; every price
+        # field it does carry must still be a valid one, so fall through
     currency = row.get("currency")
     if currency is not None and (
         not isinstance(currency, str) or re.fullmatch(r"[A-Z]{3}", currency) is None
@@ -159,6 +159,9 @@ def validate_row(row: dict[str, Any]) -> None:
     search_fee = row.get("web_search_usd")
     if search_fee is not None:
         _check_price(row, "web_search_usd", search_fee)
+    # peak_windows is legacy-only: no producer emits it since the flat peak_*
+    # rows moved onto window_rates, so the lax string-pair check stays until
+    # a producer re-emits the field (then tighten it to a time format)
     if any(field in row for field in _PEAK_PRICE_FIELDS) or "peak_windows" in row:
         windows = row.get("peak_windows")
         if not isinstance(windows, list) or not windows:
