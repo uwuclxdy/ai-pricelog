@@ -1804,3 +1804,9 @@
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-pro","observed_at":"2026-08-30","name":"DeepSeek V4 Pro 0423","input_mtok":0.417252,"output_mtok":0.834504,"cache_read_mtok":0.034771,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-30","name":"DeepSeek V4 Flash 0423","input_mtok":0.07896,"output_mtok":0.15792,"cache_read_mtok":0.015792,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-08-30","name":"Devstral 2 2512","input_mtok":0.4,"output_mtok":2.0,"cache_read_mtok":0.04,"max_tokens_in":262144}
+{"source":"fireworks","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","removed":true,"input_mtok":1.74,"output_mtok":3.48,"cache_read_mtok":0.145}
+{"source":"fireworks","model_id":"glm-5.3-fast","observed_at":"2026-08-30","removed":true,"input_mtok":2.1,"output_mtok":6.6,"cache_read_mtok":0.39}
+{"source":"fireworks","model_id":"kimi-k2.6-fast","observed_at":"2026-08-30","removed":true,"input_mtok":2.0,"output_mtok":8.0,"cache_read_mtok":0.3}
+{"source":"fireworks","model_id":"kimi-k2.7-code-fast","observed_at":"2026-08-30","removed":true,"input_mtok":1.9,"output_mtok":8.0,"cache_read_mtok":0.38}
+{"source":"fireworks","model_id":"minimax-m2.7","observed_at":"2026-08-30","removed":true,"input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.06}
+{"source":"fireworks","model_id":"openai-gpt-oss-20b","observed_at":"2026-08-30","removed":true,"input_mtok":0.07,"output_mtok":0.3,"cache_read_mtok":0.035}
