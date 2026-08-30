@@ -1194,3 +1194,8 @@
 {"source":"moonshot","model_id":"kimi-k2.7-code-highspeed","observed_at":"2026-08-29","input_mtok":1.9,"output_mtok":8.0,"cache_read_mtok":0.38,"max_tokens_in":262144,"url":"https://platform.kimi.ai/docs/pricing/chat-k27-code.md"}
 {"source":"moonshot","model_id":"kimi-k2.6","observed_at":"2026-08-29","input_mtok":0.95,"output_mtok":4.0,"cache_read_mtok":0.16,"max_tokens_in":262144,"url":"https://platform.kimi.ai/docs/pricing/chat-k26.md"}
 {"source":"moonshot","model_id":"kimi-k2.5","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":3.0,"cache_read_mtok":0.1,"max_tokens_in":262144,"url":"https://platform.kimi.ai/docs/pricing/chat-k25.md"}
+{"source":"minimax","model_id":"MiniMax-M2.7-highspeed","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":2.4,"cache_read_mtok":0.06,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
+{"source":"minimax","model_id":"MiniMax-M2.1-highspeed","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":2.4,"cache_read_mtok":0.03,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
+{"source":"minimax","model_id":"MiniMax-M3","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.06,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
+{"source":"minimax","model_id":"MiniMax-M2.5","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.03,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
+{"source":"minimax","model_id":"MiniMax-M2","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.03,"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}
