@@ -333,9 +333,34 @@ def build_row(
     return row
 
 
-def build_removal_row(source: str, model_id: str, observed_at: str) -> dict[str, object]:
-    """The removal row: one per (source, model_id) ever, no price fields."""
-    return {"source": source, "model_id": model_id, "observed_at": observed_at, "removed": True}
+def build_removal_row(
+    source: str,
+    model_id: str,
+    observed_at: str,
+    last_row: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """The removal row: one per (source, model_id) ever, carrying the final
+    price snapshot so the closing record stays self-contained.
+
+    `last_row` is the last priced row for the key (store.last); its comparable
+    fields ride the removal row. the currency-rate pair is conversion
+    provenance but rides along when the snapshot quotes non-USD, so the row
+    still validates. a missing last row builds the bare removal row.
+    """
+    row: dict[str, object] = {
+        "source": source,
+        "model_id": model_id,
+        "observed_at": observed_at,
+        "removed": True,
+    }
+    if last_row is None:
+        return row
+    row.update(_comparable(last_row))
+    if last_row.get("currency") not in (None, "USD"):
+        for field in ("currency_rate", "currency_rate_date"):
+            if field in last_row:
+                row[field] = last_row[field]
+    return row
 
 
 def _atomic_write(payload: str, path: Path) -> None:

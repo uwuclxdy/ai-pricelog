@@ -69,24 +69,6 @@ _WINDOW_DAYS = frozenset(
     {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 )
 _WINDOW_ENTRY_KEYS = frozenset({*_PRICE_FIELDS, "days", "window"})
-# a removal row is provenance only: any pricing data beside it is junk
-_REMOVAL_FORBIDDEN = (
-    "input_mtok",
-    "output_mtok",
-    "cache_read_mtok",
-    "cache_write_mtok",
-    "cache_write_1h_mtok",
-    "peak_windows",
-    "peak_input_mtok",
-    "peak_output_mtok",
-    "peak_cache_read_mtok",
-    "window_rates",
-    "currency",
-    "unit",
-    "currency_rate",
-    "currency_rate_date",
-    "effective_at",
-)
 
 
 def validate_row(row: dict[str, Any]) -> None:
@@ -106,12 +88,8 @@ def validate_row(row: dict[str, Any]) -> None:
             raise ValidationError(
                 f"row field 'removed' has bad value {removed!r}; fix: only true is valid"
             )
-        for field in _REMOVAL_FORBIDDEN:
-            if field in row:
-                raise ValidationError(
-                    f"row field '{field}' is not allowed on a removed row; fix: drop it"
-                )
-        return
+        # a removal row carries the final price snapshot; every price field
+        # it does carry must still be a valid one, so fall through
     currency = row.get("currency")
     if currency is not None and (
         not isinstance(currency, str) or re.fullmatch(r"[A-Z]{3}", currency) is None

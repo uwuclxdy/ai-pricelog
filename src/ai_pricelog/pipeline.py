@@ -605,7 +605,7 @@ def _track_absence(
             # the removal row is already on record: one per key ever
             del source_state[model_id]
             continue
-        row = store.build_removal_row(source, model_id, today)
+        row = store.build_removal_row(source, model_id, today, store.last(rows, source, model_id))
         validate.validate_row(row)
         group = _PrGroup(source, provider, source_url)
         group.rows.append(row)

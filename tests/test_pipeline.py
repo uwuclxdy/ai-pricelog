@@ -1247,7 +1247,18 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
     removal = rows[-1]
     assert removal["removed"] is True
     assert removal["observed_at"] == "2026-08-27"
-    assert list(removal) == ["source", "model_id", "observed_at", "removed"]
+    # the removal carries the last priced row's comparable fields as the
+    # final snapshot; provenance (url) stays off
+    assert list(removal) == [
+        "source",
+        "model_id",
+        "observed_at",
+        "removed",
+        "input_mtok",
+        "output_mtok",
+    ]
+    assert removal["input_mtok"] == 0.2
+    assert removal["output_mtok"] == 0.4
     # the counter stays at 2 on the branch; the landed-removal cleanup drops
     # it once the row reaches the store
     assert branch_absence(repo_root, removal_branch) == {

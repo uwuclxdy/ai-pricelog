@@ -557,6 +557,46 @@ def test_build_removal_row_shape():
     }
 
 
+def test_build_removal_row_copies_the_final_price_snapshot():
+    last_row = {
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "input_mtok": 1.0,
+        "output_mtok": 2.0,
+        "max_tokens_in": 4096,
+        "window_rates": [{"days": ["saturday"], "input_mtok": 0.5}],
+        "currency": "EUR",
+        "currency_rate": 1.1643,
+        "currency_rate_date": "2026-08-28",
+        "url": "https://example.com/pricing",
+        "name": "M",
+    }
+    removal = build_removal_row("a", "m", "t2", last_row)
+    assert removal == {
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "removed": True,
+        "input_mtok": 1.0,
+        "output_mtok": 2.0,
+        "max_tokens_in": 4096,
+        "window_rates": [{"days": ["saturday"], "input_mtok": 0.5}],
+        "currency": "EUR",
+        "currency_rate": 1.1643,
+        "currency_rate_date": "2026-08-28",
+    }
+
+
+def test_build_removal_row_without_a_last_row_stays_bare():
+    assert build_removal_row("a", "m", "t2") == {
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "removed": True,
+    }
+
+
 def test_write_index_removed_at_stamps_and_clears(tmp_path):
     rows = [
         {

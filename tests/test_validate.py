@@ -31,6 +31,26 @@ def test_valid_row_passes():
     validate_row(row())
 
 
+def test_removal_row_with_a_price_snapshot_passes():
+    validate_row(row(removed=True, input_mtok=0.0, max_tokens_in=4096))
+
+
+def test_removal_row_with_a_non_usd_snapshot_validates():
+    validate_row(
+        row(
+            removed=True,
+            currency="EUR",
+            currency_rate=1.1643,
+            currency_rate_date="2026-08-28",
+        )
+    )
+
+
+def test_removal_row_with_a_bad_snapshot_price_fails():
+    with pytest.raises(ValidationError, match="input_mtok"):
+        validate_row(row(removed=True, input_mtok=-1.0))
+
+
 def test_bad_effective_at_rejected():
     with pytest.raises(ValidationError, match="effective_at"):
         validate_row(row(effective_at="08-23"))
@@ -238,17 +258,17 @@ def test_empty_window_rates_list_rejected():
         validate_row(row(window_rates=[]))
 
 
-def test_removed_row_with_window_rates_rejected():
-    with pytest.raises(ValidationError, match="window_rates"):
-        validate_row(
-            {
-                "source": "openrouter",
-                "model_id": "deepseek/deepseek-v4-pro-0813",
-                "observed_at": "2026-08-28",
-                "removed": True,
-                "window_rates": [{"days": ["monday"], "input_mtok": 0.66}],
-            }
-        )
+def test_removed_row_with_window_rates_passes():
+    # the final snapshot can carry the last row's schedule container
+    validate_row(
+        {
+            "source": "openrouter",
+            "model_id": "deepseek/deepseek-v4-pro-0813",
+            "observed_at": "2026-08-28",
+            "removed": True,
+            "window_rates": [{"days": ["monday"], "input_mtok": 0.66}],
+        }
+    )
 
 
 def test_removed_row_passes():
@@ -275,60 +295,27 @@ def test_removed_flag_must_be_true(bad):
         )
 
 
-@pytest.mark.parametrize(
-    "field",
-    [
-        "input_mtok",
-        "output_mtok",
-        "cache_read_mtok",
-        "cache_write_mtok",
-        "cache_write_1h_mtok",
-        "peak_input_mtok",
-        "peak_output_mtok",
-        "peak_cache_read_mtok",
-    ],
-)
-def test_removed_row_with_price_field_rejected(field):
-    with pytest.raises(ValidationError, match=field):
-        validate_row(
-            {
-                "source": "deepseek",
-                "model_id": "deepseek-chat",
-                "observed_at": "2026-08-26",
-                "removed": True,
-                field: 1.0,
-            }
-        )
-
-
-def test_removed_row_with_peak_windows_rejected():
-    with pytest.raises(ValidationError, match="peak_windows"):
-        validate_row(
-            {
-                "source": "deepseek",
-                "model_id": "deepseek-chat",
-                "observed_at": "2026-08-26",
-                "removed": True,
-                "peak_windows": [["01:00:00Z", "04:00:00Z"]],
-            }
-        )
-
-
-@pytest.mark.parametrize(
-    "field",
-    ["currency", "unit", "currency_rate", "currency_rate_date"],
-)
-def test_removed_row_with_quote_field_rejected(field):
-    with pytest.raises(ValidationError, match=field):
-        validate_row(
-            {
-                "source": "deepseek",
-                "model_id": "deepseek-chat",
-                "observed_at": "2026-08-26",
-                "removed": True,
-                field: "EUR",
-            }
-        )
+def test_removed_row_with_price_fields_passes():
+    # the removal row carries the final price snapshot; its price fields
+    # validate like any row's
+    validate_row(
+        {
+            "source": "deepseek",
+            "model_id": "deepseek-chat",
+            "observed_at": "2026-08-26",
+            "removed": True,
+            "input_mtok": 1.0,
+            "output_mtok": 2.0,
+            "cache_read_mtok": 0.1,
+            "cache_write_mtok": 0.125,
+            "cache_write_1h_mtok": 0.2,
+            "peak_input_mtok": 2.0,
+            "peak_output_mtok": 4.0,
+            "peak_cache_read_mtok": 0.2,
+            "peak_windows": [["01:00:00Z", "04:00:00Z"]],
+            "window_rates": [{"window": [600, 1000], "input_mtok": 3.0}],
+        }
+    )
 
 
 def eur_row(**overrides) -> dict:
