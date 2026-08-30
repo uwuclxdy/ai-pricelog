@@ -855,6 +855,70 @@ def test_pending_branch_rows_union_prevents_duplicate_rows(tmp_path, fake_module
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
+def test_pending_branch_carried_removal_lands_once(tmp_path, fake_modules, repo_root):
+    # a pending branch's full-store snapshot repeats a landed removal row; the
+    # union must not append the copy, or every open pr duplicates every
+    # landed removal
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    removal = store.build_removal_row("deepseek", "deepseek-gone", "2026-08-19")
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [removal, prior])
+
+    # the sibling pr branch carries the full store snapshot plus its own row
+    pending = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+    )
+    pending_branch = pr.branch_name("deepseek-chat")
+    git(repo_root, "switch", "-C", pending_branch)
+    store.save([removal, prior, pending], repo_root / "data" / "history.ndjson")
+    store.write_index([removal, prior, pending], repo_root / "data" / "index.json")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "sibling drift update")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Update deepseek-chat pricing for Deepseek",
+                "body": "",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-new"]
+    branch_rows = [
+        json.loads(line)
+        for line in git(
+            repo_root, "show", f"{batch_branch('deepseek')}:data/history.ndjson"
+        ).splitlines()
+    ]
+    assert [row["model_id"] for row in branch_rows] == [
+        "deepseek-gone",
+        "deepseek-chat",
+        "deepseek-chat",
+        "deepseek-new",
+    ]
+    keys = [(row["source"], row["model_id"], row["observed_at"]) for row in branch_rows]
+    assert len(keys) == len(set(keys))
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
 def test_closed_pr_branch_contributes_no_rows(tmp_path, fake_modules, repo_root):
     # a closed pr keeps its branch on origin; without an open pr naming its
     # head ref the rows must not ride any new branch, and the model

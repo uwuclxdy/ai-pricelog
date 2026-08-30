@@ -102,6 +102,20 @@ def test_union_keeps_removal_row_sharing_a_landed_price_key():
     assert union(base, extra) == base + extra
 
 
+def test_union_dedupes_carried_removal_copy():
+    # a pending branch's full-store snapshot repeats a landed removal; the
+    # copy appends nothing (one removal row per key ever)
+    base = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
+        {"source": "a", "model_id": "n", "observed_at": "t2", "input_mtok": 1.0},
+    ]
+    extra = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
+        {"source": "a", "model_id": "o", "observed_at": "t2", "removed": True},
+    ]
+    assert union(base, extra) == base + [extra[1]]
+
+
 def test_last_returns_latest_row_per_source_and_model():
     rows = [
         {"source": "a", "model_id": "m1", "observed_at": "t1"},

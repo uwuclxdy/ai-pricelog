@@ -60,16 +60,29 @@ def union(rows: list[dict[str, object]], extra: list[dict[str, object]]) -> list
 
     Pending PR branches each carry a full store snapshot, so their union over
     the loaded store repeats every load-time row; the key dedupe collapses
-    those while keeping the rows unique to a pending branch. removal rows
-    bypass the dedupe: a same-day landed price row shares the key with a
-    pending removal row, and dropping the removal would hide removed_at from
-    sibling branches until the removal PR merges.
+    those while keeping the rows unique to a pending branch. a removal row
+    dedupes against removal rows only: it must survive a same-day landed price
+    row sharing its key (the price row must not hide the removal), but a
+    carried copy of an already-union'd removal appends nothing, since one
+    removal row per key ever is the store's invariant.
     """
     seen = {(row.get("source"), row.get("model_id"), row.get("observed_at")) for row in rows}
+    removed_keys = {
+        (row.get("source"), row.get("model_id"), row.get("observed_at"))
+        for row in rows
+        if row.get("removed") is True
+    }
     merged = list(rows)
     for row in extra:
         key = (row.get("source"), row.get("model_id"), row.get("observed_at"))
-        if row.get("removed") is not True and key in seen:
+        if row.get("removed") is True:
+            if key in removed_keys:
+                continue
+            removed_keys.add(key)
+            seen.add(key)
+            merged.append(row)
+            continue
+        if key in seen:
             continue
         seen.add(key)
         merged.append(row)
