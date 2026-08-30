@@ -5,7 +5,7 @@ emission could corrupt is checked here: the model id (rows are keyed by
 (source, model_id)), the price values, the quote provenance (currency, unit,
 currency_rate), the peak-pricing shape, the scheduled window-rate shape, the
 volume-threshold shape, the schedule timezone, and the removal-row shape
-(removed=true only, never alongside price fields). The producers are the
+(removed=true, carrying the final price snapshot). The producers are the
 store's build_row, build_removal_row, and openrouter.build_row.
 """
 
