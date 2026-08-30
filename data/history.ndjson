@@ -1386,3 +1386,14 @@
 {"source":"cloudflare","model_id":"@cf/meta/m2m100-1.2b","observed_at":"2026-08-29","input_mtok":0.342,"output_mtok":0.342,"url":"https://developers.cloudflare.com/workers-ai/platform/pricing/"}
 {"source":"cloudflare","model_id":"@cf/ai4bharat/indictrans2-en-indic-1b","observed_at":"2026-08-29","input_mtok":0.342,"output_mtok":0.342,"url":"https://developers.cloudflare.com/workers-ai/platform/pricing/"}
 {"source":"cloudflare","model_id":"@cf/moondream/moondream3.1-9b-a2b","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":1.0,"url":"https://developers.cloudflare.com/workers-ai/platform/pricing/"}
+{"source":"watsonx","model_id":"granite-4h-small","observed_at":"2026-08-29","input_mtok":0.0636,"output_mtok":0.265,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"granite-8b-code-instruct","observed_at":"2026-08-29","input_mtok":0.636,"output_mtok":0.636,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"granite-guardian-3-8b","observed_at":"2026-08-29","input_mtok":0.212,"output_mtok":0.212,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"llama-4-maverick-17b-128e-instruct-fp8","observed_at":"2026-08-29","input_mtok":0.371,"output_mtok":1.484,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"llama-3-3-70b-instruct","observed_at":"2026-08-29","input_mtok":0.7526,"output_mtok":0.7526,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"llama-3-2-11b-vision-instruct","observed_at":"2026-08-29","input_mtok":0.371,"output_mtok":0.371,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"llama-guard-3-11b-vision","observed_at":"2026-08-29","input_mtok":0.371,"output_mtok":0.371,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"mistral-large-2512","observed_at":"2026-08-29","input_mtok":0.636,"output_mtok":1.908,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"mistral-medium-2505","observed_at":"2026-08-29","input_mtok":3.18,"output_mtok":9.5,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"mistral-small-3-1-24b-instruct-2503","observed_at":"2026-08-29","input_mtok":0.106,"output_mtok":0.318,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
+{"source":"watsonx","model_id":"gpt-oss-120b","observed_at":"2026-08-29","input_mtok":0.159,"output_mtok":0.636,"url":"https://www.ibm.com/products/watsonx-ai/pricing"}
