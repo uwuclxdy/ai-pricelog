@@ -27,7 +27,7 @@ a branch carries the landed store plus rows from still-open PR branches plus its
 - openrouter rows add `name` and keep unconsumed pricing keys verbatim under `extra`. alias entries and dated-canonical snapshots get no row. scheduled overrides land under `window_rates` (one entry per override: optional `days` = lowercase weekday names, absent = every day; optional `window` = `[start_hhmm, end_hhmm]`, absent = whole day; per-rate mtok keys present only when the override carries them, absent keys inherit the base price). volume overrides (`min_prompt_tokens`) stay verbatim in `extra`.
 - a removal row carries `{"removed": true}` and no price fields; it means the source stopped listing the model. accept it as valid.
 - `data/index.json` regenerates each run: latest row per `(source, model_id)` plus `first_seen`. a removed model keeps its last prices and gains `removed_at`.
-- `data/billing-rules.json` is human-written billing-rule semantics per provider. a channel diff that confirms a rule change should be flagged for the human to land there; you do not write it.
+- `data/billing-rules.json` is human-written billing-rule semantics per provider. a channel diff confirming a deprecation or retirement of priced models changes when their rates apply: write the entry into `data/billing-rules.json` on the PR branch yourself (one entry per change, fields like the existing entries: `id` as `<provider>-<what>-<date>`, `provider`, `effective`, `timezone`, `statement` naming the models and their migrations, `citation` = the channel url) and name it in your comment. other rule classes (rate and tier changes, promo windows, free-tier flips) stay flagged for the human, who owns those calls.
 
 ## source urls
 
