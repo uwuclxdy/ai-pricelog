@@ -1259,3 +1259,6 @@
 {"source":"fireworks","model_id":"muse-glimmer-30b","observed_at":"2026-08-29","input_mtok":0.35,"output_mtok":1.5,"cache_read_mtok":0.04,"url":"https://docs.fireworks.ai/serverless/pricing"}
 {"source":"fireworks","model_id":"nvidia-nemotron-3.5-lightning-30b-a3b","observed_at":"2026-08-29","input_mtok":0.05,"output_mtok":0.2,"cache_read_mtok":0.01,"url":"https://docs.fireworks.ai/serverless/pricing"}
 {"source":"fireworks","model_id":"nvidia-nemotron-3-ultra-preview","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":2.4,"cache_read_mtok":0.12,"url":"https://docs.fireworks.ai/serverless/pricing"}
+{"source":"cohere","model_id":"command-r","observed_at":"2026-08-29","input_mtok":0.15,"output_mtok":0.6,"url":"https://cohere.com/pricing"}
+{"source":"cohere","model_id":"command-r7b","observed_at":"2026-08-29","input_mtok":0.0375,"output_mtok":0.15,"url":"https://cohere.com/pricing"}
+{"source":"cohere","model_id":"embed-4","observed_at":"2026-08-29","input_mtok":0.12,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
