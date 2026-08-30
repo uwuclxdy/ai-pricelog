@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "models": {
     "claude-fable-5": {
       "sources": {
@@ -1456,5 +1456,6 @@
       },
       "name": "WizardLM-2 8x22B"
     }
-  }
+  },
+  "aliases": {}
 }

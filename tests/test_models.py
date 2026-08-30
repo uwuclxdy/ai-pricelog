@@ -13,14 +13,26 @@ DATA = Path(__file__).resolve().parents[1] / "data"
 def models_file(tmp_path: Path, **overrides) -> Path:
     path = tmp_path / "models-test.json"
     data = {
-        "version": 2,
+        "version": 3,
         "models": {
             "m1": {"name": "M1", "sources": {"a": "m1", "b": "vendor/m1"}},
         },
+        "aliases": {},
     }
     data.update(overrides)
     path.write_text(json.dumps(data), encoding="utf-8")
     return path
+
+
+def alias_record(start="2024-12-26", end="2025-03-24", **overrides) -> dict:
+    record = {
+        "from": start,
+        "to": end,
+        "canonical": "m1",
+        "citation": "https://example.com/#date-2024-12-26",
+    }
+    record.update(overrides)
+    return record
 
 
 def test_committed_models_file_passes_schema():
@@ -51,7 +63,8 @@ def test_load_models_accepts_a_missing_file():
     ("overrides", "match"),
     [
         ({"version": 1}, "version"),
-        ({"version": 3}, "version"),
+        ({"version": 2}, "version"),
+        ({"version": 4}, "version"),
         ({"version": True}, "version"),
         ({"models": []}, "'models'"),
         ({"models": {"": {"sources": {"a": "m1"}}}}, "canonical id"),
@@ -63,11 +76,85 @@ def test_load_models_accepts_a_missing_file():
         ({"models": {"m1": {"sources": {"a": [""]}}}}, "sources"),
         ({"models": {"m1": {"sources": {"a": [1]}}}}, "sources"),
         ({"models": {"m1": {"sources": {"a": {"b": 1}}}}}, "sources"),
+        ({"aliases": "x"}, "'aliases'"),
+        ({"aliases": {"": [alias_record()]}}, "alias id"),
+        ({"aliases": {"a": []}}, "records"),
+        ({"aliases": {"a": "x"}}, "records"),
+        ({"aliases": {"a": [1]}}, "record must be an object"),
+        ({"aliases": {"a": [{"bogus": 1}]}}, "unknown key"),
+        ({"aliases": {"a": [alias_record(canonical="m9")]}}, "canonical"),
+        (
+            {"aliases": {"a": [{"from": "2024-12-26", "to": None, "citation": "https://e.com"}]}},
+            "canonical",
+        ),
+        ({"aliases": {"a": [alias_record(citation="example.com")]}}, "citation"),
+        ({"aliases": {"a": [{"from": "2024-12-26", "to": None, "canonical": "m1"}]}}, "citation"),
+        (
+            {"aliases": {"a": [{"to": None, "canonical": "m1", "citation": "https://e.com"}]}},
+            "missing 'from'",
+        ),
+        (
+            {
+                "aliases": {
+                    "a": [{"from": "2024-12-26", "canonical": "m1", "citation": "https://e.com"}]
+                }
+            },
+            "missing 'to'",
+        ),
+        ({"aliases": {"a": [alias_record(start="2024")]}}, "'from'"),
+        ({"aliases": {"a": [alias_record(start="2024-13-01")]}}, "'from'"),
+        ({"aliases": {"a": [alias_record(start="20240101")]}}, "'from'"),
+        ({"aliases": {"a": [alias_record(end="2024-02-30")]}}, "'to'"),
+        (
+            {
+                "aliases": {
+                    "a": [
+                        {"from": None, "to": None, "canonical": "m1", "citation": "https://e.com"}
+                    ]
+                }
+            },
+            "carry a 'from' or 'to'",
+        ),
+        (
+            {"aliases": {"a": [alias_record(start="2025-01-02", end="2025-01-01")]}},
+            "before 'to'",
+        ),
+        (
+            {"aliases": {"a": [alias_record(start="2025-01-01", end="2025-01-01")]}},
+            "before 'to'",
+        ),
     ],
 )
 def test_bad_models_file_rejected(tmp_path, overrides, match):
     with pytest.raises(MappingError, match=match):
         load_models(models_file(tmp_path, **overrides))
+
+
+def test_load_models_accepts_dated_alias_records(tmp_path):
+    path = models_file(
+        tmp_path,
+        aliases={
+            "alias-open-start": [
+                {
+                    "from": None,
+                    "to": "2025-01-01",
+                    "canonical": "m1",
+                    "citation": "https://example.com/one",
+                }
+            ],
+            "alias-open-end": [
+                {
+                    "from": "2025-01-01",
+                    "to": None,
+                    "canonical": "m1",
+                    "citation": "http://example.com/two",
+                }
+            ],
+            "alias-dated": [alias_record()],
+        },
+    )
+    mapping = load_models(path)
+    assert mapping["m1"]["sources"] == {"a": ["m1"], "b": ["vendor/m1"]}
 
 
 def test_canonical_spelling_strips_vendor_prefixes():

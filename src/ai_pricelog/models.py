@@ -2,17 +2,26 @@
 
 `data/models.json` links first-party ids to openrouter ids plus display
 names, keyed by a canonical id, so consumers can compare prices across
-sources. the pipeline never writes it: each run proposes mapping
-candidates on the PR body, and the human review lands confirmed entries.
-serving tiers stay out (cloudy 2026-08-30: mapping only).
+sources. v3 adds dated api-alias records under `aliases`: alias id ->
+records `{"from": "<date|null>", "to": "<date|null>", "canonical":
+"<id>", "citation": "<url>"}`, so a consumer resolves an api alias
+against the date it was used. the loader schema-checks the aliases and
+returns the models map; a consumer reads the file for the alias table.
+the pipeline never writes the file: each run proposes mapping candidates
+on the PR body, and the human review lands confirmed entries. serving
+tiers stay out (cloudy 2026-08-30: mapping only).
 """
 
 from __future__ import annotations
 
 import json
+import re
+from datetime import date
 from pathlib import Path
 
 MODELS_FILE = "data/models.json"
+
+_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 class MappingError(ValueError):
@@ -30,8 +39,8 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
     if not isinstance(data, dict):
         raise MappingError(f"models file '{path}': must be an object")
     version = data.get("version")
-    if isinstance(version, bool) or not isinstance(version, int) or version != 2:
-        raise MappingError(f"models file '{path}': version must be the integer 2")
+    if isinstance(version, bool) or not isinstance(version, int) or version != 3:
+        raise MappingError(f"models file '{path}': version must be the integer 3")
     models = data.get("models")
     if not isinstance(models, dict):
         raise MappingError(f"models file '{path}': 'models' must be an object")
@@ -78,6 +87,67 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
                 )
             normalized[source] = ids
         entry["sources"] = normalized
+    aliases = data.get("aliases")
+    if not isinstance(aliases, dict):
+        raise MappingError(f"models file '{path}': 'aliases' must be an object")
+    for alias, records in aliases.items():
+        if not isinstance(alias, str) or not alias:
+            raise MappingError(f"models file '{path}': alias id must be a non-empty string")
+        if not isinstance(records, list) or not records:
+            raise MappingError(
+                f"models file '{path}': alias '{alias}' records must be a non-empty list"
+            )
+        for record in records:
+            if not isinstance(record, dict):
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record must be an object"
+                )
+            unknown = set(record) - {"from", "to", "canonical", "citation"}
+            if unknown:
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record has unknown key"
+                    f" '{sorted(unknown)[0]}'"
+                )
+            canonical = record.get("canonical")
+            if not isinstance(canonical, str) or canonical not in models:
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record canonical must"
+                    " name a model in the file"
+                )
+            for field in ("from", "to"):
+                if field not in record:
+                    raise MappingError(
+                        f"models file '{path}': alias '{alias}' record is missing '{field}'"
+                    )
+                value = record[field]
+                if value is None:
+                    continue
+                if not isinstance(value, str) or _DATE.fullmatch(value) is None:
+                    raise MappingError(
+                        f"models file '{path}': alias '{alias}' record '{field}'"
+                        " must be a YYYY-MM-DD date or null"
+                    )
+                try:
+                    date.fromisoformat(value)
+                except ValueError:
+                    raise MappingError(
+                        f"models file '{path}': alias '{alias}' record '{field}'"
+                        " must be a YYYY-MM-DD date or null"
+                    ) from None
+            start, end = record["from"], record["to"]
+            if start is None and end is None:
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record must carry a 'from' or 'to' date"
+                )
+            if start is not None and end is not None and start >= end:
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record 'from' must be before 'to'"
+                )
+            citation = record.get("citation")
+            if not isinstance(citation, str) or not citation.startswith(("http://", "https://")):
+                raise MappingError(
+                    f"models file '{path}': alias '{alias}' record citation must be an http(s) url"
+                )
     return models
 
 
