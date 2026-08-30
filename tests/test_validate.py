@@ -373,7 +373,7 @@ def test_removed_flag_must_be_true(bad):
 
 
 def test_removed_row_with_price_fields_passes():
-    # the removal row carries the final price snapshot; its price fields
+    # a removal row may carry the final price snapshot; its price fields
     # validate like any row's
     validate_row(
         {
