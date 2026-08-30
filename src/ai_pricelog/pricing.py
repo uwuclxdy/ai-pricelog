@@ -40,6 +40,10 @@ class Pricing:
     # weekday days of the peak windows (lowercase names, calendar order);
     # empty = every day
     peak_days: tuple[str, ...] = ()
+    # pre-built window_rates entries (e.g. zai's quota multipliers); build_row
+    # appends them after the peak-derived entries. entries carry rate keys, a
+    # quota_multiplier, or both
+    window_rates: tuple[dict[str, object], ...] = ()
 
 
 def to_mtok(per_token: float) -> float:

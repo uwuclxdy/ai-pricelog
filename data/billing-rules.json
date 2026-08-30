@@ -42,6 +42,16 @@
       "citation": [
         "https://docs.fireworks.ai/updates/changelog"
       ]
+    },
+    {
+      "id": "zai-glm-quota-multipliers",
+      "provider": "zai",
+      "effective": "2026-07-30",
+      "timezone": "Asia/Singapore",
+      "statement": "glm coding plan quota consumption multipliers, not prices: GLM-5.3 consumes 1x off-peak / 3x peak, GLM-5.3-Flash 0.4x off-peak / 1.2x peak; peak hours Monday-Friday 14:00-18:00 SGT (UTC+8). the index stores the multipliers as typed window_rates entries; consumers never price sessions from them",
+      "citation": [
+        "https://docs.z.ai/devpack/notice/usage-revision.md"
+      ]
     }
   ]
 }

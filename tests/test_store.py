@@ -333,6 +333,25 @@ def test_build_row_maps_peak_fields_to_window_rates():
     assert "peak_cache_read_mtok" not in row
 
 
+def test_build_row_appends_prebuilt_window_rates_entries():
+    # pricing.window_rates carries scraper-built entries (zai quota
+    # multipliers); they ride the row after any peak-derived entries
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        window_rates=(
+            {"quota_multiplier": 0.4},
+            {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
+        ),
+    )
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["window_rates"] == [
+        {"quota_multiplier": 0.4},
+        {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
+    ]
+
+
 def test_build_row_stamps_the_page_the_scraper_read():
     # the scraper's own url names the row unless the scrape resolved another
     # page (moonshot reads the index to find the per-model page)

@@ -94,6 +94,29 @@ def test_peak_windows_without_peak_price_is_valid():
     validate_row(row(peak_windows=[["01:00:00Z", "04:00:00Z"]]))
 
 
+def test_window_entry_with_quota_multiplier_only_passes():
+    # zai plan-quota entries carry a multiplier and no rate keys
+    validate_row(
+        row(
+            window_rates=[
+                {"quota_multiplier": 0.4},
+                {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
+            ]
+        )
+    )
+
+
+@pytest.mark.parametrize("bad", [0, -1, 0.0, True, "1.2", float("inf"), float("nan")])
+def test_window_entry_with_bad_quota_multiplier_rejected(bad):
+    with pytest.raises(ValidationError, match="quota_multiplier"):
+        validate_row(row(window_rates=[{"quota_multiplier": bad}]))
+
+
+def test_window_entry_with_neither_rates_nor_multiplier_rejected():
+    with pytest.raises(ValidationError, match="quota_multiplier"):
+        validate_row(row(window_rates=[{"window": [600, 1000]}]))
+
+
 @pytest.mark.parametrize("model_id", [None, "", 5, ["deepseek-chat"]])
 def test_bad_model_id_rejected(model_id):
     with pytest.raises(ValidationError, match="model_id"):

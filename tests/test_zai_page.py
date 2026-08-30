@@ -156,6 +156,126 @@ def test_scrape_free_model_prices_zero(monkeypatch):
         assert pricing.cache_read_cost_per_token == 0.0
 
 
+def notice_cfg() -> ProviderCfg:
+    base = cfg()
+    return ProviderCfg(
+        key=base.key,
+        provider=base.provider,
+        detector=base.detector,
+        detector_url=base.detector_url,
+        scraper=base.scraper,
+        scraper_url=base.scraper_url,
+        announce_urls=("https://docs.z.ai/devpack/notice/usage-revision.md",),
+    )
+
+
+def serve_notice(monkeypatch: pytest.MonkeyPatch, text: str | None = None) -> None:
+    """serve the notice fixture to the scraper; an unscripted url fails loudly."""
+    if text is None:
+        text = (FIXTURE.parent / "usage-revision.md").read_text(encoding="utf-8")
+
+    def fetch(url: str) -> str:
+        if url != "https://docs.z.ai/devpack/notice/usage-revision.md":
+            raise AssertionError(f"unscripted fetch for {url}")
+        return text
+
+    monkeypatch.setattr(scraper, "fetch_text", fetch)
+
+
+@pytest.fixture(autouse=True)
+def fresh_notice_cache():
+    scraper._notice_text.cache_clear()
+    yield
+    scraper._notice_text.cache_clear()
+
+
+def test_scrape_glm53_attaches_quota_multiplier_entries(monkeypatch):
+    # glm-5.3: 1x off-peak is the implicit base, 3x peak rides the peak-hours
+    # entry (weekdays, 06:00-10:00 utc)
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch)
+    pricing = scraper.scrape(notice_cfg(), "glm-5.3")
+    assert pricing is not None
+    assert pricing.window_rates == (
+        {
+            "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+            "window": [600, 1000],
+            "quota_multiplier": 3.0,
+        },
+    )
+
+
+def test_scrape_glm53_flash_attaches_whole_day_and_peak_entries(monkeypatch):
+    # glm-5.3-flash: 0.4x off-peak rides a whole-day entry, 1.2x the
+    # peak-hours entry
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch)
+    pricing = scraper.scrape(notice_cfg(), "glm-5.3-flash")
+    assert pricing is not None
+    assert pricing.window_rates == (
+        {"quota_multiplier": 0.4},
+        {
+            "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+            "window": [600, 1000],
+            "quota_multiplier": 1.2,
+        },
+    )
+
+
+def test_scrape_non_quota_model_carries_no_entries(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch)
+    pricing = scraper.scrape(notice_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.window_rates == ()
+
+
+def test_scrape_notice_fetch_failure_leaves_entries_off(monkeypatch):
+    # a failed notice fetch must not kill the price row: the base rates land
+    # without entries and the next scrape re-attaches them
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+
+    def boom(url: str) -> str:
+        raise FetchError(f"fetch failed for {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", boom)
+    pricing = scraper.scrape(notice_cfg(), "glm-5.3")
+    assert pricing is not None
+    assert pricing.window_rates == ()
+
+
+def test_scrape_broken_quota_clause_raises(monkeypatch):
+    # a clause the pattern no longer matches is a page-shape break: a
+    # drifted multiplier must never drop silently
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    broken = (
+        (FIXTURE.parent / "usage-revision.md")
+        .read_text(encoding="utf-8")
+        .replace(
+            'consume quota at a rate of "1× during off-peak hours and 3× during peak hours"',
+            'consume quota at a rate of "1× off-peak"',
+        )
+    )
+    serve_notice(monkeypatch, broken)
+    with pytest.raises(FetchError, match="unrecognized quota clause"):
+        scraper.scrape(notice_cfg(), "glm-5.3")
+
+
+def test_scrape_broken_peak_hours_clause_raises(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    broken = (
+        (FIXTURE.parent / "usage-revision.md")
+        .read_text(encoding="utf-8")
+        .replace(
+            "Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).",
+            "Peak hours: see the app.",
+        )
+    )
+    serve_notice(monkeypatch, broken)
+    with pytest.raises(FetchError, match="unrecognized peak-hours clause"):
+        scraper.scrape(notice_cfg(), "glm-5.3")
+
+
 def test_scrape_cached_input_without_rate_is_omitted(monkeypatch):
     # the 32b row carries "-" in the Cached Input column: no cache-read rate
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())

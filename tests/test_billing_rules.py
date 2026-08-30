@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 4
+    assert len(rules) == 5
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -58,6 +58,13 @@ def test_committed_billing_rules_pass_schema():
     assert uplift["timezone"] == "UTC"
     assert "10%" in uplift["statement"]
     assert "https://platform.openai.com/docs/pricing" in uplift["citation"]
+    quota = rules[4]
+    assert quota["id"] == "zai-glm-quota-multipliers"
+    assert quota["provider"] == "zai"
+    assert quota["effective"] == "2026-07-30"
+    assert quota["timezone"] == "Asia/Singapore"
+    assert "not prices" in quota["statement"]
+    assert "https://docs.z.ai/devpack/notice/usage-revision.md" in quota["citation"]
 
 
 @pytest.mark.parametrize(

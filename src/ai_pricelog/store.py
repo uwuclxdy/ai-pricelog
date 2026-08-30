@@ -313,13 +313,13 @@ def build_row(
         )
         if cost is not None
     }
+    entries: list[dict[str, object]] = []
     if peak_rates:
         # the peak schedule lands as window_rates entries: the base mtok
         # fields stay the off-peak default, one entry per window overrides
         # them. no assert on peak_windows here: the row must build even when
         # the scrape left the windows empty, so validate.validate_row rejects
         # THIS row instead of an AssertionError killing the whole run
-        entries: list[dict[str, object]] = []
         for window in pricing.peak_windows or (None,):
             entry: dict[str, object] = {}
             if window is not None:
@@ -328,6 +328,8 @@ def build_row(
                 entry["days"] = list(pricing.peak_days)
             entry.update(peak_rates)
             entries.append(entry)
+    entries.extend(pricing.window_rates)
+    if entries:
         row["window_rates"] = entries
     row["url"] = pricing.url or url
     return row

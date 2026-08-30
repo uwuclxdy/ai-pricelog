@@ -68,7 +68,7 @@ _PEAK_PRICE_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mt
 _WINDOW_DAYS = frozenset(
     {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 )
-_WINDOW_ENTRY_KEYS = frozenset({*_PRICE_FIELDS, "days", "window"})
+_WINDOW_ENTRY_KEYS = frozenset({*_PRICE_FIELDS, "days", "window", "quota_multiplier"})
 
 
 def validate_row(row: dict[str, Any]) -> None:
@@ -204,16 +204,30 @@ def _check_window_rates(row: dict[str, Any]) -> None:
                 " fix: [start, end] HHMM clock numbers with minutes under 60,"
                 " start < end, end at most 2400"
             )
-        if days is None and window is None:
+        multiplier = entry.get("quota_multiplier")
+        if multiplier is not None and (
+            isinstance(multiplier, bool)
+            or not isinstance(multiplier, (int, float))
+            or not math.isfinite(multiplier)
+            or multiplier <= 0
+        ):
+            raise ValidationError(
+                f"row field 'window_rates' entry has bad quota_multiplier"
+                f" {multiplier!r}; fix: a finite float > 0"
+            )
+        rates = {field: entry[field] for field in _PRICE_FIELDS if field in entry}
+        if rates and days is None and window is None:
+            # a rate override must be scheduled; a multiplier-only entry may
+            # cover the whole day by design (zai's whole-day quota weight)
             raise ValidationError(
                 "row field 'window_rates' entry needs a 'days' set or a 'window';"
                 " fix: keep at least one schedule condition"
             )
-        rates = {field: entry[field] for field in _PRICE_FIELDS if field in entry}
-        if not rates:
+        if not rates and "quota_multiplier" not in entry:
             raise ValidationError(
-                "row field 'window_rates' entry carries no rates;"
-                " fix: map at least one override price key"
+                "row field 'window_rates' entry carries no rates and no"
+                " quota_multiplier; fix: map at least one override price key"
+                " or a multiplier"
             )
         for field, value in rates.items():
             if (
