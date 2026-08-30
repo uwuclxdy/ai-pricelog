@@ -1784,3 +1784,9 @@
 {"source":"ai21","model_id":"jamba-large","observed_at":"2026-08-30","input_mtok":2.0,"output_mtok":8.0,"url":"https://www.ai21.com/pricing"}
 {"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-08-30","name":"GLM 5.1","input_mtok":0.966,"output_mtok":3.036,"cache_read_mtok":0.1794,"max_tokens_in":204800}
 {"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-08-30","name":"Qwen3 Next 80B A3B Instruct","input_mtok":0.09,"output_mtok":1.1,"max_tokens_in":262144}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-30","name":"DeepSeek V4 Flash 0731","input_mtok":0.065,"output_mtok":0.18,"cache_read_mtok":0.016,"max_tokens_in":1310720}
+{"source":"openrouter","model_id":"thinkingmachines/inkling","observed_at":"2026-08-30","name":"Inkling","input_mtok":1.0,"output_mtok":4.05,"cache_read_mtok":0.17,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"tencent/hy3","observed_at":"2026-08-30","name":"Hy3","input_mtok":0.132,"output_mtok":0.528,"cache_read_mtok":0.033,"max_tokens_in":262144,"window_rates":[{"input_mtok":0.132,"output_mtok":0.528,"cache_read_mtok":0.033,"window":[0,1600]},{"input_mtok":0.0825,"output_mtok":0.33,"cache_read_mtok":0.020625,"window":[1600,2400]}]}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-pro","observed_at":"2026-08-30","name":"DeepSeek V4 Pro 0423","input_mtok":0.427344,"output_mtok":0.854688,"cache_read_mtok":0.035612,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-30","name":"DeepSeek V4 Flash 0423","input_mtok":0.0798,"output_mtok":0.1596,"cache_read_mtok":0.01596,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"arcee-ai/trinity-large-thinking","observed_at":"2026-08-30","name":"Trinity Large Thinking","input_mtok":0.25,"output_mtok":0.8,"cache_read_mtok":0.06,"max_tokens_in":262144}
