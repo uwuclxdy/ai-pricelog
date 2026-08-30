@@ -1782,3 +1782,5 @@
 {"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-08-29","removed":true}
 {"source":"ai21","model_id":"jamba-mini","observed_at":"2026-08-30","input_mtok":0.2,"output_mtok":0.4,"url":"https://www.ai21.com/pricing"}
 {"source":"ai21","model_id":"jamba-large","observed_at":"2026-08-30","input_mtok":2.0,"output_mtok":8.0,"url":"https://www.ai21.com/pricing"}
+{"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-08-30","name":"GLM 5.1","input_mtok":0.966,"output_mtok":3.036,"cache_read_mtok":0.1794,"max_tokens_in":204800}
+{"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-08-30","name":"Qwen3 Next 80B A3B Instruct","input_mtok":0.09,"output_mtok":1.1,"max_tokens_in":262144}
