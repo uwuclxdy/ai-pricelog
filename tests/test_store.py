@@ -273,6 +273,13 @@ def test_build_row_omits_optional_fields_when_absent():
     assert "unit" not in row
     assert "currency_rate" not in row
     assert "currency_rate_date" not in row
+    assert "effective_at" not in row
+
+
+def test_build_row_copies_effective_at():
+    pricing = Pricing(1e-6, 2e-6, "flex", effective_at="2026-08-23")
+    row = build_row("deepseek", "m", pricing, "2026-08-30", "u")
+    assert row["effective_at"] == "2026-08-23"
 
 
 def test_build_row_includes_cache_read_and_max_tokens():

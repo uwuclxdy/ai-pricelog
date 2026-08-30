@@ -287,6 +287,8 @@ def build_row(
     }
     if pricing.currency != "USD":
         row["currency"] = pricing.currency
+    if pricing.effective_at is not None:
+        row["effective_at"] = pricing.effective_at
     if conversion is not None:
         row["currency_rate"] = conversion[0]
         row["currency_rate_date"] = conversion[1]

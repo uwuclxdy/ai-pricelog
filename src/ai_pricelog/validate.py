@@ -23,7 +23,7 @@ class ValidationError(ValueError):
 # the row-format version, mirrored by the committed data/schema.json (pinned by
 # a test). a top-level key change bumps both: consumers detect the format change
 # by version instead of by surprise.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # every top-level key a produced row may carry; validate_row rejects anything
 # else, so a new key cannot slide past without the version bump. the legacy
@@ -33,6 +33,7 @@ ROW_KEYS = frozenset(
         "source",
         "model_id",
         "observed_at",
+        "effective_at",
         "removed",
         "input_mtok",
         "output_mtok",
@@ -84,6 +85,7 @@ _REMOVAL_FORBIDDEN = (
     "unit",
     "currency_rate",
     "currency_rate_date",
+    "effective_at",
 )
 
 
@@ -146,6 +148,13 @@ def validate_row(row: dict[str, Any]) -> None:
     ):
         raise ValidationError(
             f"row field 'currency_rate_date' has bad value {rate_date!r}; fix: YYYY-MM-DD"
+        )
+    effective = row.get("effective_at")
+    if effective is not None and (
+        not isinstance(effective, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", effective) is None
+    ):
+        raise ValidationError(
+            f"row field 'effective_at' has bad value {effective!r}; fix: YYYY-MM-DD"
         )
     for field in _PRICE_FIELDS:
         value = row.get(field)

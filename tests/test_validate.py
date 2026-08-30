@@ -31,6 +31,21 @@ def test_valid_row_passes():
     validate_row(row())
 
 
+def test_bad_effective_at_rejected():
+    with pytest.raises(ValidationError, match="effective_at"):
+        validate_row(row(effective_at="08-23"))
+
+
+def test_valid_effective_at_passes():
+    validate_row(row(effective_at="2026-08-23"))
+
+
+def test_future_effective_at_is_valid():
+    # a rate announced ahead of time carries an effective date after its
+    # observation; consumers clamp rows to effective <= the query date
+    validate_row(row(observed_at="2026-08-28", effective_at="2026-08-30"))
+
+
 def test_zero_prices_are_valid():
     # openrouter free rows keep zero pricing strings as 0.0 by design
     validate_row(row(input_mtok=0.0, output_mtok=0.0))

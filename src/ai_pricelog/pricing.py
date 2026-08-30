@@ -33,6 +33,10 @@ class Pricing:
     cache_write_1h_cost_per_token: float | None = None
     currency: str = "USD"
     unit: str = "tokens"
+    # the date the quote becomes effective, when the source announces one
+    # ahead of time; None = valid at observation. consumers clamp rows to
+    # effective <= the query date
+    effective_at: str | None = None
 
 
 def to_mtok(per_token: float) -> float:
