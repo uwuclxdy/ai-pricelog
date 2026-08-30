@@ -39,11 +39,40 @@ def test_committed_models_file_passes_schema():
     mapping = load_models(DATA / "models.json")
     assert mapping["deepseek-v4-pro"]["sources"]["openrouter"] == ["deepseek/deepseek-v4-pro"]
     assert mapping["deepseek-v4-pro"]["name"] == "DeepSeek V4 Pro"
-    assert mapping["deepseek-v4-flash"]["sources"]["deepseek"] == [
+    assert mapping["deepseek-v4-flash"]["sources"]["deepseek"] == ["deepseek-v4-flash"]
+
+
+def test_committed_deepseek_alias_chains_are_dated_and_contiguous():
+    data = json.loads((DATA / "models.json").read_text(encoding="utf-8"))
+    chat = data["aliases"]["deepseek-chat"]
+    reasoner = data["aliases"]["deepseek-reasoner"]
+    assert [record["canonical"] for record in chat] == [
+        "deepseek-v3",
+        "deepseek-v3-0324",
+        "deepseek-v3.1",
+        "deepseek-v3.1-terminus",
+        "deepseek-v3.2-exp",
+        "deepseek-v3.2",
         "deepseek-v4-flash",
-        "deepseek-chat",
-        "deepseek-reasoner",
     ]
+    assert [record["canonical"] for record in reasoner] == [
+        "deepseek-r1",
+        "deepseek-r1-0528",
+        "deepseek-v3.1",
+        "deepseek-v3.1-terminus",
+        "deepseek-v3.2-exp",
+        "deepseek-v3.2",
+        "deepseek-v4-flash",
+    ]
+    assert chat[0]["from"] == "2024-12-26"
+    assert reasoner[0]["from"] == "2025-01-20"
+    for chain in (chat, reasoner):
+        assert chain[-1]["to"] == "2026-07-24"
+        assert all(a["to"] == b["from"] for a, b in zip(chain, chain[1:], strict=False))
+        assert all(
+            record["citation"].startswith("https://api-docs.deepseek.com/updates/")
+            for record in chain
+        )
 
 
 def test_load_models_normalizes_source_spellings_to_lists(tmp_path):
