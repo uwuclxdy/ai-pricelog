@@ -85,6 +85,7 @@ def test_scrape_flash_split_pricing(monkeypatch):
     assert pricing.peak_windows == WINDOWS
     assert pricing.peak_days == WEEKDAYS
     assert pricing.effective_at == "2026-08-23"
+    assert pricing.timezone == "Asia/Shanghai"
     assert pricing.mode == "chat"
     assert pricing.max_tokens_out == 384 * 1024
     assert pricing.max_tokens_in == 1024 * 1024

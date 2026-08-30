@@ -352,6 +352,22 @@ def test_build_row_appends_prebuilt_window_rates_entries():
     ]
 
 
+def test_build_row_stamps_schedule_timezone():
+    # a schedule row stamps the pricing's IANA zone (deepseek's weekday rule
+    # is beijing-derived); no schedule, no stamp
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        window_rates=({"quota_multiplier": 0.4},),
+        timezone="Asia/Shanghai",
+    )
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["timezone"] == "Asia/Shanghai"
+    plain = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
+    assert "timezone" not in build_row("a", "m", plain, "t", "u")
+
+
 def test_build_row_stamps_the_page_the_scraper_read():
     # the scraper's own url names the row unless the scrape resolved another
     # page (moonshot reads the index to find the per-model page)

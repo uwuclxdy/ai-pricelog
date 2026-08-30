@@ -117,6 +117,60 @@ def test_window_entry_with_neither_rates_nor_multiplier_rejected():
         validate_row(row(window_rates=[{"window": [600, 1000]}]))
 
 
+def test_volume_rates_entry_passes():
+    validate_row(
+        row(
+            volume_rates=[
+                {"min_tokens": 32000, "input_mtok": 0.1, "output_mtok": 0.4},
+                {"min_tokens": 256000, "input_mtok": 0.2, "image_mtok": 3.0},
+            ]
+        )
+    )
+
+
+@pytest.mark.parametrize("bad", [0, -1, True, 1.5, "32000", None])
+def test_volume_rates_bad_min_tokens_rejected(bad):
+    with pytest.raises(ValidationError, match="min_tokens"):
+        validate_row(row(volume_rates=[{"min_tokens": bad, "input_mtok": 0.1}]))
+
+
+def test_volume_rates_unknown_key_rejected():
+    with pytest.raises(ValidationError, match="volume_rates"):
+        validate_row(row(volume_rates=[{"min_tokens": 100, "bogus": 1.0}]))
+
+
+def test_volume_rates_empty_list_rejected():
+    with pytest.raises(ValidationError, match="volume_rates"):
+        validate_row(row(volume_rates=[]))
+
+
+def test_volume_rates_entry_without_rates_rejected():
+    with pytest.raises(ValidationError, match="volume_rates"):
+        validate_row(row(volume_rates=[{"min_tokens": 100}]))
+
+
+def test_row_timezone_passes_beside_window_rates():
+    validate_row(
+        row(window_rates=[{"window": [600, 1000], "input_mtok": 1.0}], timezone="Asia/Shanghai")
+    )
+
+
+def test_row_timezone_without_window_rates_rejected():
+    with pytest.raises(ValidationError, match="timezone"):
+        validate_row(row(timezone="UTC"))
+
+
+@pytest.mark.parametrize("bad", ["Mars/Olympus", "", "utc", 5])
+def test_row_bad_timezone_rejected(bad):
+    with pytest.raises(ValidationError, match="timezone"):
+        validate_row(
+            row(
+                window_rates=[{"window": [600, 1000], "input_mtok": 1.0}],
+                timezone=bad,
+            )
+        )
+
+
 @pytest.mark.parametrize("model_id", [None, "", 5, ["deepseek-chat"]])
 def test_bad_model_id_rejected(model_id):
     with pytest.raises(ValidationError, match="model_id"):
@@ -424,7 +478,7 @@ def test_valid_unit_passes(good):
 
 def test_unknown_top_level_key_rejected():
     with pytest.raises(ValidationError, match="schema"):
-        validate_row(row(audio_mtok=1.0))
+        validate_row(row(junk=1.0))
 
 
 def test_unknown_key_on_removed_row_rejected():

@@ -186,7 +186,9 @@ def test_build_row_omits_missing_prompt_and_empty_name():
     assert row["output_mtok"] == 1.2
 
 
-def test_build_row_passes_unconsumed_pricing_keys_through_extra():
+def test_build_row_promotes_fee_and_volume_overrides():
+    # web_search prices per request and lands as a plain USD fee; a
+    # volume-threshold override lands as a typed volume_rates entry
     model = OpenrouterModel(
         "x/y",
         "X",
@@ -202,10 +204,30 @@ def test_build_row_passes_unconsumed_pricing_keys_through_extra():
     )
     row = build_row(model, "t")
     assert row is not None
-    # a volume-threshold override is not a schedule: it stays verbatim
+    assert row["web_search_usd"] == 0.005
+    assert row["volume_rates"] == [{"min_tokens": 200000, "input_mtok": 4.0}]
+    assert "extra" not in row
+
+
+def test_build_row_passes_truly_unknown_pricing_keys_through_extra():
+    model = OpenrouterModel(
+        "x/y",
+        "X",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "completion": "0.000002",
+            "some_new_key": "0.005",
+            "overrides": [{"some_new_override": 1}],
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
     assert row["extra"] == {
-        "web_search": "0.005",
-        "overrides": [{"min_prompt_tokens": 200000, "prompt": "0.000004"}],
+        "some_new_key": "0.005",
+        "overrides": [{"some_new_override": 1}],
     }
     assert list(row)[-1] == "extra"
 
@@ -320,8 +342,10 @@ def test_build_row_maps_fixture_cache_write_tiers(fake_fetch: list[str]) -> None
     assert row["cache_write_mtok"] == 12.5
     assert row["cache_write_1h_mtok"] == 20.0
     assert row["max_tokens_in"] == 1000000
-    # the write keys no longer ride extra in their per-token spelling
-    assert row["extra"] == {"web_search": "0.01"}
+    # the write keys ride typed fields, and web_search rides the typed fee
+    # field; nothing is left for extra
+    assert row["web_search_usd"] == 0.01
+    assert "extra" not in row
 
 
 def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) -> None:
@@ -336,7 +360,8 @@ def test_build_row_keeps_every_non_alias_fixture_model(fake_fetch: list[str]) ->
     by_id = {row["model_id"]: row for row in rows}
     sonar = by_id["perplexity/sonar-pro"]
     assert sonar["name"] == "Sonar Pro"
-    assert sonar["extra"] == {"web_search": "0.005"}
+    assert sonar["web_search_usd"] == 0.005
+    assert "extra" not in sonar
     assert len(by_id["deepseek/deepseek-v4-flash-vision-exp"]["window_rates"]) == 6
     # every rowable model ships a context window in this capture
     assert all("max_tokens_in" in row for row in rows)
@@ -392,6 +417,8 @@ def test_build_row_maps_scheduled_overrides_to_window_rates(fake_fetch: list[str
     ]
     # the override key is consumed: nothing rides extra on this model
     assert "extra" not in row
+    # schedule entries are clock windows the source spells in UTC
+    assert row["timezone"] == "UTC"
 
 
 def test_build_row_maps_window_only_override_and_wraps_midnight_end(
@@ -419,29 +446,58 @@ def test_build_row_maps_window_only_override_and_wraps_midnight_end(
     assert "extra" not in row
 
 
-def test_build_row_keeps_volume_overrides_verbatim_in_extra(fake_fetch: list[str]) -> None:
+def test_build_row_maps_volume_overrides_to_volume_rates(fake_fetch: list[str]) -> None:
     by_id = {m.id: m for m in fetch_models()}
     row = build_row(by_id["qwen/qwen3.7-flash"], "2026-08-28")
     assert row is not None
-    # min_prompt_tokens is a volume threshold, not a schedule: whole objects
-    # stay under extra exactly as before
+    # min_prompt_tokens is a volume threshold, not a schedule: it lands as a
+    # typed volume_rates entry with the rate keys mapped to mtok fields
     assert "window_rates" not in row
-    assert row["extra"]["overrides"] == [
+    assert row["volume_rates"] == [
         {
-            "min_prompt_tokens": 32000,
-            "prompt": "0.0000001",
-            "completion": "0.0000004",
-            "input_cache_read": "0.00000002",
-            "input_cache_write": "0.000000125",
+            "min_tokens": 32000,
+            "input_mtok": 0.1,
+            "output_mtok": 0.4,
+            "cache_read_mtok": 0.02,
+            "cache_write_mtok": 0.125,
         },
         {
-            "min_prompt_tokens": 256000,
-            "prompt": "0.0000002",
-            "completion": "0.0000008",
-            "input_cache_read": "0.00000004",
-            "input_cache_write": "0.00000025",
+            "min_tokens": 256000,
+            "input_mtok": 0.2,
+            "output_mtok": 0.8,
+            "cache_read_mtok": 0.04,
+            "cache_write_mtok": 0.25,
         },
     ]
+
+
+def test_build_row_promotes_modality_keys_to_mtok_fields():
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "completion": "0.000002",
+            "image": "0.0000005",
+            "audio": "0.000002",
+            "input_audio_cache": "0.0000002",
+            "internal_reasoning": "0.000012",
+            "image_output": "0.00003",
+            "audio_output": "0.000064",
+        },
+    )
+    row = build_row(model, "t")
+    assert row is not None
+    assert row["image_mtok"] == 0.5
+    assert row["audio_mtok"] == 2.0
+    assert row["input_audio_cache_mtok"] == 0.2
+    assert row["internal_reasoning_mtok"] == 12.0
+    assert row["image_output_mtok"] == 30.0
+    assert row["audio_output_mtok"] == 64.0
+    assert "extra" not in row
 
 
 def test_build_row_rounds_window_rates_to_six_decimals():

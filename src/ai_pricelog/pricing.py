@@ -44,6 +44,9 @@ class Pricing:
     # appends them after the peak-derived entries. entries carry rate keys, a
     # quota_multiplier, or both
     window_rates: tuple[dict[str, object], ...] = ()
+    # the IANA zone of the schedule, stamped on rows carrying window_rates
+    # (deepseek: Asia/Shanghai, the beijing-derived weekday rule)
+    timezone: str | None = None
 
 
 def to_mtok(per_token: float) -> float:

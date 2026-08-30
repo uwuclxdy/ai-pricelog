@@ -56,10 +56,29 @@ _PRICE_KEYS = (
     ("input_cache_write_1h", "cache_write_1h_mtok"),
 )
 
+# source modality key -> typed row mtok field (schema v3): promoted out of
+# `extra` so consumers can query and validate them. web_search stays out: it
+# prices per request (a flat USD fee), not per token, and lands as
+# web_search_usd below
+_MODALITY_KEYS = (
+    ("image", "image_mtok"),
+    ("audio", "audio_mtok"),
+    ("input_audio_cache", "input_audio_cache_mtok"),
+    ("internal_reasoning", "internal_reasoning_mtok"),
+    ("image_output", "image_output_mtok"),
+    ("audio_output", "audio_output_mtok"),
+)
+_MODALITY_SOURCE_KEYS = frozenset(key for key, _ in _MODALITY_KEYS)
+# per-request fee keys, typed as plain USD fields (never per-token)
+_FEE_SOURCE_KEYS = frozenset({"web_search"})
+
 # the override keys that make an override a schedule rather than a threshold;
-# any override carrying one of them maps to window_rates, everything else
-# stays verbatim under extra
+# any override carrying one of them maps to window_rates
 _SCHEDULE_KEYS = frozenset({"utc_days", "utc_start", "utc_end"})
+
+# override keys recognized in a volume-threshold override: the threshold plus
+# every price key the volume mapper maps
+_VOLUME_SOURCE_KEYS = frozenset({*(key for key, _ in _PRICE_KEYS), *_MODALITY_SOURCE_KEYS})
 
 _WINDOW_ENTRY_KEYS = frozenset({*_SCHEDULE_KEYS, *(key for key, _ in _PRICE_KEYS)})
 
@@ -84,7 +103,7 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
     }
     if model.name:
         row["name"] = model.name
-    for key, field_name in _PRICE_KEYS:
+    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
         value = model.pricing.get(key)
         if value is None:
             continue
@@ -97,10 +116,22 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
             ) from exc
         if rate >= 0:
             row[field_name] = to_mtok(rate)
+    web_search = model.pricing.get("web_search")
+    if web_search is not None:
+        try:
+            fee = float(web_search)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"model {model.id!r}: pricing value for web_search must be a"
+                f" per-request dollar string, got {type(web_search).__name__}"
+            ) from exc
+        if fee >= 0:
+            row["web_search_usd"] = fee
     if model.context_length > 0:
         row["max_tokens_in"] = model.context_length
     overrides = model.pricing.get("overrides")
     window_rates: list[dict[str, object]] = []
+    volume_rates: list[dict[str, object]] = []
     leftover_overrides: list[dict[str, object]] = []
     if overrides is not None:
         if not isinstance(overrides, list) or not all(
@@ -108,16 +139,25 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         ):
             raise ValueError(f"model {model.id!r}: pricing 'overrides' must be a list of objects")
         for override in overrides:
-            if _SCHEDULE_KEYS.isdisjoint(override):
+            if not _SCHEDULE_KEYS.isdisjoint(override):
+                window_rates.extend(_window_entry(model.id, override))
+            elif "min_prompt_tokens" in override:
+                volume_rates.append(_volume_entry(model.id, override))
+            else:
                 leftover_overrides.append(override)
-                continue
-            window_rates.extend(_window_entry(model.id, override))
     if window_rates:
         row["window_rates"] = window_rates
+        # schedule entries are clock windows; the source spells them in UTC
+        row["timezone"] = "UTC"
+    if volume_rates:
+        row["volume_rates"] = volume_rates
     extra = {
         key: value
         for key, value in model.pricing.items()
-        if key not in OBSERVED_KEYS and key != "overrides"
+        if key not in OBSERVED_KEYS
+        and key not in _MODALITY_SOURCE_KEYS
+        and key not in _FEE_SOURCE_KEYS
+        and key != "overrides"
     }
     if leftover_overrides:
         extra["overrides"] = leftover_overrides
@@ -199,6 +239,52 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
     if windows is None:
         return [entry]
     return [{**entry, "window": window} for window in windows]
+
+
+def _volume_entry(model_id: str, override: dict[str, object]) -> dict[str, object]:
+    """One volume-threshold override as a volume_rates entry.
+
+    min_prompt_tokens lands as min_tokens; the price keys map to their mtok
+    fields with the same zero/negative inherit-base rule as window entries.
+    A key outside the known volume set is a shape break.
+    """
+    min_tokens = override.get("min_prompt_tokens")
+    if (
+        isinstance(min_tokens, bool)
+        or not isinstance(min_tokens, (int, float))
+        or not float(min_tokens).is_integer()
+        or min_tokens <= 0
+    ):
+        raise ValueError(
+            f"model {model_id!r}: override min_prompt_tokens must be a positive"
+            f" integer, got {min_tokens!r}"
+        )
+    entry: dict[str, object] = {"min_tokens": int(min_tokens)}
+    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
+        value = override.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise ValueError(
+                f"model {model_id!r}: override pricing value for {key} must be a"
+                f" per-token string, got {type(value).__name__}"
+            )
+        try:
+            rate = float(value)
+        except ValueError as exc:
+            raise ValueError(
+                f"model {model_id!r}: override pricing value for {key} must be a"
+                f" per-token number string, got {value!r}"
+            ) from exc
+        if rate > 0:
+            entry[field_name] = to_mtok(rate)
+    unknown = set(override) - _VOLUME_SOURCE_KEYS - {"min_prompt_tokens"}
+    if unknown:
+        raise ValueError(
+            f"model {model_id!r}: volume override key(s) {sorted(unknown)!r} are"
+            " not mapped; fix: extend the volume mapping or drop the key"
+        )
+    return entry
 
 
 def _clock(model_id: str, key: str, value: object) -> int:

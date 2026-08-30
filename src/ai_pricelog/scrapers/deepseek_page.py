@@ -109,6 +109,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         peak_cache_read_cost_per_token=_per_token(peak_cache_read),
         effective_at=_WEEKEND_RULE_EFFECTIVE if peak_days else None,
         peak_days=peak_days,
+        timezone="Asia/Shanghai",
     )
 
 

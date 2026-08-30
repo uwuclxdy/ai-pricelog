@@ -331,6 +331,8 @@ def build_row(
     entries.extend(pricing.window_rates)
     if entries:
         row["window_rates"] = entries
+        if pricing.timezone is not None:
+            row["timezone"] = pricing.timezone
     row["url"] = pricing.url or url
     return row
 
