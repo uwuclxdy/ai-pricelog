@@ -1603,3 +1603,5 @@
 {"source":"anthropic","model_id":"claude-sonnet-4","observed_at":"2026-08-29","input_mtok":3.0,"output_mtok":15.0,"cache_read_mtok":0.3,"cache_write_mtok":3.75,"cache_write_1h_mtok":6.0,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
 {"source":"anthropic","model_id":"claude-haiku-4-5","observed_at":"2026-08-29","input_mtok":1.0,"output_mtok":5.0,"cache_read_mtok":0.1,"cache_write_mtok":1.25,"cache_write_1h_mtok":2.0,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
 {"source":"anthropic","model_id":"claude-haiku-3-5","observed_at":"2026-08-29","input_mtok":0.8,"output_mtok":4.0,"cache_read_mtok":0.08,"cache_write_mtok":1.0,"cache_write_1h_mtok":1.6,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
+{"source":"cerebras","model_id":"gemma-4-31b","observed_at":"2026-08-29","input_mtok":0.99,"output_mtok":1.49,"url":"https://api.cerebras.ai/public/v1/models"}
+{"source":"cerebras","model_id":"gpt-oss-120b","observed_at":"2026-08-29","input_mtok":0.35,"output_mtok":0.75,"url":"https://api.cerebras.ai/public/v1/models"}
