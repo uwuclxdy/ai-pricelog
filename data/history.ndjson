@@ -1798,3 +1798,5 @@
 {"source":"zai","model_id":"glm-5.3","observed_at":"2026-08-30","input_mtok":1.4,"output_mtok":4.4,"cache_read_mtok":0.26,"window_rates":[{"quota_multiplier":3.0,"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000]}],"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.7-flash","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"cache_read_mtok":0.0,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"zai","model_id":"glm-4.5-flash","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"cache_read_mtok":0.0,"url":"https://docs.z.ai/guides/overview/pricing"}
+{"source":"cohere","model_id":"command-a-plus","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
+{"source":"cohere","model_id":"north-mini-code","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
