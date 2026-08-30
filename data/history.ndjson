@@ -1206,3 +1206,11 @@
 {"source":"xai","model_id":"grok-4.3","observed_at":"2026-08-29","input_mtok":1.25,"output_mtok":2.5,"cache_read_mtok":0.2,"max_tokens_in":1000000,"url":"https://docs.x.ai/docs/models"}
 {"source":"xai","model_id":"grok-4.6","observed_at":"2026-08-29","input_mtok":2.0,"output_mtok":6.0,"cache_read_mtok":0.5,"max_tokens_in":500000,"url":"https://docs.x.ai/docs/models"}
 {"source":"xai","model_id":"grok-4.5","observed_at":"2026-08-29","input_mtok":2.0,"output_mtok":6.0,"cache_read_mtok":0.3,"max_tokens_in":500000,"url":"https://docs.x.ai/docs/models"}
+{"source":"mistral","model_id":"codestral-25-08","observed_at":"2026-08-29","input_mtok":0.3,"output_mtok":0.9,"cache_read_mtok":0.03,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"mistral-medium-3-5-26-04","observed_at":"2026-08-29","input_mtok":1.5,"output_mtok":7.5,"cache_read_mtok":0.15,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"zai-glm-5-2","observed_at":"2026-08-29","input_mtok":1.4,"output_mtok":4.4,"cache_read_mtok":0.14,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"mistral-small-4-0-26-03","observed_at":"2026-08-29","input_mtok":0.15,"output_mtok":0.6,"cache_read_mtok":0.015,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"mistral-large-3-25-12","observed_at":"2026-08-29","input_mtok":0.5,"output_mtok":1.5,"cache_read_mtok":0.05,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"ministral-3-14b-25-12","observed_at":"2026-08-29","input_mtok":0.2,"output_mtok":0.2,"cache_read_mtok":0.02,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"ministral-3-8b-25-12","observed_at":"2026-08-29","input_mtok":0.15,"output_mtok":0.15,"cache_read_mtok":0.015,"url":"https://docs.mistral.ai/inference/pricing"}
+{"source":"mistral","model_id":"ministral-3-3b-25-12","observed_at":"2026-08-29","input_mtok":0.1,"output_mtok":0.1,"cache_read_mtok":0.01,"url":"https://docs.mistral.ai/inference/pricing"}
