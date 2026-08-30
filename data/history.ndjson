@@ -1800,3 +1800,7 @@
 {"source":"zai","model_id":"glm-4.5-flash","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"cache_read_mtok":0.0,"url":"https://docs.z.ai/guides/overview/pricing"}
 {"source":"cohere","model_id":"command-a-plus","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
 {"source":"cohere","model_id":"north-mini-code","observed_at":"2026-08-30","input_mtok":0.0,"output_mtok":0.0,"url":"https://cohere.com/pricing"}
+{"source":"openrouter","model_id":"tencent/hy3","observed_at":"2026-08-30","name":"Hy3","input_mtok":0.0825,"output_mtok":0.33,"cache_read_mtok":0.020625,"max_tokens_in":262144,"window_rates":[{"input_mtok":0.132,"output_mtok":0.528,"cache_read_mtok":0.033,"window":[0,1600]},{"input_mtok":0.0825,"output_mtok":0.33,"cache_read_mtok":0.020625,"window":[1600,2400]}]}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-pro","observed_at":"2026-08-30","name":"DeepSeek V4 Pro 0423","input_mtok":0.417252,"output_mtok":0.834504,"cache_read_mtok":0.034771,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-30","name":"DeepSeek V4 Flash 0423","input_mtok":0.07896,"output_mtok":0.15792,"cache_read_mtok":0.015792,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-08-30","name":"Devstral 2 2512","input_mtok":0.4,"output_mtok":2.0,"cache_read_mtok":0.04,"max_tokens_in":262144}
