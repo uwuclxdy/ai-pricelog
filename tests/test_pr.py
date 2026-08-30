@@ -141,19 +141,30 @@ def test_spec_body_cache_write_column():
     )
 
 
-def test_spec_body_peak_row():
+def test_spec_body_deepseek_windowed_row():
+    # deepseek peak rows render as window_rates: the rows table shows the
+    # base (off-peak) rates, the windowed table the scheduled peak overrides
     row = {
         "source": "deepseek",
         "model_id": "deepseek-v4-flash",
-        "observed_at": "2026-08-26",
+        "observed_at": "2026-08-30",
         "input_mtok": 0.22,
         "output_mtok": 0.66,
-        "peak_input_mtok": 0.44,
-        "peak_output_mtok": 1.32,
-        "peak_windows": [["01:00:00Z", "04:00:00Z"]],
+        "window_rates": [
+            {
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "window": [100, 400],
+                "input_mtok": 0.44,
+                "output_mtok": 1.32,
+            }
+        ],
     }
     body = spec(rows=(row,)).body
-    assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
+    assert "| deepseek | `deepseek-v4-flash` | 2026-08-30 | 0.22 | — | — | 0.66 | — |" in body
+    assert (
+        "| `deepseek-v4-flash` | monday, tuesday, wednesday, thursday, friday"
+        " | 01:00 - 04:00 | 0.44 | — | — | 1.32 |" in body
+    )
 
 
 def test_spec_body_windowed_rates_table():

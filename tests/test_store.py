@@ -310,7 +310,9 @@ def test_build_row_includes_cache_write_tiers():
     assert row["cache_write_1h_mtok"] == 2.0
 
 
-def test_build_row_emits_peak_fields_together():
+def test_build_row_maps_peak_fields_to_window_rates():
+    # the base mtok fields stay the off-peak default; one window_rates entry
+    # per peak window carries the override rates
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -318,13 +320,17 @@ def test_build_row_emits_peak_fields_together():
         peak_input_cost_per_token=0.000002,
         peak_output_cost_per_token=0.000004,
         peak_cache_read_cost_per_token=0.0000005,
-        peak_windows=(("00:00", "04:00"), ("06:00", "10:00")),
+        peak_windows=((0, 400), (600, 1000)),
     )
     row = build_row("a", "m", pricing, "t", "u")
-    assert row["peak_windows"] == [["00:00", "04:00"], ["06:00", "10:00"]]
-    assert row["peak_input_mtok"] == 2.0
-    assert row["peak_output_mtok"] == 4.0
-    assert row["peak_cache_read_mtok"] == 0.5
+    assert row["window_rates"] == [
+        {"window": [0, 400], "input_mtok": 2.0, "output_mtok": 4.0, "cache_read_mtok": 0.5},
+        {"window": [600, 1000], "input_mtok": 2.0, "output_mtok": 4.0, "cache_read_mtok": 0.5},
+    ]
+    assert "peak_windows" not in row
+    assert "peak_input_mtok" not in row
+    assert "peak_output_mtok" not in row
+    assert "peak_cache_read_mtok" not in row
 
 
 def test_build_row_stamps_the_page_the_scraper_read():
@@ -349,16 +355,33 @@ def test_build_row_peak_cache_read_alone_triggers_peak_block():
         output_cost_per_token=2e-6,
         mode="flex",
         peak_cache_read_cost_per_token=0.0000005,
-        peak_windows=(("00:00", "04:00"),),
+        peak_windows=((0, 400),),
     )
     row = build_row("a", "m", pricing, "t", "u")
-    assert row["peak_windows"] == [["00:00", "04:00"]]
-    assert row["peak_cache_read_mtok"] == 0.5
-    assert "peak_input_mtok" not in row
-    assert "peak_output_mtok" not in row
+    assert row["window_rates"] == [{"window": [0, 400], "cache_read_mtok": 0.5}]
+    assert "peak_cache_read_mtok" not in row
 
 
-def test_build_row_peak_prices_without_windows_builds_and_validation_rejects():
+def test_build_row_peak_days_without_windows_builds_day_only_entry():
+    # a weekday-only peak schedule (no clock windows) stays expressible
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        peak_input_cost_per_token=0.000002,
+        peak_days=("monday", "tuesday", "wednesday", "thursday", "friday"),
+    )
+    row = build_row("a", "m", pricing, "t", "u")
+    assert row["window_rates"] == [
+        {
+            "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+            "input_mtok": 2.0,
+        }
+    ]
+    validate.validate_row(row)
+
+
+def test_build_row_peak_prices_without_windows_or_days_builds_and_validation_rejects():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -366,11 +389,54 @@ def test_build_row_peak_prices_without_windows_builds_and_validation_rejects():
         peak_input_cost_per_token=0.000002,
     )
     row = build_row("a", "m", pricing, "t", "u")
-    assert row["peak_windows"] == []
-    assert row["peak_input_mtok"] == 2.0
+    assert row["window_rates"] == [{"input_mtok": 2.0}]
     # one malformed scrape must fail only its own row, not the whole run
-    with pytest.raises(validate.ValidationError, match="peak_windows"):
+    with pytest.raises(validate.ValidationError, match="days' set"):
         validate.validate_row(row)
+
+
+def test_deepseek_weekend_schedule_prices_saturday_at_off_peak():
+    # todo 20 acceptance check: a consumer pricing a saturday deepseek call
+    # inside a peak window resolves the off-peak (base) rates, since the
+    # window entries carry weekday day-sets
+    pricing = Pricing(
+        input_cost_per_token=0.22 / 1e6,
+        output_cost_per_token=0.66 / 1e6,
+        cache_read_cost_per_token=0.007 / 1e6,
+        mode="chat",
+        peak_input_cost_per_token=0.44 / 1e6,
+        peak_output_cost_per_token=1.32 / 1e6,
+        peak_cache_read_cost_per_token=0.014 / 1e6,
+        peak_windows=((100, 400), (600, 1000)),
+        peak_days=("monday", "tuesday", "wednesday", "thursday", "friday"),
+        effective_at="2026-08-23",
+    )
+    row = build_row("deepseek", "deepseek-v4-flash", pricing, "2026-08-30", "u")
+    assert row["effective_at"] == "2026-08-23"
+    assert _schedule_rate(row, "saturday", 200) == (
+        row["input_mtok"],
+        row["output_mtok"],
+        row["cache_read_mtok"],
+    )
+    assert _schedule_rate(row, "monday", 200) == (0.44, 1.32, 0.014)
+
+
+def _schedule_rate(row: dict[str, object], day: str, clock: int) -> tuple[object, object, object]:
+    """The consumer-side resolution the window_rates shape promises."""
+    base = (row["input_mtok"], row["output_mtok"], row["cache_read_mtok"])
+    for entry in row["window_rates"]:
+        days = entry.get("days")
+        window = entry.get("window")
+        if days is not None and day not in days:
+            continue
+        if window is not None and not (window[0] <= clock < window[1]):
+            continue
+        return (
+            entry.get("input_mtok", base[0]),
+            entry.get("output_mtok", base[1]),
+            entry.get("cache_read_mtok", base[2]),
+        )
+    return base
 
 
 def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
@@ -596,7 +662,7 @@ def test_build_row_converts_every_price_field_but_not_max_tokens():
         peak_input_cost_per_token=2e-6,
         peak_output_cost_per_token=4e-6,
         peak_cache_read_cost_per_token=5e-7,
-        peak_windows=(("00:00", "04:00"),),
+        peak_windows=((0, 400),),
         max_tokens_in=200000,
         max_tokens_out=8192,
         currency="EUR",
@@ -607,9 +673,9 @@ def test_build_row_converts_every_price_field_but_not_max_tokens():
     assert row["cache_read_mtok"] == 0.55
     assert row["cache_write_mtok"] == 1.375
     assert row["cache_write_1h_mtok"] == 2.2
-    assert row["peak_input_mtok"] == 2.2
-    assert row["peak_output_mtok"] == 4.4
-    assert row["peak_cache_read_mtok"] == 0.55
+    assert row["window_rates"] == [
+        {"window": [0, 400], "input_mtok": 2.2, "output_mtok": 4.4, "cache_read_mtok": 0.55}
+    ]
     assert row["max_tokens_in"] == 200000
     assert row["max_tokens_out"] == 8192
 

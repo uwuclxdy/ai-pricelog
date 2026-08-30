@@ -3,17 +3,24 @@
 same table as detection. pricing rows are keyed by their label cell
 (1M INPUT TOKENS (CACHE MISS) / 1M OUTPUT TOKENS / 1M INPUT TOKENS (CACHE
 HIT)) and split into OFF-PEAK and PEAK subrows. the OFF-PEAK value becomes the
-default price and the PEAK value the peak fields, with the schedule footnote
-("Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC") parsed into
-peak_windows pairs. labels without a PEAK subrow are flat (no peak fields).
-peak subrows without the footnote are a scrape failure: the entry builder
-requires windows with peak prices. CACHE HIT parses like CACHE MISS into the
-cache-read fields: OFF-PEAK -> cache_read_cost_per_token, PEAK ->
-peak_cache_read_cost_per_token. values are USD per 1M tokens -> /1e6.
+default price and the PEAK value the scheduled overrides, with the schedule
+footnote ("Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC, Monday through
+Friday") parsed into window bounds and weekday days. labels without a PEAK
+subrow are flat (no peak fields). peak subrows without the footnote are a
+scrape failure: the entry builder requires windows with peak prices. CACHE HIT
+parses like CACHE MISS into the cache-read fields: OFF-PEAK ->
+cache_read_cost_per_token, PEAK -> peak_cache_read_cost_per_token. values are
+USD per 1M tokens -> /1e6.
 max_tokens_out comes from the MAX OUTPUT row ("MAXIMUM: 384K" -> 384 *
 1024) and max_tokens_in from the CONTEXT LENGTH row ("1M" -> 1024 * 1024);
 either row may span all model columns as one merged cell, in which case the
 single value applies to every model.
+
+the "Monday through Friday" clause turns into weekday day-sets on the
+windows; absent, the windows apply every day. the beijing-time weekend rule
+(billing-rules id deepseek-weekend-off-peak, effective 2026-08-23) equals
+UTC-day weekdays only while every window ends by 16:00 UTC (beijing
+midnight); a window past that raises instead of silently mis-scheduling.
 
 None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed or the page has no MODEL header table.
@@ -40,6 +47,11 @@ _M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
 _FOOTNOTE_PATTERN = re.compile(
     r"Peak hours are (\d{2}:\d{2}) - (\d{2}:\d{2}) and (\d{2}:\d{2}) - (\d{2}:\d{2}) UTC"
 )
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+# the weekend rule (billing-rules.json id deepseek-weekend-off-peak) bills
+# saturday-sunday beijing time at the off-peak rate; rows carrying the weekday
+# schedule stamp that date so consumers clamp historical sessions correctly
+_WEEKEND_RULE_EFFECTIVE = "2026-08-23"
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -71,6 +83,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         )
     if peak_input is None or peak_output is None:
         return None
+    peak_windows, peak_days = _peak_schedule(soup, cfg.scraper_url)
     return Pricing(
         input_cost_per_token=off_input / 1e6,
         output_cost_per_token=off_output / 1e6,
@@ -82,8 +95,10 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         cache_read_cost_per_token=_per_token(off_cache_read),
         peak_input_cost_per_token=peak_input / 1e6,
         peak_output_cost_per_token=peak_output / 1e6,
-        peak_windows=_peak_windows(soup, cfg.scraper_url),
+        peak_windows=peak_windows,
         peak_cache_read_cost_per_token=_per_token(peak_cache_read),
+        effective_at=_WEEKEND_RULE_EFFECTIVE if peak_days else None,
+        peak_days=peak_days,
     )
 
 
@@ -105,16 +120,46 @@ def _pricing_cells(rows: list[list[str]], column: int) -> dict[str, dict[str, st
     return prices
 
 
-def _peak_windows(soup: BeautifulSoup, url: str) -> tuple[tuple[str, str], ...]:
-    """The schedule footnote's two peak windows as ("HH:MM:SSZ", "HH:MM:SSZ") pairs."""
-    match = _FOOTNOTE_PATTERN.search(soup.get_text(" ", strip=True))
+def _peak_schedule(
+    soup: BeautifulSoup, url: str
+) -> tuple[tuple[tuple[int, int], ...], tuple[str, ...]]:
+    """The footnote's peak windows as HHMM int pairs and their weekday days.
+
+    "Monday through Friday" (or its absence) keys the day-set: weekdays, or
+    every day. any other weekday wording raises. the beijing-day equivalence
+    from the module docstring holds only while every window ends by 16:00
+    UTC; a window past that raises.
+    """
+    text = soup.get_text(" ", strip=True)
+    match = _FOOTNOTE_PATTERN.search(text)
     if match is None:
         raise FetchError(f"peak price rows without a schedule footnote on {url}")
     first_start, first_end, second_start, second_end = match.groups()
-    return (
-        (f"{first_start}:00Z", f"{first_end}:00Z"),
-        (f"{second_start}:00Z", f"{second_end}:00Z"),
+    windows = (
+        (_hhmm(first_start), _hhmm(first_end)),
+        (_hhmm(second_start), _hhmm(second_end)),
     )
+    for start, end in windows:
+        if end > 1600:
+            raise FetchError(
+                f"peak window {start:04d}-{end:04d} on {url} ends after 16:00 UTC,"
+                " past the beijing-day boundary the weekday clause assumes;"
+                " fix: re-verify the schedule footnote"
+            )
+    tail = text[match.end() :].split(".")[0].casefold()
+    if "monday through friday" in tail:
+        return windows, _WEEKDAYS[:5]
+    if any(day in tail for day in _WEEKDAYS):
+        raise FetchError(
+            f"unrecognized peak weekday clause on {url}: {tail.strip()!r};"
+            " fix: re-verify the schedule footnote"
+        )
+    return windows, ()
+
+
+def _hhmm(clock: str) -> int:
+    """'01:30' -> 130."""
+    return int(clock[:2]) * 100 + int(clock[3:])
 
 
 def _window_tokens(

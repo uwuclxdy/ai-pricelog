@@ -20,7 +20,7 @@ class Pricing:
     cache_read_cost_per_token: float | None = None
     peak_input_cost_per_token: float | None = None
     peak_output_cost_per_token: float | None = None
-    peak_windows: tuple[tuple[str, str], ...] = ()
+    peak_windows: tuple[tuple[int, int], ...] = ()
     peak_cache_read_cost_per_token: float | None = None
     max_tokens_out: int = 0
     # the page the rate was read from, when it is not the scraper's own url
@@ -37,6 +37,9 @@ class Pricing:
     # ahead of time; None = valid at observation. consumers clamp rows to
     # effective <= the query date
     effective_at: str | None = None
+    # weekday days of the peak windows (lowercase names, calendar order);
+    # empty = every day
+    peak_days: tuple[str, ...] = ()
 
 
 def to_mtok(per_token: float) -> float:

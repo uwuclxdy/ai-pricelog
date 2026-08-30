@@ -66,7 +66,8 @@ def test_detect_fetch_error_propagates(monkeypatch):
         detector.detect(cfg())
 
 
-WINDOWS = (("01:00:00Z", "04:00:00Z"), ("06:00:00Z", "10:00:00Z"))
+WINDOWS = ((100, 400), (600, 1000))
+WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday")
 
 
 def test_scrape_flash_split_pricing(monkeypatch):
@@ -82,6 +83,8 @@ def test_scrape_flash_split_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
+    assert pricing.peak_days == WEEKDAYS
+    assert pricing.effective_at == "2026-08-23"
     assert pricing.mode == "chat"
     assert pricing.max_tokens_out == 384 * 1024
     assert pricing.max_tokens_in == 1024 * 1024
@@ -98,6 +101,8 @@ def test_scrape_pro_split_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token == pytest.approx(3.96 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.044 / 1e6)
     assert pricing.peak_windows == WINDOWS
+    assert pricing.peak_days == WEEKDAYS
+    assert pricing.effective_at == "2026-08-23"
     assert pricing.max_tokens_out == 384 * 1024
     assert pricing.max_tokens_in == 1024 * 1024
 
@@ -113,6 +118,8 @@ def test_scrape_vision_exp_split_pricing(monkeypatch):
     assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
     assert pricing.peak_windows == WINDOWS
+    assert pricing.peak_days == WEEKDAYS
+    assert pricing.effective_at == "2026-08-23"
     assert pricing.max_tokens_out == 384 * 1024
     assert pricing.max_tokens_in == 1024 * 1024
 
@@ -237,6 +244,10 @@ def test_scrape_flat_cache_hit_with_split_input_output(monkeypatch):
     assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
     assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
     assert pricing.peak_windows == WINDOWS
+    # no weekday clause in the footnote: windows apply every day, and the
+    # weekend rule has no effective stamp
+    assert pricing.peak_days == ()
+    assert pricing.effective_at is None
 
 
 def test_scrape_cache_hit_peak_without_input_output_peak_returns_none(monkeypatch):
@@ -320,3 +331,41 @@ def test_scrape_one_sided_peak_rows_return_none(monkeypatch):
         "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr></table>",
     )
     assert scraper.scrape(cfg(), "deepseek-v4-flash") is None
+
+
+def test_scrape_unrecognized_weekday_clause_fails(monkeypatch):
+    # a weekday clause the scraper cannot map must fail loudly, not schedule
+    # wrongly
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr>"
+        "<tr><td>PEAK</td><td>$1.32</td></tr></table>"
+        "<p>Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC,"
+        " Tuesday through Saturday (all other hours are off-peak).</p>",
+    )
+    with pytest.raises(FetchError, match="weekday clause"):
+        scraper.scrape(cfg(), "deepseek-v4-flash")
+
+
+def test_scrape_window_past_beijing_boundary_fails(monkeypatch):
+    # a window ending after 16:00 UTC no longer shares its weekday with the
+    # beijing billing day; the schedule needs a timezone-aware shape
+    patch_soup(
+        monkeypatch,
+        scraper,
+        "<table><tr><td>MODEL</td><td>deepseek-v4-flash</td></tr>"
+        "<tr><td>MAX OUTPUT</td><td>MAXIMUM: 128K</td></tr>"
+        "<tr><td>1M INPUT TOKENS (CACHE MISS)</td><td>OFF-PEAK</td><td>$0.22</td></tr>"
+        "<tr><td>PEAK</td><td>$0.44</td></tr>"
+        "<tr><td>1M OUTPUT TOKENS</td><td>OFF-PEAK</td><td>$0.66</td></tr>"
+        "<tr><td>PEAK</td><td>$1.32</td></tr></table>"
+        "<p>Peak hours are 12:00 - 18:00 and 20:00 - 22:00 UTC,"
+        " Monday through Friday (all other hours are off-peak).</p>",
+    )
+    with pytest.raises(FetchError, match="16:00 UTC"):
+        scraper.scrape(cfg(), "deepseek-v4-flash")

@@ -304,21 +304,31 @@ def build_row(
         row["max_tokens_in"] = pricing.max_tokens_in
     if pricing.max_tokens_out > 0:
         row["max_tokens_out"] = pricing.max_tokens_out
-    if (
-        pricing.peak_input_cost_per_token is not None
-        or pricing.peak_output_cost_per_token is not None
-        or pricing.peak_cache_read_cost_per_token is not None
-    ):
-        # no assert on peak_windows here: the row must build even when the
-        # scrape left the windows empty, so validate.validate_row rejects
+    peak_rates = {
+        field: to_mtok(cost * factor)
+        for field, cost in (
+            ("input_mtok", pricing.peak_input_cost_per_token),
+            ("output_mtok", pricing.peak_output_cost_per_token),
+            ("cache_read_mtok", pricing.peak_cache_read_cost_per_token),
+        )
+        if cost is not None
+    }
+    if peak_rates:
+        # the peak schedule lands as window_rates entries: the base mtok
+        # fields stay the off-peak default, one entry per window overrides
+        # them. no assert on peak_windows here: the row must build even when
+        # the scrape left the windows empty, so validate.validate_row rejects
         # THIS row instead of an AssertionError killing the whole run
-        row["peak_windows"] = [list(window) for window in pricing.peak_windows]
-        if pricing.peak_input_cost_per_token is not None:
-            row["peak_input_mtok"] = to_mtok(pricing.peak_input_cost_per_token * factor)
-        if pricing.peak_output_cost_per_token is not None:
-            row["peak_output_mtok"] = to_mtok(pricing.peak_output_cost_per_token * factor)
-        if pricing.peak_cache_read_cost_per_token is not None:
-            row["peak_cache_read_mtok"] = to_mtok(pricing.peak_cache_read_cost_per_token * factor)
+        entries: list[dict[str, object]] = []
+        for window in pricing.peak_windows or (None,):
+            entry: dict[str, object] = {}
+            if window is not None:
+                entry["window"] = list(window)
+            if pricing.peak_days:
+                entry["days"] = list(pricing.peak_days)
+            entry.update(peak_rates)
+            entries.append(entry)
+        row["window_rates"] = entries
     row["url"] = pricing.url or url
     return row
 
