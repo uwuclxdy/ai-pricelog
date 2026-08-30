@@ -103,6 +103,7 @@ def run(
         log.info("store empty at load and the seed pr is still open; skipping the run")
         return report
 
+    landed_rows = rows
     rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_FILE, open_prs))
 
     snapshot = announce.load_snapshot(repo_root / announce.ANNOUNCE_FILE)
@@ -185,10 +186,20 @@ def run(
             resolve,
         )
         _track_provider_absence(
-            pcfg, dedup_keys, absence_ids, rows, fresh_absence, removal_groups, open_prs, today
+            pcfg,
+            dedup_keys,
+            absence_ids,
+            rows,
+            landed_rows,
+            fresh_absence,
+            removal_groups,
+            open_prs,
+            today,
         )
 
-    _openrouter_rows(rows, plan, report, open_prs, today, fresh_absence, removal_groups)
+    _openrouter_rows(
+        rows, landed_rows, plan, report, open_prs, today, fresh_absence, removal_groups
+    )
 
     fresh_absence = {source: entries for source, entries in fresh_absence.items() if entries}
     absence_diff = fresh_absence != absence_state
@@ -429,6 +440,7 @@ def _refresh_drift(
 
 def _openrouter_rows(
     rows: list[dict[str, object]],
+    landed_rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     report: RunReport,
     open_prs: Sequence[pr.OpenPr],
@@ -483,6 +495,7 @@ def _openrouter_rows(
         stored_ids,
         rowable,
         rows,
+        landed_rows,
         state,
         removal_groups,
         open_prs,
@@ -495,6 +508,7 @@ def _track_provider_absence(
     dedup_keys: Any,
     absence_ids: list[str] | None,
     rows: list[dict[str, object]],
+    landed_rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
@@ -527,6 +541,7 @@ def _track_provider_absence(
         stored_ids,
         present,
         rows,
+        landed_rows,
         state,
         removal_groups,
         open_prs,
@@ -541,6 +556,7 @@ def _track_absence(
     stored_ids: set[str],
     present_ids: set[str],
     rows: list[dict[str, object]],
+    landed_rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
@@ -562,9 +578,11 @@ def _track_absence(
     for model_id in [mid for mid in source_state if mid in present_ids]:
         del source_state[model_id]
     # a landed removal ends tracking: the row is the record, and re-counting
-    # would churn the state (and the CI marker) on every later run
+    # would churn the state (and the CI marker) on every later run. only a
+    # LANDED row counts: a pending removal still has an open pr, and dropping
+    # its entry early would lose the counters if that pr gets rejected
     for model_id in [
-        mid for mid in source_state if store.newest(rows, source, mid).get("removed") is True
+        mid for mid in source_state if store.newest(landed_rows, source, mid).get("removed") is True
     ]:
         del source_state[model_id]
     absent_ids = {

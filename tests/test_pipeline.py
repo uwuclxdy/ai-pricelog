@@ -1257,6 +1257,47 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
     assert_default_branch_clean(repo_root, tip="merge zai pr")
 
 
+def test_pending_removal_keeps_the_counter_until_the_row_lands(tmp_path, fake_modules, repo_root):
+    # a sibling pr carries the removal row; it is pending, not landed, so the
+    # cleanup must not drop the counter: a rejected pr leaves the committed
+    # baseline intact for the next run to re-derive
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    prior = deepseek_prior()
+    seed_store(repo_root, [prior])
+    seed_absence(repo_root, {"deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}})
+
+    removal = store.build_removal_row("deepseek", "deepseek-chat", "2026-08-26")
+    pending_branch = pr.branch_name("deepseek-chat")
+    git(repo_root, "switch", "-C", pending_branch)
+    store.save([prior, removal], repo_root / "data" / "history.ndjson")
+    store.write_index([prior, removal], repo_root / "data" / "index.json")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "sibling removal pr")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Mark deepseek-chat delisted from Deepseek",
+                "body": "",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-new"]
+    # the counter survives on the branch: the removal is pending, not landed
+    assert branch_absence(repo_root, batch_branch("deepseek")) == {
+        "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
+    }
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
 def test_flaky_absent_run_without_pr_leaves_no_trace(tmp_path, fake_modules, repo_root):
     # a run with no pr opens nothing: the counter at 1 never lands, so the
     # next run re-derives from the committed (empty) state
