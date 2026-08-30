@@ -30,7 +30,7 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
     if not isinstance(data, dict):
         raise MappingError(f"models file '{path}': must be an object")
     version = data.get("version")
-    if not isinstance(version, int) or version != 1:
+    if isinstance(version, bool) or not isinstance(version, int) or version != 1:
         raise MappingError(f"models file '{path}': version must be the integer 1")
     models = data.get("models")
     if not isinstance(models, dict):

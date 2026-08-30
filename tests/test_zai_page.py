@@ -203,6 +203,8 @@ def test_scrape_glm53_attaches_quota_multiplier_entries(monkeypatch):
             "quota_multiplier": 3.0,
         },
     )
+    # the peak-hours rule derives from Singapore time
+    assert pricing.timezone == "Asia/Singapore"
 
 
 def test_scrape_glm53_flash_attaches_whole_day_and_peak_entries(monkeypatch):
@@ -228,6 +230,7 @@ def test_scrape_non_quota_model_carries_no_entries(monkeypatch):
     pricing = scraper.scrape(notice_cfg(), "glm-5.2")
     assert pricing is not None
     assert pricing.window_rates == ()
+    assert pricing.timezone is None
 
 
 def test_scrape_notice_fetch_failure_leaves_entries_off(monkeypatch):

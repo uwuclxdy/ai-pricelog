@@ -226,12 +226,17 @@ def _window_hhmm(window: object, model_id: str) -> list[int]:
     parts: list[int] = []
     for part in window:
         match = _WINDOW_STR_RE.fullmatch(part)
-        if match is None or int(match.group(2)) > 59:
+        if match is None or int(match.group(1)) > 23 or int(match.group(2)) > 59:
             raise ValueError(
                 f"row {model_id!r}: peak window {part!r} outside the HH:MM:SSZ shape;"
                 " fix: the row or extend the normalization"
             )
         parts.append(int(match.group(1)) * 100 + int(match.group(2)))
+    if parts[0] >= parts[1]:
+        raise ValueError(
+            f"row {model_id!r}: peak window start must precede its end;"
+            " fix: the row or extend the normalization"
+        )
     return parts
 
 
@@ -245,8 +250,9 @@ def _normalize_entry(row: dict[str, object], model_id: str) -> dict[str, object]
     consumed key leaves `extra`, and an empty `extra` drops entirely.
     """
     entry = dict(row)
-    if "max_tokens" in entry and "max_tokens_in" not in entry:
-        entry["max_tokens_in"] = entry.pop("max_tokens")
+    if "max_tokens" in entry:
+        # an existing typed field wins: the newer shape already rode the row
+        entry.setdefault("max_tokens_in", entry.pop("max_tokens"))
     if any(field in entry for field in validate._PEAK_PRICE_FIELDS):
         rates = {
             _PEAK_TO_BASE[field]: entry.pop(field)

@@ -121,7 +121,7 @@ class PrSpec:
             for row in removals:
                 lines.append(
                     f"`{row['model_id']}` no longer listed by {self.provider} "
-                    f"as of {row['observed_at']}."
+                    f"as of {row['observed_at']}; final prices {_removal_snapshot(row)}."
                 )
             lines += [""]
         if prices:
@@ -190,13 +190,14 @@ class PrSpec:
                         "## windowed rates",
                         "",
                         "| model | days | window (UTC) | input (/1M) | cache read (/1M) |"
-                        " cache write 5m/1h (/1M) | output (/1M) |",
-                        "|---|---|---|---|---|---|---|",
+                        " cache write 5m/1h (/1M) | output (/1M) | quota multiplier |",
+                        "|---|---|---|---|---|---|---|---|",
                     ]
                 lines.append(
                     f"| `{row['model_id']}` | {_days(entry)} | {_window(entry)} | "
                     f"{_fmt(entry.get('input_mtok'))} | {_fmt(entry.get('cache_read_mtok'))} | "
-                    f"{_cache_write(entry)} | {_fmt(entry.get('output_mtok'))} |"
+                    f"{_cache_write(entry)} | {_fmt(entry.get('output_mtok'))} | "
+                    f"{_fmt(entry.get('quota_multiplier'))} |"
                 )
         return lines
 
@@ -233,6 +234,7 @@ class PrSpec:
         lines = ["", "## review checklist", ""]
         if self._removals():
             lines.append("- [ ] each removal: model no longer listed on the source page")
+            lines.append("- [ ] each removal: the final snapshot matches the last priced row")
         if self._prices():
             lines.append("- [ ] prices verified against the source page")
             lines.append("- [ ] peak/off-peak rates match the page")
@@ -247,6 +249,23 @@ class PrSpec:
 
 def _fmt(value: object) -> str:
     return "—" if value is None else f"{value:g}"
+
+
+def _removal_snapshot(row: dict[str, object]) -> str:
+    """The removal's final prices as `name value` pairs, or the absence."""
+    names = {
+        "input_mtok": "input",
+        "cache_read_mtok": "cache read",
+        "cache_write_mtok": "cache write",
+        "cache_write_1h_mtok": "cache write 1h",
+        "output_mtok": "output",
+    }
+    parts = [
+        f"{label} {_fmt(row[field])}"
+        for field, label in names.items()
+        if row.get(field) is not None
+    ]
+    return " / ".join(parts) if parts else "not carried"
 
 
 def _quoted_mtok(row: dict[str, object]) -> str:

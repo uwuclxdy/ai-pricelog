@@ -553,18 +553,41 @@ def test_write_index_normalization_prefers_an_existing_typed_field(tmp_path):
 
 
 def test_write_index_normalization_rejects_a_bad_peak_window(tmp_path):
+    for windows in (
+        [["01:00:00Z", "99:99:99Z"]],
+        [["25:00:00Z", "26:00:00Z"]],
+        [["04:00:00Z", "01:00:00Z"]],
+    ):
+        rows = [
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "input_mtok": 0.27,
+                "peak_input_mtok": 0.54,
+                "peak_windows": windows,
+            }
+        ]
+        with pytest.raises(ValueError, match="peak window"):
+            write_index(rows, tmp_path / "index.json")
+
+
+def test_write_index_normalization_prefers_a_typed_max_tokens(tmp_path):
     rows = [
         {
-            "source": "deepseek",
-            "model_id": "deepseek-chat",
+            "source": "a",
+            "model_id": "m",
             "observed_at": "2026-08-26",
-            "input_mtok": 0.27,
-            "peak_input_mtok": 0.54,
-            "peak_windows": [["01:00:00Z", "99:99:99Z"]],
+            "input_mtok": 1.0,
+            "max_tokens": 1000,
+            "max_tokens_in": 2000,
         }
     ]
-    with pytest.raises(ValueError, match="peak window"):
-        write_index(rows, tmp_path / "index.json")
+    path = tmp_path / "index.json"
+    write_index(rows, path)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["max_tokens_in"] == 2000
+    assert "max_tokens" not in entry
 
 
 def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):

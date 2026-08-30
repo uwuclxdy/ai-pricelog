@@ -94,12 +94,16 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         if input_cost is None or output_cost is None:
             return None
         cache_read = _dollars(row[header.index("Cached Input")])
+        window_rates = _quota_window_rates(cfg, model_id)
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
             mode="chat",
             cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
-            window_rates=_quota_window_rates(cfg, model_id),
+            window_rates=window_rates,
+            # the peak-hours rule derives from Singapore time; the entries
+            # themselves are UTC clock windows
+            timezone="Asia/Singapore" if window_rates else None,
         )
     return None
 

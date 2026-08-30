@@ -42,6 +42,8 @@ def removal_row(model_id: str = "deepseek-chat") -> dict:
         "model_id": model_id,
         "observed_at": "2026-08-26",
         "removed": True,
+        "input_mtok": 0.27,
+        "output_mtok": 1.1,
     }
 
 
@@ -190,6 +192,27 @@ def test_spec_body_legacy_peak_row():
     assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
 
 
+def test_spec_body_windowed_rates_table_renders_quota_multipliers():
+    row = {
+        "source": "zai",
+        "model_id": "glm-5.3",
+        "observed_at": "2026-08-30",
+        "input_mtok": 1.4,
+        "output_mtok": 4.4,
+        "window_rates": [
+            {
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "window": [600, 1000],
+                "quota_multiplier": 3.0,
+            },
+        ],
+    }
+    body = spec(source="zai", provider="Z.AI", rows=(row,)).body
+    assert "| quota multiplier |" in body
+    assert "| `glm-5.3` | monday, tuesday, wednesday, thursday, friday |" in body
+    assert "| 3 |" in body
+
+
 def test_spec_body_windowed_rates_table():
     row = {
         "source": "openrouter",
@@ -333,14 +356,18 @@ def test_removal_spec_title_and_branch():
     assert s.branch == pr.branch_name(BATCH_KEY)
 
 
-def test_removal_spec_body_lists_the_removal_without_prices():
+def test_removal_spec_body_lists_the_removal_with_its_snapshot():
     body = spec(rows=(removal_row(),)).body
     assert "## removals" in body
-    assert "`deepseek-chat` no longer listed by DeepSeek as of 2026-08-26." in body
+    assert (
+        "`deepseek-chat` no longer listed by DeepSeek as of 2026-08-26;"
+        " final prices input 0.27 / output 1.1." in body
+    )
     assert "this branch carries 0 price rows and 1 removal." in body
     assert "## new rows" not in body
     assert "| input (/1M)" not in body
     assert "- [ ] each removal: model no longer listed on the source page" in body
+    assert "- [ ] each removal: the final snapshot matches the last priced row" in body
     assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
 
 
@@ -357,7 +384,10 @@ def test_mixed_spec_body_renders_both_sections():
     )
     body = spec(rows=rows).body
     assert "## removals" in body
-    assert "`deepseek-old` no longer listed by DeepSeek as of 2026-08-26." in body
+    assert (
+        "`deepseek-old` no longer listed by DeepSeek as of 2026-08-26;"
+        " final prices input 0.27 / output 1.1." in body
+    )
     assert "## new rows" in body
     assert "| deepseek | `deepseek-chat` |" in body
     assert "this branch carries 1 price row and 1 removal." in body

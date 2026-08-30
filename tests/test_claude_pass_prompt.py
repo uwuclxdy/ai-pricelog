@@ -44,3 +44,18 @@ def test_quirks_snapshot_matches_domain(title: str) -> None:
         f"claude pass prompt section {title!r} drifted from domain-knowledge; "
         "re-copy the section verbatim"
     )
+
+
+def test_row_schema_carries_the_current_vocabulary() -> None:
+    # the pass judges rows against this section; a schema change that leaves
+    # it stale sends the next review against a dead shape
+    schema = _section_body(PROMPT.read_text(), "row schema", "##")
+    for term in (
+        "quota_multiplier",
+        "volume_rates",
+        "timezone",
+        "web_search_usd",
+        "final price snapshot",
+        "zero price is a price",
+    ):
+        assert term in schema, f"row schema section lost {term!r}; update it"

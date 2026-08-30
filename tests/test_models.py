@@ -10,8 +10,8 @@ from ai_pricelog.models import MappingError, canonical_spelling, hint_candidates
 DATA = Path(__file__).resolve().parents[1] / "data"
 
 
-def models_file(**overrides) -> Path:
-    path = Path("/tmp") / "models-test.json"
+def models_file(tmp_path: Path, **overrides) -> Path:
+    path = tmp_path / "models-test.json"
     data = {
         "version": 1,
         "models": {
@@ -37,6 +37,7 @@ def test_load_models_accepts_a_missing_file():
     ("overrides", "match"),
     [
         ({"version": 2}, "version"),
+        ({"version": True}, "version"),
         ({"models": []}, "'models'"),
         ({"models": {"": {"sources": {"a": "m1"}}}}, "canonical id"),
         ({"models": {"m1": {"bogus": 1}}}, "unknown key"),
@@ -45,9 +46,9 @@ def test_load_models_accepts_a_missing_file():
         ({"models": {"m1": {"sources": {"a": ""}}}}, "sources"),
     ],
 )
-def test_bad_models_file_rejected(overrides, match):
+def test_bad_models_file_rejected(tmp_path, overrides, match):
     with pytest.raises(MappingError, match=match):
-        load_models(models_file(**overrides))
+        load_models(models_file(tmp_path, **overrides))
 
 
 def test_canonical_spelling_strips_vendor_prefixes():
