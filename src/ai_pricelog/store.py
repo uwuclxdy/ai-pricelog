@@ -261,8 +261,16 @@ def build_row(
 
     `resolve` maps a non-USD quote currency to its USD rate and the rate's
     date; without one, a non-USD quote is refused instead of passing through
-    unconverted. max_tokens fields are never converted.
+    unconverted. max_tokens fields are never converted. a non-token unit
+    (per-minute, per-character) is refused: the mtok fields price tokens,
+    and a converted non-token price would misstate the billing axis.
     """
+    if pricing.unit != "tokens":
+        raise ValueError(
+            f"cannot build a row for unit {pricing.unit!r}: non-token units stay"
+            " out of the index; fix: drop the model in the scraper instead of"
+            " converting a non-token price into mtok fields"
+        )
     conversion = None
     if pricing.currency != "USD":
         if resolve is None:
@@ -279,8 +287,6 @@ def build_row(
     }
     if pricing.currency != "USD":
         row["currency"] = pricing.currency
-    if pricing.unit != "tokens":
-        row["unit"] = pricing.unit
     if conversion is not None:
         row["currency_rate"] = conversion[0]
         row["currency_rate_date"] = conversion[1]

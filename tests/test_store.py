@@ -630,14 +630,12 @@ def test_build_row_dbu_quote_converts_via_provider_rate():
     assert row["output_mtok"] == 0.077
 
 
-def test_build_row_stamps_unit_without_conversion_for_usd_quote():
-    pricing = Pricing(1e-6, 2e-6, "flex", unit="dbu")
-    row = build_row("databricks", "m", pricing, "2026-08-28", "u", resolve=eur_resolve())
-    assert row["unit"] == "dbu"
-    assert "currency" not in row
-    assert "currency_rate" not in row
-    assert "currency_rate_date" not in row
-    assert row["input_mtok"] == 1.0
+def test_build_row_refuses_non_token_units():
+    # per-minute or per-character quotes price a different axis than the mtok
+    # fields: the row must not convert them, the scraper must drop the model
+    pricing = Pricing(1e-6, 2e-6, "flex", unit="minutes")
+    with pytest.raises(ValueError, match="non-token"):
+        build_row("a", "m", pricing, "2026-08-28", "u")
 
 
 def test_resolve_rate_returns_none_for_usd():
