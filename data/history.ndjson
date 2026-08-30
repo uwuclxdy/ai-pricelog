@@ -1605,3 +1605,10 @@
 {"source":"anthropic","model_id":"claude-haiku-3-5","observed_at":"2026-08-29","input_mtok":0.8,"output_mtok":4.0,"cache_read_mtok":0.08,"cache_write_mtok":1.0,"cache_write_1h_mtok":1.6,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
 {"source":"cerebras","model_id":"gemma-4-31b","observed_at":"2026-08-29","input_mtok":0.99,"output_mtok":1.49,"url":"https://api.cerebras.ai/public/v1/models"}
 {"source":"cerebras","model_id":"gpt-oss-120b","observed_at":"2026-08-29","input_mtok":0.35,"output_mtok":0.75,"url":"https://api.cerebras.ai/public/v1/models"}
+{"source":"groq","model_id":"openai/gpt-oss-120b","observed_at":"2026-08-29","input_mtok":0.15,"output_mtok":0.6,"max_tokens_in":131072,"max_tokens_out":65536,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"openai/gpt-oss-20b","observed_at":"2026-08-29","input_mtok":0.075,"output_mtok":0.3,"max_tokens_in":131072,"max_tokens_out":65536,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"meta-llama/llama-prompt-guard-2-22m","observed_at":"2026-08-29","input_mtok":0.03,"output_mtok":0.03,"max_tokens_in":512,"max_tokens_out":512,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"meta-llama/llama-prompt-guard-2-86m","observed_at":"2026-08-29","input_mtok":0.04,"output_mtok":0.04,"max_tokens_in":512,"max_tokens_out":512,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"openai/gpt-oss-safeguard-20b","observed_at":"2026-08-29","input_mtok":0.075,"output_mtok":0.3,"max_tokens_in":131072,"max_tokens_out":65536,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"qwen/qwen3.6-27b","observed_at":"2026-08-29","input_mtok":0.6,"output_mtok":3.0,"max_tokens_in":131072,"max_tokens_out":16384,"url":"https://console.groq.com/docs/models.md"}
+{"source":"groq","model_id":"qwen/qwen3.8-27b","observed_at":"2026-08-29","input_mtok":0.8,"output_mtok":4.0,"max_tokens_in":131042,"max_tokens_out":16384,"url":"https://console.groq.com/docs/models.md"}
