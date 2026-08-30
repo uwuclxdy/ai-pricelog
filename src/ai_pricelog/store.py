@@ -18,6 +18,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ai_pricelog.pricing import Pricing, to_mtok
+from ai_pricelog.validate import SCHEMA_VERSION
 
 
 class FxError(ValueError):
@@ -242,7 +243,10 @@ def write_index(rows: list[dict[str, object]], path: Path) -> None:
         if row.get("removed") is True:
             entry["removed_at"] = row["observed_at"]
         sources.setdefault(source, {})[model_id] = entry
-    _atomic_write(json.dumps({"sources": sources}, ensure_ascii=False) + "\n", path)
+    _atomic_write(
+        json.dumps({"sources": sources, "version": SCHEMA_VERSION}, ensure_ascii=False) + "\n",
+        path,
+    )
 
 
 def build_row(

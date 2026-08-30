@@ -20,6 +20,42 @@ class ValidationError(ValueError):
     """a row failed validation; the message names the field, bad value, fix."""
 
 
+# the row-format version, mirrored by the committed data/schema.json (pinned by
+# a test). a top-level key change bumps both: consumers detect the format change
+# by version instead of by surprise.
+SCHEMA_VERSION = 1
+
+# every top-level key a produced row may carry; validate_row rejects anything
+# else, so a new key cannot slide past without the version bump. the legacy
+# `max_tokens` key is not producible (pre-split rows only) and stays out.
+ROW_KEYS = frozenset(
+    {
+        "source",
+        "model_id",
+        "observed_at",
+        "removed",
+        "input_mtok",
+        "output_mtok",
+        "cache_read_mtok",
+        "cache_write_mtok",
+        "cache_write_1h_mtok",
+        "max_tokens_in",
+        "max_tokens_out",
+        "peak_windows",
+        "peak_input_mtok",
+        "peak_output_mtok",
+        "peak_cache_read_mtok",
+        "window_rates",
+        "name",
+        "extra",
+        "url",
+        "currency",
+        "unit",
+        "currency_rate",
+        "currency_rate_date",
+    }
+)
+
 _PRICE_FIELDS = (
     "input_mtok",
     "output_mtok",
@@ -52,6 +88,13 @@ _REMOVAL_FORBIDDEN = (
 
 
 def validate_row(row: dict[str, Any]) -> None:
+    unknown = set(row) - ROW_KEYS
+    if unknown:
+        raise ValidationError(
+            f"row field(s) {sorted(unknown)!r} are not part of the row schema;"
+            " fix: drop them, or extend the schema and bump the version in"
+            " validate.py and data/schema.json"
+        )
     model_id = row.get("model_id")
     if not isinstance(model_id, str) or not model_id:
         raise ValidationError("row field 'model_id' must be a non-empty string")

@@ -408,6 +408,7 @@ def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
     path = tmp_path / "index.json"
     write_index(rows, path)
     index = json.loads(path.read_text(encoding="utf-8"))
+    assert index["version"] == validate.SCHEMA_VERSION
     sources = index["sources"]
     assert list(sources) == ["a", "z"]
     assert list(sources["a"]) == ["m1", "m2"]

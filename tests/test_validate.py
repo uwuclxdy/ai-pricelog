@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
-from ai_pricelog.validate import ValidationError, validate_row
+from ai_pricelog.validate import ROW_KEYS, SCHEMA_VERSION, ValidationError, validate_row
+
+DATA = Path(__file__).resolve().parents[1] / "data"
+
+# keys that exist only in rows already in the store (the pre-split max_tokens)
+# or only in index entries (first_seen, removed_at); not producible today
+_LEGACY_ROW_KEYS = frozenset({"max_tokens"})
+_INDEX_ENTRY_KEYS = frozenset({"first_seen", "removed_at"})
 
 
 def row(**overrides) -> dict:
@@ -385,3 +395,40 @@ def test_bad_unit_rejected(bad):
 @pytest.mark.parametrize("good", ["tokens", "dbu", "dbu-hours"])
 def test_valid_unit_passes(good):
     validate_row(eur_row(unit=good))
+
+
+def test_unknown_top_level_key_rejected():
+    with pytest.raises(ValidationError, match="schema"):
+        validate_row(row(audio_mtok=1.0))
+
+
+def test_unknown_key_on_removed_row_rejected():
+    with pytest.raises(ValidationError, match="schema"):
+        validate_row(
+            {
+                "source": "deepseek",
+                "model_id": "deepseek-chat",
+                "observed_at": "2026-08-26",
+                "removed": True,
+                "junk": 1,
+            }
+        )
+
+
+def test_schema_file_version_matches_code():
+    schema = json.loads((DATA / "schema.json").read_text(encoding="utf-8"))
+    assert schema["version"] == SCHEMA_VERSION
+
+
+def test_store_rows_carry_only_schema_keys():
+    for line in (DATA / "history.ndjson").read_text(encoding="utf-8").splitlines():
+        unknown = set(json.loads(line)) - (ROW_KEYS | _LEGACY_ROW_KEYS)
+        assert not unknown, f"store row carries keys outside the schema: {sorted(unknown)}"
+
+
+def test_index_entries_carry_only_schema_keys():
+    index = json.loads((DATA / "index.json").read_text(encoding="utf-8"))
+    for models in index["sources"].values():
+        for entry in models.values():
+            unknown = set(entry) - (ROW_KEYS | _LEGACY_ROW_KEYS | _INDEX_ENTRY_KEYS)
+            assert not unknown, f"index entry carries keys outside the schema: {sorted(unknown)}"
