@@ -1,8 +1,9 @@
 """scrape cerebras per-token pricing from the public models api.
 
 same payload as detection. pricing.prompt / pricing.completion are
-per-token dollar strings -> per-token floats; an entry without both
-carries no usable rates (None, skip-and-retry: decision 8). the api
+per-token dollar strings -> per-token floats; zero strings are zero rates
+(free is a price), negative strings read as no price. an entry without
+both carries no usable rates (None, skip-and-retry: decision 8). the api
 serves no context window, so the max_tokens fields stay 0 (the entry
 builder omits them).
 
@@ -26,7 +27,7 @@ def _per_token(entry: dict, key: str, model_id: str, url: str) -> float | None:
         rate = float(value)
     except (TypeError, ValueError) as exc:
         raise FetchError(f"unreadable {key} rate for {model_id} on {url}: {value!r}") from exc
-    return rate if rate > 0 else None
+    return rate if rate >= 0 else None
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

@@ -184,15 +184,15 @@ def test_scrape_model_without_cache(monkeypatch):
     assert pricing.max_tokens_in == 196_000
 
 
-def test_scrape_zero_cache_keeps_field_none(monkeypatch):
-    # a $0 cache rate is not a usable per-token rate; the field stays None
+def test_scrape_zero_cache_prices_zero(monkeypatch):
+    # free is a price: a $0 cache rate is a 0.0 rate, never None
     page = synthetic_page(
         model_card("MiniMax M2.5", "196K context", Input="$0.27", Output="$1.08", Cache="$0")
     )
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: page)
     pricing = scraper.scrape(cfg(), "minimax-m2.5")
     assert pricing is not None
-    assert pricing.cache_read_cost_per_token is None
+    assert pricing.cache_read_cost_per_token == 0.0
 
 
 def test_scrape_matches_page_spelling(serve_soup):
@@ -216,13 +216,16 @@ def test_scrape_unpriced_row_returns_none(monkeypatch):
     assert scraper.scrape(cfg(), "kimi-k2.5") is None
 
 
-def test_scrape_zero_input_returns_none(monkeypatch):
-    # a $0 input rate is not a usable rate
+def test_scrape_zero_input_prices_zero(monkeypatch):
+    # free is a price: a $0 input rate is a 0.0 rate, never a drop
     page = synthetic_page(
         model_card("Kimi K2.5", "262K context", Input="$0", Output="$2.2", Cache="$0.225")
     )
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: page)
-    assert scraper.scrape(cfg(), "kimi-k2.5") is None
+    pricing = scraper.scrape(cfg(), "kimi-k2.5")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 2.2 / 1e6
 
 
 def test_scrape_no_grid_raises(monkeypatch):

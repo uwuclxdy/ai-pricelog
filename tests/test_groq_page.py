@@ -263,13 +263,16 @@ def test_scrape_contact_sales_model_returns_none(monkeypatch: pytest.MonkeyPatch
     assert scraper.scrape(cfg(), "llama-3.1-8b-instant") is None
 
 
-def test_scrape_both_zero_rates_returns_none(monkeypatch: pytest.MonkeyPatch):
-    # free rows carry no price row; None re-candidates next run (decision 8)
+def test_scrape_both_zero_rates_price_zero(monkeypatch: pytest.MonkeyPatch):
+    # free is a price: a fully free row scrapes as a 0.0/0.0 pair, never None
     text = table(
         row("[Free](/docs/model/llama-3.1-8b-instant)llama-3.1-8b-instant", "$0 input$0 output")
     )
     feed(monkeypatch, text)
-    assert scraper.scrape(cfg(), "llama-3.1-8b-instant") is None
+    pricing = scraper.scrape(cfg(), "llama-3.1-8b-instant")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
 
 
 def test_scrape_partial_zero_returns_pricing(monkeypatch: pytest.MonkeyPatch):

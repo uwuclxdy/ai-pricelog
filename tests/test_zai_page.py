@@ -83,6 +83,24 @@ def test_scrape_promo_takes_charged_rate_not_struck_list_price(monkeypatch):
     assert pricing.cache_read_cost_per_token == pytest.approx(0.015 / 1e6)
 
 
+def test_scrape_free_cells_price_zero(monkeypatch):
+    # free is a price: "Free" and "Limited-time Free" cells are zero rates,
+    # a "-" cell stays unpriced
+    soup = BeautifulSoup(
+        "<table><tr><th>Model</th><th>Input</th><th>Cached Input</th>"
+        "<th>Cached Input Storage</th><th>Output</th></tr>"
+        "<tr><td>GLM-Free</td><td>Free</td><td>Free</td><td>-</td>"
+        "<td>Limited-time Free</td></tr></table>",
+        "html.parser",
+    )
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
+    pricing = scraper.scrape(cfg(), "glm-free")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
+    assert pricing.cache_read_cost_per_token == 0.0
+
+
 def test_scrape_glm45_cache_read_pinned(monkeypatch):
     # 2026-08-26 flip-flop: one pass served every zai row without the cached
     # rate; pin the restored values so a silent drop fails this test
@@ -126,10 +144,16 @@ def test_scrape_matches_row_case_insensitively(monkeypatch):
     assert pricing.input_cost_per_token == pytest.approx(1.4 / 1e6)
 
 
-def test_scrape_free_model_returns_none(monkeypatch):
+def test_scrape_free_model_prices_zero(monkeypatch):
+    # free is a price: the all-Free rows on the live page scrape as 0.0
+    # pairs, never None
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
-    assert scraper.scrape(cfg(), "glm-4.7-flash") is None
-    assert scraper.scrape(cfg(), "glm-4.6v-flash") is None
+    for model_id in ("glm-4.7-flash", "glm-4.6v-flash"):
+        pricing = scraper.scrape(cfg(), model_id)
+        assert pricing is not None
+        assert pricing.input_cost_per_token == 0.0
+        assert pricing.output_cost_per_token == 0.0
+        assert pricing.cache_read_cost_per_token == 0.0
 
 
 def test_scrape_cached_input_without_rate_is_omitted(monkeypatch):

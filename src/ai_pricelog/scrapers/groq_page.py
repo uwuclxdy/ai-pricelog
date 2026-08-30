@@ -10,13 +10,12 @@ column, so the cache fields stay unset. a matched row with an unreadable
 token count is a page-shape break (FetchError), so a silent misread cannot
 ship.
 
-None = the model id is not on the page, its row carries no per-token rate
-(ContactSales, per-hour, per-character), or both its rates are zero (a
-free row carries no price row; skip-and-retry re-candidates it next run,
-and the detector still emits the id so a stored model never counts
-absent). a zero input beside a priced output scrapes normally (the google
-embeddings convention). FetchError = the fetch failed, the page carries no
-per-token pricing table, or a row is outside the shape.
+None = the model id is not on the page, or its row carries no per-token
+rate (ContactSales, per-hour, per-character). zero rates scrape as 0.0
+(free is a price), so a fully free row lands a 0.0 price row; the
+detector still emits the id, so a stored model whose row turns free stays
+mapped. FetchError = the fetch failed, the page carries no per-token
+pricing table, or a row is outside the shape.
 """
 
 from __future__ import annotations
@@ -52,8 +51,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             if parse_id(row[0], cfg.scraper_url) != model_id:
                 continue
             input_rate, output_rate = float(match.group(1)), float(match.group(2))
-            if input_rate == 0 and output_rate == 0:
-                return None
             return Pricing(
                 input_cost_per_token=input_rate / 1e6,
                 output_cost_per_token=output_rate / 1e6,

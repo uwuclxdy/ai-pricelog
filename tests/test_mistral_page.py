@@ -275,6 +275,20 @@ def test_scrape_token_priced_tables_beyond_flagship(live_pricing):
     )
 
 
+def test_scrape_free_cells_in_a_token_table_price_zero(monkeypatch):
+    # free is a price: a token-section row whose cells read "Free" scrapes
+    # as a 0.0 pair, never None
+    html = (
+        "<section><p>Prices /M Tokens</p><table>"
+        "<tr><th>Model</th><th>Input</th><th>Cached input</th><th>Output</th></tr>"
+        "<tr><td><a href='/models/free-model'>Free Model</a></td>"
+        "<td>Free</td><td>Free</td><td>Free</td></tr>"
+        "</table></section>"
+    )
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
+    assert mistral_scraper.scrape(make_cfg(), "free-model") == Pricing(0.0, 0.0, "chat", 0, 0.0)
+
+
 def test_scrape_accepts_stored_spellings(live_pricing):
     # the detector emits raw slugs; scrape still matches the stored spellings
     # through dedup_keys
@@ -308,7 +322,10 @@ def test_scrape_non_token_units_return_none(live_pricing):
     assert mistral_scraper.scrape(cfg, "voxtral-tts-26-03") is None
 
 
-def test_scrape_free_cells_return_none(live_pricing):
+def test_scrape_as_marked_section_free_rows_return_none(live_pricing):
+    # these "Free" rows sit in the as-marked sections (specialized, labs),
+    # which are never per-token priced; the rows stay out for the unit
+    # reason, not the zero reason
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "mistral-moderation-26-03") is None
     assert mistral_scraper.scrape(cfg, "leanstral-1-5") is None
@@ -371,11 +388,13 @@ def test_scrape_matches_row_by_exact_slug(monkeypatch):
     assert mistral_scraper.scrape(cfg, "bbb") == Pricing(
         1e-6, 2e-6, "chat", 0, pytest.approx(1e-7, rel=1e-12)
     )
-    assert mistral_scraper.scrape(cfg, "aaa") is None
+    # free is a price: a Free row inside a token section scrapes as a 0.0
+    # pair, never None
+    assert mistral_scraper.scrape(cfg, "aaa") == Pricing(0.0, 0.0, "chat", 0, 0.0)
     # unit-priced row inside a token section: the cell regex must reject it
     assert mistral_scraper.scrape(cfg, "ccc") is None
-    # a non-dollar cached cell leaves the cache-read cost None
-    assert mistral_scraper.scrape(cfg, "ddd") == Pricing(1e-6, 2e-6, "chat", 0, None)
+    # a Free cached cell is a zero cache-read rate
+    assert mistral_scraper.scrape(cfg, "ddd") == Pricing(1e-6, 2e-6, "chat", 0, 0.0)
 
 
 def test_dedup_keys_compaction():

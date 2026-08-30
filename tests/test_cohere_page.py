@@ -15,9 +15,11 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cohere_page"
 PAGE_URL = "https://cohere.com/pricing"
 
 EXPECTED_IDS = [
+    "command-a-plus",
     "command-r",
     "command-r7b",
     "embed-4",
+    "north-mini-code",
     "embed-4-small",
     "embed-4-medium",
     "rerank-3.5-medium",
@@ -78,8 +80,10 @@ CARD_SNIPPET = (
     '"]);</script>'
 )
 
-# cards whose rates are not a positive dollar pair: no pricings list, a free
-# 0/0 card, a zero-output card, and a one-sided card billing per 1K searches
+# cards of every seed decision: no pricings list (North), a free 0/0 card
+# (Command A+), a zero-output card (Some Model), and a one-sided card
+# billing per 1K searches (Rerank 4 Fast). free is a price: the 0/0 and
+# zero-output cards seed, the rest stay excluded.
 UNPRICED_CARD_SNIPPET = (
     '<script>self.__next_f.push([1,"'
     r"{\"_type\":\"pricingGroup\",\"models\":["
@@ -137,16 +141,14 @@ def test_detect_lists_models_in_page_order(live_page):
 
 
 def test_detect_excludes_unpriced_content(live_page):
-    # cards without dollar rates, free cards, one-sided per-search cards, and
-    # the aya research faq answer (not a "pricing is" sentence): none of them
-    # may leak into detection
+    # cards without a pricings list, one-sided per-search cards, and the aya
+    # research faq answer (not a "pricing is" sentence): none of them may
+    # leak into detection
     ids = cohere_page.detect(make_cfg())
     for excluded in (
         "north",
         "compass",
         "transcribe",
-        "command-a-plus",
-        "north-mini-code",
         "rerank-4-fast",
         "rerank-4-pro",
         "aya-expanse",
@@ -159,11 +161,32 @@ def test_detect_cards_only(monkeypatch):
     assert cohere_page.detect(make_cfg()) == ["command-r", "command-r7b", "embed-4"]
 
 
-def test_detect_skips_cards_without_dollar_rates(monkeypatch):
-    # cards with no pricings list, a 0/0 free card, a zero-output card, and a
-    # one-sided per-search card are not priced: no ids, and the parse failure
-    # is loud
+def test_detect_free_and_zero_output_cards_seed(monkeypatch):
+    # free is a price: the 0/0 card and the zero-output card seed; the
+    # pricings-less and one-sided cards stay out
     serve_html(monkeypatch, UNPRICED_CARD_SNIPPET)
+    assert cohere_page.detect(make_cfg()) == ["command-a-plus", "some-model"]
+
+
+def test_scrape_free_card_prices_zero(monkeypatch):
+    # the free card's row lands with 0.0 fields, never None
+    serve_html(monkeypatch, UNPRICED_CARD_SNIPPET)
+    pricing = cohere_scraper.scrape(make_cfg(), "command-a-plus")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
+
+
+def test_detect_all_cards_unpriced_raises(monkeypatch):
+    # a page where no card seeds is a parse failure, and the parse failure
+    # is loud
+    serve_html(
+        monkeypatch,
+        '<script>self.__next_f.push([1,"'
+        r"{\"_type\":\"pricingGroup\",\"models\":["
+        r"{\"_key\":\"a\",\"_type\":\"model\",\"modelName\":\"North\",\"per\":\"1M tokens\"}]}"
+        '"]);</script>',
+    )
     with pytest.raises(web.FetchError, match="no priced models"):
         cohere_page.detect(make_cfg())
 

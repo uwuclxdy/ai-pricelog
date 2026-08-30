@@ -11,10 +11,10 @@ bill input only). a cell outside the known shapes reads as unpriced
 instead). the page carries no context/max-tokens column and no peak tier,
 so those fields stay unset. mode is chat.
 
-None = the model id is not on the page, its row carries no per-token
-input rate, or both its rates are zero (a free row carries no price row;
-skip-and-retry re-candidates it next run, and the detector still emits the
-id so a stored model never counts absent). FetchError = the fetch failed,
+None = the model id is not on the page, or its row carries no per-token
+input rate. zero rates scrape as 0.0 (free is a price), so a fully free
+row lands a 0.0 price row; the detector still emits the id, so a stored
+model whose row turns free stays mapped. FetchError = the fetch failed,
 the page has no dbu table, a row is outside the row shape, or a priced
 row's display name is unmapped.
 """
@@ -61,8 +61,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         cache_rate = _try_rate(cells[3])
         if parse_id(cells[0], cfg.scraper_url) != model_id:
             continue
-        if input_rate == 0 and output_rate == 0:
-            return None
         return Pricing(
             input_cost_per_token=input_rate / 1e6,
             output_cost_per_token=output_rate / 1e6,

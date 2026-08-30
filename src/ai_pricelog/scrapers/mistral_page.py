@@ -7,11 +7,12 @@ rows link their model cell to the model-card slug and are matched by slug or
 stored spelling (see ``dedup_keys``: the detector emits raw page slugs, and
 ``scrape`` accepts the stored spellings as well).
 cells are USD per 1M tokens in the default static html (the EUR tab is
-client-side; the fixture pins the USD variant) -> /1e6. ``Free`` cells and
-non-dollar cells (``$4 /1000 Pages``, ``$0.003 /Min``, ``—``) have no token
-pricing -> None. the ``Cached input`` cell emits as cache-read cost when it
-carries a bare dollar amount (zai-glm-5-2: $0.14); other cached cells leave it
-None. the page carries no context window -> the max_tokens fields 0. mode is chat.
+client-side; the fixture pins the USD variant) -> /1e6. a ``Free`` cell is
+a zero rate (free is a price); non-dollar cells (``$4 /1000 Pages``,
+``$0.003 /Min``, ``—``) have no token pricing -> None. the ``Cached input``
+cell emits as cache-read cost when it carries a bare dollar amount
+(zai-glm-5-2: $0.14); other cached cells leave it None. the page carries no
+context window -> the max_tokens fields 0. mode is chat.
 """
 
 from __future__ import annotations
@@ -49,9 +50,11 @@ def dedup_keys(model_id: str) -> list[str]:
 
 def _price(cell: str) -> float | None:
     match = _DOLLAR_CELL.fullmatch(cell)
-    if match is None:
-        return None
-    return float(match.group(1)) / 1e6
+    if match is not None:
+        return float(match.group(1)) / 1e6
+    if cell == "Free":
+        return 0.0
+    return None
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

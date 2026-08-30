@@ -7,9 +7,10 @@ context from the card meta -> max_tokens_in ("262K context · ..." -> 262000;
 K = 1000, M = 1000000: the page abbreviates and the exact token count is not
 shown, the human verifier reconciles it). mode is chat; no peak fields.
 
-None = the model id is not on the page, or its Input/Output rates are
-missing, unparseable, or zero (a row without usable rates is never a
-candidate). FetchError = the fetch failed or the page has no pricing grid.
+None = the model id is not on the page, or its Input/Output cells are
+missing or unparseable (a row without usable rates is never a candidate).
+zero rates scrape as 0.0 (free is a price). FetchError = the fetch failed
+or the page has no pricing grid.
 
 no dedup_keys hook: the page models (deepseek, minimax, glm, kimi, mimo
 cards) map to none of the stored avian ids (four stale Meta-Llama
@@ -49,7 +50,7 @@ def _rate(prices: dict[str, str], name: str) -> float | None:
     if text is None:
         return None
     amount = _dollars(text)
-    if amount is None or amount <= 0:
+    if amount is None or amount < 0:
         return None
     return amount / 1e6
 

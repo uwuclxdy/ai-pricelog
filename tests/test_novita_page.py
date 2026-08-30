@@ -324,13 +324,17 @@ def test_scrape_unknown_model_returns_none(live_page):
     assert scraper.scrape(make_cfg(), "deepseek/deepseek-v9") is None
 
 
-def test_scrape_zero_rate_returns_none(monkeypatch):
+def test_scrape_zero_rate_prices_zero(monkeypatch):
+    # free is a price: a zero input title is a 0.0 rate, never None
     monkeypatch.setattr(
         detector,
         "fetch_soup",
         lambda url: synthetic_page(card_html("free-model", input_amount="0")),
     )
-    assert scraper.scrape(make_cfg(), "free/model") is None
+    pricing = scraper.scrape(make_cfg(), "free/model")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 2.00 / 1e6
 
 
 def test_scrape_card_without_context_omits_max_tokens_in(monkeypatch):

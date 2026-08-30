@@ -204,10 +204,14 @@ def test_detect_zero_rate_rows_emitted(monkeypatch: pytest.MonkeyPatch):
     assert detector.detect(make_cfg()) == ["glm-5.2", "gpt-oss-120b"]
 
 
-def test_scrape_both_zero_rates_returns_none(monkeypatch: pytest.MonkeyPatch):
+def test_scrape_both_zero_rates_price_zero(monkeypatch: pytest.MonkeyPatch):
+    # free is a price: a fully free row scrapes as a 0.0/0.0 pair, never None
     text = table(row("GLM-5.2", "0.000", "0.000"))
     serve(monkeypatch, text)
-    assert scraper.scrape(make_cfg(), "glm-5.2") is None
+    pricing = scraper.scrape(make_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
 
 
 def test_detect_unknown_rate_shape_raises(monkeypatch: pytest.MonkeyPatch):

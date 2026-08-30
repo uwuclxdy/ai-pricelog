@@ -66,10 +66,20 @@ def test_scrape_entry_without_pricing_returns_none(monkeypatch: pytest.MonkeyPat
     assert scraper.scrape(cfg(), "x") is None
 
 
-def test_scrape_zero_rate_parses_as_no_price(monkeypatch: pytest.MonkeyPatch):
-    # the openrouter convention: zero (free) and negative pricing strings
-    # read as no price, never as a 0.0 row
+def test_scrape_zero_rate_prices_zero(monkeypatch: pytest.MonkeyPatch):
+    # free is a price: zero pricing strings scrape as a 0.0/0.0 pair,
+    # never None
     payload = '{"data": [{"id": "x", "pricing": {"prompt": "0", "completion": "0"}}]}'
+    feed(monkeypatch, payload)
+    pricing = scraper.scrape(cfg(), "x")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.0
+    assert pricing.output_cost_per_token == 0.0
+
+
+def test_scrape_negative_rate_parses_as_no_price(monkeypatch: pytest.MonkeyPatch):
+    # negative strings ("no fixed price") stay unpriced
+    payload = '{"data": [{"id": "x", "pricing": {"prompt": "-1", "completion": "0"}}]}'
     feed(monkeypatch, payload)
     assert scraper.scrape(cfg(), "x") is None
 

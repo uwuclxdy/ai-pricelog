@@ -44,7 +44,11 @@ def dedup_keys(model_id: str) -> tuple[str, ...]:
 
 
 def _amount(element: Tag | None) -> float | None:
-    """the element's title as a positive dollar amount, or None when unusable."""
+    """the element's title as a dollar amount, or None when unusable.
+
+    a zero title is a zero rate (free is a price); negative or non-finite
+    titles are unusable.
+    """
     if element is None:
         return None
     title = element.get("title")
@@ -54,7 +58,7 @@ def _amount(element: Tag | None) -> float | None:
         value = float(title.strip())
     except ValueError:
         return None
-    if not math.isfinite(value) or value <= 0:
+    if not math.isfinite(value) or value < 0:
         return None
     return value
 

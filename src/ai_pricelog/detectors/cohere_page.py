@@ -8,11 +8,12 @@ reads https://cohere.com/pricing (static server-rendered html, snapshot
   per current model. the card pricings items carry USD per 1M tokens
   ("Input"/"Output" pairs: "Command R" -> command-r at 0.15/0.60,
   "Command R7B" -> command-r7b at 0.0375/0.15; "Embed 4" carries a
-  per-token "Cost" plus a per-image "Image cost"). a card seeds only
-  when both prices are positive dollars: cards without a pricings list
-  (North, Compass, Transcribe), free cards (Command A+, North Mini
-  Code: API-key/model-download 0/0) and one-sided cards (Rerank 4
-  Fast/Pro: Cost per 1K searches, no output rate) stay excluded.
+  per-token "Cost" plus a per-image "Image cost"). a card seeds when
+  both prices are non-negative dollars: free cards (Command A+, North
+  Mini Code: API-key/model-download 0/0) seed as zero-rate pairs (free
+  is a price). cards without a pricings list (North, Compass,
+  Transcribe) and one-sided cards (Rerank 4 Fast/Pro: Cost per 1K
+  searches, no output rate) stay excluded.
 - the Model Vault table: a css grid whose header row is ``Model |
   Performance Tier | Hourly rate per instance | Monthly rate per
   instance``, one row per model and tier. the id is the slug of
@@ -103,8 +104,9 @@ def _card_model(segment: str, url: str) -> _Model | None:
     """the per-token model for one model-card segment, or None when the card
     carries no usable dollar rates.
 
-    a card seeds only when both prices are positive dollar amounts; a card
-    whose output rate is not a token rate ("Embed 4"'s "Image cost" is per
+    a card seeds when both prices are non-negative dollar amounts; a free
+    card (0/0) seeds as a zero-rate pair (free is a price). a card whose
+    output rate is not a token rate ("Embed 4"'s "Image cost" is per
     image) prices with output 0, since embedding models bill no output
     tokens (litellm stores cohere/embed-v4.0 as 0.12/1M input, 0 output,
     measured 2026-08-26).
@@ -127,8 +129,8 @@ def _card_model(segment: str, url: str) -> _Model | None:
         return None
     input_cost = _card_price(input_match.group(2))
     output_cost = _card_price(output_match.group(2))
-    if input_cost is None or output_cost is None or input_cost <= 0 or output_cost <= 0:
-        return None  # free cards (0/0) carry no dollar rate pair
+    if input_cost is None or output_cost is None or input_cost < 0 or output_cost < 0:
+        return None  # negative rates are junk, never a price
     per_token_output = output_cost if output_match.group(1) == "Output" else 0.0
     return _Model(model_id, input_cost / 1e6, per_token_output / 1e6)
 
