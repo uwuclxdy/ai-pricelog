@@ -1963,3 +1963,4 @@
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-31","name":"DeepSeek V4 Flash 0423","input_mtok":0.088606,"output_mtok":0.177212,"cache_read_mtok":0.017721,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"moonshotai/kimi-k2.5","observed_at":"2026-08-31","name":"Kimi K2.5","input_mtok":0.45,"output_mtok":2.25,"cache_read_mtok":0.07,"max_tokens_in":262144}
 {"source":"openrouter","model_id":"meta-llama/llama-4-maverick","observed_at":"2026-08-31","name":"Llama 4 Maverick","input_mtok":0.2,"output_mtok":0.696,"max_tokens_in":1048576}
+{"source":"novita","model_id":"deepseek/deepseek-v4-flash-vision-exp","observed_at":"2026-08-31","input_mtok":0.44,"output_mtok":1.32,"cache_read_mtok":0.028,"max_tokens_in":1048576,"url":"https://novita.ai/pricing"}
