@@ -29,8 +29,8 @@ EXPECTED_IDS = [
     "command",
     "command-light",
     "command-r-03-2024",
-    "command-r-plus-08-2024",
     "command-r-plus-04-2024",
+    "command-r-plus-08-2024",
 ]
 
 TABLE_SNIPPET = (
@@ -134,9 +134,7 @@ def live_page(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_detect_lists_models_in_page_order(live_page):
-    # model cards first, then vault rows, then the faq prose; the dated
-    # Command R+ releases emit newest first so the refresh pass diffs the
-    # freshest rate
+    # model cards first, then vault rows, then the faq prose
     assert cohere_page.detect(make_cfg()) == EXPECTED_IDS
 
 
@@ -271,23 +269,6 @@ def test_scrape_unknown_model_returns_none(live_page):
     cfg = make_cfg()
     assert cohere_scraper.scrape(cfg, "north") is None
     assert cohere_scraper.scrape(cfg, "command-a") is None
-
-
-def test_dedup_keys_dated_releases():
-    # page ids spelled as dated releases normalize to the tracked ids,
-    # measured against prices/providers/cohere.yml (2026-08-24)
-    cases = {
-        "command-r-03-2024": ("command-r",),
-        "command-r-plus-04-2024": ("command-r-plus",),
-        "command-r-plus-08-2024": ("command-r-plus",),
-    }
-    for page_id, tracked in cases.items():
-        assert cohere_scraper.dedup_keys(page_id) == tracked, page_id
-
-
-def test_dedup_keys_plain_ids_return_nothing():
-    for page_id in ("command", "command-light", "embed-4-small", "rerank-4-pro-large"):
-        assert cohere_scraper.dedup_keys(page_id) == (), page_id
 
 
 def test_detect_table_only(monkeypatch):

@@ -21,11 +21,9 @@ None = the model id is not on the page, or the page has no per-token
 rate for it (model vault rows). FetchError = the fetch failed or the
 page carries no pricing content at all.
 
-dedup_keys maps the faq's dated release spellings to the stored ids,
-measured against pydantic/genai-prices cohere.yml (2026-08-24). cohere
-names its releases by date; the page's legacy faq spells "Command R
-03-2024" and "Command R+ 04-2024"/"Command R+ 08-2024", and the store
-holds those models as command-r and command-r-plus.
+the faq's dated release spellings are the stored ids themselves (the
+store re-keyed onto them 2026-08-30), so page ids map straight to their
+rows and no dedup is needed.
 """
 
 from __future__ import annotations
@@ -34,17 +32,6 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.cohere_page import _page, _slug
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError
-
-_DEDUP_BY_PAGE_ID = {
-    "command-r-03-2024": ("command-r",),
-    "command-r-plus-04-2024": ("command-r-plus",),
-    "command-r-plus-08-2024": ("command-r-plus",),
-}
-
-
-def dedup_keys(model_id: str) -> tuple[str, ...]:
-    """tracked spellings for a dated release page id, or () when unchanged."""
-    return _DEDUP_BY_PAGE_ID.get(model_id, ())
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

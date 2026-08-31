@@ -34,9 +34,7 @@ the Aya research-model faq answer (not a "pricing is" sentence) is out
 of scope.
 
 ids come back in page order: model cards, model vault rows, then faq
-prose. dated release spellings of one base id emit newest first (see
-_newest_dated_first). a page with none of the shapes is a parse failure
-(FetchError).
+prose. a page with none of the shapes is a parse failure (FetchError).
 """
 
 from __future__ import annotations
@@ -66,7 +64,6 @@ _PROSE_RE = re.compile(
 )
 _AMOUNT_RE = re.compile(r"^\$([\d,]+(?:\.\d+)?)$")
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
-_DATED_RELEASE = re.compile(r"^(?P<base>.+)-(?P<month>\d{2})-(?P<year>\d{4})$")
 
 
 @dataclass(frozen=True)
@@ -193,50 +190,11 @@ def _prose_models(soup) -> list[_Model]:
     return models
 
 
-def _dated_base(model_id: str) -> str | None:
-    match = _DATED_RELEASE.match(model_id)
-    return match.group("base") if match else None
-
-
-def _release_date(model: _Model) -> int:
-    match = _DATED_RELEASE.match(model.id)
-    assert match is not None  # callers pass dated ids only
-    return int(match.group("year")) * 100 + int(match.group("month"))
-
-
-def _newest_dated_first(models: list[_Model]) -> list[_Model]:
-    """same-base dated release spellings emit newest first.
-
-    the refresh pass drift-checks the first page id mapping to a stored
-    row; the store carries the newest release's rates (command-r-plus
-    holds 2.5/10 = the page's 08-2024 row, measured 2026-08-24), and an
-    older dated row in the lead would open a false drift row every run.
-    """
-    ordered: list[_Model] = []
-    dated_run: list[_Model] = []
-    for model in models:
-        base = _dated_base(model.id)
-        if dated_run and base != _dated_base(dated_run[0].id):
-            ordered.extend(sorted(dated_run, key=_release_date, reverse=True))
-            dated_run = []
-        if base is None:
-            ordered.append(model)
-        else:
-            dated_run.append(model)
-    if dated_run:
-        ordered.extend(sorted(dated_run, key=_release_date, reverse=True))
-    return ordered
-
-
 @cache
 def _page(url: str) -> tuple[_Model, ...]:
     """fetch and parse all three rate shapes; cached per url so the scraper reuses this parse."""
     soup = fetch_soup(url)
-    return tuple(
-        _model_cards(soup, url)
-        + _model_vault_rows(soup, url)
-        + _newest_dated_first(_prose_models(soup))
-    )
+    return tuple(_model_cards(soup, url) + _model_vault_rows(soup, url) + _prose_models(soup))
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
