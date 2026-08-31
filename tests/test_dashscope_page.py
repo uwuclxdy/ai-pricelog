@@ -48,10 +48,6 @@ def test_detect_returns_all_fixture_models_in_page_order(dashscope_cfg, feed_fix
         "qwen3.7-plus-2026-05-26",
         "qwen3.7-flash",
         "qwen3.7-flash-2026-07-15",
-        "deepseek-v4-pro",
-        "deepseek-v4-flash",
-        "glm-5.2",
-        "kimi-k2.7-code",
         "MiniMax-M3",
         "mimo-v2.5-pro",
         "qwen3.7-max",
@@ -59,7 +55,6 @@ def test_detect_returns_all_fixture_models_in_page_order(dashscope_cfg, feed_fix
         "qwen3.7-max-2026-06-08",
         "qwen3.7-max-2026-05-20",
         "qwen3.7-max-2026-05-17",
-        "glm-5.1",
         "glm-5",
         "glm-4.7",
         "glm-4.5",
@@ -70,7 +65,6 @@ def test_detect_returns_all_fixture_models_in_page_order(dashscope_cfg, feed_fix
         "kimi-k2.5",
         "kimi-k2-thinking",
         "Moonshot-Kimi-K2-Instruct",
-        "deepseek-v3.2",
         "deepseek-v3.2-exp",
         "deepseek-v3.1",
         "deepseek-v3",
@@ -83,6 +77,11 @@ def test_detect_returns_all_fixture_models_in_page_order(dashscope_cfg, feed_fix
         "deepseek-r1-distill-qwen-1.5b",
         "deepseek-r1-distill-llama-8b",
     ]
+
+
+def test_detect_excludes_resold_first_party_ids(dashscope_cfg, feed_fixtures):
+    detected = dashscope_detect.detect(dashscope_cfg)
+    assert set(dashscope_detect._RESOLD_IDS).isdisjoint(detected)
 
 
 def test_scrape_qwen37_plus_takes_first_dollar_amount(dashscope_cfg, feed_fixtures):

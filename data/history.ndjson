@@ -1963,3 +1963,9 @@
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-31","name":"DeepSeek V4 Flash 0423","input_mtok":0.088606,"output_mtok":0.177212,"cache_read_mtok":0.017721,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"moonshotai/kimi-k2.5","observed_at":"2026-08-31","name":"Kimi K2.5","input_mtok":0.45,"output_mtok":2.25,"cache_read_mtok":0.07,"max_tokens_in":262144}
 {"source":"openrouter","model_id":"meta-llama/llama-4-maverick","observed_at":"2026-08-31","name":"Llama 4 Maverick","input_mtok":0.2,"output_mtok":0.696,"max_tokens_in":1048576}
+{"source":"dashscope","model_id":"deepseek-v3.2","observed_at":"2026-08-31","removed":true,"input_mtok":0.57,"output_mtok":1.71}
+{"source":"dashscope","model_id":"deepseek-v4-flash","observed_at":"2026-08-31","removed":true,"input_mtok":0.2,"output_mtok":0.4}
+{"source":"dashscope","model_id":"deepseek-v4-pro","observed_at":"2026-08-31","removed":true,"input_mtok":2.4,"output_mtok":4.8}
+{"source":"dashscope","model_id":"glm-5.1","observed_at":"2026-08-31","removed":true,"input_mtok":1.4,"output_mtok":4.4}
+{"source":"dashscope","model_id":"glm-5.2","observed_at":"2026-08-31","removed":true,"input_mtok":1.4,"output_mtok":4.4}
+{"source":"dashscope","model_id":"kimi-k2.7-code","observed_at":"2026-08-31","removed":true,"input_mtok":0.95,"output_mtok":4.0}
