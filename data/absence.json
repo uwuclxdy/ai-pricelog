@@ -1,1 +1,1 @@
-{}
+{"deepseek": {"deepseek-r1": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-r1-0528": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3-0324": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3.1": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3.1-terminus": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3.2": {"absent_runs": 1, "since": "2026-08-31"}, "deepseek-v3.2-exp": {"absent_runs": 1, "since": "2026-08-31"}}}
