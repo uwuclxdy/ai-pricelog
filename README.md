@@ -13,11 +13,11 @@ detectors scrape provider pricing pages and the openrouter api daily. every obse
 <!-- stats:start -->
 | metric | value |
 |---|---|
-| models tracked | **1,086** |
+| models tracked | **1,092** |
 | sources | 29 |
-| dated rows | 1,971 |
+| dated rows | 2,019 |
 | canonical models | 191 |
-| history | since 2023-03-01 (1,280 days) |
+| history | since 2023-03-01 (1,281 days) |
 <!-- stats:end -->
 
 ## What it is
@@ -140,7 +140,7 @@ deepseek rows carry `window_rates`: the plain `input_mtok`/`output_mtok` are the
 | what | dated price history repo | generated pricing dataset for python/js packages |
 | updates | automation + human review per change | human PRs into provider ymls |
 | history | every observed change since the first sighting | dated conditional entries where contributors add them |
-<!-- stats-row:start -->| models | **1,086** tracked across 29 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
+<!-- stats-row:start -->| models | **1,092** tracked across 29 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
 
 ## Development
 
