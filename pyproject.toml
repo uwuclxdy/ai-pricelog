@@ -12,6 +12,7 @@ dependencies = [
 [project.scripts]
 ai-pricelog = "ai_pricelog.pipeline:main"
 ai-pricelog-smoke = "ai_pricelog.smoke:main"
+ai-pricelog-automerge = "ai_pricelog.automerge:main"
 
 [dependency-groups]
 dev = [
