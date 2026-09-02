@@ -178,3 +178,65 @@ def test_detect_missing_table_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="no models table"):
         detector.detect(cfg())
+
+
+def test_detect_header_wording_drift_still_matches(monkeypatch):
+    # the models-table header pins match after folding case, whitespace, and
+    # &/and: an internal whitespace run (casefold alone cannot absorb it)
+    # still locates the table
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><thead><tr><th>Model  ID</th><th>Context Length</th><th>Pricing</th>"
+            "<th>Country of Origin</th></tr></thead><tbody>"
+            "<tr><td><a>swiss-ai/apertus-v1.5-8b</a></td><td>262K</td>"
+            "<td>$0.10 / $0.20<span>per 1M tokens</span></td><td>CH</td></tr>"
+            "</tbody></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["swiss-ai/apertus-v1.5-8b"]
+
+
+def test_scrape_unrelated_short_row_does_not_block(monkeypatch):
+    # a short drifted row for another model is additive drift detection
+    # already skips; scraping the chosen model must not break on it
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            _MODELS_TABLE.format(
+                rows=(
+                    "<tr><td>stray</td></tr>"
+                    "<tr><td><a>swiss-ai/apertus-v1.5-8b</a></td><td>262K</td>"
+                    "<td>$0.10 / $0.20<span>per 1M tokens</span></td><td>CH</td></tr>"
+                )
+            ),
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "swiss-ai/apertus-v1.5-8b")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.10 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.20 / 1e6)
+
+
+def test_scrape_matched_row_with_extra_amount_raises(monkeypatch):
+    # the matched row's pricing cell must hold exactly two amounts: a third
+    # is a page-shape break, never a silent read of the first two
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            _MODELS_TABLE.format(
+                rows=(
+                    "<tr><td><a>swiss-ai/apertus-v1.5-8b</a></td><td>262K</td>"
+                    "<td>$0.10 / $0.20 / $0.30<span>per 1M tokens</span></td><td>CH</td></tr>"
+                )
+            ),
+            "html.parser",
+        ),
+    )
+    with pytest.raises(FetchError, match="3 amounts, want 2"):
+        scraper.scrape(cfg(), "swiss-ai/apertus-v1.5-8b")

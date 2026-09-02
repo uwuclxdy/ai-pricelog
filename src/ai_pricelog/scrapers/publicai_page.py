@@ -6,11 +6,14 @@ Country of Origin. the Pricing cell prices input / output per 1M tokens
 from the Context Length cell ("262K" -> 262000; the page spells decimal-K
 labels). rows key by the page Model ID case-folded (the ids already carry
 org/model slugs, so case is the only folding). the page carries no
-cache-read or peak rates.
+cache-read or peak rates. a row too short to carry a model id is additive
+drift: detection already skips it, so the match scan tolerates it
+(plan #22); the matched row's pricing and context cells stay strict, so a
+drifted cell cannot read as a missing or wrong rate.
 
-None = the model id is not on the page. FetchError = the fetch failed, the
-page has no models table, or a matched row's pricing or context cell does
-not parse.
+None = the model id is not on the page, or a drifted short row carries no
+id and reads as absent. FetchError = the fetch failed, the page has no
+models table, or a matched row's pricing or context cell does not parse.
 """
 
 from __future__ import annotations
@@ -40,7 +43,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         if not cells:
             continue
         if len(cells) < 3:
-            raise FetchError(f"malformed row for {model_id} on {cfg.scraper_url}: short row")
+            continue  # additive drift; detection already skips the short row
         if _model_id(cells) != target:
             continue
         amounts = _pricing_amounts(cells[2])

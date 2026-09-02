@@ -1,7 +1,8 @@
 """detect model ids on the publicai models page.
 
 https://platform.publicai.co/models serves one static table with the header
-Model ID | Context Length | Pricing | Country of Origin. the Model ID cell
+Model ID | Context Length | Pricing | Country of Origin, pinned after
+folding case, whitespace, and &/and (web.fold_heading). the Model ID cell
 spells the api id as an org/model slug; ids are case-folded to fit the
 stored id charset (^[a-z0-9][a-z0-9._/-]*$), and rows whose id does not fit
 are skipped. the Pricing cell is input / output per 1M tokens ("$0.10 /
@@ -19,11 +20,12 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _AMOUNT_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
 _HEADERS = ("model id", "context length", "pricing", "country of origin")
+_FOLDED_HEADERS = tuple(fold_heading(cell) for cell in _HEADERS)
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
@@ -51,11 +53,11 @@ def _models_table(soup: BeautifulSoup, url: str) -> Tag:
             continue
         thead = table.find("thead")
         headers = (
-            [th.get_text(" ", strip=True).casefold() for th in thead.find_all("th")]
+            [fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th")]
             if thead
             else []
         )
-        if tuple(headers) == _HEADERS:
+        if tuple(headers) == _FOLDED_HEADERS:
             return table
     raise FetchError(f"no models table on {url}")
 
