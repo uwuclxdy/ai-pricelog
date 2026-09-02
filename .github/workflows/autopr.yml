@@ -17,6 +17,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   run:
@@ -64,6 +65,12 @@ jobs:
           # GH_TOKEN holds the cloudybot PAT: every automation action (open
           # pr, comment, merge commit) acts as the bot, so a @-mention in a
           # needs-human comment notifies the owner (a self-mention never does)
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: provider health check
+        if: always()
+        run: uv run ai-pricelog-health /tmp/run.log
+        env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
   smoke:

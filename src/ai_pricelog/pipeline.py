@@ -392,7 +392,7 @@ def _add_candidates(
             )
             validate.validate_row(row)
         except validate.ValidationError as exc:
-            log.warning("entry %s failed validation: %s", model_id, exc)
+            log.warning("entry %s failed validation for %s: %s", model_id, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
             continue
         group = plan.setdefault(
@@ -434,7 +434,7 @@ def _refresh_drift(
         try:
             pricing = scraper.scrape(pcfg, page_id)
         except Exception as exc:
-            log.exception("refresh scrape failed for %s", stored)
+            log.exception("refresh scrape failed for %s (%s)", stored, pcfg.key)
             provider_report.errors.append(_describe(exc))
             continue
         if pricing is None:
@@ -446,7 +446,7 @@ def _refresh_drift(
             )
             validate.validate_row(row)
         except validate.ValidationError as exc:
-            log.warning("refresh for %s skipped: %s", stored, exc)
+            log.warning("refresh for %s skipped in %s: %s", stored, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
             continue
         newest = store.newest(rows, pcfg.key, stored)
@@ -494,7 +494,7 @@ def _openrouter_rows(
         try:
             validate.validate_row(row)
         except validate.ValidationError as exc:
-            log.warning("openrouter entry %s failed validation: %s", model.id, exc)
+            log.warning("entry %s failed validation for openrouter: %s", model.id, exc)
             or_report.errors.append(_describe(exc))
             continue
         model_id = row["model_id"]

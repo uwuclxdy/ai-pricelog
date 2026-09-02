@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 
 import pytest
 
-from ai_pricelog import announce, config, openrouter, pipeline, pr, store
+from ai_pricelog import announce, config, health, openrouter, pipeline, pr, store
 from ai_pricelog.pricing import Pricing
 from conftest import git, git_init_repo, register_fake_module
 
@@ -626,6 +627,51 @@ def test_detector_error_does_not_block_next_provider(tmp_path, fake_modules, rep
     assert zai_report.detected == ["zai-x"]
     assert [model_id for model_id, _url in zai_report.prs] == ["zai-x"]
     assert zai_report.errors == []
+
+
+def _logged_lines(caplog) -> list[str]:
+    return [f"{record.levelname}:{record.name}:{record.getMessage()}" for record in caplog.records]
+
+
+def test_detector_failure_line_is_health_parseable(tmp_path, fake_modules, repo_root, caplog):
+    # the pipeline's failure log and the health checker's patterns are two
+    # sides of one wire: a failing detector must parse as a hard failure
+    detect, _ = fake_modules
+    detect["deepseek"] = RuntimeError("detector boom")
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.ERROR):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    assert health.parse_log(_logged_lines(caplog))["deepseek"]["hard"]
+
+
+def test_refresh_scrape_failure_line_is_health_parseable(tmp_path, fake_modules, repo_root, caplog):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": RuntimeError("scrape boom")}
+    prior = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+    )
+    seed_store(repo_root, [prior])
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.ERROR):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    assert health.parse_log(_logged_lines(caplog))["deepseek"]["hard"]
+
+
+def test_validation_failure_line_is_health_parseable(tmp_path, fake_modules, repo_root, caplog):
+    # a rejected candidate row parses as a soft (provider-alive) issue
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["a"]
+    scrape["deepseek"] = {"a": Pricing(-1.0, 1.1e-06, "chat", 65536)}
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["deepseek"]["soft"] and issues["deepseek"]["hard"] == []
 
 
 def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
