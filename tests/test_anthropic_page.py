@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,8 @@ PAGE_URL = "https://platform.claude.com/docs/en/about-claude/pricing.md"
 FIXTURE = Path(__file__).parent / "fixtures" / "anthropic_page" / "pricing.md"
 
 EXPECTED_IDS = [
+    "claude-fable-5-1",
+    "claude-mythos-5-1",
     "claude-fable-5",
     "claude-mythos-5",
     "claude-opus-5",
@@ -82,6 +85,26 @@ def test_scrape_unknown_model_returns_none(monkeypatch: pytest.MonkeyPatch):
     assert scraper.scrape(cfg(), "claude-opus-3") is None
 
 
+def test_scrape_fable_5_1(monkeypatch: pytest.MonkeyPatch):
+    feed(monkeypatch)
+    pricing = scraper.scrape(cfg(), "claude-fable-5-1")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(10 / 1e6)
+    assert pricing.cache_write_cost_per_token == pytest.approx(12.5 / 1e6)
+    assert pricing.cache_write_1h_cost_per_token == pytest.approx(20 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.25 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(50 / 1e6)
+
+
+def test_header_wording_drift_still_matches(monkeypatch: pytest.MonkeyPatch):
+    drifted = (
+        "| Model | base input tokens | 5M CACHE WRITES | 1h cache writes"
+        " | cache hits and refreshes | output tokens |\n"
+    )
+    feed(monkeypatch, drifted + "\n".join(_TABLE.splitlines()[1:]))
+    assert detector.detect(cfg()) == ["claude-opus-5-fast", "claude-sonnet-5"]
+
+
 _TABLE = (
     "| Model | Base Input Tokens | 5m Cache Writes | 1h Cache Writes"
     " | Cache Hits & Refreshes | Output Tokens |\n"
@@ -101,16 +124,22 @@ def test_paren_without_link_is_part_of_the_name(monkeypatch: pytest.MonkeyPatch)
     assert pricing.input_cost_per_token == pytest.approx(5 / 1e6)
 
 
-def test_detect_row_outside_shape_raises(monkeypatch: pytest.MonkeyPatch):
+def test_detect_row_outside_shape_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
     short_row_table = _TABLE + "| Claude Opus 4 | $3 / MTok |\n"
     feed(monkeypatch, short_row_table)
-    with pytest.raises(FetchError, match="outside the pricing shape"):
-        detector.detect(cfg())
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["claude-opus-5-fast", "claude-sonnet-5"]
+    assert "detect skip for anthropic" in caplog.text
 
 
-def test_detect_annotation_only_name_raises(monkeypatch: pytest.MonkeyPatch):
-    # a cell that is only a link annotation strips to no id; emitting an
-    # empty id is worse than failing the run
+def test_detect_annotation_only_name_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a cell that is only a link annotation strips to no id: additive
+    # drift, skipped with a warning; with no readable rows left the
+    # detector raises the structural error
     annotation_only = (
         "| Model | Base Input Tokens | 5m Cache Writes | 1h Cache Writes"
         " | Cache Hits & Refreshes | Output Tokens |\n"
@@ -119,8 +148,21 @@ def test_detect_annotation_only_name_raises(monkeypatch: pytest.MonkeyPatch):
         " | $1 / MTok | $1 / MTok |\n"
     )
     feed(monkeypatch, annotation_only)
-    with pytest.raises(FetchError, match="unreadable model name"):
+    with caplog.at_level(logging.WARNING), pytest.raises(FetchError, match="no model rows"):
         detector.detect(cfg())
+    assert "unreadable model name" in caplog.text
+
+
+def test_detect_annotation_only_name_skips_that_row(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    annotation_row = (
+        "| ([retired](https://x)) | $1 / MTok | $1 / MTok | $1 / MTok | $1 / MTok | $1 / MTok |\n"
+    )
+    feed(monkeypatch, _TABLE + annotation_row)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["claude-opus-5-fast", "claude-sonnet-5"]
+    assert "unreadable model name" in caplog.text
 
 
 def test_detect_missing_model_table_raises(monkeypatch: pytest.MonkeyPatch):

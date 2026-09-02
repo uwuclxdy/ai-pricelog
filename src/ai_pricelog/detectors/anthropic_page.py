@@ -3,22 +3,29 @@
 reads https://platform.claude.com/docs/en/about-claude/pricing.md (the
 machine-readable surface llms.txt advertises). the "Model pricing" table
 carries Model | Base Input Tokens | 5m Cache Writes | 1h Cache Writes |
-Cache Hits & Refreshes | Output Tokens; the header is pinned exactly, so
-a column rename is a page-shape break (FetchError) and the tier tables
-further down the page (fast mode, batch, long context) never match. the
-first column is a display name: a trailing parenthesized annotation
-carrying a markdown link ("[retired, except on ...](...)") is stripped,
-while a paren without a link ("(Fast)") is part of the name. names slug
-lowercase with non-alphanumeric runs collapsed to dashes ("Claude Opus
-4.1" -> claude-opus-4-1).
+Cache Hits & Refreshes | Output Tokens; the header pins after folding
+case, whitespace, and &/and, so wording drift ("base input tokens",
+"cache hits and refreshes") still matches, while the tier tables further
+down the page (fast mode, batch, long context) never match. rows outside
+the six-cell shape and names that slug to nothing are additive drift:
+detection skips them with a warning (plan #22), and a page whose model
+table or model rows are gone still raises. the first column is a display
+name: a trailing parenthesized annotation carrying a markdown link
+("[retired, except on ...](...)") is stripped, while a paren without a
+link ("(Fast)") is part of the name. names slug lowercase with
+non-alphanumeric runs collapsed to dashes ("Claude Opus 4.1" ->
+claude-opus-4-1).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text
+from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text, fold_heading
+
+log = logging.getLogger(__name__)
 
 TABLE_HEADER = [
     "Model",
@@ -41,10 +48,13 @@ def _slug(name: str) -> str:
     return _NON_ALNUM_RE.sub("-", name.lower()).strip("-")
 
 
+_FOLDED_HEADER = [fold_heading(cell) for cell in TABLE_HEADER]
+
+
 def model_table(text: str, url: str) -> list[list[str]]:
-    """the "Model pricing" table; anything else on the page is a shape break."""
+    """the "Model pricing" table; a missing table is a page-shape break."""
     for table in extract_markdown_tables(text):
-        if table and table[0] == TABLE_HEADER:
+        if table and [fold_heading(cell) for cell in table[0]] == _FOLDED_HEADER:
             return table
     raise FetchError(f"no model pricing table on {url}")
 
@@ -59,10 +69,14 @@ def detect(cfg: ProviderCfg) -> list[str]:
     ids: list[str] = []
     seen: set[str] = set()
     for row in model_table(text, cfg.detector_url)[2:]:
-        check_row(row, cfg.detector_url)
-        model_id = _slug(row[0])
-        if not model_id:
-            raise FetchError(f"unreadable model name {row[0]!r} on {cfg.detector_url}")
+        try:
+            check_row(row, cfg.detector_url)
+            model_id = _slug(row[0])
+            if not model_id:
+                raise FetchError(f"unreadable model name {row[0]!r} on {cfg.detector_url}")
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", cfg.key, exc)
+            continue
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)
