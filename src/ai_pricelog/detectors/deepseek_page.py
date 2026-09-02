@@ -3,8 +3,9 @@
 the page (https://api-docs.deepseek.com/quick_start/pricing/) is a docusaurus
 static html page with a single table; the trailing slash is required, the
 slash-less path serves a JS shell without the table. its header row's first
-cell is "MODEL"
-and every remaining header cell is a raw model id. rows keyed by BASE URL /
+cell pins as "MODEL" after folding case, whitespace, and &/and
+(web.fold_heading), and every remaining header cell is a raw model id.
+rows keyed by BASE URL /
 MODEL VERSION / THINKING MODE / CONTEXT LENGTH / MAX OUTPUT / FEATURES /
 PRICING are not model rows. header cells that do not look like model ids are
 skipped; a page whose MODEL row carries no id is a parse failure (FetchError).
@@ -15,9 +16,10 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_tables, fetch_soup
+from ai_pricelog.web import FetchError, extract_tables, fetch_soup, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
+_FOLDED_MODEL_HEADER = fold_heading("MODEL")
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
@@ -31,6 +33,6 @@ def detect(cfg: ProviderCfg) -> list[str]:
 
 def _model_table(tables: list[list[list[str]]], url: str) -> list[list[str]]:
     for table in tables:
-        if table and table[0] and table[0][0].strip() == "MODEL":
+        if table and table[0] and fold_heading(table[0][0]) == _FOLDED_MODEL_HEADER:
             return table
     raise FetchError(f"no MODEL header table on {url}")

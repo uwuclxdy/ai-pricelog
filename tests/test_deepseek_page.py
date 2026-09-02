@@ -57,6 +57,17 @@ def test_detect_malformed_page_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_model_header_case_drift_still_matches(monkeypatch):
+    # the first header cell pins as "MODEL" after folding case, so a
+    # lowercase spelling still locates the model table
+    patch_soup(
+        monkeypatch,
+        detector,
+        "<table><tr><td>model</td><td>deepseek-v4-flash</td></tr></table>",
+    )
+    assert detector.detect(cfg()) == ["deepseek-v4-flash"]
+
+
 def test_detect_fetch_error_propagates(monkeypatch):
     def boom(url):
         raise FetchError(f"fetch failed for {url}")
