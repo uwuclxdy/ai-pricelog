@@ -2071,3 +2071,4 @@
 {"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-09-02","name":"Nemotron 3 Ultra","input_mtok":0.6,"output_mtok":2.4,"cache_read_mtok":0.12,"max_tokens_in":262144}
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-pro","observed_at":"2026-09-02","name":"DeepSeek V4 Pro 0423","input_mtok":1.02747,"output_mtok":2.05494,"cache_read_mtok":0.085623,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-09-02","name":"DeepSeek V4 Flash 0423","input_mtok":0.08092,"output_mtok":0.16184,"cache_read_mtok":0.016184,"max_tokens_in":1048576}
+{"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-09-02","name":"DeepSeek V4 Flash 0423","input_mtok":0.07938,"output_mtok":0.15876,"cache_read_mtok":0.015876,"max_tokens_in":1048576}
