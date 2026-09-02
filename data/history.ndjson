@@ -2051,3 +2051,6 @@
 {"source":"moonshot","model_id":"moonshot-v1-32k-vision-preview","observed_at":"2026-09-02","removed":true,"input_mtok":1.0,"output_mtok":3.0,"max_tokens_in":32768}
 {"source":"moonshot","model_id":"moonshot-v1-8k","observed_at":"2026-09-02","removed":true,"input_mtok":0.2,"output_mtok":2.0,"max_tokens_in":8192}
 {"source":"moonshot","model_id":"moonshot-v1-8k-vision-preview","observed_at":"2026-09-02","removed":true,"input_mtok":0.2,"output_mtok":2.0,"max_tokens_in":8192}
+{"source":"together","model_id":"gemma-3n-e4b-instruct","observed_at":"2026-09-02","removed":true,"input_mtok":0.06,"output_mtok":0.12}
+{"source":"together","model_id":"gpt-oss-20b","observed_at":"2026-09-02","removed":true,"input_mtok":0.05,"output_mtok":0.2}
+{"source":"together","model_id":"inkling-small","observed_at":"2026-09-02","removed":true,"input_mtok":0.5,"output_mtok":1.2,"cache_read_mtok":0.1}
