@@ -3,7 +3,9 @@
 the page (https://docs.z.ai/guides/overview/pricing) carries 7 tables under
 section headings. the watched tables are the ones priced per 1M input/output
 tokens: Text Models and Vision Models, both headed Model | Input | Cached
-Input | Cached Input Storage | Output. the single-rate tables (image, video,
+Input | Cached Input Storage | Output, the header cells matched after
+folding case, whitespace, and &/and (web.fold_heading). the single-rate
+tables (image, video,
 ASR: Model | Price), the built-in tools (per use) and the agents tables
 (per request/video) are out of scope. the page spells ids like
 GLM-4.7-FlashX; ids are lowercased because litellm keys are lowercase. a
@@ -17,9 +19,10 @@ import re
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
 
 _GLM_ID_PATTERN = re.compile(r"^glm-[a-z0-9][a-z0-9.-]*$", re.IGNORECASE)
+_TOKEN_HEADERS = frozenset(fold_heading(cell) for cell in ("Model", "Input", "Output"))
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
@@ -52,7 +55,7 @@ def _token_model_tables(soup: BeautifulSoup, url: str) -> list[list[list[str]]]:
             for row in table.find_all("tr")
             if row.find_parent("table") is table
         ]
-        if rows and {"Model", "Input", "Output"} <= set(rows[0]):
+        if rows and {fold_heading(cell) for cell in rows[0]} >= _TOKEN_HEADERS:
             tables.append(rows)
     if not tables:
         raise FetchError(f"no model pricing tables on {url}")

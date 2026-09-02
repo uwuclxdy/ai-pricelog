@@ -319,6 +319,22 @@ def test_detect_no_token_table_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_header_case_drift_still_matches(monkeypatch):
+    # the Model/Input/Output header pins match after folding, so a
+    # lowercase header still locates the per-token tables
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>model</th><th>input</th><th>cached input</th>"
+            "<th>output</th></tr>"
+            "<tr><td>GLM-5.3</td><td>$1.4</td><td>$0.26</td><td>$4.4</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["glm-5.3"]
+
+
 def test_fetch_error_propagates(monkeypatch):
     def boom(url):
         raise FetchError(f"fetch failed for {url}")
