@@ -2025,3 +2025,4 @@
 {"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-09-02","name":"GLM 5.2","input_mtok":0.966,"output_mtok":3.036,"cache_read_mtok":0.1932,"max_tokens_in":1048576}
 {"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-09-02","name":"Nemotron 3 Ultra","input_mtok":0.625,"output_mtok":3.125,"cache_read_mtok":0.1875,"max_tokens_in":262144}
 {"source":"openrouter","model_id":"deepseek/deepseek-chat-v3.1","observed_at":"2026-09-02","name":"DeepSeek V3.1","input_mtok":0.25,"output_mtok":0.95,"cache_read_mtok":0.13,"max_tokens_in":163840}
+{"source":"dashscope","model_id":"qwen3.8-max-0902","observed_at":"2026-09-02","input_mtok":2.0,"output_mtok":6.0,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
