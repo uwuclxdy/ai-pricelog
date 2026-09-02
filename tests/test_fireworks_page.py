@@ -134,3 +134,18 @@ def test_detect_missing_table_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="no serverless pricing table"):
         detector.detect(cfg())
+
+
+def test_detect_header_case_drift_still_matches(monkeypatch):
+    # the serverless-table header pins match after folding, so a lowercase
+    # header still locates the table
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>model</th><th>standard</th><th>priority</th></tr>"
+            "<tr><td>Kimi K3</td><td>$3.00 / $0.30 / $15.00</td><td>—</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["kimi-k3"]
