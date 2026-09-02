@@ -91,6 +91,22 @@ def test_detect_no_token_table_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_header_wording_drift_still_matches(monkeypatch):
+    # the token-pricing header pins match after folding case and whitespace,
+    # so lowercase spellings still locate the table
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>input tokens ($/1m)</th>"
+            "<th>output tokens ($/1m)</th></tr>"
+            "<tr><td>Sonar</td><td>$1</td><td>$1</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["sonar"]
+
+
 def test_fetch_error_propagates(monkeypatch):
     def boom(url):
         raise FetchError(f"fetch failed for {url}")

@@ -3,7 +3,8 @@
 the page (https://docs.perplexity.ai/guides/pricing) carries several tables:
 search-context request fees, pro search tiers, embeddings, agent-api costs,
 and the Token Pricing table. only Token Pricing is watched: the table whose
-header row holds "Input Tokens ($/1M)" and "Output Tokens ($/1M)". ids are
+header row holds "Input Tokens ($/1M)" and "Output Tokens ($/1M)", matched
+after folding case, whitespace, and &/and (web.fold_heading). ids are
 the Model column cells normalized to litellm key form (lowercase, whitespace
 runs -> "-"): the page spells "Sonar Pro", litellm keys it
 perplexity/sonar-pro. cells that do not normalize to a bare lowercase-dash
@@ -17,10 +18,12 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_tables, fetch_soup
+from ai_pricelog.web import FetchError, extract_tables, fetch_soup, fold_heading
 
 _INPUT_HEADER = "Input Tokens ($/1M)"
 _OUTPUT_HEADER = "Output Tokens ($/1M)"
+_FOLDED_INPUT_HEADER = fold_heading(_INPUT_HEADER)
+_FOLDED_OUTPUT_HEADER = fold_heading(_OUTPUT_HEADER)
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -40,7 +43,10 @@ def detect(cfg: ProviderCfg) -> list[str]:
 
 def _token_pricing_table(tables: list[list[list[str]]], url: str) -> list[list[str]]:
     for table in tables:
-        if table and table[0] and _INPUT_HEADER in table[0] and _OUTPUT_HEADER in table[0]:
+        if not table or not table[0]:
+            continue
+        folded = [fold_heading(cell) for cell in table[0]]
+        if _FOLDED_INPUT_HEADER in folded and _FOLDED_OUTPUT_HEADER in folded:
             return table
     raise FetchError(f"no token pricing table on {url}")
 
