@@ -80,6 +80,17 @@ def test_detect_malformed_page_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_header_wording_drift_still_matches(monkeypatch):
+    # the Model Name header pins after folding case and whitespace, so a
+    # drifted spelling still locates the model tables
+    monkeypatch.setattr(
+        detector,
+        "fetch_text",
+        lambda url: "| Model   Name | Context |\n| --- | --- |\n| `kimi-k3` | 1M |\n",
+    )
+    assert detector.detect(cfg()) == ["kimi-k3"]
+
+
 def test_scrape_k3(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k3"))
     pricing = scraper.scrape(cfg(), "kimi-k3")
