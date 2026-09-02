@@ -2062,3 +2062,5 @@
 {"source":"deepinfra","model_id":"kimi-k2.5","observed_at":"2026-09-02","removed":true,"input_mtok":0.45,"output_mtok":2.25,"cache_read_mtok":0.07,"max_tokens_in":262144}
 {"source":"publicai","model_id":"allenai/olmo-3-7b-instruct","observed_at":"2026-09-02","removed":true,"input_mtok":0.1,"output_mtok":0.2,"max_tokens_in":65000}
 {"source":"publicai","model_id":"utter-project/eurollm-22b-instruct-2512","observed_at":"2026-09-02","removed":true,"input_mtok":0.1,"output_mtok":0.2,"max_tokens_in":32000}
+{"source":"anthropic","model_id":"claude-fable-5-1","observed_at":"2026-09-02","input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":0.25,"cache_write_mtok":12.5,"cache_write_1h_mtok":20.0,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
+{"source":"anthropic","model_id":"claude-mythos-5-1","observed_at":"2026-09-02","input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":0.25,"cache_write_mtok":12.5,"cache_write_1h_mtok":20.0,"url":"https://platform.claude.com/docs/en/about-claude/pricing.md"}
