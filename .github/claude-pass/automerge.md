@@ -77,7 +77,7 @@ when the script fails: do not retry it. report the error in your final message, 
 
 ## needs-human comment shape
 
-every needs-human PR gets a comment opening with the ping line, posted as github-actions[bot] (the pass runs with the workflow's `GITHUB_TOKEN`):
+every needs-human PR gets a comment opening with the ping line, posted as cloudybot (the pass runs with the bot's PAT in `GH_TOKEN`):
 
 ```markdown
 @uwuclxdy need help wit this

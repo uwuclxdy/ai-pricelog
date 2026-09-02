@@ -2,8 +2,8 @@
 # and the openrouter api, append observed rows, open draft PRs), followed by a
 # claude code review pass when the run changed something; weekly (monday 05:17
 # utc) a live smoke probe checks the moonshot .md endpoints. push/PR gates stay
-# in ci.yml + reindex.yml. GH_TOKEN = PAT with repo scope (repo secret); falls
-# back to GITHUB_TOKEN. the claude pass reads ANTHROPIC_API_KEY and optional
+# in ci.yml + reindex.yml. GH_TOKEN = the cloudybot PAT with repo scope (repo
+# secret); falls back to GITHUB_TOKEN. the claude pass reads ANTHROPIC_API_KEY and optional
 # ANTHROPIC_BASE_URL / ANTHROPIC_MODEL overrides from repo secrets.
 
 name: autopr
@@ -61,10 +61,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          # the bot identity: comments post as github-actions[bot], so a
-          # @-mention in a needs-human comment actually notifies the owner
-          # (a self-mention under the PAT never does)
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GH_TOKEN holds the cloudybot PAT: every automation action (open
+          # pr, comment, merge commit) acts as the bot, so a @-mention in a
+          # needs-human comment notifies the owner (a self-mention never does)
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
   smoke:
     runs-on: ubuntu-latest
