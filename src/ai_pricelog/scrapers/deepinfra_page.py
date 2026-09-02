@@ -7,11 +7,13 @@ cache reads; the output cell holds exactly one. the context cell ("1024k")
 -> max_tokens_in, k counted as 1024 (the repo convention). rows key by the
 model-cell link's last path segment, lowercased, the detector's id. a
 matched cell with an unexpected amount count, or an unreadable context, is
-a page-shape break (FetchError), so a silent misread cannot ship.
+a page-shape break (FetchError), so a silent misread cannot ship. rows the
+match scan passes over with a link-less or out-of-charset model cell are
+additive drift detection already reported.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
-page has no per-token model table, a model cell lacks its id link, or a
-matched cell carries an unexpected shape.
+page has no per-token model table, or a matched cell carries an unexpected
+shape.
 """
 
 from __future__ import annotations
@@ -36,8 +38,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         for row in _table_rows(table):
             if not row:
                 continue
-            if _row_id(row[0], cfg.scraper_url) != model_id:
-                continue
+            try:
+                if _row_id(row[0], cfg.scraper_url) != model_id:
+                    continue
+            except FetchError:
+                continue  # additive drift; detect already reported the row
             if len(row) < 4:
                 raise FetchError(f"malformed row for {model_id} on {cfg.scraper_url}")
             input_amounts = _AMOUNT_RE.findall(row[2].get_text(" ", strip=True))

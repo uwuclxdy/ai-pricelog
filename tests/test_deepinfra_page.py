@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -248,7 +249,28 @@ def test_detect_missing_table_raises(monkeypatch):
         detector.detect(cfg())
 
 
-def test_detect_model_cell_without_link_raises(monkeypatch):
+def test_detect_model_cell_without_link_skips(monkeypatch, caplog):
+    # a link-less model cell is additive drift: skipped with a warning,
+    # later rows still seed
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: token_table_soup(
+            (
+                "<tr><td>Kimi K9</td><td>1024k</td><td>$2.85</td><td>$14.25</td>"
+                "<td>View more</td></tr>"
+            ),
+            model_row("Kimi K3", "/moonshotai/Kimi-K3", "1024k", "$2.85", "$14.25"),
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["kimi-k3"]
+    assert "detect skip for deepinfra" in caplog.text
+    assert "model cell without a model link" in caplog.text
+
+
+def test_detect_all_cells_without_links_raises(monkeypatch, caplog):
+    # every row skipped leaves no ids: the structural raise stays
     monkeypatch.setattr(
         detector,
         "fetch_soup",
@@ -256,17 +278,48 @@ def test_detect_model_cell_without_link_raises(monkeypatch):
             "<tr><td>Kimi K3</td><td>1024k</td><td>$2.85</td><td>$14.25</td><td>View more</td></tr>"
         ),
     )
-    with pytest.raises(FetchError, match="model cell without a model link"):
+    with (
+        caplog.at_level(logging.WARNING),
+        pytest.raises(FetchError, match="no model ids"),
+    ):
         detector.detect(cfg())
+    assert "detect skip for deepinfra" in caplog.text
 
 
-def test_scrape_model_cell_without_link_raises(monkeypatch):
+def test_detect_folded_header_matches(monkeypatch):
+    # header wording drift (case) still matches after folding
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><thead><tr>"
+            "<th>model</th><th>CONTEXT</th><th>$ per 1M input tokens</th>"
+            "<th>$ per 1m output tokens</th><th>actions</th>"
+            "</tr></thead><tbody>"
+            + model_row("Kimi K3", "/moonshotai/Kimi-K3", "1024k", "$2.85", "$14.25")
+            + "</tbody></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["kimi-k3"]
+
+
+def test_scrape_model_cell_without_link_does_not_block(monkeypatch):
+    # a link-less cell the scan passes over is additive drift detect
+    # reported; the chosen model still scrapes, the link-less one is absent
     monkeypatch.setattr(
         scraper,
         "fetch_soup",
         lambda url: token_table_soup(
-            "<tr><td>Kimi K3</td><td>1024k</td><td>$2.85</td><td>$14.25</td><td>View more</td></tr>"
+            (
+                "<tr><td>Kimi K9</td><td>1024k</td><td>$2.85</td><td>$14.25</td>"
+                "<td>View more</td></tr>"
+            ),
+            model_row("Kimi K3", "/moonshotai/Kimi-K3", "1024k", "$2.85 / $0.285 cached", "$14.25"),
         ),
     )
-    with pytest.raises(FetchError, match="model cell without a model link"):
-        scraper.scrape(cfg(), "kimi-k3")
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(2.85 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.285 / 1e6)
+    assert scraper.scrape(cfg(), "kimi-k9") is None

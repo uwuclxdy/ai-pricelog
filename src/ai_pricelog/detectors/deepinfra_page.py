@@ -9,22 +9,28 @@ one link to the model's own page and its last path segment is the id: the
 display name can abbreviate it ("Llama-4-Scout-17B-16E" links to
 /meta-llama/Llama-4-Scout-17B-16E-Instruct), so the link slug, lowercased,
 is the stored spelling. the other tables (audio, image, embeddings,
-hardware, tiers) carry different headers and are out of scope. a page with
-no per-token model table, a model cell without its link, or a slug outside
-the stored id charset, is a parse failure (FetchError).
+hardware, tiers) carry different headers and are out of scope. a model
+cell without its link or a slug outside the stored id charset is additive
+drift: detection skips the row with a warning (plan #22), and the table
+headers pin after folding case, whitespace, and &/and. a page with no
+per-token model table or no usable ids is a parse failure (FetchError).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+
+log = logging.getLogger(__name__)
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _TOKEN_HEADERS = ["Model", "Context", "$ per 1M input tokens", "$ per 1M output tokens", "Actions"]
+_FOLDED_TOKEN_HEADERS = tuple(fold_heading(cell) for cell in _TOKEN_HEADERS)
 
 
 def _model_tables(soup: BeautifulSoup) -> list[Tag]:
@@ -34,8 +40,12 @@ def _model_tables(soup: BeautifulSoup) -> list[Tag]:
         if table.find_parent("table") is not None:
             continue
         thead = table.find("thead")
-        headers = [th.get_text(" ", strip=True) for th in thead.find_all("th")] if thead else []
-        if headers == _TOKEN_HEADERS:
+        headers = (
+            tuple(fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th"))
+            if thead
+            else ()
+        )
+        if headers == _FOLDED_TOKEN_HEADERS:
             tables.append(table)
     return tables
 
@@ -80,7 +90,11 @@ def detect(cfg: ProviderCfg) -> list[str]:
         for row in _table_rows(table):
             if not row:
                 continue
-            model_id = _row_id(row[0], cfg.detector_url)
+            try:
+                model_id = _row_id(row[0], cfg.detector_url)
+            except FetchError as exc:
+                log.warning("detect skip for %s: %s", cfg.key, exc)
+                continue
             if model_id not in seen:
                 seen.add(model_id)
                 ids.append(model_id)
