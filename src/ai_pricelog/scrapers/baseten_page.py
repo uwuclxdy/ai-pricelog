@@ -7,7 +7,9 @@ labels are server-rendered on the page itself, and the amounts are USD per
 model) yields cache_read None. cells render twice (desktop and mobile
 duplicates); only the desktop wrapper is read, and a cell with an unexpected
 amount count is a page-shape break (FetchError), so a silent misread cannot
-ship. rows key by the /library/ slug.
+ship. rows key by the /library/ slug. rows the match scan passes over with
+a malformed name cell (odd desktop renders, odd links, out-of-charset
+slugs) are additive drift detection already reported.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
 page has no Model APIs table, or a matched cell carries an unexpected amount
@@ -31,8 +33,12 @@ _AMOUNT_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     rows = _model_rows(fetch_soup(cfg.scraper_url), cfg.scraper_url)
     for cells in rows:
-        if _model_id(cells[0], cfg.scraper_url) == model_id:
-            return _pricing(cells, model_id, cfg.scraper_url)
+        try:
+            if _model_id(cells[0], cfg.scraper_url) != model_id:
+                continue
+        except FetchError:
+            continue  # additive drift; detect already reported the row
+        return _pricing(cells, model_id, cfg.scraper_url)
     return None
 
 

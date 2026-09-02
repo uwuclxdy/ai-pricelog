@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -169,7 +170,43 @@ def test_detect_missing_table_raises(monkeypatch):
         detector.detect(cfg())
 
 
-def test_detect_row_without_library_link_raises(monkeypatch):
+def test_detect_row_without_library_link_skips(monkeypatch, caplog):
+    # an odd model link is additive drift: the row is skipped with a
+    # warning, later rows still seed
+    html = (
+        "<div>"
+        '<div class="grid">'
+        "<div>Model</div><div>Input</div><div>Cache Input</div><div>Output</div>"
+        "</div>"
+        '<div class="grid">'
+        '<div><div class="hidden md:flex"><a href="/something/else/">'
+        "GLM-5.3-Flash</a></div></div>"
+        '<div><div class="hidden md:flex">$0.15</div></div>'
+        '<div><div class="hidden md:flex">$0.03</div></div>'
+        '<div><div class="hidden md:flex">$0.50</div></div>'
+        "</div>"
+        '<div class="grid">'
+        '<div><div class="hidden md:flex"><a href="/library/glm-53-flash/">'
+        "GLM-5.3-Flash</a></div></div>"
+        '<div><div class="hidden md:flex">$0.15</div></div>'
+        '<div><div class="hidden md:flex">$0.03</div></div>'
+        '<div><div class="hidden md:flex">$0.50</div></div>'
+        "</div>"
+        "</div>"
+    )
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(html, "html.parser"),
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["glm-53-flash"]
+    assert "detect skip for baseten" in caplog.text
+    assert "unexpected model link" in caplog.text
+
+
+def test_detect_all_rows_malformed_raises(monkeypatch, caplog):
+    # every row skipped leaves no ids: the structural raise stays
     html = (
         "<div>"
         '<div class="grid">'
@@ -189,5 +226,67 @@ def test_detect_row_without_library_link_raises(monkeypatch):
         "fetch_soup",
         lambda url: BeautifulSoup(html, "html.parser"),
     )
-    with pytest.raises(FetchError, match="unexpected model link"):
+    with (
+        caplog.at_level(logging.WARNING),
+        pytest.raises(FetchError, match="no model ids"),
+    ):
         detector.detect(cfg())
+    assert "detect skip for baseten" in caplog.text
+
+
+def test_detect_folded_header_matches(monkeypatch):
+    # header wording drift (case) still matches after folding
+    html = (
+        "<div>"
+        '<div class="grid">'
+        "<div>model</div><div>INPUT</div><div>cache input</div><div>Output</div>"
+        "</div>"
+        '<div class="grid">'
+        '<div><div class="hidden md:flex"><a href="/library/glm-53-flash/">'
+        "GLM-5.3-Flash</a></div></div>"
+        '<div><div class="hidden md:flex">$0.15</div></div>'
+        '<div><div class="hidden md:flex">$0.03</div></div>'
+        '<div><div class="hidden md:flex">$0.50</div></div>'
+        "</div>"
+        "</div>"
+    )
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(html, "html.parser"),
+    )
+    assert detector.detect(cfg()) == ["glm-53-flash"]
+
+
+def test_scrape_skips_unrelated_malformed_row(monkeypatch):
+    # an unrelated row with an odd link is additive drift detect reported;
+    # the chosen model still scrapes
+    html = (
+        "<div>"
+        '<div class="grid">'
+        "<div>Model</div><div>Input</div><div>Cache Input</div><div>Output</div>"
+        "</div>"
+        '<div class="grid">'
+        '<div><div class="hidden md:flex"><a href="/something/else/">'
+        "GLM-5.3-Flash</a></div></div>"
+        '<div><div class="hidden md:flex">$0.15</div></div>'
+        '<div><div class="hidden md:flex">$0.03</div></div>'
+        '<div><div class="hidden md:flex">$0.50</div></div>'
+        "</div>"
+        '<div class="grid">'
+        '<div><div class="hidden md:flex"><a href="/library/glm-53-flash/">'
+        "GLM-5.3-Flash</a></div></div>"
+        '<div><div class="hidden md:flex">$0.15</div></div>'
+        '<div><div class="hidden md:flex">$0.03</div></div>'
+        '<div><div class="hidden md:flex">$0.50</div></div>'
+        "</div>"
+        "</div>"
+    )
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(html, "html.parser"),
+    )
+    pricing = scraper.scrape(cfg(), "glm-53-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.15 / 1e6)
