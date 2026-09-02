@@ -2027,3 +2027,4 @@
 {"source":"openrouter","model_id":"deepseek/deepseek-chat-v3.1","observed_at":"2026-09-02","name":"DeepSeek V3.1","input_mtok":0.25,"output_mtok":0.95,"cache_read_mtok":0.13,"max_tokens_in":163840}
 {"source":"dashscope","model_id":"qwen3.8-max-0902","observed_at":"2026-09-02","input_mtok":2.0,"output_mtok":6.0,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
 {"source":"openrouter","model_id":"anthropic/claude-fable-5.1:batch","observed_at":"2026-09-02","name":"Claude Fable 5.1 (batch)","input_mtok":5.0,"output_mtok":25.0,"cache_read_mtok":0.125,"cache_write_mtok":6.25,"cache_write_1h_mtok":10.0,"web_search_usd":0.01,"max_tokens_in":1000000}
+{"source":"google","model_id":"gemini-3.8-flash","observed_at":"2026-09-02","input_mtok":0.75,"output_mtok":3.75,"cache_read_mtok":0.075,"url":"https://ai.google.dev/gemini-api/docs/pricing"}
