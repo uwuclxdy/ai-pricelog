@@ -96,7 +96,7 @@ for each changed announce channel, answer: does this change billing semantics (r
 
 ## output contract
 
-- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`). a merged PR's comment states the merge; a `needs human` comment follows the shape in `automerge.md`.
+- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`). a merged PR's comment states the merge; a `needs human` comment follows the shape in `automerge.md` and opens with the ping line `@uwuclxdy need help wit this`.
 - no PR comments when you find nothing: say so in your final message only.
 - never comment on PRs the run did not open. the only pushes to the default branch and the only branch-ref deletions are the ones `ai-pricelog-automerge` performs; never do either by hand.
 - your final message summarizes per PR: findings, the verdict, and what the merge did (merged / needs human / failed with the script's error); the PR comments are the durable record.

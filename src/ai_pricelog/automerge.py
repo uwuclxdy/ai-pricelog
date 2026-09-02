@@ -112,6 +112,8 @@ def merge_branches(
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
     _check_branches(branches, repo_root, runner)
+    # the runner checkout carries no git identity; the merge commits need one
+    pr.ensure_author(repo_root, runner)
 
     results: list[MergeResult] = []
     for number, branch in enumerate(branches):

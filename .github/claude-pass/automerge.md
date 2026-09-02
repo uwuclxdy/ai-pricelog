@@ -77,14 +77,16 @@ when the script fails: do not retry it. report the error in your final message, 
 
 ## needs-human comment shape
 
+every needs-human PR gets a comment opening with the ping line, posted as github-actions[bot] (the pass runs with the workflow's `GITHUB_TOKEN`):
+
 ```markdown
-## needs human
+@uwuclxdy need help wit this
 
 <one line: what could not be settled>
 
 <what you checked and what blocked it>
 
-<what the human must decide>
+<what to decide>
 ```
 
-end on the last substantive line. no sign-off.
+the mention is what reaches the human; the rest is for the thread. end on the last substantive line. no sign-off.

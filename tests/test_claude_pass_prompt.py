@@ -67,3 +67,12 @@ def test_prompt_names_the_automerge_surface() -> None:
     text = PROMPT.read_text()
     assert "ai-pricelog-automerge" in text
     assert ".github/claude-pass/automerge.md" in text
+
+
+def test_needs_human_comment_pings_the_owner() -> None:
+    # the ping line is the notification mechanism: the pass posts as the bot,
+    # so the @-mention is what reaches the owner
+    ping = "@uwuclxdy need help wit this"
+    assert ping in PROMPT.read_text()
+    manual = (ROOT / ".github" / "claude-pass" / "automerge.md").read_text()
+    assert ping in manual

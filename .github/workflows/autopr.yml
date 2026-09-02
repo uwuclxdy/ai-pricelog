@@ -61,7 +61,10 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+          # the bot identity: comments post as github-actions[bot], so a
+          # @-mention in a needs-human comment actually notifies the owner
+          # (a self-mention under the PAT never does)
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   smoke:
     runs-on: ubuntu-latest
