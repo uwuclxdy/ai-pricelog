@@ -2034,3 +2034,4 @@
 {"source":"fireworks","model_id":"deepseek-v4-flash-vision-exp","observed_at":"2026-09-02","input_mtok":0.22,"output_mtok":0.66,"cache_read_mtok":0.007,"url":"https://docs.fireworks.ai/serverless/pricing"}
 {"source":"digitalocean","model_id":"claude-fable-5.1","observed_at":"2026-09-02","input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":0.25,"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}
 {"source":"digitalocean","model_id":"claude-opus-5-fast-mode","observed_at":"2026-09-02","removed":true,"input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":1.0}
+{"source":"dashscope","model_id":"qwen3.8-flash","observed_at":"2026-09-02","input_mtok":0.15,"output_mtok":0.47,"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}
