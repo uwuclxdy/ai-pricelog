@@ -99,7 +99,7 @@ uv sync --frozen
 uv run ai-pricelog
 ```
 
-`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the scheduled GitHub Actions run carries it as a secret. schedule: every 6h (plus a weekly moonshot smoke), or `workflow_dispatch`.
+`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the scheduled GitHub Actions run carries it as a secret. schedule: every 2h (plus a weekly moonshot smoke), or `workflow_dispatch`.
 
 ## Configuration
 

@@ -1,4 +1,4 @@
-# the one scheduled workflow: every 6h the watchdog runs (watch provider pages
+# the one scheduled workflow: every 2h the watchdog runs (watch provider pages
 # and the openrouter api, append observed rows, open draft PRs), followed by a
 # claude code review pass when the run changed something; weekly (monday 05:17
 # utc) a live smoke probe checks the moonshot .md endpoints. push/PR gates stay
@@ -10,7 +10,7 @@ name: autopr
 
 on:
   schedule:
-    - cron: "0 */6 * * *" # every 6h
+    - cron: "0 */2 * * *" # every 2h
     - cron: "17 5 * * 1" # weekly monday 05:17 utc
   workflow_dispatch:
 
