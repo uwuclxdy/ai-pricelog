@@ -7,6 +7,7 @@ the detector's display-name mapping.
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from pathlib import Path
 
@@ -27,11 +28,13 @@ FIXTURE = Path(__file__).parent / "fixtures" / "databricks_page" / "pricing.html
 EXPECTED_IDS = [
     "kimi-k3",
     "kimi-k2.7",
+    "glm-5.3",
     "glm-5.2",
     "glm-5.2-priority",
     "inkling",
     "deepseek-v4-pro-0813",
     "deepseek-v4-flash-0731",
+    "glm-5.3-flash",
     "qwen3.5-122b-a10b",
     "qwen3.5-122b-a10b-priority",
     "qwen3-next-80b-a3b-instruct",
@@ -152,6 +155,54 @@ def test_scrape_glm_5_2(live_page):
     assert pricing.currency == "DBU"
 
 
+def test_scrape_glm_5_3(live_page):
+    pricing = scraper.scrape(make_cfg(), "glm-5.3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(20.000 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(62.857 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(3.714 / 1e6)
+    assert pricing.currency == "DBU"
+
+
+def test_scrape_glm_5_3_flash(live_page):
+    pricing = scraper.scrape(make_cfg(), "glm-5.3-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(2.143 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(7.143 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.429 / 1e6)
+
+
+def test_scrape_matched_row_odd_cell_raises(monkeypatch: pytest.MonkeyPatch):
+    # the matched row's cells are strict: an unknown shape raises, never
+    # reads as unpriced (plan #22)
+    text = table(row("GLM-5.2", "20.000 DBU", "62.857"))
+    serve(monkeypatch, text)
+    with pytest.raises(FetchError, match="unreadable dbu rate cell"):
+        scraper.scrape(make_cfg(), "glm-5.2")
+
+
+def test_scrape_skips_unrelated_odd_rows(monkeypatch: pytest.MonkeyPatch):
+    text = table(
+        row("Kimi K3", "42.857 DBU", "214.286"),
+        row("GLM-5.2", "20.000", "62.857"),
+    )
+    serve(monkeypatch, text)
+    pricing = scraper.scrape(make_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(20.000 / 1e6)
+
+
+def test_scrape_skips_unmapped_rows(monkeypatch: pytest.MonkeyPatch):
+    text = table(
+        row("Brand New Model", "20.000", "62.857"),
+        row("GLM-5.2", "20.000", "62.857"),
+    )
+    serve(monkeypatch, text)
+    pricing = scraper.scrape(make_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(20.000 / 1e6)
+
+
 def test_scrape_priority_tier(live_page):
     pricing = scraper.scrape(make_cfg(), "glm-5.2-priority")
     assert pricing is not None
@@ -190,7 +241,7 @@ def test_scrape_unpriced_rows_return_none(live_page):
 
 
 def test_scrape_unknown_model_returns_none(live_page):
-    assert scraper.scrape(make_cfg(), "glm-5.3") is None
+    assert scraper.scrape(make_cfg(), "glm-6") is None
 
 
 def test_detect_zero_rate_rows_emitted(monkeypatch: pytest.MonkeyPatch):
@@ -214,37 +265,57 @@ def test_scrape_both_zero_rates_price_zero(monkeypatch: pytest.MonkeyPatch):
     assert pricing.output_cost_per_token == 0.0
 
 
-def test_detect_unknown_rate_shape_raises(monkeypatch: pytest.MonkeyPatch):
-    # a drifted rate-cell shape must fail the run, never read as an
-    # unpriced row (two such runs would open a phantom delisting pr)
+def test_detect_unknown_rate_shape_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a drifted rate-cell shape is additive drift: the row skips with a
+    # warning (plan #22); the scrape-side strictness for the matched row
+    # is the wrong-data guard
+    text = table(row("GLM-5.2", "20.000 DBU", "62.857"), row("Kimi K3", "42.857", "214.286"))
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3"]
+    assert "unreadable dbu rate cell" in caplog.text
+
+
+def test_detect_unknown_output_shape_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    text = table(row("GLM-5.2", "20.000", "62.857 DBU"), row("Kimi K3", "42.857", "214.286"))
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3"]
+    assert "unreadable dbu rate cell" in caplog.text
+
+
+def test_detect_unknown_cache_shape_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    text = table(
+        row("GLM-5.2", "20.000", "62.857", "3.714 DBU"), row("Kimi K3", "42.857", "214.286")
+    )
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3"]
+    assert "unreadable dbu rate cell" in caplog.text
+
+
+def test_detect_unmapped_name_skips(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a priced row whose display name the mapping does not hold skips with
+    # a warning; one new model can no longer blind the provider (plan #22)
+    text = table(row("Brand New Model", "20.000", "62.857"), row("GLM-5.2", "20.000", "62.857"))
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert "unmapped model name" in caplog.text
+
+
+def test_detect_all_rows_skipped_raises(monkeypatch: pytest.MonkeyPatch):
     text = table(row("GLM-5.2", "20.000 DBU", "62.857"))
     serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="unreadable dbu rate cell"):
-        detector.detect(make_cfg())
-
-
-def test_detect_unknown_output_shape_raises(monkeypatch: pytest.MonkeyPatch):
-    # the same _rate path for the output column: only numeric and "n/a"
-    # are known shapes
-    text = table(row("GLM-5.2", "20.000", "62.857 DBU"))
-    serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="unreadable dbu rate cell"):
-        detector.detect(make_cfg())
-
-
-def test_detect_unknown_cache_shape_raises(monkeypatch: pytest.MonkeyPatch):
-    text = table(row("GLM-5.2", "20.000", "62.857", "3.714 DBU"))
-    serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="unreadable dbu rate cell"):
-        detector.detect(make_cfg())
-
-
-def test_detect_unmapped_name_raises(monkeypatch: pytest.MonkeyPatch):
-    # a priced row whose display name the mapping does not hold must fail
-    # the run, never emit an invented id
-    text = table(row("Brand New Model", "20.000", "62.857"))
-    serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="unmapped model name"):
+    with pytest.raises(FetchError, match="no per-token model rows"):
         detector.detect(make_cfg())
 
 

@@ -12,15 +12,18 @@ with "-priority" for the databricks-native tier rows. the ⌖ marker
 (regional-processing uplift, per the page's footnote 4) strips off the
 name. rate cells read numeric DBU amounts or "n/a"; a row with n/a input
 is known unpriced (provisioned-only rows) and skipped, n/a output reads as
-a zero output rate (embedding rows bill input only), and any other
-rate-cell shape is a page-shape break (FetchError), so a drifted price
-column cannot read as a missing model. zero-rate rows stay emitted (the
-scraper decides); dated display spellings dedup to their base id in the
-scraper's dedup_keys.
+a zero output rate (embedding rows bill input only). rows outside these
+shapes (odd cell counts, unknown rate-cell text, unmapped names) are
+additive drift: detection skips them with a warning (plan #22), and the
+scraper stays strict for the matched row, so a drifted price column cannot
+read as a missing model. a page whose dbu table or priced rows are gone
+still raises. zero-rate rows stay emitted (the scraper decides); dated
+display spellings dedup to their base id in the scraper's dedup_keys.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 from functools import cache
 
@@ -28,6 +31,8 @@ from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_soup
+
+log = logging.getLogger(__name__)
 
 _TABLE_HEADERS = ("DBU / M input tokens", "DBU / M output tokens", "DBU / M cache read tokens")
 _RATE_RE = re.compile(r"^\d+(?:\.\d+)?$")
@@ -45,6 +50,8 @@ _DISPLAY_IDS: dict[str, str] = {
     "Kimi K2.7": "kimi-k2.7",
     "GLM-5.2": "glm-5.2",
     "GLM-5.2 (Priority)": "glm-5.2-priority",
+    "GLM-5.3": "glm-5.3",
+    "GLM-5.3 Flash": "glm-5.3-flash",
     "Inkling": "inkling",
     "Deepseek V4 Pro (0813)": "deepseek-v4-pro-0813",
     "Deepseek V4 Flash (0731)": "deepseek-v4-flash-0731",
@@ -133,14 +140,16 @@ def detect(cfg: ProviderCfg) -> list[str]:
     ids: list[str] = []
     seen: set[str] = set()
     for row in table.find("tbody").find_all("tr", recursive=False):
-        cells = _row_cells(row, cfg.detector_url)
-        if _rate(cells[1], cfg.detector_url) is None:
-            continue  # provisioned-only rows carry no per-token input
-        # output: "n/a" (embedding rows bill input only) or numeric, else
-        # the strict shape check raises
-        _rate(cells[2], cfg.detector_url)
-        _rate(cells[3], cfg.detector_url)  # cache: n/a or numeric, else raise
-        model_id = parse_id(cells[0], cfg.detector_url)
+        try:
+            cells = _row_cells(row, cfg.detector_url)
+            if _rate(cells[1], cfg.detector_url) is None:
+                continue  # provisioned-only rows carry no per-token input
+            _rate(cells[2], cfg.detector_url)
+            _rate(cells[3], cfg.detector_url)
+            model_id = parse_id(cells[0], cfg.detector_url)
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", cfg.key, exc)
+            continue
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)
