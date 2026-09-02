@@ -9,18 +9,23 @@ row-label cell is the model name, sometimes suffixed "New". ids are the
 names slugged: lowercase, the "New" suffix stripped, runs of
 non-alphanumerics -> dashes, charset-checked against the stored-id pattern.
 rows whose pay-as-you-go cell carries no USD amount ("Not available") are
-skipped: there is nothing to price. a page with no per-model token table is
-a parse failure (FetchError).
+skipped: there is nothing to price. a row shorter than its table's header
+is additive drift: detection skips it with a warning (plan #22). a page
+with no per-model token table or no usable ids is a parse failure
+(FetchError).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_soup
+
+log = logging.getLogger(__name__)
 
 _AMOUNT_RE = re.compile(r"USD ([\d,]+(?:\.\d+)?)")
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
@@ -39,8 +44,12 @@ def detect(cfg: ProviderCfg) -> list[str]:
         for cells in _comp_rows(comp):
             if not cells:
                 continue
-            if len(cells) < len(headers):
-                raise FetchError(f"malformed pricing row on {cfg.detector_url}")
+            try:
+                if len(cells) < len(headers):
+                    raise FetchError(f"malformed pricing row on {cfg.detector_url}")
+            except FetchError as exc:
+                log.warning("detect skip for %s: %s", cfg.key, exc)
+                continue
             if not _AMOUNT_RE.search(cells[price_col]):
                 continue
             normalized = _normalize_id(cells[0])

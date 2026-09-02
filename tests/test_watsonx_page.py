@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -193,6 +194,99 @@ def test_detect_strips_new_suffix(monkeypatch):
         ),
     )
     assert detector.detect(cfg()) == ["granite-4h-small"]
+
+
+def test_detect_malformed_row_skips(monkeypatch, caplog):
+    # a row shorter than its table's header is additive drift: skipped
+    # with a warning, later rows still seed
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<c4d-pricing-table>"
+            "<c4d-pricing-table-head><c4d-pricing-table-header-row>"
+            "<c4d-pricing-table-header-cell>Model Name</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Model Provider</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Pay as you go</c4d-pricing-table-header-cell>"
+            "</c4d-pricing-table-header-row></c4d-pricing-table-head>"
+            "<c4d-pricing-table-body>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Mistral Small 3.1</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>Mistral AI</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Granite 4H Small</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>IBM</c4d-pricing-table-cell>"
+            "<c4d-pricing-table-cell>USD 0.0636 per 1M tokens input USD 0.265 per 1M tokens"
+            " output</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "</c4d-pricing-table-body>"
+            "</c4d-pricing-table>",
+            "html.parser",
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["granite-4h-small"]
+    assert "detect skip for watsonx" in caplog.text
+    assert "malformed pricing row" in caplog.text
+
+
+def test_scrape_unrelated_short_row_does_not_block(monkeypatch):
+    # a short row the scan passes over is additive drift detect reported;
+    # the chosen model still scrapes
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<c4d-pricing-table>"
+            "<c4d-pricing-table-head><c4d-pricing-table-header-row>"
+            "<c4d-pricing-table-header-cell>Model Name</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Model Provider</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Pay as you go</c4d-pricing-table-header-cell>"
+            "</c4d-pricing-table-header-row></c4d-pricing-table-head>"
+            "<c4d-pricing-table-body>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Mistral Small 3.1</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>Mistral AI</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Granite 4H Small</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>IBM</c4d-pricing-table-cell>"
+            "<c4d-pricing-table-cell>USD 0.0636 per 1M tokens input USD 0.265 per 1M tokens"
+            " output</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "</c4d-pricing-table-body>"
+            "</c4d-pricing-table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "granite-4h-small")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.0636 / 1e6)
+
+
+def test_scrape_matched_short_row_raises(monkeypatch):
+    # the chosen model's own row is short: the misparse stays loud
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<c4d-pricing-table>"
+            "<c4d-pricing-table-head><c4d-pricing-table-header-row>"
+            "<c4d-pricing-table-header-cell>Model Name</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Model Provider</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Pay as you go</c4d-pricing-table-header-cell>"
+            "</c4d-pricing-table-header-row></c4d-pricing-table-head>"
+            "<c4d-pricing-table-body><c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Granite 4H Small</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>IBM</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row></c4d-pricing-table-body>"
+            "</c4d-pricing-table>",
+            "html.parser",
+        ),
+    )
+    with pytest.raises(FetchError, match="malformed pricing row"):
+        scraper.scrape(cfg(), "granite-4h-small")
 
 
 def test_detect_missing_table_raises(monkeypatch):

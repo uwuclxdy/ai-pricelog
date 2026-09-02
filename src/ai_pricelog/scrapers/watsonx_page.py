@@ -5,8 +5,10 @@ rate text: "USD <in> per 1M tokens input USD <out> per 1M tokens output"
 (input then output), or one bare "USD <x>" amount, the watsonx convention
 where a single rate bills both directions (stored input=output=x). amounts
 are USD per 1M tokens -> /1e6. "Not available" and empty cells carry no
-rate -> None. more than two amounts in a matched cell is a page-shape break
-(FetchError), so a silent misread cannot ship.
+rate -> None. more than two amounts in a matched cell, or a short matched
+row, is a page-shape break (FetchError), so a silent misread cannot ship.
+short rows the match scan passes over are additive drift detection already
+reported.
 
 None = the model id is not on the page or its row carries no amount.
 FetchError = the fetch failed, the page has no per-model token table, or a
@@ -34,10 +36,10 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         for cells in _comp_rows(comp):
             if not cells:
                 continue
-            if len(cells) < len(headers):
-                raise FetchError(f"malformed pricing row on {cfg.scraper_url}")
             if _normalize_id(cells[0]) != target:
                 continue
+            if len(cells) < len(headers):
+                raise FetchError(f"malformed pricing row on {cfg.scraper_url}")
             amounts = _AMOUNT_RE.findall(cells[price_col])
             if not amounts:
                 return None
