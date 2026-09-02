@@ -8,20 +8,26 @@ systems, and preview. only rows whose price cell reads "$in input $out
 output" are emitted, zero rates included so a stored model whose row turns
 free stays mapped (the scraper decides); the known unpriced forms
 (ContactSales, per-hour "$0.111 per hour", per-character "$40 per 1M
-characters", "-") are skipped, and any other price cell is a page-shape
-break (FetchError), so a drifted price column cannot read as a missing
-model. the model cell holds a display-name link followed by the api id;
-the link path is authoritative and a badge glued onto the id in any
-casing strips off ("Enterprisellama-3.1-8b-instant" ->
-llama-3.1-8b-instant).
+characters", "-") are skipped. rows outside the table shape, price cells
+outside the known forms, and model cells outside the link/id shape are
+additive drift: detection skips them with a warning (plan #22), and a page
+without a per-token pricing table or per-token model rows still raises.
+the header pins after folding case, whitespace, and &/and, so wording
+drift ("model id", "price per 1m tokens") still matches. the model cell
+holds a display-name link followed by the api id; the link path is
+authoritative and a badge glued onto the id in any casing strips off
+("Enterprisellama-3.1-8b-instant" -> llama-3.1-8b-instant).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text
+from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text, fold_heading
+
+log = logging.getLogger(__name__)
 
 TABLE_HEADER = [
     "MODEL ID",
@@ -39,11 +45,15 @@ _PER_HOUR_RE = re.compile(r"^\$\d+(?:\.\d+)? per hour$")
 _PER_CHAR_RE = re.compile(r"^\$\d+(?:\.\d+)? per 1M characters$")
 _UNPRICED = ("ContactSales", "-", "\\-")
 
+_FOLDED_HEADER = [fold_heading(cell) for cell in TABLE_HEADER]
+
 
 def model_tables(text: str, url: str) -> list[list[list[str]]]:
     """the per-token price tables; a page without one is a shape break."""
     tables = [
-        table for table in extract_markdown_tables(text) if table and table[0] == TABLE_HEADER
+        table
+        for table in extract_markdown_tables(text)
+        if table and [fold_heading(cell) for cell in table[0]] == _FOLDED_HEADER
     ]
     if not tables:
         raise FetchError(f"no per-token pricing table on {url}")
@@ -107,10 +117,14 @@ def detect(cfg: ProviderCfg) -> list[str]:
     seen: set[str] = set()
     for table in model_tables(text, cfg.detector_url):
         for row in table[2:]:
-            check_row(row, cfg.detector_url)
-            if _price_amounts(row[2], cfg.detector_url) is None:
+            try:
+                check_row(row, cfg.detector_url)
+                if _price_amounts(row[2], cfg.detector_url) is None:
+                    continue
+                model_id = parse_id(row[0], cfg.detector_url)
+            except FetchError as exc:
+                log.warning("detect skip for %s: %s", cfg.key, exc)
                 continue
-            model_id = parse_id(row[0], cfg.detector_url)
             if model_id not in seen:
                 seen.add(model_id)
                 ids.append(model_id)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -113,11 +114,51 @@ def test_detect_unpriced_row_without_link_is_skipped(monkeypatch: pytest.MonkeyP
     assert detector.detect(cfg()) == ["openai/gpt-oss-120b"]
 
 
-def test_detect_priced_row_without_link_raises(monkeypatch: pytest.MonkeyPatch):
-    text = table(row("openai/gpt-oss-120b", "$0.15 input$0.60 output"))
+def test_detect_priced_row_without_link_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # a priced row whose model cell carries no link is additive drift: the
+    # run skips it with a warning and keeps the well-shaped rows
+    text = table(
+        row("openai/gpt-oss-120b", "$0.15 input$0.60 output"),
+        row(
+            "[GPT OSS 20B](/docs/model/openai/gpt-oss-20b)openai/gpt-oss-20b",
+            "$0.075 input$0.30 output",
+        ),
+    )
     feed(monkeypatch, text)
-    with pytest.raises(FetchError, match="model cell without a model link"):
-        detector.detect(cfg())
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["openai/gpt-oss-20b"]
+    assert "detect skip for groq" in caplog.text
+    assert "model cell without a model link" in caplog.text
+
+
+def test_detect_odd_row_shape_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # a row outside the seven-cell shape is additive drift: the run skips
+    # it with a warning and keeps the well-shaped rows
+    text = table(
+        "| [Odd](/docs/model/x)x | 500 | $0.15 input$0.60 output |\n",
+        row(
+            "[GPT OSS 20B](/docs/model/openai/gpt-oss-20b)openai/gpt-oss-20b",
+            "$0.075 input$0.30 output",
+        ),
+    )
+    feed(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["openai/gpt-oss-20b"]
+    assert "detect skip for groq" in caplog.text
+    assert "outside the pricing shape" in caplog.text
+
+
+def test_detect_header_wording_drift_still_locates_table(monkeypatch: pytest.MonkeyPatch):
+    # the header pin folds case, whitespace, and &/and: casing drift on the
+    # live page must not read as a missing table
+    text = _TABLE_HEADER.lower() + "".join(
+        row(
+            "[GPT OSS 20B](/docs/model/openai/gpt-oss-20b)openai/gpt-oss-20b",
+            "$0.075 input$0.30 output",
+        )
+    )
+    feed(monkeypatch, text)
+    assert detector.detect(cfg()) == ["openai/gpt-oss-20b"]
 
 
 def test_detect_missing_table_raises(monkeypatch: pytest.MonkeyPatch):
@@ -135,9 +176,9 @@ def test_detect_no_priced_rows_raises(monkeypatch: pytest.MonkeyPatch):
         detector.detect(cfg())
 
 
-def test_detect_unknown_price_cell_raises(monkeypatch: pytest.MonkeyPatch):
-    # a drifted price-cell shape must fail the run, never read as an
-    # unpriced row (two such runs would open a phantom delisting pr)
+def test_detect_unknown_price_cell_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # a drifted price-cell shape is additive drift: the row skips with a
+    # warning naming the cell, and the well-shaped rows still emit
     text = table(
         row(
             "[GPT OSS 120B](/docs/model/openai/gpt-oss-120b)openai/gpt-oss-120b",
@@ -149,8 +190,10 @@ def test_detect_unknown_price_cell_raises(monkeypatch: pytest.MonkeyPatch):
         ),
     )
     feed(monkeypatch, text)
-    with pytest.raises(FetchError, match=r"unreadable price cell '\$0\.15 per 1M input'"):
-        detector.detect(cfg())
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["openai/gpt-oss-20b"]
+    assert "detect skip for groq" in caplog.text
+    assert "unreadable price cell" in caplog.text
 
 
 def test_detect_zero_rate_rows_emitted(monkeypatch: pytest.MonkeyPatch):
@@ -307,6 +350,37 @@ def test_scrape_unreadable_token_count_raises(monkeypatch: pytest.MonkeyPatch):
     feed(monkeypatch, text)
     with pytest.raises(FetchError, match="unreadable token count 'lots'"):
         scraper.scrape(cfg(), "openai/gpt-oss-120b")
+
+
+def test_scrape_matched_row_drifted_price_raises(monkeypatch: pytest.MonkeyPatch):
+    # the matched row's price cell is strict: a drifted shape raises, it
+    # must not read as the model missing
+    text = table(
+        row(
+            "[GPT OSS 120B](/docs/model/openai/gpt-oss-120b)openai/gpt-oss-120b",
+            "$0.15 per 1M input",
+        )
+    )
+    feed(monkeypatch, text)
+    with pytest.raises(FetchError, match="unreadable price cell"):
+        scraper.scrape(cfg(), "openai/gpt-oss-120b")
+
+
+def test_scrape_unrelated_linkless_row_tolerated(monkeypatch: pytest.MonkeyPatch):
+    # a malformed model cell for another model is additive drift detection
+    # already reported; the match scan passes it over instead of raising
+    text = table(
+        row("openai/gpt-oss-120b", "$0.15 input$0.60 output"),
+        row(
+            "[GPT OSS 20B](/docs/model/openai/gpt-oss-20b)openai/gpt-oss-20b",
+            "$0.075 input$0.30 output",
+        ),
+    )
+    feed(monkeypatch, text)
+    pricing = scraper.scrape(cfg(), "openai/gpt-oss-20b")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.075 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.30 / 1e6)
 
 
 def test_scrape_missing_table_raises(monkeypatch: pytest.MonkeyPatch):
