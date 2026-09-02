@@ -10,6 +10,7 @@ rows; the gpu-per-hour table stays out.
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from pathlib import Path
 
@@ -223,31 +224,84 @@ def test_scrape_both_zero_rates_price_zero(monkeypatch: pytest.MonkeyPatch):
     assert pricing.output_cost_per_token == 0.0
 
 
-def test_detect_unknown_input_shape_raises(monkeypatch: pytest.MonkeyPatch):
-    # a drifted input-cell shape must fail the run, never read as an
-    # unpriced row (two such runs would open a phantom delisting pr)
+def test_detect_unknown_input_shape_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # a drifted input-cell shape is additive drift: the row skips with a
+    # warning naming the cell, and the well-shaped rows still emit
+    text = table(
+        row("glm-5.3", "€0.15 per 1M input", "€5.50 / million tokens"),
+        row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens"),
+    )
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert "detect skip for scaleway" in caplog.text
+    assert "unreadable input price cell" in caplog.text
+
+
+def test_detect_unknown_output_shape_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    text = table(
+        row("glm-5.3", "€1.80 / million tokens", "€5.50 per 1M output"),
+        row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens"),
+    )
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert "detect skip for scaleway" in caplog.text
+    assert "unreadable output price cell" in caplog.text
+
+
+def test_detect_id_link_mismatch_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # a Try-link disagreement is additive drift: the row skips with a
+    # warning and the well-shaped rows still emit
+    text = table(
+        row("glm-5.3", "€1.80 / million tokens", "€5.50 / million tokens"),
+        row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens"),
+    ).replace("modelName=glm-5.3", "modelName=glm-5.2")
+    serve(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert "detect skip for scaleway" in caplog.text
+    assert "modelName disagrees" in caplog.text
+
+
+def test_detect_header_wording_drift_still_locates_table(monkeypatch: pytest.MonkeyPatch):
+    # the header pins fold case and whitespace: wording drift must not read
+    # as a missing table
+    drifted = (
+        "<tr><th><button><span>name</span></button></th>"
+        "<th><button><span> TASKS </span></button></th>"
+        "<th><button><span>Input  Tokens</span></button></th>"
+        "<th><button><span>output tokens</span></button></th>"
+        "<th></th></tr>"
+    )
+    text = table(row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens")).replace(
+        _TABLE_HEADER, drifted
+    )
+    serve(monkeypatch, text)
+    assert detector.detect(make_cfg()) == ["glm-5.2"]
+
+
+def test_scrape_unrelated_id_mismatch_tolerated(monkeypatch: pytest.MonkeyPatch):
+    # a Try-link disagreement on another model's row is additive drift
+    # detection already reported; the match scan passes it over
+    text = table(
+        row("glm-5.3", "€1.80 / million tokens", "€5.50 / million tokens"),
+        row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens"),
+    ).replace("modelName=glm-5.3", "modelName=glm-5.2")
+    serve(monkeypatch, text)
+    pricing = scraper.scrape(make_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.80 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(5.50 / 1e6)
+
+
+def test_scrape_matched_row_unknown_input_shape_raises(monkeypatch: pytest.MonkeyPatch):
+    # the matched row's cells are strict: a drifted input shape raises, it
+    # must not read as the model missing
     text = table(row("glm-5.2", "€0.15 per 1M input", "€5.50 / million tokens"))
     serve(monkeypatch, text)
     with pytest.raises(FetchError, match="unreadable input price cell"):
-        detector.detect(make_cfg())
-
-
-def test_detect_unknown_output_shape_raises(monkeypatch: pytest.MonkeyPatch):
-    text = table(row("glm-5.2", "€1.80 / million tokens", "€5.50 per 1M output"))
-    serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="unreadable output price cell"):
-        detector.detect(make_cfg())
-
-
-def test_detect_id_link_mismatch_raises(monkeypatch: pytest.MonkeyPatch):
-    # the Name cell and the Try link's modelName are two id sources and
-    # must agree; a mismatch is a page-shape break
-    text = table(row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens")).replace(
-        "modelName=glm-5.2", "modelName=glm-5.3"
-    )
-    serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="modelName"):
-        detector.detect(make_cfg())
+        scraper.scrape(make_cfg(), "glm-5.2")
 
 
 def test_detect_missing_table_raises(monkeypatch: pytest.MonkeyPatch):

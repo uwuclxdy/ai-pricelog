@@ -5,28 +5,37 @@ server-rendered html). the per-token table is the one captioned "Generative
 API" (sr-only); the gpu-per-hour table is out of scope. a row's model id is
 the Name cell's plain-text slug; the Try link's modelName query is a
 second id source that must agree when the row carries one (a row without
-a link falls back to the Name cell alone).
+a link falls back to the Name cell alone). the header pins after folding
+case, whitespace, and &/and, so wording drift ("name", "input tokens")
+still matches; a drifted header counts as a missing table.
 the input cell reads "€X / million tokens", optionally with a cached rate
 ("... €Y / million tokens cached"); the output cell reads the same shape
 or "Free" (a zero rate, the embedding convention). rows priced per audio
-minute (whisper) are known unpriced and skipped, and any other price-cell
-shape is a page-shape break (FetchError), so a drifted price column cannot
-read as a missing model. zero-rate rows stay emitted (the scraper decides);
-dated slug spellings dedup to their base id in the scraper's dedup_keys.
+minute (whisper) are known unpriced and skipped. a Try-link disagreement,
+an out-of-charset name, a row outside the five-cell shape, and a price
+cell outside the known shapes are additive drift: detection skips the row
+with a warning (plan #22), and a page whose generative-api table or
+per-token model rows are gone still raises. zero-rate rows stay emitted
+(the scraper decides); dated slug spellings dedup to their base id in the
+scraper's dedup_keys.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 from functools import cache
 
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+
+log = logging.getLogger(__name__)
 
 _TABLE_CAPTION = "Generative API"
 _HEADER_PREFIXES = ("Name", "Tasks", "Input tokens", "Output tokens")
+_FOLDED_PREFIXES = tuple(fold_heading(prefix) for prefix in _HEADER_PREFIXES)
 _ID_CHARSET_RE = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _MODEL_NAME_RE = re.compile(r"[?&]modelName=([^&]+)")
 _RATE_RE = re.compile(r"^€(\d+(?:\.\d+)?) / million tokens$")
@@ -54,8 +63,8 @@ def _model_table(soup: BeautifulSoup, url: str) -> Tag:
                 raise FetchError(f"pricing table outside the row shape on {url}")
             header_cells = header.find_all("th")
             if len(header_cells) != 5 or not all(
-                cell.get_text(" ", strip=True).startswith(prefix)
-                for cell, prefix in zip(header_cells[:4], _HEADER_PREFIXES, strict=True)
+                fold_heading(cell.get_text(" ", strip=True)).startswith(prefix)
+                for cell, prefix in zip(header_cells[:4], _FOLDED_PREFIXES, strict=True)
             ):
                 raise FetchError(f"pricing table headers drifted on {url}")
             return table
@@ -123,11 +132,15 @@ def detect(cfg: ProviderCfg) -> list[str]:
     ids: list[str] = []
     seen: set[str] = set()
     for row in table.find("tbody").find_all("tr", recursive=False):
-        cells = _row_cells(row, cfg.detector_url)
-        if _input_amounts(cells[2], cfg.detector_url) is None:
+        try:
+            cells = _row_cells(row, cfg.detector_url)
+            if _input_amounts(cells[2], cfg.detector_url) is None:
+                continue
+            _output_amount(cells[3], cfg.detector_url)
+            model_id = parse_id(cells[0], cells[4], cfg.detector_url)
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", cfg.key, exc)
             continue
-        _output_amount(cells[3], cfg.detector_url)
-        model_id = parse_id(cells[0], cells[4], cfg.detector_url)
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)

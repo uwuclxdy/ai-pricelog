@@ -5,32 +5,35 @@ read "€X / million tokens" in EUR, so each amount divides by 1e6 and
 Pricing quotes currency="EUR" (store.build_row converts through the dated
 fx table). an input cell carrying a cached amount parses into
 cache_read_cost_per_token; "Free" cells are zero rates. rows priced per
-audio minute are known unpriced and scrape as None, and a cell outside the
-known shapes reads as an unpriced row here (the detector gates the run
-loudly instead). the page carries no context/max-tokens column and no peak
-tier, so those fields stay unset. mode is chat.
+audio minute are known unpriced and scrape as None. the matched row's
+cells are strict: a cell outside the known shapes raises (plan #22),
+never reads as unpriced, so a drifted price column cannot read as a
+missing model. rows the match scan passes over (odd cell counts, id
+disagreements) are additive drift detection already reported. the page
+carries no context/max-tokens column and no peak tier, so those fields
+stay unset. mode is chat.
 
 None = the model id is not on the page, or its row carries no per-token
 rate. zero rates scrape as 0.0 (free is a price), so a fully free row
 lands a 0.0 price row; the detector still emits the id, so a stored model
 whose row turns free stays mapped. FetchError = the fetch failed, the page
-has no generative-api table, a row is outside the row shape, or the row's
-id sources disagree.
+has no generative-api table, or the matched row's cells are outside the
+known shapes.
 """
 
 from __future__ import annotations
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.scaleway_page import (
-    _CACHED_RE,
-    _FREE,
-    _RATE_RE,
+    _input_amounts,
     _model_table,
+    _output_amount,
     _page,
     _row_cells,
     parse_id,
 )
 from ai_pricelog.pricing import Pricing
+from ai_pricelog.web import FetchError
 
 # dated slug spellings map to the base id the store holds (the xai
 # convention): openrouter carries deepseek/deepseek-v4-flash as a base id,
@@ -57,25 +60,17 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = _page(cfg.scraper_url)
     table = _model_table(soup, cfg.scraper_url)
     for row in table.find("tbody").find_all("tr", recursive=False):
-        cells = _row_cells(row, cfg.scraper_url)
-        input_text = cells[2].get_text(" ", strip=True)
-        if (match := _CACHED_RE.fullmatch(input_text)) is not None:
-            input_rate, cache_rate = float(match.group(1)), float(match.group(2))
-        elif (match := _RATE_RE.fullmatch(input_text)) is not None:
-            input_rate, cache_rate = float(match.group(1)), None
-        elif input_text == _FREE:
-            input_rate, cache_rate = 0.0, None
-        else:
-            continue  # per audio minute, or a shape the detector gates on
-        output_text = cells[3].get_text(" ", strip=True)
-        if (match := _RATE_RE.fullmatch(output_text)) is not None:
-            output_rate = float(match.group(1))
-        elif output_text == _FREE:
-            output_rate = 0.0
-        else:
-            continue
-        if parse_id(cells[0], cells[4], cfg.scraper_url) != model_id:
-            continue
+        try:
+            cells = _row_cells(row, cfg.scraper_url)
+            if parse_id(cells[0], cells[4], cfg.scraper_url) != model_id:
+                continue
+        except FetchError:
+            continue  # additive drift; detect already reported the row
+        amounts = _input_amounts(cells[2], cfg.scraper_url)
+        if amounts is None:
+            return None  # per audio minute, a known unpriced form
+        input_rate, cache_rate = amounts
+        output_rate = _output_amount(cells[3], cfg.scraper_url)
         return Pricing(
             input_cost_per_token=input_rate / 1e6,
             output_cost_per_token=output_rate / 1e6,
