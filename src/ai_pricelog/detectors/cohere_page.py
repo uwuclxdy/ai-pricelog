@@ -34,17 +34,24 @@ the Aya research-model faq answer (not a "pricing is" sentence) is out
 of scope.
 
 ids come back in page order: model cards, model vault rows, then faq
-prose. a page with none of the shapes is a parse failure (FetchError).
+prose. a card without a modelName, a card whose pricings carry no input
+rate, and a vault row outside the four-cell shape are additive drift:
+detection skips them with a warning (plan #22), and the vault header pins
+after folding case, whitespace, and &/and. a page with none of the shapes
+is a parse failure (FetchError).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from functools import cache
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+
+log = logging.getLogger(__name__)
 
 _CARD_MARKER = '\\"_type\\":\\"model\\"'
 _CARD_NAME_RE = re.compile(r'\\"modelName\\":\\"([^"\\]+)\\"')
@@ -58,6 +65,7 @@ _TABLE_HEADER = [
     "Hourly rate per instance",
     "Monthly rate per instance",
 ]
+_FOLDED_TABLE_HEADER = tuple(fold_heading(cell) for cell in _TABLE_HEADER)
 _PROSE_RE = re.compile(
     r"^(?P<name>.+?) pricing is \$(?P<input>\d+(?:\.\d+)?)/1M tokens for input"
     r" and \$(?P<output>\d+(?:\.\d+)?)/1M tokens for output$"
@@ -132,7 +140,7 @@ def _card_model(segment: str, url: str) -> _Model | None:
     return _Model(model_id, input_cost / 1e6, per_token_output / 1e6)
 
 
-def _model_cards(soup, url: str) -> list[_Model]:
+def _model_cards(soup, url: str, key: str) -> list[_Model]:
     """model cards with per-token rates from the flight state, page order."""
     cards: list[_Model] = []
     for script in soup.find_all("script"):
@@ -140,17 +148,25 @@ def _model_cards(soup, url: str) -> list[_Model]:
         if not text or "__next_f" not in text or _CARD_MARKER not in text:
             continue
         for segment in text.split(_CARD_MARKER)[1:]:
-            card = _card_model(segment, url)
+            try:
+                card = _card_model(segment, url)
+            except FetchError as exc:
+                log.warning("detect skip for %s: %s", key, exc)
+                continue
             if card is not None:
                 cards.append(card)
     return cards
 
 
-def _model_vault_rows(soup, url: str) -> list[_Model]:
+def _model_vault_rows(soup, url: str, key: str) -> list[_Model]:
     """model vault rows as id-only models; their rates are per instance."""
     grids = [div for div in soup.find_all("div") if _GRID_MARKER in " ".join(div.get("class", []))]
     header_at = next(
-        (index for index, div in enumerate(grids) if _grid_cells(div) == _TABLE_HEADER),
+        (
+            index
+            for index, div in enumerate(grids)
+            if tuple(fold_heading(cell) for cell in _grid_cells(div)) == _FOLDED_TABLE_HEADER
+        ),
         None,
     )
     if header_at is None:
@@ -158,10 +174,14 @@ def _model_vault_rows(soup, url: str) -> list[_Model]:
     rows: list[_Model] = []
     for div in grids[header_at + 1 :]:
         cells = _grid_cells(div)
-        if len(cells) != 4:
-            raise FetchError(f"malformed model vault row on {url}: {cells!r}")
-        if _dollars(cells[2]) is None or _dollars(cells[3]) is None:
-            break  # past the rate rows: later 4-column grids are other sections
+        try:
+            if len(cells) != 4:
+                raise FetchError(f"malformed model vault row on {url}: {cells!r}")
+            if _dollars(cells[2]) is None or _dollars(cells[3]) is None:
+                break  # past the rate rows: later 4-column grids are other sections
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", key, exc)
+            continue
         model_id = _slug(f"{cells[0]} {cells[1]}")
         if _ID_PATTERN.fullmatch(model_id):
             rows.append(_Model(model_id, None, None))
@@ -191,15 +211,18 @@ def _prose_models(soup) -> list[_Model]:
 
 
 @cache
-def _page(url: str) -> tuple[_Model, ...]:
+def _page(url: str, key: str) -> tuple[_Model, ...]:
     """fetch and parse all three rate shapes; cached per url so the scraper reuses this parse."""
     soup = fetch_soup(url)
-    return tuple(_model_cards(soup, url) + _model_vault_rows(soup, url) + _prose_models(soup))
+    cards = _model_cards(soup, url, key)
+    vault = _model_vault_rows(soup, url, key)
+    prose = _prose_models(soup)
+    return tuple(cards + vault + prose)
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
     """current model ids on the page, model cards then vault rows then faq prose."""
-    models = _page(cfg.detector_url)
+    models = _page(cfg.detector_url, cfg.key)
     if not models:
         raise FetchError(f"no priced models found on {cfg.detector_url}")
     ids: list[str] = []

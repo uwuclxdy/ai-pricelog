@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -189,27 +190,63 @@ def test_detect_all_cards_unpriced_raises(monkeypatch):
         cohere_page.detect(make_cfg())
 
 
-def test_detect_raises_on_malformed_card(monkeypatch):
+def test_detect_malformed_card_skips(monkeypatch, caplog):
+    # a card without a modelName is additive drift: skipped with a
+    # warning, the other cards still seed
     serve_html(
         monkeypatch,
         '<script>self.__next_f.push([1,"'
-        r"{\"_type\":\"model\",\"highlightModel\":false}"
+        r"{\"_type\":\"pricingGroup\",\"models\":["
+        r"{\"_key\":\"a\",\"_type\":\"model\",\"highlightModel\":false},"
+        r"{\"_key\":\"b\",\"_type\":\"model\",\"modelName\":\"Command R\",\"per\":\"1M tokens\","
+        r"\"pricings\":[{\"_key\":\"p\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+        r"\"inputPrice\":0.15,\"outputLabel\":\"Output\",\"outputPrice\":0.6}]}"
+        r'"]}'
         '"]);</script>',
     )
-    with pytest.raises(web.FetchError, match="malformed model card"):
-        cohere_page.detect(make_cfg())
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["command-r"]
+    assert "detect skip for cohere" in caplog.text
+    assert "malformed model card" in caplog.text
 
 
-def test_detect_raises_on_malformed_card_pricings(monkeypatch):
+def test_detect_malformed_card_pricings_skips(monkeypatch, caplog):
+    # a card whose pricings carry no input rate is additive drift: skipped
+    # with a warning, the other cards still seed
     serve_html(
         monkeypatch,
         '<script>self.__next_f.push([1,"'
-        r"{\"_type\":\"model\",\"modelName\":\"Command R\","
-        r"\"pricings\":[{\"_type\":\"pricing\",\"outputLabel\":\"Output\",\"outputPrice\":0.6}]}"
+        r"{\"_type\":\"pricingGroup\",\"models\":["
+        r"{\"_key\":\"a\",\"_type\":\"model\",\"modelName\":\"Command R\","
+        r"\"pricings\":[{\"_type\":\"pricing\",\"outputLabel\":\"Output\",\"outputPrice\":0.6}]},"
+        r"{\"_key\":\"b\",\"_type\":\"model\",\"modelName\":\"Command R7B\",\"per\":\"1M tokens\","
+        r"\"pricings\":[{\"_key\":\"p\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+        r"\"inputPrice\":0.0375,\"outputLabel\":\"Output\",\"outputPrice\":0.15}]}"
+        r'"]}'
         '"]);</script>',
     )
-    with pytest.raises(web.FetchError, match="malformed pricings"):
-        cohere_page.detect(make_cfg())
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["command-r7b"]
+    assert "detect skip for cohere" in caplog.text
+    assert "malformed pricings" in caplog.text
+
+
+def test_scrape_unrelated_malformed_card_does_not_block(monkeypatch):
+    # a malformed card the scan passes over is additive drift detect
+    # reported; the chosen model still scrapes
+    serve_html(
+        monkeypatch,
+        '<script>self.__next_f.push([1,"'
+        r"{\"_type\":\"pricingGroup\",\"models\":["
+        r"{\"_key\":\"a\",\"_type\":\"model\",\"highlightModel\":false},"
+        r"{\"_key\":\"b\",\"_type\":\"model\",\"modelName\":\"Command R\",\"per\":\"1M tokens\","
+        r"\"pricings\":[{\"_key\":\"p\",\"_type\":\"pricing\",\"inputLabel\":\"Input\","
+        r"\"inputPrice\":0.15,\"outputLabel\":\"Output\",\"outputPrice\":0.6}]}"
+        r'"]}'
+        '"]);</script>',
+    )
+    pricing = cohere_scraper.scrape(make_cfg(), "command-r")
+    assert pricing == Pricing(0.15 / 1e6, 0.6 / 1e6, "chat")
 
 
 def test_scrape_prose_model_command(live_page):
@@ -293,23 +330,53 @@ def test_detect_skips_malformed_prose(monkeypatch):
     assert cohere_page.detect(make_cfg()) == ["command"]
 
 
-def test_detect_raises_on_malformed_table_row(monkeypatch):
+def test_detect_malformed_table_row_skips(monkeypatch, caplog):
+    # a vault row outside the four-cell shape is additive drift: skipped
+    # with a warning, later rows still seed
     serve_html(
         monkeypatch,
-        '<div class="grid [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
         "<div><p>Model</p></div>"
         "<div><p>Performance Tier</p></div>"
         "<div><p>Hourly rate per instance</p></div>"
         "<div><p>Monthly rate per instance</p></div>"
         "</div>"
-        '<div class="grid [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
         "<div><p>Embed 4</p></div>"
         "<div><p>Small</p></div>"
         "<div><p>$4.00</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Rerank 4 Pro</strong></p></div>"
+        "<div><p>Large</p></div>"
+        "<div><p>$10.00</p></div>"
+        "<div><p>$6,500</p></div>"
         "</div>",
     )
-    with pytest.raises(web.FetchError, match="malformed model vault row"):
-        cohere_page.detect(make_cfg())
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["rerank-4-pro-large"]
+    assert "detect skip for cohere" in caplog.text
+    assert "malformed model vault row" in caplog.text
+
+
+def test_detect_folded_vault_header_matches(monkeypatch):
+    # header wording drift (case) still matches after folding
+    serve_html(
+        monkeypatch,
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p>model</p></div>"
+        "<div><p>performance tier</p></div>"
+        "<div><p>HOURLY rate per instance</p></div>"
+        "<div><p>Monthly rate per instance</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Rerank 4 Pro</strong></p></div>"
+        "<div><p>Large</p></div>"
+        "<div><p>$10.00</p></div>"
+        "<div><p>$6,500</p></div>"
+        "</div>",
+    )
+    assert cohere_page.detect(make_cfg()) == ["rerank-4-pro-large"]
 
 
 def test_detect_raises_when_no_pricing_content(monkeypatch):

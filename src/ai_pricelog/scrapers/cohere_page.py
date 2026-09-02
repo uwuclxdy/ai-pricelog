@@ -18,8 +18,9 @@ fields stay 0. mode is chat; cohere lists no cache-read rates, so
 cache_read_cost_per_token stays None, and there are no peak fields.
 
 None = the model id is not on the page, or the page has no per-token
-rate for it (model vault rows). FetchError = the fetch failed or the
-page carries no pricing content at all.
+rate for it (model vault rows, and cards the shared parse skipped as
+malformed: additive drift detection already reported). FetchError = the
+fetch failed or the page carries no pricing content at all.
 
 the faq's dated release spellings are the stored ids themselves (the
 store re-keyed onto them 2026-08-30), so page ids map straight to their
@@ -36,7 +37,7 @@ from ai_pricelog.web import FetchError
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     """Pricing for model_id, or None when the page has no usable rates for it."""
-    models = _page(cfg.scraper_url)
+    models = _page(cfg.scraper_url, cfg.key)
     if not models:
         raise FetchError(f"no priced models found on {cfg.scraper_url}")
     for model in models:
