@@ -53,7 +53,10 @@ jobs:
           export ANTHROPIC_API_KEY
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
           [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
-          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md
+          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "Bash(uv run *)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          if rg -q "401 Authentication Fails|unrecognized_model" /tmp/pass.log; then
+            echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
+          fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}

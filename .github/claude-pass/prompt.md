@@ -1,6 +1,6 @@
-# claude pass: review this watchdog run
+# claude pass: review and merge this watchdog run's draft PRs
 
-you review the draft PRs this run opened, on this repo. the run log below lists them as `opened pr for <source>: <url>`. each pr carries one source's new rows from this run, price rows and `removed: true` rows mixed in one pr. work the list top to bottom.
+you review the draft PRs this run opened, on this repo, then merge the ones you verified. the run log below lists them as `opened pr for <source>: <url>`. each pr carries one source's new rows from this run, price rows and `removed: true` rows mixed in one pr. work the list top to bottom.
 
 ## your job
 
@@ -10,7 +10,17 @@ you review the draft PRs this run opened, on this repo. the run log below lists 
 a branch carries the landed store plus rows from still-open PR branches plus its own rows (the union keeps sibling PRs from rewriting the same files); only the rows the PR body's table names are this PR's own new rows. judge those against their source pages, and never treat carried rows or the global artifacts (`data/index.json`, `data/absence.json`, `data/announce.json`, the README stats) as scope noise: `data/announce.json` settles the run's channel changes and the others regenerate from the union at merge.
 3. for the announce diff: the log lists channel changes as `announce change: <provider> <url> <old sha8> -> <new sha8>`. for each changed channel, diff `origin/mommy..<branch>` on `data/announce.json` and answer the rubric question.
 4. post findings as PR comments: one comment per PR, findings plus your verdict. comment only on PRs this run opened.
-5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. never push to mommy.
+5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. pushes happen only through the merge job below.
+
+## merge job
+
+after every PR the run opened is judged, read `.github/claude-pass/automerge.md` and follow it. it owns the disposition table, the flip-flop rule, the always-human list, the billing-rule write shape, and the merge mechanics. the summary:
+
+- classify each PR: merge-eligible (verified, flip-flop, confirmed deprecation/retirement) or needs human (seed PRs, code PRs, promo/tier/free-tier rule changes, bot-blocked pages, anything unverified)
+- post the `needs human` comment on every excluded PR
+- a confirmed deprecation/retirement: write the `data/billing-rules.json` entry on that PR branch, bump the `len(rules) == N` pin in `tests/test_billing_rules.py` in the same commit, then treat the PR as merge-eligible
+- merge the eligible set with `uv run ai-pricelog-automerge <branch>...`, oldest PR first, newest last. the script refuses the seed branch, code PRs, and anything outside the pipeline file set, so pass it only what you judged
+- if the script fails: do not retry it; report the error in your final message, leave every PR open, delete nothing
 
 ## row schema
 
@@ -86,10 +96,10 @@ for each changed announce channel, answer: does this change billing semantics (r
 
 ## output contract
 
-- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`).
+- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`). a merged PR's comment states the merge; a `needs human` comment follows the shape in `automerge.md`.
 - no PR comments when you find nothing: say so in your final message only.
-- never comment on PRs the run did not open. never push to mommy. never delete branches.
-- your final message summarizes findings per PR; the PR comments are the durable record.
+- never comment on PRs the run did not open. the only pushes to the default branch and the only branch-ref deletions are the ones `ai-pricelog-automerge` performs; never do either by hand.
+- your final message summarizes per PR: findings, the verdict, and what the merge did (merged / needs human / failed with the script's error); the PR comments are the durable record.
 
 ### scaleway + databricks (added 2026-08-29, todo #17)
 

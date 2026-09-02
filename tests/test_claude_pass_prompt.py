@@ -59,3 +59,11 @@ def test_row_schema_carries_the_current_vocabulary() -> None:
         "zero price is a price",
     ):
         assert term in schema, f"row schema section lost {term!r}; update it"
+
+
+def test_prompt_names_the_automerge_surface() -> None:
+    # the merge job runs the automerge script under the manual's rules; a
+    # rename of either breaks the pass cold
+    text = PROMPT.read_text()
+    assert "ai-pricelog-automerge" in text
+    assert ".github/claude-pass/automerge.md" in text
