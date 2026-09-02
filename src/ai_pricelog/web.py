@@ -13,7 +13,7 @@ class FetchError(Exception):
     """a fetch failed after retries; the message names the url."""
 
 
-def fetch_text(url: str) -> str:
+def fetch_text(url: str, headers: dict[str, str] | None = None) -> str:
     if urllib.parse.urlparse(url).scheme not in ("http", "https"):
         raise ValueError(f"url scheme must be http or https: {url!r}")
     try:
@@ -21,6 +21,7 @@ def fetch_text(url: str) -> str:
             transport=httpx.HTTPTransport(retries=3),
             timeout=30.0,
             follow_redirects=True,
+            headers=headers,
         ) as client:
             response = client.get(url)
             response.raise_for_status()
@@ -29,8 +30,13 @@ def fetch_text(url: str) -> str:
         raise FetchError(f"fetch failed for {url}: {exc}") from exc
 
 
-def fetch_soup(url: str) -> BeautifulSoup:
-    return BeautifulSoup(fetch_text(url), "html.parser")
+def fetch_soup(url: str, headers: dict[str, str] | None = None) -> BeautifulSoup:
+    return BeautifulSoup(fetch_text(url, headers), "html.parser")
+
+
+def fold_heading(text: str) -> str:
+    """fold case, whitespace, and &/and for pinned-header comparison."""
+    return " ".join(text.casefold().replace("&", " and ").split())
 
 
 def extract_markdown_tables(text: str) -> list[list[list[str]]]:
