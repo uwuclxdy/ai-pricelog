@@ -2011,3 +2011,7 @@
 {"source":"openrouter","model_id":"openai/o3-mini:batch","observed_at":"2026-08-31","name":"o3 Mini (batch)","input_mtok":0.55,"output_mtok":2.2,"cache_read_mtok":0.275,"web_search_usd":0.01,"max_tokens_in":200000}
 {"source":"novita","model_id":"mindai/macaron-v1-venti","observed_at":"2026-09-01","input_mtok":0.825,"output_mtok":2.4475,"cache_read_mtok":0.165,"max_tokens_in":1048576,"url":"https://novita.ai/pricing"}
 {"source":"novita","model_id":"mindai/macaron-v1-tall","observed_at":"2026-09-01","input_mtok":0.2475,"output_mtok":1.43,"cache_read_mtok":0.044,"max_tokens_in":262144,"url":"https://novita.ai/pricing"}
+{"source":"openrouter","model_id":"qwen/qwen3-235b-a22b-2507","observed_at":"2026-09-01","name":"Qwen3 235B A22B Instruct 2507","input_mtok":0.09,"output_mtok":0.55,"max_tokens_in":262144}
+{"source":"openrouter","model_id":"anthracite-org/magnum-v4-72b","observed_at":"2026-09-01","name":"Magnum v4 72B","input_mtok":2.5,"output_mtok":5.0,"max_tokens_in":32768}
+{"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-09-01","name":"Weaver (alpha)","input_mtok":0.4,"output_mtok":0.75,"max_tokens_in":8000}
+{"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-09-01","name":"MythoMax 13B","input_mtok":0.35,"output_mtok":0.6,"max_tokens_in":8192}
