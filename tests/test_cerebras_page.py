@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -101,3 +102,51 @@ def test_detect_non_object_root_raises(monkeypatch: pytest.MonkeyPatch):
     feed(monkeypatch, "[1, 2]")
     with pytest.raises(FetchError, match="root"):
         detector.detect(cfg())
+
+
+def test_detect_entry_without_id_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    # an entry without an id string is additive drift: detection skips it
+    # with a warning and keeps the well-shaped entries
+    payload = (
+        '{"data": [{"pricing": {}}, {"id": "x", "pricing": {"prompt": "1", "completion": "2"}}]}'
+    )
+    feed(monkeypatch, payload)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["x"]
+    assert "detect skip for cerebras" in caplog.text
+    assert "without an id string" in caplog.text
+
+
+def test_detect_non_object_pricing_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
+    payload = (
+        '{"data": [{"id": "a", "pricing": "0.000001"}, '
+        '{"id": "x", "pricing": {"prompt": "1", "completion": "2"}}]}'
+    )
+    feed(monkeypatch, payload)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["x"]
+    assert "detect skip for cerebras" in caplog.text
+    assert "pricing must be an object" in caplog.text
+
+
+def test_detect_all_entries_skipped_raises(monkeypatch: pytest.MonkeyPatch):
+    # structural: a data list whose entries are all additive drift leaves
+    # no ids and still raises
+    feed(monkeypatch, '{"data": [{"pricing": {}}]}')
+    with pytest.raises(FetchError, match="no model entries"):
+        detector.detect(cfg())
+
+
+def test_scrape_unrelated_odd_entries_tolerated(monkeypatch: pytest.MonkeyPatch):
+    # entries without an id string or with a non-object pricing are
+    # additive drift detection already reported; the match scan passes
+    # them over instead of raising
+    payload = (
+        '{"data": [{"pricing": {}}, {"id": "a", "pricing": "0.000001"}, '
+        '{"id": "x", "pricing": {"prompt": "0.0000001", "completion": "0.0000002"}}]}'
+    )
+    feed(monkeypatch, payload)
+    pricing = scraper.scrape(cfg(), "x")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.0000001)
+    assert pricing.output_cost_per_token == pytest.approx(0.0000002)
