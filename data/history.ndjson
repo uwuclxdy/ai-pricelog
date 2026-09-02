@@ -2059,3 +2059,4 @@
 {"source":"novita","model_id":"kwaipilot/kat-coder-pro","observed_at":"2026-09-02","removed":true,"input_mtok":0.3,"output_mtok":1.2,"cache_read_mtok":0.06,"max_tokens_in":256000}
 {"source":"novita","model_id":"xiaomimimo/mimo-v2.5","observed_at":"2026-09-02","removed":true,"input_mtok":0.168,"output_mtok":0.336,"cache_read_mtok":0.0034,"max_tokens_in":1048576}
 {"source":"novita","model_id":"xiaomimimo/mimo-v2.5-pro","observed_at":"2026-09-02","removed":true,"input_mtok":0.522,"output_mtok":1.044,"cache_read_mtok":0.0043,"max_tokens_in":1048576}
+{"source":"deepinfra","model_id":"kimi-k2.5","observed_at":"2026-09-02","removed":true,"input_mtok":0.45,"output_mtok":2.25,"cache_read_mtok":0.07,"max_tokens_in":262144}
