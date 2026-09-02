@@ -2044,3 +2044,10 @@
 {"source":"openrouter","model_id":"anthropic/claude-opus-4.8-fast","observed_at":"2026-09-02","removed":true,"input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":1.0,"cache_write_mtok":12.5,"cache_write_1h_mtok":20.0,"web_search_usd":0.01,"max_tokens_in":1000000}
 {"source":"openrouter","model_id":"anthropic/claude-opus-5-fast","observed_at":"2026-09-02","removed":true,"input_mtok":10.0,"output_mtok":50.0,"cache_read_mtok":1.0,"cache_write_mtok":12.5,"cache_write_1h_mtok":20.0,"web_search_usd":0.01,"max_tokens_in":1000000}
 {"source":"openrouter","model_id":"kwaipilot/kat-coder-air-v2.5","observed_at":"2026-09-02","removed":true,"input_mtok":0.15,"output_mtok":0.6,"cache_read_mtok":0.03,"max_tokens_in":256000}
+{"source":"moonshot","model_id":"kimi-k2.5","observed_at":"2026-09-02","removed":true,"input_mtok":0.6,"output_mtok":3.0,"cache_read_mtok":0.1,"max_tokens_in":262144}
+{"source":"moonshot","model_id":"moonshot-v1-128k","observed_at":"2026-09-02","removed":true,"input_mtok":2.0,"output_mtok":5.0,"max_tokens_in":131072}
+{"source":"moonshot","model_id":"moonshot-v1-128k-vision-preview","observed_at":"2026-09-02","removed":true,"input_mtok":2.0,"output_mtok":5.0,"max_tokens_in":131072}
+{"source":"moonshot","model_id":"moonshot-v1-32k","observed_at":"2026-09-02","removed":true,"input_mtok":1.0,"output_mtok":3.0,"max_tokens_in":32768}
+{"source":"moonshot","model_id":"moonshot-v1-32k-vision-preview","observed_at":"2026-09-02","removed":true,"input_mtok":1.0,"output_mtok":3.0,"max_tokens_in":32768}
+{"source":"moonshot","model_id":"moonshot-v1-8k","observed_at":"2026-09-02","removed":true,"input_mtok":0.2,"output_mtok":2.0,"max_tokens_in":8192}
+{"source":"moonshot","model_id":"moonshot-v1-8k-vision-preview","observed_at":"2026-09-02","removed":true,"input_mtok":0.2,"output_mtok":2.0,"max_tokens_in":8192}
