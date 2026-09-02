@@ -5,11 +5,14 @@ rows come from the standard tier island (see the detector for the shape):
 input, cached read, cache write (the default 5m tier on five-column rows)
 and output parse into Pricing. "null" and "-" cells mean the model has no
 such rate. max_tokens stays unset: the rows carry no context column (the
-page prints context as a name annotation, not a field).
+page prints context as a name annotation, not a field). rows the match
+scan passes over (odd shapes, unreadable names) are additive drift
+detection already reported; the matched row's cells are strict, so an
+unreadable rate raises (plan #22) and never reads as unpriced.
 
 None = the model id is not on the page, or its row carries no input or
 output rate. FetchError = the fetch failed, the page has no standard
-pricing table, or a cell carries an unreadable rate.
+pricing table, or the matched row carries an unreadable rate.
 """
 
 from __future__ import annotations
@@ -32,8 +35,11 @@ def _rate(value, model_id: str, url: str) -> float | None:
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = fetch_soup(cfg.scraper_url)
     for row in _standard_rows(soup, cfg.scraper_url):
-        if _row_id(row, cfg.scraper_url) != model_id:
-            continue
+        try:
+            if _row_id(row, cfg.scraper_url) != model_id:
+                continue
+        except FetchError:
+            continue  # additive drift; detect already reported the row
         input_cost = _rate(row[1], model_id, cfg.scraper_url)
         cache_read = _rate(row[2], model_id, cfg.scraper_url)
         cache_write = _rate(row[3], model_id, cfg.scraper_url) if len(row) == 5 else None

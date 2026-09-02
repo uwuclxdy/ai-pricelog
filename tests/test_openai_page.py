@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -150,11 +151,57 @@ def test_detect_missing_standard_island_raises(monkeypatch):
         detector.detect(cfg())
 
 
-def test_detect_malformed_row_raises(monkeypatch):
+def test_detect_malformed_row_skips_with_warning(monkeypatch, caplog):
+    # a row outside the pricing shape is additive drift: the run skips it
+    # with a warning and keeps the well-shaped rows
     monkeypatch.setattr(
         detector,
         "fetch_soup",
-        lambda url: island_soup("standard", [["gpt-5.6-sol", 4, 0.4]]),
+        lambda url: island_soup("standard", [["gpt-5.6-sol", 4, 0.4], ["gpt-4o", 2.5, 1.25, 10]]),
     )
-    with pytest.raises(FetchError, match="outside the pricing shape"):
-        detector.detect(cfg())
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["gpt-4o"]
+    assert "detect skip for openai" in caplog.text
+    assert "outside the pricing shape" in caplog.text
+
+
+def test_detect_name_outside_id_shape_skips_with_warning(monkeypatch, caplog):
+    # a model name outside the id shape is additive drift and skips with a
+    # warning; the well-shaped rows still emit
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: island_soup(
+            "standard", [["GPT 5.6 SOL!", 4, 0.4, 5, 20], ["gpt-4o", 2.5, 1.25, 10]]
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["gpt-4o"]
+    assert "detect skip for openai" in caplog.text
+    assert "outside the id shape" in caplog.text
+
+
+def test_scrape_unrelated_malformed_row_tolerated(monkeypatch):
+    # a drifted row for another model is additive drift detection already
+    # reported; the match scan passes it over instead of raising
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: island_soup("standard", [["gpt-5.6-sol", 4, 0.4], ["gpt-4o", 2.5, 1.25, 10]]),
+    )
+    pricing = scraper.scrape(cfg(), "gpt-4o")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(2.5 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(10 / 1e6)
+
+
+def test_scrape_matched_row_unreadable_rate_raises(monkeypatch):
+    # the matched row's cells are strict: an unreadable rate raises, it
+    # must not read as the model missing
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: island_soup("standard", [["gpt-5.6-sol", "lots", 0.4, 5, 20]]),
+    )
+    with pytest.raises(FetchError, match="unreadable rate 'lots'"):
+        scraper.scrape(cfg(), "gpt-5.6-sol")

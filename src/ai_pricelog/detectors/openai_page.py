@@ -12,19 +12,24 @@ page's own "Cache writes" heading; measured at 1.25x the input on every
 five-column row in the 2026-08-27 fixture); the scraper stores it as the
 default cache-write tier. model names may carry a page annotation
 ("gpt-5.5 (<272K context length)"); the annotation is stripped and the
-bare name is the id. a page without the standard island, with unparseable
-props, or with a row outside this shape is a parse failure (FetchError).
+bare name is the id. rows outside this shape and names outside the id
+shape are additive drift: detection skips them with a warning (plan #22),
+and a page without the standard island, with unparseable props, or with no
+model rows still raises.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
 
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_soup
+
+log = logging.getLogger(__name__)
 
 _NAME_PATTERN = re.compile(r"^(?P<id>[a-z0-9][a-z0-9.-]*)(?: \(.*\))?$")
 _ROW_LENGTHS = (4, 5)
@@ -89,7 +94,11 @@ def detect(cfg: ProviderCfg) -> list[str]:
     ids: list[str] = []
     seen: set[str] = set()
     for row in _standard_rows(soup, cfg.detector_url):
-        model_id = _row_id(row, cfg.detector_url)
+        try:
+            model_id = _row_id(row, cfg.detector_url)
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", cfg.key, exc)
+            continue
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)
