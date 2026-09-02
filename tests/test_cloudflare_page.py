@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -149,6 +150,34 @@ def test_scrape_malformed_cell_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match=r"per M image tokens"):
         scraper.scrape(cfg(), "@cf/meta/llama-3.2-1b-instruct")
+
+
+def test_detect_malformed_cell_skips_row(monkeypatch, caplog):
+    # an unknown rate line in the LLM table is additive drift: the row is
+    # skipped with a warning, later rows still seed
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            '<h2 id="llm-model-pricing">LLM model pricing</h2>'
+            "<table><thead><tr><th>Model</th><th>Price in Tokens</th>"
+            "<th>Price in Neurons</th></tr></thead><tbody><tr>"
+            "<td>@cf/meta/llama-3.2-1b-instruct</td>"
+            "<td>$0.027 per M input tokens<br>$0.201 per M image tokens</td>"
+            "<td>2457 neurons</td></tr><tr>"
+            "<td>@cf/meta/m2m100-1.2b</td>"
+            "<td>$0.342 per M input tokens<br>$0.342 per M output tokens</td>"
+            "<td>0 neurons</td></tr></tbody></table>"
+            '<h2 id="other-model-pricing">Other model pricing</h2>'
+            "<table><thead><tr><th>Model</th><th>Price in Tokens</th>"
+            "<th>Price in Neurons</th></tr></thead><tbody></tbody></table>",
+            "html.parser",
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["@cf/meta/m2m100-1.2b"]
+    assert "detect skip for cloudflare" in caplog.text
+    assert "per M image tokens" in caplog.text
 
 
 def test_scrape_input_only_cell_raises(monkeypatch):

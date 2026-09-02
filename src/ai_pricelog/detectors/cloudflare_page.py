@@ -10,22 +10,27 @@ taken (m2m100, indictrans2, moondream3.1-9B-A2B today). embeddings, image,
 and audio are out of scope. ids are the page spelling of the api id
 ("@cf/meta/llama-3.2-1b-instruct"), already lowercase, guarded by the
 stored id charset with "@" allowed. the Price in Neurons column is an
-equivalent unit the index has no slot for and is ignored. a page without
+equivalent unit the index has no slot for and is ignored. an LLM-table row
+whose token cell stopped parsing into input+output rates is additive
+drift: detection skips it with a warning (plan #22). a page without
 either section, its table, or any usable ids is a parse failure
 (FetchError).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+
+log = logging.getLogger(__name__)
 
 _ID_PATTERN = re.compile(r"^@[a-z0-9][a-z0-9._/-]*$")
-_HEADER = ("model", "price in tokens", "price in neurons")
+_HEADER = tuple(fold_heading(cell) for cell in ("Model", "Price in Tokens", "Price in Neurons"))
 _SECTION_IDS = ("llm-model-pricing", "other-model-pricing")
 _RATE_LINE_RE = re.compile(r"\$(\d+(?:\.\d+)?) per M (cached input|input|output) tokens")
 
@@ -43,13 +48,17 @@ def detect(cfg: ProviderCfg) -> list[str]:
             normalized = _model_id(cells[0])
             if not _ID_PATTERN.fullmatch(normalized) or normalized in seen:
                 continue
-            if len(cells) > 1 and index == 0:
-                # the LLM table prices every row per input and output token;
-                # a row that stopped doing so is a page-shape break
-                _token_rates(cells[1], normalized, cfg.detector_url)
-            elif len(cells) > 1 and _token_rates_opt(cells[1]) is None:
-                # the other section mixes input-only and per-image rows;
-                # only rows with a clean input+output pair are token-priced
+            try:
+                if len(cells) > 1 and index == 0:
+                    # the LLM table prices every row per input and output token;
+                    # a row that stopped doing so is additive drift, skipped
+                    _token_rates(cells[1], normalized, cfg.detector_url)
+                elif len(cells) > 1 and _token_rates_opt(cells[1]) is None:
+                    # the other section mixes input-only and per-image rows;
+                    # only rows with a clean input+output pair are token-priced
+                    continue
+            except FetchError as exc:
+                log.warning("detect skip for %s: %s", cfg.key, exc)
                 continue
             seen.add(normalized)
             ids.append(normalized)
@@ -86,8 +95,8 @@ def _header_matches(table: Tag) -> bool:
     thead = table.find("thead")
     if thead is None:
         return False
-    headers = [th.get_text(" ", strip=True).casefold() for th in thead.find_all("th")]
-    return tuple(headers) == _HEADER
+    headers = tuple(fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th"))
+    return headers == _HEADER
 
 
 def _table_rows(table: Tag) -> list[list[Tag]]:
