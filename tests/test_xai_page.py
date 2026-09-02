@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -106,6 +107,54 @@ def test_detect_raises_when_no_model_is_priced(monkeypatch):
     serve_html(monkeypatch, f"globalThis.__XAI_PUBLIC_MODELS__={blob};")
     with pytest.raises(web.FetchError, match="no priced language models"):
         xai_page.detect(make_cfg())
+
+
+def test_detect_non_object_cluster_skips(monkeypatch, caplog):
+    # a non-object cluster is additive drift: skipped with a warning, the
+    # other clusters still seed
+    blob = (
+        '{"clusterConfigs": ['
+        '{"languageModels": [{"name": "grok-x", "promptTextTokenPrice": 20000,'
+        '"completionTextTokenPrice": 60000}]},'
+        '"not-an-object",'
+        '{"languageModels": [{"name": "grok-y", "promptTextTokenPrice": 10000,'
+        '"completionTextTokenPrice": 30000}]}'
+        "]}"
+    )
+    serve_html(monkeypatch, f"globalThis.__XAI_PUBLIC_MODELS__={blob};")
+    with caplog.at_level(logging.WARNING):
+        assert xai_page.detect(make_cfg()) == ["grok-x", "grok-y"]
+    assert "detect skip for xai" in caplog.text
+    assert "non-object cluster" in caplog.text
+
+
+def test_detect_all_clusters_non_object_raises(monkeypatch, caplog):
+    # skipping every cluster leaves no ids: the structural raise stays
+    serve_html(
+        monkeypatch,
+        'globalThis.__XAI_PUBLIC_MODELS__={"clusterConfigs": ["not-an-object"]};',
+    )
+    with (
+        caplog.at_level(logging.WARNING),
+        pytest.raises(web.FetchError, match="no priced language models"),
+    ):
+        xai_page.detect(make_cfg())
+    assert "detect skip for xai" in caplog.text
+
+
+def test_scrape_unrelated_non_object_cluster_does_not_block(monkeypatch):
+    # a non-object cluster the scan passes over is additive drift detect
+    # reported; the chosen model still scrapes
+    blob = (
+        '{"clusterConfigs": ['
+        '"not-an-object",'
+        '{"languageModels": [{"name": "grok-x", "promptTextTokenPrice": 20000,'
+        '"completionTextTokenPrice": 60000, "maxPromptLength": 100000}]}'
+        "]}"
+    )
+    serve_html(monkeypatch, f"globalThis.__XAI_PUBLIC_MODELS__={blob};")
+    pricing = xai_scraper.scrape(make_cfg(), "grok-x")
+    assert pricing == Pricing(2e-6, 6e-6, "chat", 100000, None)
 
 
 def test_detect_extracts_blob_from_html(snippet):

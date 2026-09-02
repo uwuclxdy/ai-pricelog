@@ -3,16 +3,22 @@
 the page is static mintlify html; models live in an embedded json blob assigned to
 ``globalThis.__XAI_PUBLIC_MODELS__``. language models are the ``languageModels``
 entries carrying ``promptTextTokenPrice`` inside ``clusterConfigs``; image, audio
-and video entries have no token pricing and are out of scope.
+and video entries have no token pricing and are out of scope. a cluster that is
+not an object is additive drift: detection skips it with a warning (plan #22);
+a blob-level break (no marker, invalid json, no clusterConfigs list) still
+raises.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 from functools import cache
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_text
+
+log = logging.getLogger(__name__)
 
 _MARKER = "__XAI_PUBLIC_MODELS__"
 
@@ -52,22 +58,22 @@ def _blob(url: str) -> dict:
     return _extract_blob(fetch_text(url), url)
 
 
-def _language_models(blob: dict, url: str) -> list[dict]:
-    """every languageModels entry across clusters, cluster order preserved."""
+def _clusters(blob: dict, url: str) -> list:
+    """the clusterConfigs list; missing -> FetchError (page-shape break)."""
     clusters = blob.get("clusterConfigs")
     if not isinstance(clusters, list):
         raise FetchError(f"{_MARKER} blob on {url} has no clusterConfigs list")
-    models: list[dict] = []
-    for cluster in clusters:
-        if not isinstance(cluster, dict):
-            raise FetchError(f"{_MARKER} blob on {url} has a non-object cluster")
-        entries = cluster.get("languageModels", [])
-        if not isinstance(entries, list):
-            continue
-        for entry in entries:
-            if isinstance(entry, dict) and entry.get("name"):
-                models.append(entry)
-    return models
+    return clusters
+
+
+def _language_models(cluster: dict, url: str) -> list[dict]:
+    """one cluster's language model entries; a non-object cluster -> FetchError."""
+    if not isinstance(cluster, dict):
+        raise FetchError(f"{_MARKER} blob on {url} has a non-object cluster")
+    entries = cluster.get("languageModels", [])
+    if not isinstance(entries, list):
+        return []
+    return [entry for entry in entries if isinstance(entry, dict) and entry.get("name")]
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
@@ -75,13 +81,19 @@ def detect(cfg: ProviderCfg) -> list[str]:
     blob = _blob(cfg.detector_url)
     ids: list[str] = []
     seen: set[str] = set()
-    for entry in _language_models(blob, cfg.detector_url):
-        if "promptTextTokenPrice" not in entry:
+    for cluster in _clusters(blob, cfg.detector_url):
+        try:
+            entries = _language_models(cluster, cfg.detector_url)
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", cfg.key, exc)
             continue
-        name = entry["name"]
-        if name not in seen:
-            seen.add(name)
-            ids.append(name)
+        for entry in entries:
+            if "promptTextTokenPrice" not in entry:
+                continue
+            name = entry["name"]
+            if name not in seen:
+                seen.add(name)
+                ids.append(name)
     if not ids:
         raise FetchError(f"no priced language models found on {cfg.detector_url}")
     return ids

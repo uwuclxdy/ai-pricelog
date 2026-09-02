@@ -20,8 +20,9 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.detectors.xai_page import _blob, _language_models
+from ai_pricelog.detectors.xai_page import _blob, _clusters, _language_models
 from ai_pricelog.pricing import Pricing
+from ai_pricelog.web import FetchError
 
 _PER_1M_SCALE = 1e-4
 _PER_TOKEN = _PER_1M_SCALE / 1e6
@@ -58,20 +59,25 @@ def _max_tokens_in(entry: dict) -> int:
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     """Pricing for model_id, or None when the page carries no pricing for it."""
     blob = _blob(cfg.scraper_url)
-    for entry in _language_models(blob, cfg.scraper_url):
-        if entry["name"] != model_id:
-            continue
-        if "promptTextTokenPrice" not in entry or "completionTextTokenPrice" not in entry:
-            return None
-        input_cost = _price(entry["promptTextTokenPrice"])
-        output_cost = _price(entry["completionTextTokenPrice"])
-        if input_cost is None or output_cost is None:
-            return None
-        return Pricing(
-            input_cost_per_token=input_cost,
-            output_cost_per_token=output_cost,
-            mode="chat",
-            max_tokens_in=_max_tokens_in(entry),
-            cache_read_cost_per_token=_price(entry.get("cachedPromptTokenPrice")),
-        )
+    for cluster in _clusters(blob, cfg.scraper_url):
+        try:
+            entries = _language_models(cluster, cfg.scraper_url)
+        except FetchError:
+            continue  # additive drift; detect already reported the cluster
+        for entry in entries:
+            if entry["name"] != model_id:
+                continue
+            if "promptTextTokenPrice" not in entry or "completionTextTokenPrice" not in entry:
+                return None
+            input_cost = _price(entry["promptTextTokenPrice"])
+            output_cost = _price(entry["completionTextTokenPrice"])
+            if input_cost is None or output_cost is None:
+                return None
+            return Pricing(
+                input_cost_per_token=input_cost,
+                output_cost_per_token=output_cost,
+                mode="chat",
+                max_tokens_in=_max_tokens_in(entry),
+                cache_read_cost_per_token=_price(entry.get("cachedPromptTokenPrice")),
+            )
     return None
