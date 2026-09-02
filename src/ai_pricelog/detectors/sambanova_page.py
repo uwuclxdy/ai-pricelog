@@ -2,7 +2,9 @@
 
 https://cloud.sambanova.ai/pricing (redirects to /plans/pricing) serves the
 per-token table statically: Model | Cached Input Tokens | Input (per 1M
-tokens) | Output (per 1M tokens). the same rows ride the page's next.js rsc
+tokens) | Output (per 1M tokens), the header pinned after folding case,
+whitespace, and &/and (web.fold_heading). the same rows ride the page's
+next.js rsc
 flight payload; the captured fixture carries the identical seven rows in
 both sources, so the rendered table is parsed (stable dom, nothing to
 deserialize). ids are the Model column cells normalized to the index
@@ -19,11 +21,12 @@ import re
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_tables, fetch_soup
+from ai_pricelog.web import FetchError, extract_tables, fetch_soup, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _NON_ID_RE = re.compile(r"[^a-z0-9.]+")
 _MODEL_HEADERS = ("Model", "Cached Input Tokens", "Input (per 1M tokens)", "Output (per 1M tokens)")
+_FOLDED_MODEL_HEADERS = [fold_heading(cell) for cell in _MODEL_HEADERS]
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
@@ -45,7 +48,7 @@ def detect(cfg: ProviderCfg) -> list[str]:
 def _pricing_table(soup: BeautifulSoup, url: str) -> list[list[str]]:
     """the Model | Cached Input Tokens | Input | Output table; missing -> FetchError."""
     for table in extract_tables(soup):
-        if table and table[0] == list(_MODEL_HEADERS):
+        if table and [fold_heading(cell) for cell in table[0]] == _FOLDED_MODEL_HEADERS:
             return table
     raise FetchError(f"no pricing table on {url}")
 

@@ -179,3 +179,20 @@ def test_detect_missing_table_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="no pricing table"):
         detector.detect(cfg())
+
+
+def test_detect_header_case_drift_still_matches(monkeypatch):
+    # the pricing-table header pins match after folding, so a lowercase
+    # header still locates the table
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>model</th><th>cached input tokens</th>"
+            "<th>input (per 1m tokens)</th><th>output (per 1m tokens)</th></tr>"
+            "<tr><td>MiniMax-M2.7</td><td>N/A</td><td>0.60 USD</td><td>2.40 USD</td></tr>"
+            "</table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["minimax-m2.7"]
