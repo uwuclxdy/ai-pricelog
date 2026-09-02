@@ -2016,3 +2016,4 @@
 {"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-09-01","name":"Weaver (alpha)","input_mtok":0.4,"output_mtok":0.75,"max_tokens_in":8000}
 {"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-09-01","name":"MythoMax 13B","input_mtok":0.35,"output_mtok":0.6,"max_tokens_in":8192}
 {"source":"deepinfra","model_id":"claude-sonnet-5","observed_at":"2026-09-01","input_mtok":3.0,"output_mtok":15.0,"max_tokens_in":999424,"url":"https://deepinfra.com/pricing"}
+{"source":"openrouter","model_id":"meta-llama/llama-4-scout","observed_at":"2026-09-01","name":"Llama 4 Scout","input_mtok":0.1,"output_mtok":0.3,"max_tokens_in":1310720}
