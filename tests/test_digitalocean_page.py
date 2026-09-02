@@ -222,6 +222,25 @@ def test_detect_table_without_priced_rows_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_header_wording_drift_still_matches(monkeypatch):
+    # the pinned table headers match after folding case, whitespace, and
+    # &/and: an internal whitespace run (casefold alone cannot absorb it)
+    # still locates the serverless tables
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><thead><tr><th>Model</th><th>Serverless  Inference</th></tr></thead>"
+            "<tbody><tr><td><a>Kimi K3</a></td>"
+            '<td><span class="gen-ai-pricing-grid"><span>Input/output tokens</span>'
+            "<span>$3.00 per 1M input tokens $15.00 per 1M output tokens</span>"
+            "</span></td></tr></tbody></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["kimi-k3"]
+
+
 def test_unparseable_caching_group_raises(monkeypatch):
     # a caching group with two cache-creation lines and no read line is a
     # shape break, never a silent cache-rate drop

@@ -3,7 +3,8 @@
 the page (https://docs.digitalocean.com/products/inference/details/pricing/)
 serves the per-model tables statically, one per provider group. the
 token-priced tables carry the header Model | Serverless Inference, or
-Provider | Model | Serverless Inference for digitalocean-hosted models; a
+Provider | Model | Serverless Inference for digitalocean-hosted models,
+matched after folding case, whitespace, and &/and (web.fold_heading); a
 row is in scope when its Serverless Inference cell holds a
 span.gen-ai-pricing-grid with per-1M token rates. the fal and
 digitalocean-hosted image/audio/video rows (per megapixel, per compute
@@ -25,13 +26,16 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _IMAGE_MODEL_RE = re.compile(r"\bimage\b", re.IGNORECASE)
 _MODEL_HEADERS = (
     ("model", "serverless inference"),
     ("provider", "model", "serverless inference"),
+)
+_FOLDED_MODEL_HEADERS = tuple(
+    tuple(fold_heading(cell) for cell in headers) for headers in _MODEL_HEADERS
 )
 _GRID_CLASS = "gen-ai-pricing-grid"
 
@@ -45,8 +49,8 @@ def _model_tables(soup: BeautifulSoup) -> list[tuple[Tag, int]]:
         thead = table.find("thead")
         if thead is None:
             continue
-        headers = tuple(th.get_text(" ", strip=True).casefold() for th in thead.find_all("th"))
-        if headers in _MODEL_HEADERS:
+        headers = tuple(fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th"))
+        if headers in _FOLDED_MODEL_HEADERS:
             tables.append((table, len(headers) - 2))
     return tables
 
