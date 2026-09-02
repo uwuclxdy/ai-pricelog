@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 5
+    assert len(rules) == 8
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -65,6 +65,22 @@ def test_committed_billing_rules_pass_schema():
     assert quota["timezone"] == "Asia/Singapore"
     assert "not prices" in quota["statement"]
     assert "https://docs.z.ai/devpack/notice/usage-revision.md" in quota["citation"]
+    moonshot = rules[5]
+    assert moonshot["id"] == "moonshot-k25-v1-retirement-2026-08-31"
+    assert moonshot["provider"] == "moonshot"
+    assert moonshot["effective"] == "2026-08-31"
+    assert "kimi-k2.5" in moonshot["statement"]
+    assert "https://platform.kimi.ai/docs/platform-changelog.md" in moonshot["citation"]
+    intro = rules[6]
+    assert intro["id"] == "google-gemini-3.8-flash-intro-2026-09-02"
+    assert intro["provider"] == "google"
+    assert intro["effective"] == "2026-09-02"
+    assert "2026-12-31" in intro["statement"]
+    novita = rules[7]
+    assert novita["id"] == "novita-multimodal-deprecation-2026-09-30"
+    assert novita["provider"] == "novita"
+    assert novita["effective"] == "2026-09-30"
+    assert "Multimodal Model Deprecation Notice" in novita["statement"]
 
 
 @pytest.mark.parametrize(

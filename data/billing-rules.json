@@ -52,6 +52,37 @@
       "citation": [
         "https://docs.z.ai/devpack/notice/usage-revision.md"
       ]
+    },
+    {
+      "id": "moonshot-k25-v1-retirement-2026-08-31",
+      "provider": "moonshot",
+      "effective": "2026-08-31",
+      "timezone": "Asia/Shanghai",
+      "statement": "kimi-k2.5 and all moonshot-v1 series models (including the -vision-preview ids and moonshot-v1-auto) retired across all platforms at 16:00 on 2026-08-31; calls to these models now return a 404 'model not found' error; migrate to Kimi K3. the changelog names no timezone for the 16:00 hour; Asia/Shanghai is inferred (moonshot is a Beijing company). the stored rows get removal rows through the absence machinery",
+      "citation": [
+        "https://platform.kimi.ai/docs/platform-changelog.md"
+      ]
+    },
+    {
+      "id": "google-gemini-3.8-flash-intro-2026-09-02",
+      "provider": "google",
+      "effective": "2026-09-02",
+      "timezone": "UTC",
+      "statement": "gemini-3.8-flash is generally available from 2026-09-02. the paid-tier standard rates ($0.75 input / $0.075 cache read / $3.75 output per 1M tokens) apply through 2026-12-31, then step to $1.50 / $0.15 / $7.50 starting 2027-01-01 (the batch tier halves input and output and quarters cache read). the pricing page names no timezone for the boundary; the index stores the in-force intro rates",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/pricing",
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
+    },
+    {
+      "id": "novita-multimodal-deprecation-2026-09-30",
+      "provider": "novita",
+      "effective": "2026-09-30",
+      "timezone": "UTC",
+      "statement": "the changelog gained a 'Multimodal Model Deprecation Notice' dated 2026-09-30; the fetched snapshot carries only the entry title, no model list or terms. the page names no timezone; UTC is the recorded frame. re-read the entry prose at the effective date",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }
