@@ -2,7 +2,8 @@
 
 https://www.together.ai/pricing is static server-rendered html. the
 serverless-inference section holds per-token tables whose header row is
-Model | Input | output: the chat table (input cells may carry a cached
+Model | Input | output, matched after folding case, whitespace, and &/and
+(web.fold_heading): the chat table (input cells may carry a cached
 sub-cell) and the vision table (same shape, today a strict subset of the
 chat rows at identical rates). rows from both are merged by slug, first
 table in document order wins, so each model id appears once. ids are the
@@ -24,10 +25,11 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _MODEL_HEADERS = ("model", "input", "output")
+_FOLDED_MODEL_HEADERS = tuple(fold_heading(cell) for cell in _MODEL_HEADERS)
 
 
 def _model_tables(soup: BeautifulSoup) -> list[Tag]:
@@ -38,11 +40,11 @@ def _model_tables(soup: BeautifulSoup) -> list[Tag]:
             continue
         thead = table.find("thead")
         headers = (
-            [th.get_text(" ", strip=True).casefold() for th in thead.find_all("th")]
+            [fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th")]
             if thead
             else []
         )
-        if tuple(headers) == _MODEL_HEADERS:
+        if tuple(headers) == _FOLDED_MODEL_HEADERS:
             tables.append(table)
     return tables
 
