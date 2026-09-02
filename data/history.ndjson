@@ -1979,3 +1979,4 @@
 {"source":"deepseek","model_id":"deepseek-v3.1-terminus","observed_at":"2026-08-31","removed":true,"input_mtok":0.56,"cache_read_mtok":0.07,"output_mtok":1.68}
 {"source":"deepseek","model_id":"deepseek-v3.2","observed_at":"2026-08-31","removed":true,"input_mtok":0.28,"cache_read_mtok":0.028,"output_mtok":0.42}
 {"source":"deepseek","model_id":"deepseek-v3.2-exp","observed_at":"2026-08-31","removed":true,"input_mtok":0.28,"cache_read_mtok":0.028,"output_mtok":0.42}
+{"source":"together","model_id":"qwen3.8-flash","observed_at":"2026-08-31","input_mtok":0.15,"output_mtok":0.47,"url":"https://www.together.ai/pricing"}
