@@ -1,21 +1,25 @@
 """Billing-rule announcement watch: per-provider public channels vs a committed snapshot.
 
 Every configured channel is fetched each run, reduced to normalized prose, and
-hashed. A hash differing from the committed data/announce.json snapshot is an
-announcement change: the pipeline reports it old->new on every draft PR it
-opens and commits the updated snapshot on the PR branch, so a channel settles
-only under a human-reviewed PR. With no PR opened the snapshot stays stale and
-the change re-surfaces next run (skip-and-retry). Confirmed billing-rule
-semantics land in the committed data/billing-rules.json, human-written per
-rule; the pipeline never writes it.
+hashed. The committed snapshot lives under state/announce/: one sentence-per-line
+.md file per channel plus an index.json that owns url -> file. A hash differing
+from the committed snapshot is an announcement change: the pipeline reports it
+old->new on every draft PR it opens and commits the fresh snapshot on the PR
+branch, so a channel settles only under a human-reviewed PR. With no PR opened
+the snapshot stays stale and the change re-surfaces next run (skip-and-retry).
+Confirmed billing-rule semantics land in the committed data/billing-rules.json,
+human-written per rule; the pipeline never writes it.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import urllib.parse
 import warnings
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -27,7 +31,8 @@ from ai_pricelog import web
 from ai_pricelog.config import Config
 from ai_pricelog.store import _atomic_write
 
-ANNOUNCE_FILE = "data/announce.json"
+ANNOUNCE_DIR = "state/announce"
+ANNOUNCE_INDEX = "state/announce/index.json"
 BILLING_RULES_FILE = "data/billing-rules.json"
 
 
@@ -85,21 +90,167 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def load_snapshot(path: Path) -> dict[str, dict[str, dict[str, str]]]:
-    """The committed channel snapshot, or an empty one when absent."""
+def slug(url: str) -> str:
+    """The channel filename stem: the url's last path segment, slugged.
+
+    The segment lowercases, every run of non-alphanumeric characters collapses
+    to one dash, and leading/trailing dashes strip; an empty segment reads as
+    ``index``.
+    """
+    segments = [part for part in urllib.parse.urlsplit(url).path.split("/") if part]
+    segment = segments[-1] if segments else ""
+    return re.sub(r"[^a-z0-9]+", "-", segment.lower()).strip("-") or "index"
+
+
+def channel_files(source: str, urls: Iterable[str]) -> dict[str, str]:
+    """Map each url to its repo-relative .md path, disambiguating slug collisions.
+
+    When two urls of one source share a slug, every colliding member gains the
+    url's sha256 prefix, so the naming never depends on config order.
+    """
+    urls = list(urls)
+    stems = {url: slug(url) for url in urls}
+    counts = Counter(stems.values())
+    files: dict[str, str] = {}
+    for url in urls:
+        stem = stems[url]
+        if counts[stem] > 1:
+            stem = f"{stem}-{_sha256(url)[:8]}"
+        files[url] = f"{ANNOUNCE_DIR}/{source}/{stem}.md"
+    return files
+
+
+# sentence-per-line leaves url lists and rss bodies as one giant line; wrap
+# only those, above the p90 line length (537 chars) measured 2026-09-03
+_LINE_CEILING = 600
+
+
+def wrap(prose: str) -> str:
+    """The canonical prose one sentence per line, then long lines word-wrapped.
+
+    The sentence split owns the boundaries, so an edit reflows only its own
+    sentence. The ceiling then subdivides only the lines the sentence split
+    left too long, breaking at a space, never inside a word. The canonical
+    prose already carries single spaces and no newlines, so both passes are
+    exact: ``unwrap`` recovers it byte-for-byte.
+    """
+    lines: list[str] = []
+    for sentence in re.sub(r"(?<=[.!?]) ", "\n", prose).splitlines():
+        lines.extend(_wrap_line(sentence))
+    return "\n".join(lines) + "\n"
+
+
+def _wrap_line(line: str) -> list[str]:
+    """One sentence split into lines no longer than the ceiling, at spaces only."""
+    if len(line) <= _LINE_CEILING:
+        return [line]
+    out: list[str] = []
+    current = ""
+    for word in line.split(" "):
+        if not current:
+            current = word
+        elif len(current) + 1 + len(word) <= _LINE_CEILING:
+            current += " " + word
+        else:
+            out.append(current)
+            current = word
+    if current:
+        out.append(current)
+    return out
+
+
+def unwrap(text: str) -> str:
+    """The canonical prose: every whitespace run folds back to one space."""
+    return " ".join(text.split())
+
+
+def load_snapshot(repo_root: Path) -> dict[str, dict[str, dict[str, str]]]:
+    """The committed channel snapshot, or an empty one when absent.
+
+    index.json is the authority on url -> file; the prose is recovered from
+    each .md file, so the in-memory entry keeps the ``text`` the change report
+    needs.
+    """
+    path = repo_root / ANNOUNCE_INDEX
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
     except json.JSONDecodeError as exc:
-        raise ValueError(f"announce file '{path}': invalid json: {exc.msg}") from exc
+        raise ValueError(f"announce index '{path}': invalid json: {exc.msg}") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"announce file '{path}': must be an object")
-    return data
+        raise ValueError(f"announce index '{path}': must be an object")
+    snapshot: dict[str, dict[str, dict[str, str]]] = {}
+    for source, urls in data.items():
+        if not isinstance(source, str) or not isinstance(urls, dict):
+            raise ValueError(f"announce index '{path}': source {source!r} must map to an object")
+        derived = channel_files(source, urls.keys())
+        entries: dict[str, dict[str, str]] = {}
+        for url, entry in urls.items():
+            if not isinstance(url, str) or not isinstance(entry, dict):
+                raise ValueError(
+                    f"announce index '{path}': entry {source!r}/{url!r} must be an object"
+                )
+            for key in ("file", "sha256", "fetched"):
+                if not isinstance(entry.get(key), str):
+                    raise ValueError(
+                        f"announce index '{path}': entry {source!r}/{url!r} is missing '{key}'"
+                    )
+            expected = derived[url]
+            if entry["file"] != expected:
+                raise ValueError(
+                    f"announce index '{path}': entry {source!r}/{url!r} file"
+                    f" {entry['file']!r} does not match the derived path {expected!r}"
+                )
+            try:
+                text = (repo_root / expected).read_text(encoding="utf-8")
+            except FileNotFoundError as exc:
+                raise ValueError(
+                    f"announce index '{path}': entry {source!r}/{url!r} file"
+                    f" '{expected}' is missing"
+                ) from exc
+            entries[url] = {
+                "file": expected,
+                "text": unwrap(text),
+                "sha256": entry["sha256"],
+                "fetched": entry["fetched"],
+            }
+        snapshot[source] = entries
+    return snapshot
 
 
-def save_snapshot(snapshot: dict[str, dict[str, dict[str, str]]], path: Path) -> None:
-    _atomic_write(json.dumps(snapshot, ensure_ascii=False) + "\n", path)
+def save_snapshot(snapshot: dict[str, dict[str, dict[str, str]]], repo_root: Path) -> None:
+    """Write the .md files and index.json, then drop orphaned channel files.
+
+    A channel that left providers.toml no longer appears in the snapshot; its
+    .md file is deleted here and the caller stages the deletion with
+    ``git add -A -- state/announce``.
+    """
+    ann_dir = repo_root / ANNOUNCE_DIR
+    index: dict[str, dict[str, dict[str, str]]] = {}
+    named: set[str] = set()
+    for source, urls in snapshot.items():
+        derived = channel_files(source, urls.keys())
+        for url, entry in urls.items():
+            file = derived[url]
+            named.add(file)
+            _atomic_write(wrap(entry["text"]), repo_root / file)
+            index.setdefault(source, {})[url] = {
+                "file": file,
+                "sha256": entry["sha256"],
+                "fetched": entry["fetched"],
+            }
+    _atomic_write(
+        json.dumps(index, ensure_ascii=False, indent=2) + "\n", repo_root / ANNOUNCE_INDEX
+    )
+    for source_dir in list(ann_dir.iterdir()):
+        if not source_dir.is_dir():
+            continue
+        for path in source_dir.glob("*.md"):
+            if path.relative_to(repo_root).as_posix() not in named:
+                path.unlink()
+        if not any(source_dir.iterdir()):
+            source_dir.rmdir()
 
 
 def differs(
@@ -123,12 +274,15 @@ def fetch_channels(
     """Fetch every configured channel; a prose hash differing from the snapshot is a change.
 
     A failed fetch keeps the snapshot entry, so the stale entry re-diffs next
-    run. Entries for urls no longer configured drop on the next save.
+    run. Entries for urls no longer configured drop on the next save. A channel
+    keeps its stored ``fetched`` while its hash is unchanged and takes today's
+    date only when its hash moves, so one real change never re-dates every row.
     """
     changes: list[ChannelChange] = []
     errors: list[str] = []
     fresh: dict[str, dict[str, dict[str, str]]] = {}
     for pcfg in cfg.providers:
+        files = channel_files(pcfg.key, pcfg.announce_urls)
         for url in pcfg.announce_urls:
             try:
                 prose = extract_prose(url, web.fetch_text(url))
@@ -136,18 +290,20 @@ def fetch_channels(
                 errors.append(f"{pcfg.key} {url}: {type(exc).__name__}: {exc}")
                 old = snapshot.get(pcfg.key, {}).get(url)
                 if old is not None:
-                    fresh.setdefault(pcfg.key, {})[url] = old
+                    fresh.setdefault(pcfg.key, {})[url] = dict(old)
                 continue
-            new_entry = {"text": prose, "sha256": _sha256(prose), "fetched": today}
+            sha = _sha256(prose)
             old = snapshot.get(pcfg.key, {}).get(url)
+            fetched = old["fetched"] if old is not None and old.get("sha256") == sha else today
+            new_entry = {"file": files[url], "text": prose, "sha256": sha, "fetched": fetched}
             fresh.setdefault(pcfg.key, {})[url] = new_entry
-            if old is not None and old.get("sha256") != new_entry["sha256"]:
+            if old is not None and old.get("sha256") != sha:
                 changes.append(
                     ChannelChange(
                         pcfg.key,
                         url,
                         old.get("sha256", ""),
-                        new_entry["sha256"],
+                        sha,
                         old.get("text", ""),
                         prose,
                     )

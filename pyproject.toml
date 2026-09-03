@@ -35,6 +35,10 @@ packages = ["src/ai_pricelog"]
 line-length    = 100
 target-version = "py312"
 src            = ["src", "tests"]
+# state/ holds scraped prose, not source. ruff reads markdown for embedded code
+# and reformats a fenced block, which rewrites a channel file and breaks the
+# index hash the round-trip guard checks
+extend-exclude = ["./state"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]

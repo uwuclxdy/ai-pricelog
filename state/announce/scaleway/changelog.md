@@ -1,0 +1,2 @@
+Changelog | Scaleway Documentation Skip to navigation Skip to main content Skip to footer Scaleway Docs Homepage SearchIcon Search SparklesIcon Ask our AI BurgerIcon Open menu SearchIcon Search the docs SparklesIcon Ask our AI ProfileOutlineIcon Log in Sign up Home Changelog Changelog RssIcon Changelog RSS feed Keep up to date with Scaleway's latest products and features!
+ArrowUpIcon Back to page top API Documentation Scaleway console Dedibox console Scaleway Learning Scaleway.com Pricing Blog Careers llms.txt © 2023- 2026 – Scaleway SearchIcon Cancel No Results

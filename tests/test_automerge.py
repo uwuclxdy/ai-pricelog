@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import automerge, pr, store, validate
+from ai_pricelog import absence, announce, automerge, pr, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
 from conftest import git, git_init_repo
 
@@ -42,8 +42,8 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
         repo / "data" / "history",
         "deepseek",
     )
-    (repo / "data" / "announce.json").write_text(json.dumps({}) + "\n")
-    (repo / "data" / "absence.json").write_text(json.dumps({}) + "\n")
+    (repo / "state" / "announce").mkdir(parents=True)
+    (repo / "state" / "announce" / "index.json").write_text(json.dumps({}) + "\n")
     (repo / BILLING_RULES_FILE).write_text(json.dumps({"rules": []}) + "\n")
     (repo / "tests").mkdir()
     (repo / "tests" / "test_billing_rules.py").write_text("# pin placeholder\n")
@@ -56,12 +56,27 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     return repo, bare
 
 
+def announce_snapshot(texts: dict[str, dict[str, str]]) -> dict:
+    """An in-memory announce snapshot from ``{source: {url: text}}``."""
+    snapshot: dict[str, dict[str, dict[str, str]]] = {}
+    for source, urls in texts.items():
+        files = announce.channel_files(source, urls.keys())
+        for url, text in urls.items():
+            snapshot.setdefault(source, {})[url] = {
+                "file": files[url],
+                "text": text,
+                "sha256": announce._sha256(text),
+                "fetched": "2026-08-31",
+            }
+    return snapshot
+
+
 def make_branch(
     repo: Path,
     name: str,
     rows: list[dict],
-    announce: dict | None = None,
-    absence: dict | None = None,
+    announce_texts: dict[str, dict[str, str]] | None = None,
+    absence_data: dict | None = None,
     extra_file: str | None = None,
 ) -> None:
     """Open a pricelog branch off main: append rows, snapshots, push, return to main."""
@@ -72,10 +87,10 @@ def make_branch(
         by_source.setdefault(row["source"], []).append(row)
     for source, source_rows in by_source.items():
         store.save_shard(store.load_shard(shard_dir, source) + source_rows, shard_dir, source)
-    if announce is not None:
-        (repo / "data" / "announce.json").write_text(json.dumps(announce) + "\n")
-    if absence is not None:
-        (repo / "data" / "absence.json").write_text(json.dumps(absence) + "\n")
+    if announce_texts is not None:
+        announce.save_snapshot(announce_snapshot(announce_texts), repo)
+    if absence_data is not None:
+        absence.save_absence(absence_data, repo)
     if extra_file is not None:
         (repo / extra_file).parent.mkdir(parents=True, exist_ok=True)
         (repo / extra_file).write_text("# changed\n")
@@ -107,7 +122,7 @@ def test_merge_lands_union(tmp_path):
         repo,
         "pricelog/alpha-00000000",
         [r1, r2],
-        announce={"deepseek": {"https://example.com/u": {"text": "new"}}},
+        announce_texts={"deepseek": {"https://example.com/u": "new"}},
     )
     r4 = make_row("deepseek", "deepseek-v4-flash", "2026-08-31", 0.05)
     # beta carries alpha's rows (the pending union) plus its own
@@ -116,8 +131,8 @@ def test_merge_lands_union(tmp_path):
         repo,
         "pricelog/beta-11111111",
         beta_rows,
-        announce={"deepseek": {"https://example.com/u": {"text": "newer"}}},
-        absence={"deepseek": {"gone": {"absent_runs": 1, "since": "2026-08-31"}}},
+        announce_texts={"deepseek": {"https://example.com/u": "newer"}},
+        absence_data={"deepseek": {"gone": {"absent_runs": 1, "since": "2026-08-31"}}},
     )
 
     sha, results = automerge.merge_branches(
@@ -136,11 +151,13 @@ def test_merge_lands_union(tmp_path):
     assert r1 in [json.loads(line) for line in expected]
     assert r2 in [json.loads(line) for line in expected]
     assert r4 in [json.loads(line) for line in expected]
-    # the freshest announce/absence snapshots come from the newest branch
-    announce = json.loads((repo / "data" / "announce.json").read_text(encoding="utf-8"))
-    assert announce["deepseek"]["https://example.com/u"]["text"] == "newer"
-    absence = json.loads((repo / "data" / "absence.json").read_text(encoding="utf-8"))
-    assert absence == {"deepseek": {"gone": {"absent_runs": 1, "since": "2026-08-31"}}}
+    # the freshest announce tree comes from the newest branch; each source's
+    # absence file lands on its own branch
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    channel_file = index["deepseek"]["https://example.com/u"]["file"]
+    assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("newer")
+    absence = json.loads((repo / "state" / "absence" / "deepseek.json").read_text(encoding="utf-8"))
+    assert absence == {"gone": {"absent_runs": 1, "since": "2026-08-31"}}
     # every merge commit has two parents: the branch heads are ancestors, so
     # github auto-marks the PRs merged
     merge_commits = git(repo, "log", "--merges", "--format=%P").splitlines()
@@ -226,6 +243,28 @@ def test_non_pipeline_file_refused(tmp_path):
     with pytest.raises(automerge.AutoMergeError, match="pipeline.py"):
         automerge.merge_branches(
             ["pricelog/gamma-22222222"], repo, pr.PrRunner(), "main", push=False
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_file",
+    [
+        "state/announce/deepseek/nested/updates.md",
+        "state/absence/deepseek/nested.json",
+        "state/announce/deepseek/notes.txt",
+    ],
+)
+def test_nested_state_path_refused(tmp_path, extra_file):
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/zeta-55555555",
+        [make_row("zai", "glm-5", "2026-08-31", 0.1)],
+        extra_file=extra_file,
+    )
+    with pytest.raises(automerge.AutoMergeError, match=extra_file):
+        automerge.merge_branches(
+            ["pricelog/zeta-55555555"], repo, pr.PrRunner(), "main", push=False
         )
 
 

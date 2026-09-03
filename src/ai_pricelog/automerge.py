@@ -8,7 +8,7 @@ branches it verified, and this module re-checks each branch mechanically:
 
 - the branch is a `pricelog/` automation branch, never the seed branch
 - the branch changes only pipeline files (the per-source history shards,
-  announce, absence, billing-rules plus its test pin)
+  the state/announce and state/absence trees, billing-rules plus its test pin)
 - the pipeline files are committed and nothing else is staged: every stage
   names its paths, so unrelated dirt in the checkout cannot ride the merge
 - each shard the branch touched lands as an exact-line union: every HEAD
@@ -22,9 +22,9 @@ branches it verified, and this module re-checks each branch mechanically:
   reindex.yml still covers a human push; whether THIS push also triggers it
   depends on which credential git picks for it, which nothing here pins
 - the README stats stay stale until the publish job owns their regen
-- announce.json and absence.json take the last (newest) branch's copies with
-  the final merge; the intermediates keep whatever the git merge produced,
-  which is identical across one run's branches
+- the announce tree takes the last (newest) branch's copy with the final
+  merge; a source's absence file lands on that source's branch, so the merge
+  accumulates them without a last-branch copy
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -38,20 +38,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ai_pricelog import pr, store, validate
-from ai_pricelog.absence import ABSENCE_FILE
-from ai_pricelog.announce import ANNOUNCE_FILE, BILLING_RULES_FILE
+from ai_pricelog.absence import ABSENCE_DIR
+from ai_pricelog.announce import ANNOUNCE_DIR, BILLING_RULES_FILE
 
 SHARD_DIR = store.SHARD_DIR
 INDEX_FILE = store.INDEX_FILE
 
 PIPELINE_EXACT_FILES = frozenset(
     {
-        ANNOUNCE_FILE,
-        ABSENCE_FILE,
         BILLING_RULES_FILE,
         "tests/test_billing_rules.py",
     }
 )
+PIPELINE_STATE_DIRS = (ANNOUNCE_DIR, ABSENCE_DIR)
 
 SEED_BRANCH = "pricelog/seed"
 
@@ -101,6 +100,41 @@ def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
         return ""
 
 
+def _branch_tree_paths(
+    runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: str
+) -> list[str]:
+    """The files one branch carries under a state directory, in tree order."""
+    return [
+        path
+        for path in runner.run(
+            ["git", "ls-tree", "-r", "--name-only", f"origin/{branch}", f"{tree_dir}/"],
+            cwd=repo_root,
+        ).splitlines()
+        if path
+    ]
+
+
+def _replace_tree(runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: str) -> None:
+    """Set the worktree's copy of a state directory to the branch's copy.
+
+    The branch's tree is the complete snapshot; files it no longer carries are
+    pruned, so a removed channel or cleared source stops appearing here.
+    """
+    named: set[str] = set()
+    for path in _branch_tree_paths(runner, repo_root, branch, tree_dir):
+        (repo_root / path).write_text(
+            _branch_text(runner, repo_root, branch, path), encoding="utf-8"
+        )
+        named.add(path)
+    tree = repo_root / tree_dir
+    for path in tree.rglob("*"):
+        if path.is_file() and path.relative_to(repo_root).as_posix() not in named:
+            path.unlink()
+    for path in sorted(tree.rglob("*"), reverse=True):
+        if path.is_dir() and not any(path.iterdir()):
+            path.rmdir()
+
+
 def _branch_shard_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
     """The shard paths one branch changed, relative to HEAD."""
     paths = runner.run(
@@ -125,16 +159,29 @@ def _line_union(head: list[str], branch: list[str]) -> list[str]:
 
 
 def _is_pipeline_path(path: str) -> bool:
-    """A path the merge owns: one shard file under data/history, or an exact pipeline file.
+    """A path the merge owns: shards, the announce/absence trees, or exact pipeline files.
 
     The shard rule mirrors `store.shard_name`: exactly one segment under the
-    directory. A nested path would union-merge and commit as data nothing
-    reads, since `load_shards` globs one level.
+    directory. The announce rule allows index.json plus a two-segment
+    ``<source>/<slug>.md`` file; the absence rule allows one ``<source>.json``
+    file per source.
     """
     if path in PIPELINE_EXACT_FILES or path == INDEX_FILE:
         return True
     prefix = SHARD_DIR + "/"
-    return path.startswith(prefix) and "/" not in path[len(prefix) :]
+    if path.startswith(prefix) and "/" not in path[len(prefix) :]:
+        return True
+    announce_prefix = ANNOUNCE_DIR + "/"
+    if path.startswith(announce_prefix):
+        rest = path[len(announce_prefix) :]
+        if rest == "index.json":
+            return True
+        return rest.count("/") == 1 and rest.endswith(".md")
+    absence_prefix = ABSENCE_DIR + "/"
+    if path.startswith(absence_prefix):
+        rest = path[len(absence_prefix) :]
+        return "/" not in rest and rest.endswith(".json")
+    return False
 
 
 def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
@@ -156,6 +203,7 @@ def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
             SHARD_DIR,
             INDEX_FILE,
             *sorted(PIPELINE_EXACT_FILES),
+            *PIPELINE_STATE_DIRS,
         ],
         cwd=repo_root,
     ).splitlines()
@@ -258,12 +306,7 @@ def merge_branches(
         )
 
         if last:
-            (repo_root / ANNOUNCE_FILE).write_text(
-                _branch_text(runner, repo_root, branch, ANNOUNCE_FILE), encoding="utf-8"
-            )
-            (repo_root / ABSENCE_FILE).write_text(
-                _branch_text(runner, repo_root, branch, ABSENCE_FILE), encoding="utf-8"
-            )
+            _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
 
         runner.run(
             [
@@ -272,13 +315,13 @@ def merge_branches(
                 "--",
                 SHARD_DIR,
                 INDEX_FILE,
-                ANNOUNCE_FILE,
-                ABSENCE_FILE,
                 BILLING_RULES_FILE,
                 "tests/test_billing_rules.py",
             ],
             cwd=repo_root,
         )
+        for state_dir in PIPELINE_STATE_DIRS:
+            pr.stage_tree(runner, repo_root, state_dir)
         # the staged tree must carry no conflict markers (a file both sides
         # changed that this merge does not own would stage them)
         runner.run(["git", "diff", "--cached", "--check"], cwd=repo_root)

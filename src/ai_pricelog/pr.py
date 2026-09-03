@@ -52,6 +52,19 @@ class PrRunner:
         return result.stdout
 
 
+def stage_tree(runner: PrRunner, repo_root: Path, tree_dir: str) -> None:
+    """Stage one state tree's additions and deletions, skipping an empty tree.
+
+    ``git add -A -- <dir>`` fails when the pathspec matches nothing, and an
+    absence tree with every source cleared is a valid empty outcome.
+    """
+    tracked = runner.run(["git", "ls-files", "--", tree_dir], cwd=repo_root).strip()
+    path = repo_root / tree_dir
+    untracked = path.is_dir() and any(path.rglob("*"))
+    if tracked or untracked:
+        runner.run(["git", "add", "-A", "--", tree_dir], cwd=repo_root)
+
+
 @dataclass(frozen=True)
 class PrSpec:
     """One history PR: the new rows, the branch, the title and body.
@@ -144,14 +157,14 @@ class PrSpec:
                 )
             lines += [
                 "",
-                "full old/new prose: the `data/announce.json` diff on this branch",
+                "full old/new prose: the `state/announce/<source>/<slug>.md` diff on this branch",
             ]
         if self.absence_update:
             lines += [
                 "",
                 "## absence state",
                 "",
-                "`data/absence.json` updated on this branch; the diff names which "
+                "`state/absence/<source>.json` updated on this branch; the diff names which "
                 "stored models this run counted absent.",
             ]
         if self.hints:

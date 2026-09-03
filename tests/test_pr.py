@@ -318,7 +318,7 @@ def test_spec_body_announcement_channels():
     body = spec(announce=(change,)).body
     assert "## announcement channels" in body
     assert "| deepseek | https://example.com/updates | `aaaaaaaa` -> `bbbbbbbb` |" in body
-    assert "full old/new prose: the `data/announce.json` diff on this branch" in body
+    assert "full old/new prose: the `state/announce/<source>/<slug>.md` diff on this branch" in body
 
 
 def test_spec_body_without_announce_has_no_channel_section():

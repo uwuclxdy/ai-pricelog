@@ -16,7 +16,7 @@ default branch tip. When the store was empty at load, one seed pr carries
 all rows; while that seed pr is still open, the run skips itself.
 
 A stored model absent from its source's page twice (both observations landed
-through prs) gets a removal row; the counters live in data/absence.json,
+through prs) gets a removal row; the counters live in state/absence/,
 which only ever lands on pr branches, so a flaky page never fakes a
 delisting. When the run opens a pr it touches `.run-changed` for the CI step
 that reads it; a state-only diff with no pr opens nothing reviewable and
@@ -105,7 +105,7 @@ def run(
     landed_rows = rows
     rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs))
 
-    snapshot = announce.load_snapshot(repo_root / announce.ANNOUNCE_FILE)
+    snapshot = announce.load_snapshot(repo_root)
     fetch = announce.fetch_channels(cfg, snapshot, today)
     report.announce = list(fetch.changes)
     report.announce_errors = list(fetch.errors)
@@ -122,7 +122,7 @@ def run(
     # settles only under a human-reviewed pr
     announce_updates = fetch.snapshot if announce.differs(snapshot, fetch.snapshot) else None
 
-    absence_state = absence.load_absence(repo_root / absence.ABSENCE_FILE)
+    absence_state = absence.load_absence(repo_root)
     fresh_absence = {
         source: {model_id: dict(entry) for model_id, entry in entries.items()}
         for source, entries in absence_state.items()
@@ -203,7 +203,8 @@ def run(
         rows, landed_rows, plan, report, open_prs, today, fresh_absence, removal_groups, keys
     )
 
-    fresh_absence = {source: entries for source, entries in fresh_absence.items() if entries}
+    fresh_absence_full = fresh_absence
+    fresh_absence = {source: entries for source, entries in fresh_absence_full.items() if entries}
     absence_diff = fresh_absence != absence_state
 
     if not plan and not removal_groups:
@@ -256,7 +257,7 @@ def run(
             "feat: seed price history",
             runner,
             announce_updates,
-            fresh_absence if absence_diff else None,
+            fresh_absence_full if absence_diff else None,
         )
         if url is None:
             for group in plan.values():
@@ -306,7 +307,7 @@ def run(
             _commit_message(spec),
             runner,
             announce_updates,
-            fresh_absence if absence_diff else None,
+            {group.source: fresh_absence_full.get(group.source, {})} if absence_diff else None,
         )
         if url is None:
             # a failed open commits nothing: the rows re-derive against the
@@ -662,11 +663,11 @@ def _open_group_pr(
     """Write the PR branch, push it, open the draft, restore the tree.
 
     The branch carries the landed store plus only the rows its own PR covers,
-    plus the fresh announce snapshot and absence state when they changed this
-    run. A per-source branch writes only its own source's shard; the seed
-    branch writes every shard. The default branch is never committed or
-    pushed, and the tree is restored to the pre-run head after every PR, so
-    each branch starts from the same base.
+    plus the fresh announce snapshot and that source's absence file when they
+    changed this run. A per-source branch writes only its own source's shard
+    and absence file; the seed branch writes every shard and absence file. The
+    default branch is never committed or pushed, and the tree is restored to
+    the pre-run head after every PR, so each branch starts from the same base.
     """
     branch = spec.branch
     shard_dir = repo_root / HISTORY_DIR
@@ -679,12 +680,16 @@ def _open_group_pr(
         else:
             add_cmd.append(str(shard_dir / store.shard_name(spec.source)))
         if announce_updates is not None:
-            announce.save_snapshot(announce_updates, repo_root / announce.ANNOUNCE_FILE)
-            add_cmd.append(announce.ANNOUNCE_FILE)
+            announce.save_snapshot(announce_updates, repo_root)
         if absence_updates is not None:
-            absence.save_absence(absence_updates, repo_root / absence.ABSENCE_FILE)
-            add_cmd.append(absence.ABSENCE_FILE)
+            absence.save_absence(absence_updates, repo_root)
         runner.run(add_cmd, cwd=repo_root)
+        for state_dir in (
+            announce.ANNOUNCE_DIR if announce_updates is not None else None,
+            absence.ABSENCE_DIR if absence_updates is not None else None,
+        ):
+            if state_dir is not None:
+                pr.stage_tree(runner, repo_root, state_dir)
         runner.run(["git", "commit", "-m", message], cwd=repo_root)
     except pr.PrError:
         log.exception("branch commit failed for %s", branch)
