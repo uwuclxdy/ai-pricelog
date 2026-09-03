@@ -9,6 +9,8 @@ branches it verified, and this module re-checks each branch mechanically:
 - the branch is a `pricelog/` automation branch, never the seed branch
 - the branch changes only pipeline files (history, index, README, announce,
   absence, billing-rules plus its test pin)
+- the pipeline files are committed and nothing else is staged: every stage
+  names its paths, so unrelated dirt in the checkout cannot ride the merge
 - the history lands as an exact-line union: every HEAD line survives, the
   branch's lines not already present append in branch order. a key-based
   union drops same-day update rows, so the merge dedupes exact lines only
@@ -74,6 +76,22 @@ def _line_union(head: list[str], branch: list[str]) -> list[str]:
     return union
 
 
+def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
+    """Uncommitted state that could ride into a merge commit.
+
+    the merge stages by path and `git commit` writes the whole index, so only
+    a dirty pipeline file or an already staged change can reach the commit. a
+    CI checkout carries unrelated dirt every run: `uv run` rewrites `uv.lock`
+    when the runner's resolver config differs from the one that wrote it, and
+    `__pycache__` dirs appear under any import.
+    """
+    staged = runner.run(["git", "diff", "--cached", "--name-only"], cwd=repo_root).splitlines()
+    dirty = runner.run(
+        ["git", "status", "--porcelain", "--", *sorted(PIPELINE_FILES)], cwd=repo_root
+    ).splitlines()
+    return [f"staged {path}" for path in staged] + [line.strip() for line in dirty]
+
+
 def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -> None:
     for branch in branches:
         if branch == SEED_BRANCH:
@@ -92,8 +110,12 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
                 f"branch {branch}: changes {outside}; only pipeline files may ride"
                 " an automerged branch"
             )
-    if runner.run(["git", "status", "--porcelain"], cwd=repo_root).strip():
-        raise AutoMergeError("worktree is dirty; the merge needs a clean tree")
+    uncommitted = _uncommitted(runner, repo_root)
+    if uncommitted:
+        raise AutoMergeError(
+            "the merge needs the pipeline files committed and nothing staged: "
+            + "; ".join(uncommitted)
+        )
 
 
 def merge_branches(
@@ -199,8 +221,11 @@ def merge_branches(
         commit = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
         results.append(MergeResult(branch, commit, appended))
 
-    if runner.run(["git", "status", "--porcelain"], cwd=repo_root).strip():
-        raise AutoMergeError("the merged tree is not clean; nothing was pushed")
+    leftover = _uncommitted(runner, repo_root)
+    if leftover:
+        raise AutoMergeError(
+            "the merged pipeline files are not clean; nothing was pushed: " + "; ".join(leftover)
+        )
     for branch in branches:
         # the auto-mark precondition: every merged branch head must be an
         # ancestor of the push target, or github leaves its PR open

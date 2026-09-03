@@ -173,6 +173,50 @@ def test_non_pipeline_file_refused(tmp_path):
         )
 
 
+def test_unrelated_dirt_does_not_block_merge(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    (repo / "uv.lock").write_text("version = 1\n")
+    git(repo, "add", "uv.lock")
+    git(repo, "commit", "-m", "lock")
+    make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    # what a CI checkout carries every run: `uv run` rewrote the lockfile and
+    # imports left cache dirs. neither can reach a commit that stages by path
+    (repo / "uv.lock").write_text("version = 2\n")
+    (repo / "src" / "__pycache__").mkdir(parents=True)
+    (repo / "src" / "__pycache__" / "automerge.pyc").write_text("")
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/zeta-55555555"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [1]
+    assert git(repo, "show", f"{sha}:uv.lock") == "version = 1\n"
+    assert (repo / "uv.lock").read_text(encoding="utf-8") == "version = 2\n"
+
+
+def test_dirty_pipeline_file_refused(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/eta-66666666", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    # a pipeline file the branch leaves alone: git merges over it without a
+    # word and the by-path stage would then commit this worktree copy
+    (repo / BILLING_RULES_FILE).write_text(json.dumps({"rules": ["dirty"]}) + "\n")
+    with pytest.raises(automerge.AutoMergeError, match="nothing staged: M data/billing-rules.json"):
+        automerge.merge_branches(["pricelog/eta-66666666"], repo, pr.PrRunner(), "main", push=False)
+
+
+def test_staged_unrelated_change_refused(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/theta-77777777", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    # git refuses a merge over a dirty index, but blames the merge for a file
+    # it never touches; the pre-flight check names the real cause
+    (repo / "notes.txt").write_text("staged\n")
+    git(repo, "add", "notes.txt")
+    with pytest.raises(automerge.AutoMergeError, match="nothing staged: staged notes.txt"):
+        automerge.merge_branches(
+            ["pricelog/theta-77777777"], repo, pr.PrRunner(), "main", push=False
+        )
+
+
 def test_no_push_lands_locally_and_keeps_refs(tmp_path):
     repo, bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/delta-33333333", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
