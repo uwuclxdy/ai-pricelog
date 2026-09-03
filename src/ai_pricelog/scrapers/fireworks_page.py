@@ -3,11 +3,10 @@
 the Model | Standard | Priority table prices each model per 1M tokens, one
 cell per tier, three dollar amounts per cell in input / cached-input /
 output order. the row stores the Standard tier, the default serving path;
-the Priority column is a tier the index has no slot for and is dropped
-(known gap in docs/domain-knowledge.md). a "—" cell (fast skus have no
-priority tier) carries no amounts. rows key by the normalized page spelling
-of the sku. a cell with a different amount count is a page-shape break
-(FetchError), so a silent misread cannot ship.
+the Priority column is a tier the index has no slot for and is dropped. a
+"—" cell (fast skus have no priority tier) carries no amounts. rows key by
+the normalized page spelling of the sku. a cell with a different amount
+count is a page-shape break (FetchError), so a silent misread cannot ship.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
 page has no serverless table, or a matched cell carries an unexpected
