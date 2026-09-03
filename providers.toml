@@ -1,6 +1,10 @@
 # one section per watched provider. provider = the human-facing name in pr
 # titles and bodies, detector/scraper = module names under
 # ai_pricelog.{detectors,scrapers}. sources pinned 2026-08-19.
+# kind = "first_party" (the provider serves its own models) or "reseller"
+# (it serves everybody's). a first_party section carries vendor = who made
+# its models; a reseller section carries no vendor. generated into
+# data/catalog/providers.json, which also adds openrouter as a reseller.
 # announce_urls = public news/changelog/rss channels watched each run for
 # billing-rule announcements (rate, tier, when-rates-apply, free-tier
 # changes); the key is optional and absent for providers with no watchable
@@ -9,6 +13,8 @@
 
 [deepseek]
 provider = "DeepSeek"
+vendor = "deepseek"
+kind = "first_party"
 detector = "deepseek_page"
 detector_url = "https://api-docs.deepseek.com/quick_start/pricing/"
 scraper = "deepseek_page"
@@ -20,6 +26,8 @@ announce_urls = [
 
 [zai]
 provider = "Z.AI"
+vendor = "zai"
+kind = "first_party"
 detector = "zai_page"
 detector_url = "https://docs.z.ai/guides/overview/pricing"
 scraper = "zai_page"
@@ -33,6 +41,8 @@ announce_urls = [
 
 [moonshot]
 provider = "Moonshot AI"
+vendor = "moonshot"
+kind = "first_party"
 detector = "moonshot_page"
 detector_url = "https://platform.kimi.ai/docs/models.md"
 scraper = "moonshot_page"
@@ -44,6 +54,8 @@ announce_urls = [
 
 [minimax]
 provider = "MiniMax"
+vendor = "minimax"
+kind = "first_party"
 detector = "minimax_page"
 detector_url = "https://platform.minimax.io/docs/guides/models-intro.md"
 scraper = "minimax_page"
@@ -55,6 +67,8 @@ announce_urls = [
 
 [xai]
 provider = "xAI"
+vendor = "xai"
+kind = "first_party"
 detector = "xai_page"
 detector_url = "https://docs.x.ai/docs/models"
 scraper = "xai_page"
@@ -66,6 +80,8 @@ announce_urls = [
 
 [mistral]
 provider = "Mistral"
+vendor = "mistral"
+kind = "first_party"
 detector = "mistral_page"
 detector_url = "https://docs.mistral.ai/models/model-cards/"
 scraper = "mistral_page"
@@ -77,6 +93,8 @@ announce_urls = [
 
 [perplexity]
 provider = "Perplexity"
+vendor = "perplexity"
+kind = "first_party"
 detector = "perplexity_page"
 detector_url = "https://docs.perplexity.ai/guides/pricing"
 scraper = "perplexity_page"
@@ -95,6 +113,7 @@ announce_urls = [
 
 [together]
 provider = "Together AI"
+kind = "reseller"
 detector = "together_page"
 detector_url = "https://www.together.ai/pricing"
 scraper = "together_page"
@@ -106,6 +125,7 @@ announce_urls = [
 
 [novita]
 provider = "Novita"
+kind = "reseller"
 detector = "novita_page"
 detector_url = "https://novita.ai/pricing"
 scraper = "novita_page"
@@ -116,6 +136,7 @@ announce_urls = [
 
 [fireworks]
 provider = "Fireworks"
+kind = "reseller"
 detector = "fireworks_page"
 detector_url = "https://docs.fireworks.ai/serverless/pricing"
 scraper = "fireworks_page"
@@ -126,6 +147,8 @@ announce_urls = [
 
 [cohere]
 provider = "Cohere"
+vendor = "cohere"
+kind = "first_party"
 detector = "cohere_page"
 detector_url = "https://cohere.com/pricing"
 scraper = "cohere_page"
@@ -136,6 +159,8 @@ announce_urls = [
 
 [google]
 provider = "Google"
+vendor = "google"
+kind = "first_party"
 detector = "google_page"
 detector_url = "https://ai.google.dev/gemini-api/docs/pricing"
 scraper = "google_page"
@@ -147,6 +172,7 @@ announce_urls = [
 
 [avian]
 provider = "Avian"
+kind = "reseller"
 detector = "avian_page"
 detector_url = "https://www.avian.io/pricing"
 scraper = "avian_page"
@@ -159,6 +185,7 @@ scraper_url = "https://www.avian.io/pricing"
 
 [deepinfra]
 provider = "DeepInfra"
+kind = "reseller"
 detector = "deepinfra_page"
 detector_url = "https://deepinfra.com/pricing"
 scraper = "deepinfra_page"
@@ -166,6 +193,7 @@ scraper_url = "https://deepinfra.com/pricing"
 
 [cloudflare]
 provider = "Cloudflare"
+kind = "reseller"
 detector = "cloudflare_page"
 detector_url = "https://developers.cloudflare.com/workers-ai/platform/pricing/"
 scraper = "cloudflare_page"
@@ -176,6 +204,8 @@ announce_urls = [
 
 [watsonx]
 provider = "IBM watsonx"
+vendor = "ibm"
+kind = "first_party"
 detector = "watsonx_page"
 detector_url = "https://www.ibm.com/products/watsonx-ai/pricing"
 scraper = "watsonx_page"
@@ -183,6 +213,7 @@ scraper_url = "https://www.ibm.com/products/watsonx-ai/pricing"
 
 [baseten]
 provider = "Baseten"
+kind = "reseller"
 detector = "baseten_page"
 detector_url = "https://www.baseten.co/pricing"
 scraper = "baseten_page"
@@ -190,6 +221,7 @@ scraper_url = "https://www.baseten.co/pricing"
 
 [digitalocean]
 provider = "DigitalOcean"
+kind = "reseller"
 detector = "digitalocean_page"
 detector_url = "https://docs.digitalocean.com/products/inference/details/pricing/"
 scraper = "digitalocean_page"
@@ -200,6 +232,7 @@ announce_urls = [
 
 [sambanova]
 provider = "SambaNova"
+kind = "reseller"
 detector = "sambanova_page"
 detector_url = "https://cloud.sambanova.ai/pricing"
 scraper = "sambanova_page"
@@ -207,6 +240,7 @@ scraper_url = "https://cloud.sambanova.ai/pricing"
 
 [publicai]
 provider = "PublicAI"
+kind = "reseller"
 detector = "publicai_page"
 detector_url = "https://platform.publicai.co/models"
 scraper = "publicai_page"
@@ -220,6 +254,8 @@ scraper_url = "https://platform.publicai.co/models"
 
 [ai21]
 provider = "AI21"
+vendor = "ai21"
+kind = "first_party"
 detector = "ai21_page"
 detector_url = "https://www.ai21.com/pricing"
 scraper = "ai21_page"
@@ -227,6 +263,8 @@ scraper_url = "https://www.ai21.com/pricing"
 
 [openai]
 provider = "OpenAI"
+vendor = "openai"
+kind = "first_party"
 detector = "openai_page"
 detector_url = "https://platform.openai.com/docs/pricing"
 scraper = "openai_page"
@@ -240,6 +278,8 @@ scraper_url = "https://platform.openai.com/docs/pricing"
 
 [dashscope]
 provider = "DashScope"
+vendor = "alibaba"
+kind = "first_party"
 detector = "dashscope_page"
 detector_url = "https://help.aliyun.com/zh/model-studio/text-generation-model/"
 scraper = "dashscope_page"
@@ -252,6 +292,8 @@ scraper_url = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
 
 [anthropic]
 provider = "Anthropic"
+vendor = "anthropic"
+kind = "first_party"
 detector = "anthropic_page"
 detector_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
 scraper = "anthropic_page"
@@ -263,6 +305,7 @@ scraper_url = "https://platform.claude.com/docs/en/about-claude/pricing.md"
 
 [cerebras]
 provider = "Cerebras"
+kind = "reseller"
 detector = "cerebras_page"
 detector_url = "https://api.cerebras.ai/public/v1/models"
 scraper = "cerebras_page"
@@ -276,17 +319,19 @@ scraper_url = "https://api.cerebras.ai/public/v1/models"
 
 [groq]
 provider = "Groq"
+kind = "reseller"
 detector = "groq_page"
 detector_url = "https://console.groq.com/docs/models.md"
 scraper = "groq_page"
 scraper_url = "https://console.groq.com/docs/models.md"
 
 # ungated 2026-08-29: the model-as-a-service page serves the per-1M-token
-# table statically in EUR; build_row converts through data/fx-rates.json.
+# table statically in EUR; build_row converts through data/catalog/fx-rates.json.
 # announce surface: the docs changelog (server-rendered prose) and its rss.
 
 [scaleway]
 provider = "Scaleway"
+kind = "reseller"
 detector = "scaleway_page"
 detector_url = "https://www.scaleway.com/en/pricing/model-as-a-service/"
 scraper = "scaleway_page"
@@ -309,6 +354,7 @@ announce_urls = [
 
 [databricks]
 provider = "Databricks"
+kind = "reseller"
 detector = "databricks_page"
 detector_url = "https://www.databricks.com/product/pricing/foundation-model-serving"
 scraper = "databricks_page"

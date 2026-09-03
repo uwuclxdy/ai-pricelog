@@ -39,7 +39,7 @@ from ai_pricelog import absence, announce, config, models, openrouter, pr, store
 log = logging.getLogger(__name__)
 
 HISTORY_DIR = store.SHARD_DIR
-FX_FILE = "data/fx-rates.json"
+FX_FILE = "data/catalog/fx-rates.json"
 MARKER_FILE = ".run-changed"
 
 
@@ -212,26 +212,48 @@ def run(
         # in-memory state diff says (skip-and-retry re-derives it next run)
         return report
 
-    mapping = models.load_models(repo_root / models.MODELS_FILE)
+    mapping = models.load_models(repo_root / models.MODELS_FILE, allow_missing=False)
+    models.load_aliases(repo_root / models.ALIASES_FILE, models=mapping)
     landed_ids = {
         (group.source, row["model_id"])
         for group in (*plan.values(), *removal_groups)
         for row in group.rows
     }
+    provider_info = {pcfg.key: (pcfg.vendor, pcfg.kind) for pcfg in cfg.providers}
+    # openrouter is the one watched source with no toml section; it resells
+    provider_info["openrouter"] = (None, config.OPENROUTER["kind"])
+    seeded = models.seed_entries(landed_ids, mapping, provider_info)
     hint_by_key = {
-        (source, model_id): (model_id, canonical)
-        for source, model_id, canonical in models.hint_candidates(rows, mapping, landed_ids)
+        (source, model_id): (source, model_id, canonical)
+        for canonical, entry in seeded.items()
+        for source, model_ids in entry["sources"].items()
+        for model_id in model_ids
     }
 
-    def batch_hints(group: _PrGroup) -> tuple[tuple[str, str], ...]:
+    def batch_hints(group: _PrGroup) -> tuple[tuple[str, str, str], ...]:
         return tuple(
             hint_by_key[(group.source, row["model_id"])]
             for row in group.rows
             if (group.source, row["model_id"]) in hint_by_key
         )
 
+    def group_catalog(group: _PrGroup) -> dict[str, dict[str, object]] | None:
+        """The catalog with this group's seeded entries, or None when none."""
+        group_seeds = {
+            f"{group.source}/{row['model_id']}": seeded[f"{group.source}/{row['model_id']}"]
+            for row in group.rows
+            if f"{group.source}/{row['model_id']}" in seeded
+        }
+        if not group_seeds:
+            return None
+        merged = dict(mapping)
+        merged.update(group_seeds)
+        return merged
+
     if seed:
         run_rows = [row for group in plan.values() for row in group.rows]
+        seed_catalog = dict(mapping)
+        seed_catalog.update(seeded)
         spec = pr.PrSpec(
             source="seed",
             provider="",
@@ -258,6 +280,7 @@ def run(
             runner,
             announce_updates,
             fresh_absence_full if absence_diff else None,
+            seed_catalog if seeded else None,
         )
         if url is None:
             for group in plan.values():
@@ -308,6 +331,7 @@ def run(
             runner,
             announce_updates,
             {group.source: fresh_absence_full.get(group.source, {})} if absence_diff else None,
+            group_catalog(group),
         )
         if url is None:
             # a failed open commits nothing: the rows re-derive against the
@@ -659,13 +683,15 @@ def _open_group_pr(
     runner: pr.PrRunner,
     announce_updates: dict[str, dict[str, dict[str, str]]] | None = None,
     absence_updates: dict[str, dict[str, dict[str, object]]] | None = None,
+    catalog_models: dict[str, dict[str, object]] | None = None,
 ) -> str | None:
     """Write the PR branch, push it, open the draft, restore the tree.
 
     The branch carries the landed store plus only the rows its own PR covers,
     plus the fresh announce snapshot and that source's absence file when they
     changed this run. A per-source branch writes only its own source's shard
-    and absence file; the seed branch writes every shard and absence file. The
+    and absence file; the seed branch writes every shard and absence file. A
+    branch with seeded catalog entries also writes the full model catalog. The
     default branch is never committed or pushed, and the tree is restored to
     the pre-run head after every PR, so each branch starts from the same base.
     """
@@ -683,6 +709,9 @@ def _open_group_pr(
             announce.save_snapshot(announce_updates, repo_root)
         if absence_updates is not None:
             absence.save_absence(absence_updates, repo_root)
+        if catalog_models is not None:
+            models.save_models(catalog_models, repo_root / models.MODELS_FILE)
+            add_cmd.append(models.MODELS_FILE)
         runner.run(add_cmd, cwd=repo_root)
         for state_dir in (
             announce.ANNOUNCE_DIR if announce_updates is not None else None,

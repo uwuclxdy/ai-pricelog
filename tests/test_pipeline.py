@@ -138,6 +138,14 @@ def repo_root(tmp_path) -> Path:
     schema_src = Path(__file__).resolve().parents[1] / "data" / "schema" / "row.v4.json"
     (root / "data" / "schema").mkdir(parents=True)
     (root / "data" / "schema" / "row.v4.json").write_text(schema_src.read_text(encoding="utf-8"))
+    # the pipeline reads the committed catalog, so the test repo needs one
+    (root / "data" / "catalog").mkdir(parents=True)
+    (root / "data" / "catalog" / "models.json").write_text(
+        json.dumps({"version": 4, "models": {}}) + "\n"
+    )
+    (root / "data" / "catalog" / "aliases.json").write_text(
+        json.dumps({"version": 4, "aliases": {}}) + "\n"
+    )
     (root / "README.md").write_text("\n")
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
@@ -1224,7 +1232,7 @@ def test_landed_rows_hint_mapping_candidates(tmp_path, fake_modules, repo_root):
 
     (_title, body, _head) = runner.created[0]
     assert body.count("## mapping candidates") == 1
-    assert "- `deepseek-chat` -> canonical `deepseek-chat`" in body
+    assert "- `deepseek-chat` (deepseek) -> canonical `deepseek/deepseek-chat`" in body
 
 
 def test_announce_fetch_flows_through_the_pipeline(tmp_path, fake_modules, repo_root, monkeypatch):
@@ -1906,7 +1914,10 @@ def test_run_changed_marker_stays_off_on_state_only_change(
 
 
 def commit_fx(repo_root: Path, rates: dict[str, dict[str, float]]) -> None:
-    (repo_root / "data" / "fx-rates.json").write_text(json.dumps(rates) + "\n", encoding="utf-8")
+    (repo_root / "data" / "catalog").mkdir(parents=True, exist_ok=True)
+    (repo_root / "data" / "catalog" / "fx-rates.json").write_text(
+        json.dumps(rates) + "\n", encoding="utf-8"
+    )
     git(repo_root, "add", ".")
     git(repo_root, "commit", "-m", "seed fx")
 

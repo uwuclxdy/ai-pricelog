@@ -8,7 +8,7 @@ import pytest
 from ai_pricelog import announce
 from ai_pricelog.scrapers import deepseek_page
 
-DATA = Path(__file__).parents[1] / "data" / "billing-rules.json"
+DATA = Path(__file__).parents[1] / "data" / "catalog" / "billing-rules.json"
 
 
 def make_rules(**overrides: object) -> dict:

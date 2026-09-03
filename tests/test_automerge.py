@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import absence, announce, automerge, pr, store, validate
+from ai_pricelog import absence, announce, automerge, models, pr, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
 from conftest import git, git_init_repo
 
@@ -44,7 +44,11 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     )
     (repo / "state" / "announce").mkdir(parents=True)
     (repo / "state" / "announce" / "index.json").write_text(json.dumps({}) + "\n")
+    (repo / "data" / "catalog").mkdir(parents=True)
     (repo / BILLING_RULES_FILE).write_text(json.dumps({"rules": []}) + "\n")
+    (repo / "data" / "catalog" / "models.json").write_text(
+        json.dumps({"version": 4, "models": {}}) + "\n"
+    )
     (repo / "tests").mkdir()
     (repo / "tests" / "test_billing_rules.py").write_text("# pin placeholder\n")
     git(repo, "add", ".")
@@ -78,6 +82,7 @@ def make_branch(
     announce_texts: dict[str, dict[str, str]] | None = None,
     absence_data: dict | None = None,
     extra_file: str | None = None,
+    catalog_models: dict | None = None,
 ) -> None:
     """Open a pricelog branch off main: append rows, snapshots, push, return to main."""
     git(repo, "switch", "-c", name)
@@ -91,6 +96,8 @@ def make_branch(
         announce.save_snapshot(announce_snapshot(announce_texts), repo)
     if absence_data is not None:
         absence.save_absence(absence_data, repo)
+    if catalog_models is not None:
+        models.save_models(catalog_models, repo / models.MODELS_FILE)
     if extra_file is not None:
         (repo / extra_file).parent.mkdir(parents=True, exist_ok=True)
         (repo / extra_file).write_text("# changed\n")
@@ -225,6 +232,57 @@ def test_merge_lands_a_new_source_shard(tmp_path):
     assert git(repo, "rev-parse", "HEAD").strip() == sha
 
 
+def test_merge_unions_catalog_models(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    models.save_models(
+        {"m1": {"vendor": "v", "curated": True, "sources": {"a": ["m1"]}}},
+        repo / models.MODELS_FILE,
+    )
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "seed catalog")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [],
+        catalog_models={
+            # a stale copy of a canonical HEAD changed: HEAD must win
+            "m1": {"vendor": "stale", "curated": True, "sources": {"a": ["m1"]}},
+            "a/new": {"vendor": None, "curated": False, "sources": {"a": ["new"]}},
+        },
+    )
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
+    assert catalog["models"]["m1"]["vendor"] == "v"
+    assert catalog["models"]["a/new"]["curated"] is False
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_skips_a_seed_whose_key_head_claims(tmp_path):
+    # the reviewer's twin-merge scenario: HEAD merged seed a/m2 into curated y
+    # and deleted a/m2; an older branch still carrying a/m2 must not resurrect it
+    repo, _bare = build_repo(tmp_path)
+    curated = {"y": {"vendor": "v", "curated": True, "sources": {"a": ["m2"]}}}
+    models.save_models(curated, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "merge twin")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [],
+        catalog_models={"a/m2": {"vendor": None, "curated": False, "sources": {"a": ["m2"]}}},
+    )
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
+    assert catalog["models"] == curated
+    assert git(repo, "status", "--porcelain") == ""
+
+
 def test_seed_branch_refused(tmp_path):
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/seed", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
@@ -295,7 +353,9 @@ def test_dirty_pipeline_file_refused(tmp_path):
     # a pipeline file the branch leaves alone: git merges over it without a
     # word and the by-path stage would then commit this worktree copy
     (repo / BILLING_RULES_FILE).write_text(json.dumps({"rules": ["dirty"]}) + "\n")
-    with pytest.raises(automerge.AutoMergeError, match="nothing staged: M data/billing-rules.json"):
+    with pytest.raises(
+        automerge.AutoMergeError, match="nothing staged: M data/catalog/billing-rules.json"
+    ):
         automerge.merge_branches(["pricelog/eta-66666666"], repo, pr.PrRunner(), "main", push=False)
 
 

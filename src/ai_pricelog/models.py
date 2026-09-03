@@ -1,25 +1,28 @@
-"""the canonical model mapping: cross-source identity, human-maintained.
+"""the model catalog: cross-source identity, human-maintained plus pipeline seeds.
 
-`data/models.json` links first-party ids to openrouter ids plus display
-names, keyed by a canonical id, so consumers can compare prices across
-sources. v3 adds dated api-alias records under `aliases`: alias id ->
-records `{"from": "<date|null>", "to": "<date|null>", "canonical":
-"<id>", "citation": "<url>"}`, so a consumer resolves an api alias
-against the date it was used. the loader schema-checks the aliases and
-returns the models map; a consumer reads the file for the alias table.
-the pipeline never writes the file: each run proposes mapping candidates
-on the PR body, and the human review lands confirmed entries. serving
-tiers stay out (cloudy 2026-08-30: mapping only).
+`data/catalog/models.json` links per-source spellings to one canonical id,
+with a `vendor` (who made the model) and a `curated` flag (false on a
+pipeline-seeded entry, true once a human confirms it or merges twins). the
+dated api-alias records split into `data/catalog/aliases.json`: alias id ->
+records `{"from": "<date|null>", "to": "<date|null>", "canonical": "<id>",
+"citation": "<url>"}`, so a consumer resolves an api alias against the date
+it was used. the pipeline seeds one `curated:false` entry per store key it
+cannot map; the human review merges twins and confirms.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable, Mapping
 from datetime import date
 from pathlib import Path
 
-MODELS_FILE = "data/models.json"
+from ai_pricelog.store import _atomic_write
+
+CATALOG_VERSION = 4
+MODELS_FILE = "data/catalog/models.json"
+ALIASES_FILE = "data/catalog/aliases.json"
 
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
@@ -28,19 +31,25 @@ class MappingError(ValueError):
     """the models file failed its schema check; the message names the fix."""
 
 
-def load_models(path: Path) -> dict[str, dict[str, object]]:
-    """The committed mapping, schema-checked; a missing file is empty."""
+def load_models(path: Path, allow_missing: bool = True) -> dict[str, dict[str, object]]:
+    """The committed model catalog, schema-checked.
+
+    A missing file reads as empty when `allow_missing`; the production read
+    passes False so a checkout with no catalog fails instead of seeding over it.
+    """
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        return {}
+        if allow_missing:
+            return {}
+        raise MappingError(f"models file '{path}': missing") from None
     except json.JSONDecodeError as exc:
         raise MappingError(f"models file '{path}': invalid json: {exc.msg}") from exc
     if not isinstance(data, dict):
         raise MappingError(f"models file '{path}': must be an object")
     version = data.get("version")
-    if isinstance(version, bool) or not isinstance(version, int) or version != 3:
-        raise MappingError(f"models file '{path}': version must be the integer 3")
+    if isinstance(version, bool) or not isinstance(version, int) or version != CATALOG_VERSION:
+        raise MappingError(f"models file '{path}': version must be the integer {CATALOG_VERSION}")
     models = data.get("models")
     if not isinstance(models, dict):
         raise MappingError(f"models file '{path}': 'models' must be an object")
@@ -49,7 +58,7 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
             raise MappingError(f"models file '{path}': canonical id must be a non-empty string")
         if not isinstance(entry, dict):
             raise MappingError(f"models file '{path}': model '{canonical}' must be an object")
-        unknown = set(entry) - {"name", "sources"}
+        unknown = set(entry) - {"name", "vendor", "curated", "sources"}
         if unknown:
             raise MappingError(
                 f"models file '{path}': model '{canonical}' has unknown key '{sorted(unknown)[0]}'"
@@ -58,6 +67,19 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
         if name is not None and (not isinstance(name, str) or not name):
             raise MappingError(
                 f"models file '{path}': model '{canonical}' name must be a non-empty string"
+            )
+        vendor = entry.get("vendor")
+        if vendor is not None and (not isinstance(vendor, str) or not vendor):
+            raise MappingError(
+                f"models file '{path}': model '{canonical}' vendor must be"
+                " a non-empty string or null"
+            )
+        if "vendor" not in entry:
+            raise MappingError(f"models file '{path}': model '{canonical}' is missing 'vendor'")
+        curated = entry.get("curated")
+        if not isinstance(curated, bool):
+            raise MappingError(
+                f"models file '{path}': model '{canonical}' curated must be a boolean"
             )
         sources = entry.get("sources")
         if not isinstance(sources, dict) or not sources:
@@ -87,105 +109,235 @@ def load_models(path: Path) -> dict[str, dict[str, object]]:
                 )
             normalized[source] = ids
         entry["sources"] = normalized
+    return models
+
+
+def load_aliases(
+    path: Path, models: Mapping[str, object] | None
+) -> dict[str, list[dict[str, object]]]:
+    """The committed api-alias records, schema-checked; a missing file is empty.
+
+    `models` is the models map from load_models; every record's `canonical`
+    must name one of its keys (the invariant spans the two files). pass None
+    only for a shape check that does not hold the models map.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError as exc:
+        raise MappingError(f"aliases file '{path}': invalid json: {exc.msg}") from exc
+    if not isinstance(data, dict):
+        raise MappingError(f"aliases file '{path}': must be an object")
+    version = data.get("version")
+    if isinstance(version, bool) or not isinstance(version, int) or version != CATALOG_VERSION:
+        raise MappingError(f"aliases file '{path}': version must be the integer {CATALOG_VERSION}")
     aliases = data.get("aliases")
     if not isinstance(aliases, dict):
-        raise MappingError(f"models file '{path}': 'aliases' must be an object")
+        raise MappingError(f"aliases file '{path}': 'aliases' must be an object")
     for alias, records in aliases.items():
         if not isinstance(alias, str) or not alias:
-            raise MappingError(f"models file '{path}': alias id must be a non-empty string")
+            raise MappingError(f"aliases file '{path}': alias id must be a non-empty string")
         if not isinstance(records, list) or not records:
             raise MappingError(
-                f"models file '{path}': alias '{alias}' records must be a non-empty list"
+                f"aliases file '{path}': alias '{alias}' records must be a non-empty list"
             )
         for record in records:
             if not isinstance(record, dict):
                 raise MappingError(
-                    f"models file '{path}': alias '{alias}' record must be an object"
+                    f"aliases file '{path}': alias '{alias}' record must be an object"
                 )
             unknown = set(record) - {"from", "to", "canonical", "citation"}
             if unknown:
                 raise MappingError(
-                    f"models file '{path}': alias '{alias}' record has unknown key"
+                    f"aliases file '{path}': alias '{alias}' record has unknown key"
                     f" '{sorted(unknown)[0]}'"
                 )
             canonical = record.get("canonical")
-            if not isinstance(canonical, str) or canonical not in models:
+            if not isinstance(canonical, str) or not canonical:
                 raise MappingError(
-                    f"models file '{path}': alias '{alias}' record canonical must"
+                    f"aliases file '{path}': alias '{alias}' record canonical must"
+                    " be a non-empty string"
+                )
+            if models is not None and canonical not in models:
+                raise MappingError(
+                    f"aliases file '{path}': alias '{alias}' record canonical must"
                     " name a model in the file"
                 )
             for field in ("from", "to"):
                 if field not in record:
                     raise MappingError(
-                        f"models file '{path}': alias '{alias}' record is missing '{field}'"
+                        f"aliases file '{path}': alias '{alias}' record is missing '{field}'"
                     )
                 value = record[field]
                 if value is None:
                     continue
                 if not isinstance(value, str) or _DATE.fullmatch(value) is None:
                     raise MappingError(
-                        f"models file '{path}': alias '{alias}' record '{field}'"
+                        f"aliases file '{path}': alias '{alias}' record '{field}'"
                         " must be a YYYY-MM-DD date or null"
                     )
                 try:
                     date.fromisoformat(value)
                 except ValueError:
                     raise MappingError(
-                        f"models file '{path}': alias '{alias}' record '{field}'"
+                        f"aliases file '{path}': alias '{alias}' record '{field}'"
                         " must be a YYYY-MM-DD date or null"
                     ) from None
             start, end = record["from"], record["to"]
             if start is not None and end is not None and start >= end:
                 raise MappingError(
-                    f"models file '{path}': alias '{alias}' record 'from' must be before 'to'"
+                    f"aliases file '{path}': alias '{alias}' record 'from' must be before 'to'"
                 )
             citation = record.get("citation")
             if not isinstance(citation, str) or not citation.startswith(("http://", "https://")):
                 raise MappingError(
-                    f"models file '{path}': alias '{alias}' record citation must be an http(s) url"
+                    f"aliases file '{path}': alias '{alias}' record citation must be an http(s) url"
                 )
-    return models
+    return aliases
 
 
-def canonical_spelling(model_id: str) -> str:
-    """The candidate canonical spelling: an openrouter-style vendor prefix strips."""
-    return model_id.split("/", 1)[1] if "/" in model_id else model_id
+# an explicit family token -> maker table, census-checked against the 191
+# curated entries and each provider's published vendor prefix. a token that
+# is not here yields null: a wrong vendor is worse than a missing one.
+FAMILY_MAKER = {
+    "claude": "anthropic",
+    "command": "cohere",
+    "codestral": "mistral",
+    "deepseek": "deepseek",
+    "ernie": "baidu",
+    "gemini": "google",
+    "gemma": "google",
+    "glm": "zai",
+    "gpt": "openai",
+    "granite": "ibm",
+    "grok": "xai",
+    "hy3": "tencent",
+    "inkling": "thinkingmachines",
+    "kimi": "moonshot",
+    "ling": "inclusionai",
+    "llama": "meta",
+    "mimo": "xiaomi",
+    "minimax": "minimax",
+    "mistral": "mistral",
+    "muse": "meta",
+    "mythomax": "gryphe",
+    "nemotron": "nvidia",
+    "o1": "openai",
+    "o3": "openai",
+    "o4": "openai",
+    "phi": "microsoft",
+    "pixtral": "mistral",
+    "qwen": "alibaba",
+    "sonar": "perplexity",
+    "step": "stepfun",
+    "wizardlm": "microsoft",
+}
 
 
-def hint_candidates(
-    stored_rows: list[dict[str, object]],
-    mapping: dict[str, dict[str, object]],
-    landed_ids: set[tuple[str, str]],
-) -> list[tuple[str, str, str]]:
-    """(source, model_id, canonical) triples worth a human's mapping decision.
+def _family_vendor(model_id: str) -> str | None:
+    """The maker named by one family token in the id, or null.
 
-    a landed id hints a canonical when its stripped spelling matches a
-    stored id under another source and the pair is not already mapped. the
-    pipeline renders the hints on the PR body; a human confirms them into
-    models.json during review.
+    The id splits on non-alphanumeric delimiters and each token checks against
+    FAMILY_MAKER by exact equality. exactly one distinct maker matches; zero
+    tokens and two tokens naming different makers both yield null, so a token
+    absent from the table never guesses.
     """
-    by_spelling: dict[tuple[str, str], set[str]] = {}
-    for row in stored_rows:
-        source = row.get("source")
-        model_id = row.get("model_id")
-        if isinstance(source, str) and isinstance(model_id, str):
-            by_spelling.setdefault((canonical_spelling(model_id), source), set()).add(model_id)
-    mapped: set[tuple[str, str]] = set()
+    makers = {
+        FAMILY_MAKER[token]
+        for token in re.split(r"[^a-z0-9]+", model_id.lower())
+        if token in FAMILY_MAKER
+    }
+    return makers.pop() if len(makers) == 1 else None
+
+
+def derive_vendor(
+    model_id: str, provider_vendor: str | None, provider_kind: str | None
+) -> str | None:
+    """The maker of a model id from its shape; null when the shape names none.
+
+    The five arms, in order: a 3-segment `@cf/<vendor>/<model>` id yields
+    segment 1; a 2-segment `<vendor>/<model>` id yields segment 0; a family
+    token in the id names a maker; an unprefixed id on a first-party source
+    yields that provider's vendor; anything else is null. near-miss vendor
+    slugs stay un-unified: that twin merge is the human's, and `curated:false`
+    marks the entry as pending.
+    """
+    parts = model_id.split("/")
+    if len(parts) == 3 and parts[0] == "@cf" and parts[1]:
+        return parts[1].lower()
+    if len(parts) == 2 and parts[0]:
+        return parts[0].lower()
+    family = _family_vendor(model_id)
+    if family is not None:
+        return family
+    if (
+        len(parts) == 1
+        and provider_kind == "first_party"
+        and isinstance(provider_vendor, str)
+        and provider_vendor
+    ):
+        return provider_vendor.lower()
+    return None
+
+
+def is_resold(entry: Mapping[str, object], provider: Mapping[str, object]) -> bool:
+    """Whether a provider serving a catalog entry resells it.
+
+    Plan decision 29: a row is resold when the model's maker differs from the
+    provider's vendor; a provider carrying no vendor resells everything.
+    """
+    return entry.get("vendor") != provider.get("vendor")
+
+
+def seed_entries(
+    keys: Iterable[tuple[str, str]],
+    mapping: dict[str, dict[str, object]],
+    providers: Mapping[str, tuple[str | None, str | None]],
+) -> dict[str, dict[str, object]]:
+    """One `curated:false` entry per store key no existing entry covers.
+
+    The canonical id is `<source>/<model_id>`: the store key pair is unique,
+    and a migrated canonical id never carries a `/`, so the seeded id cannot
+    collide with an existing or another seeded one. `providers` maps a source
+    to its `(vendor, kind)` pair for derive_vendor.
+    """
+    covered: set[tuple[str, str]] = set()
     for entry in mapping.values():
         for source, model_ids in entry.get("sources", {}).items():
-            if not isinstance(model_ids, list):
+            if isinstance(model_ids, str):
                 model_ids = [model_ids]
             for model_id in model_ids:
                 if isinstance(model_id, str):
-                    mapped.add((source, model_id))
-    hints: list[tuple[str, str, str]] = []
-    for source, model_id in sorted(landed_ids):
-        spelling = canonical_spelling(model_id)
-        if (source, model_id) in mapped:
+                    covered.add((source, model_id))
+    seeded: dict[str, dict[str, object]] = {}
+    for source, model_id in sorted(keys):
+        if (source, model_id) in covered:
             continue
-        for (stored_spelling, stored_source), _spellings in by_spelling.items():
-            if stored_source == source or stored_spelling != spelling:
-                continue
-            hints.append((source, model_id, spelling))
-            break
-    return hints
+        vendor, kind = providers.get(source, (None, None))
+        canonical = f"{source}/{model_id}"
+        if canonical in mapping:
+            raise MappingError(
+                f"seed '{canonical}' collides with an existing catalog entry;"
+                " a store key no entry covers must not reuse a canonical id"
+            )
+        seeded[canonical] = {
+            "vendor": derive_vendor(model_id, vendor, kind),
+            "curated": False,
+            "sources": {source: [model_id]},
+        }
+    return seeded
+
+
+def save_models(models_map: Mapping[str, dict[str, object]], path: Path) -> None:
+    """Write the model catalog in the committed sorted, 2-space shape."""
+    _atomic_write(
+        json.dumps(
+            {"version": CATALOG_VERSION, "models": models_map},
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        path,
+    )

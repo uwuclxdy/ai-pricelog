@@ -206,10 +206,12 @@ def resolve_rate(
         if not day:
             raise FxError(
                 f"no fx rate for {currency!r} on or before {observed_at[:10]};"
-                " fix: add a dated entry to data/fx-rates.json"
+                " fix: add a dated entry to data/catalog/fx-rates.json"
             )
         return dated[day], day
-    raise FxError(f"no fx rate for currency {currency!r}; fix: add it to data/fx-rates.json")
+    raise FxError(
+        f"no fx rate for currency {currency!r}; fix: add it to data/catalog/fx-rates.json"
+    )
 
 
 def newest(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str, object] | None:

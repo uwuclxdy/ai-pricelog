@@ -10,7 +10,8 @@ from ai_pricelog.store import load_shards
 ROOT = Path(__file__).resolve().parents[1]
 
 _MAPPING = {
-    "m1": {"name": "M1", "sources": {"a": "m1", "b": "m1"}},
+    "m1": {"name": "M1", "curated": True, "sources": {"a": "m1", "b": "m1"}},
+    "a/seed": {"vendor": None, "curated": False, "sources": {"a": ["seed"]}},
 }
 
 
@@ -61,5 +62,5 @@ def test_render_missing_marker_raises():
 def test_committed_readme_stats_recompute_from_data():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     rows = load_shards(ROOT / "data" / "history")
-    mapping = models.load_models(ROOT / "data" / "models.json")
+    mapping = models.load_models(ROOT / "data" / "catalog" / "models.json")
     assert stats.render(readme, stats.compute(rows, mapping)) == readme

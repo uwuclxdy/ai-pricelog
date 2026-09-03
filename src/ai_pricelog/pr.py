@@ -83,7 +83,7 @@ class PrSpec:
     announce: tuple[announce.ChannelChange, ...] = ()
     absence_update: bool = False
     batch_key: str = ""
-    hints: tuple[tuple[str, str], ...] = ()
+    hints: tuple[tuple[str, str, str], ...] = ()
 
     @property
     def branch(self) -> str:
@@ -172,12 +172,12 @@ class PrSpec:
                 "",
                 "## mapping candidates",
                 "",
-                "the landed rows may extend the canonical model mapping. confirm"
-                " each pair into `data/models.json` during review, or drop it:",
+                "the landed rows got seeded catalog entries (`curated: false`)."
+                " confirm or merge each into `data/catalog/models.json` during review:",
                 "",
             ]
-            for model_id, canonical in self.hints:
-                lines.append(f"- `{model_id}` -> canonical `{canonical}`")
+            for source, model_id, canonical in self.hints:
+                lines.append(f"- `{model_id}` ({source}) -> canonical `{canonical}`")
         lines.extend(self._review_section())
         return "\n".join(lines) + "\n"
 

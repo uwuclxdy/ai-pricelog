@@ -27,7 +27,11 @@ class Stats:
 
 
 def compute(rows: list[dict[str, object]], mapping: dict[str, dict[str, object]]) -> Stats:
-    """Counts over the store rows: models, sources, rows, date span, mapping."""
+    """Counts over the store rows: models, sources, rows, date span, mapping.
+
+    `mapped` counts only curated entries: a pipeline seed is an unconfirmed
+    identity, not a confirmed canonical model.
+    """
     models = {(row["source"], row["model_id"]) for row in rows}
     sources = {row["source"] for row in rows}
     dates = sorted({str(row["observed_at"])[:10] for row in rows})
@@ -35,7 +39,8 @@ def compute(rows: list[dict[str, object]], mapping: dict[str, dict[str, object]]
     days = 0
     if len(dates) > 1:
         days = (date.fromisoformat(dates[-1]) - date.fromisoformat(dates[0])).days + 1
-    return Stats(len(models), len(sources), len(rows), first, days, len(mapping))
+    curated = sum(1 for entry in mapping.values() if entry.get("curated") is True)
+    return Stats(len(models), len(sources), len(rows), first, days, curated)
 
 
 def _table(stats: Stats) -> str:

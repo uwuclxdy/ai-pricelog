@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from ai_pricelog import store
+from ai_pricelog.models import CATALOG_VERSION
 
 
 class ConfigError(Exception):
@@ -27,6 +28,9 @@ class ProviderCfg:
     announce_urls: tuple[str, ...] = ()
     # USD per one source unit: the dbu->usd rate for providers quoting DBUs
     currency_rate: float | None = None
+    # who made the models a first-party source serves; a reseller carries none
+    vendor: str | None = None
+    kind: str = "reseller"
 
 
 @dataclass(frozen=True)
@@ -34,8 +38,13 @@ class Config:
     providers: tuple[ProviderCfg, ...]
 
 
-_REQUIRED_KEYS = ("provider", "detector", "detector_url", "scraper", "scraper_url")
+_REQUIRED_KEYS = ("provider", "detector", "detector_url", "scraper", "scraper_url", "kind")
 _MODULE_KINDS = ("detectors", "scrapers")
+_KINDS = ("first_party", "reseller")
+
+# openrouter is the one watched source with no toml section; its provider
+# record derives here so the generator and the pipeline agree on one value.
+OPENROUTER = {"name": "OpenRouter", "kind": "reseller"}
 
 
 def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
@@ -44,6 +53,10 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
     for section, values in data.items():
         if not isinstance(values, dict):
             raise ConfigError(f"providers file '{path}': section '{section}' must be a table")
+        if section == "openrouter":
+            raise ConfigError(
+                f"providers file '{path}': 'openrouter' is generated, not a toml section"
+            )
         # the key names the source's history shard file, so it has to be one
         # plain path segment; refusing here keeps the failure at load time
         try:
@@ -51,7 +64,11 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         except ValueError as exc:
             raise ConfigError(f"providers file '{path}': {exc}") from exc
         for key in values:
-            if key not in _REQUIRED_KEYS and key not in ("announce_urls", "currency_rate"):
+            if key not in _REQUIRED_KEYS and key not in (
+                "announce_urls",
+                "currency_rate",
+                "vendor",
+            ):
                 raise ConfigError(
                     f"providers file '{path}': provider '{section}' has unknown key '{key}'"
                 )
@@ -59,6 +76,23 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
         if missing:
             raise ConfigError(
                 f"providers file '{path}': provider '{section}' is missing required keys {missing}"
+            )
+        kind = values["kind"]
+        if kind not in _KINDS:
+            raise ConfigError(
+                f"providers file '{path}': provider '{section}' kind must be one of {_KINDS}"
+            )
+        vendor = values.get("vendor")
+        if kind == "first_party":
+            if not isinstance(vendor, str) or not vendor:
+                raise ConfigError(
+                    f"providers file '{path}': provider '{section}' kind"
+                    " 'first_party' needs a non-empty 'vendor'"
+                )
+        elif "vendor" in values:
+            raise ConfigError(
+                f"providers file '{path}': provider '{section}' kind"
+                " 'reseller' must not carry a 'vendor'"
             )
         announce = values.get("announce_urls", [])
         if not isinstance(announce, list) or not all(
@@ -89,9 +123,29 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
                 scraper_url=values["scraper_url"],
                 announce_urls=tuple(announce),
                 currency_rate=float(rate) if rate is not None else None,
+                vendor=values.get("vendor"),
+                kind=values["kind"],
             )
         )
     return tuple(providers)
+
+
+def generate_providers(path: Path) -> dict[str, object]:
+    """The committed providers.json content: providers.toml plus openrouter.
+
+    A first-party section carries its `vendor`; a reseller section carries no
+    `vendor` (it resells everybody). openrouter is the one watched source with
+    no toml section, so the generator adds it as a vendorless reseller.
+    """
+    providers: dict[str, dict[str, str]] = {}
+    for pcfg in load_providers(path):
+        entry: dict[str, str] = {"name": pcfg.provider}
+        if pcfg.vendor is not None:
+            entry["vendor"] = pcfg.vendor
+        entry["kind"] = pcfg.kind
+        providers[pcfg.key] = entry
+    providers["openrouter"] = dict(OPENROUTER)
+    return {"version": CATALOG_VERSION, "providers": providers}
 
 
 def load(

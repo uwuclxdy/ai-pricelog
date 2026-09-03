@@ -32,12 +32,13 @@ the push and the ref deletions happen only after every merge commit landed.
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import pr, store, validate
+from ai_pricelog import models, pr, store, validate
 from ai_pricelog.absence import ABSENCE_DIR
 from ai_pricelog.announce import ANNOUNCE_DIR, BILLING_RULES_FILE
 
@@ -67,7 +68,11 @@ class MergeResult:
 
 
 def _branch_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
-    return runner.run(["git", "show", f"origin/{branch}:{path}"], cwd=repo_root)
+    """The branch's copy of a path; a path the branch never had reads as empty."""
+    try:
+        return runner.run(["git", "show", f"origin/{branch}:{path}"], cwd=repo_root)
+    except pr.PrError:
+        return ""
 
 
 def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
@@ -135,16 +140,63 @@ def _replace_tree(runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: s
             path.rmdir()
 
 
+def _branch_diff_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
+    """The paths one branch changed since the merge base.
+
+    three-dot: what the BRANCH changed since the merge base. two-dot also lists
+    a file HEAD gained and the branch never had, and `git show
+    origin/<branch>:<that path>` then raises mid-merge.
+    """
+    return runner.run(
+        ["git", "diff", "--name-only", f"HEAD...origin/{branch}"], cwd=repo_root
+    ).splitlines()
+
+
 def _branch_shard_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
     """The shard paths one branch changed, relative to HEAD."""
-    paths = runner.run(
-        # three-dot: what the BRANCH changed since the merge base. two-dot also
-        # lists a file HEAD gained and the branch never had, and `git show
-        # origin/<branch>:<that path>` then raises mid-merge
-        ["git", "diff", "--name-only", f"HEAD...origin/{branch}"],
-        cwd=repo_root,
-    ).splitlines()
-    return sorted(path for path in paths if path.startswith(SHARD_DIR + "/"))
+    return sorted(
+        path
+        for path in _branch_diff_paths(runner, repo_root, branch)
+        if path.startswith(SHARD_DIR + "/")
+    )
+
+
+def _union_models(head_text: str, branch_text: str) -> str:
+    """HEAD's model catalog plus the branch's additions.
+
+    A branch entry lands only when HEAD claims none of its `(source, model_id)`
+    pairs, whatever canonical id claims them. that preserves the coverage
+    invariant: a human twin merge on HEAD deletes a seeded id, and an older
+    branch still carrying that id must not resurrect it.
+    """
+    head = json.loads(head_text) if head_text else {"version": models.CATALOG_VERSION, "models": {}}
+    branch_data = json.loads(branch_text)
+    merged = dict(head.get("models") or {})
+    head_claims = {
+        (source, model_id)
+        for entry in merged.values()
+        for source, ids in (entry.get("sources") or {}).items()
+        for model_id in ids
+    }
+    for canonical, entry in (branch_data.get("models") or {}).items():
+        claims = {
+            (source, model_id)
+            for source, ids in (entry.get("sources") or {}).items()
+            for model_id in ids
+        }
+        if claims & head_claims:
+            continue
+        merged[canonical] = entry
+        head_claims |= claims
+    return (
+        json.dumps(
+            {"version": models.CATALOG_VERSION, "models": merged},
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
 
 
 def _line_union(head: list[str], branch: list[str]) -> list[str]:
@@ -166,7 +218,7 @@ def _is_pipeline_path(path: str) -> bool:
     ``<source>/<slug>.md`` file; the absence rule allows one ``<source>.json``
     file per source.
     """
-    if path in PIPELINE_EXACT_FILES or path == INDEX_FILE:
+    if path in PIPELINE_EXACT_FILES or path == INDEX_FILE or path == models.MODELS_FILE:
         return True
     prefix = SHARD_DIR + "/"
     if path.startswith(prefix) and "/" not in path[len(prefix) :]:
@@ -202,6 +254,7 @@ def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
             "--",
             SHARD_DIR,
             INDEX_FILE,
+            models.MODELS_FILE,
             *sorted(PIPELINE_EXACT_FILES),
             *PIPELINE_STATE_DIRS,
         ],
@@ -296,6 +349,17 @@ def merge_branches(
             union_text = "\n".join(union) + ("\n" if union else "")
             (repo_root / shard_path).write_text(union_text, encoding="utf-8")
 
+        changed = set(_branch_diff_paths(runner, repo_root, branch))
+        models_changed = models.MODELS_FILE in changed
+        if models_changed:
+            (repo_root / models.MODELS_FILE).write_text(
+                _union_models(
+                    _head_text(runner, repo_root, models.MODELS_FILE),
+                    _branch_text(runner, repo_root, branch, models.MODELS_FILE),
+                ),
+                encoding="utf-8",
+            )
+
         # the merge owns the served index: reindex.yml runs on push, and
         # whether this push triggers a workflow depends on which credential
         # git picks for it. regenerating here needs no answer to that
@@ -308,18 +372,15 @@ def merge_branches(
         if last:
             _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
 
-        runner.run(
-            [
-                "git",
-                "add",
-                "--",
-                SHARD_DIR,
-                INDEX_FILE,
-                BILLING_RULES_FILE,
-                "tests/test_billing_rules.py",
-            ],
-            cwd=repo_root,
-        )
+        add_paths = [
+            SHARD_DIR,
+            INDEX_FILE,
+            BILLING_RULES_FILE,
+            "tests/test_billing_rules.py",
+        ]
+        if models_changed:
+            add_paths.append(models.MODELS_FILE)
+        runner.run(["git", "add", "--", *add_paths], cwd=repo_root)
         for state_dir in PIPELINE_STATE_DIRS:
             pr.stage_tree(runner, repo_root, state_dir)
         # the staged tree must carry no conflict markers (a file both sides

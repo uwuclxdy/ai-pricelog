@@ -121,9 +121,9 @@ def test_spec_body_summary_line():
 
 
 def test_spec_body_mapping_candidates_section():
-    body = spec(hints=(("deepseek-chat", "deepseek-chat"),)).body
+    body = spec(hints=(("deepseek", "deepseek-chat", "deepseek/deepseek-chat"),)).body
     assert "## mapping candidates" in body
-    assert "`deepseek-chat` -> canonical `deepseek-chat`" in body
+    assert "`deepseek-chat` (deepseek) -> canonical `deepseek/deepseek-chat`" in body
     assert "mapping candidates" not in spec().body
 
 

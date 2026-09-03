@@ -1,0 +1,459 @@
+{
+  "aliases": {
+    "codestral-latest": [
+      {
+        "canonical": "codestral-2405",
+        "citation": "https://docs.mistral.ai/resources/changelogs",
+        "from": "2024-05-29",
+        "to": "2025-01-13"
+      }
+    ],
+    "deepseek-chat": [
+      {
+        "canonical": "deepseek-v3",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2024-12-26",
+        "from": "2024-12-26",
+        "to": "2025-03-24"
+      },
+      {
+        "canonical": "deepseek-v3-0324",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-03-24",
+        "from": "2025-03-24",
+        "to": "2025-08-21"
+      },
+      {
+        "canonical": "deepseek-v3.1",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-08-21",
+        "from": "2025-08-21",
+        "to": "2025-09-22"
+      },
+      {
+        "canonical": "deepseek-v3.1-terminus",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-09-22",
+        "from": "2025-09-22",
+        "to": "2025-09-29"
+      },
+      {
+        "canonical": "deepseek-v3.2-exp",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-09-29",
+        "from": "2025-09-29",
+        "to": "2025-12-01"
+      },
+      {
+        "canonical": "deepseek-v3.2",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-12-01",
+        "from": "2025-12-01",
+        "to": "2026-04-24"
+      },
+      {
+        "canonical": "deepseek-v4-flash",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2026-04-24",
+        "from": "2026-04-24",
+        "to": "2026-07-24"
+      }
+    ],
+    "deepseek-flash-latest": [
+      {
+        "canonical": "deepseek-v4-flash-0731",
+        "citation": "https://docs.fireworks.ai/ecosystem/fireconnect/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "deepseek-reasoner": [
+      {
+        "canonical": "deepseek-r1",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-01-20",
+        "from": "2025-01-20",
+        "to": "2025-05-28"
+      },
+      {
+        "canonical": "deepseek-r1-0528",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-05-28",
+        "from": "2025-05-28",
+        "to": "2025-08-21"
+      },
+      {
+        "canonical": "deepseek-v3.1",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-08-21",
+        "from": "2025-08-21",
+        "to": "2025-09-22"
+      },
+      {
+        "canonical": "deepseek-v3.1-terminus",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-09-22",
+        "from": "2025-09-22",
+        "to": "2025-09-29"
+      },
+      {
+        "canonical": "deepseek-v3.2-exp",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-09-29",
+        "from": "2025-09-29",
+        "to": "2025-12-01"
+      },
+      {
+        "canonical": "deepseek-v3.2",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2025-12-01",
+        "from": "2025-12-01",
+        "to": "2026-04-24"
+      },
+      {
+        "canonical": "deepseek-v4-flash",
+        "citation": "https://api-docs.deepseek.com/updates/#date-2026-04-24",
+        "from": "2026-04-24",
+        "to": "2026-07-24"
+      }
+    ],
+    "gemini-2.5-pro-preview-03-25": [
+      {
+        "canonical": "gemini-2.5-pro",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2025-06-26",
+        "to": null
+      }
+    ],
+    "gemini-2.5-pro-preview-05-06": [
+      {
+        "canonical": "gemini-2.5-pro",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2025-06-26",
+        "to": null
+      }
+    ],
+    "gemini-3-pro-preview": [
+      {
+        "canonical": "gemini-3.1-pro-preview",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2026-03-09",
+        "to": null
+      }
+    ],
+    "gemini-flash-latest": [
+      {
+        "canonical": "gemini-2.5-flash",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2025-06-17",
+        "to": "2026-01-21"
+      },
+      {
+        "canonical": "gemini-3-flash-preview",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2026-01-21",
+        "to": "2026-05-19"
+      },
+      {
+        "canonical": "gemini-3.5-flash",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2026-05-19",
+        "to": null
+      }
+    ],
+    "gemini-pro-latest": [
+      {
+        "canonical": "gemini-2.5-pro",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2025-06-17",
+        "to": "2026-01-21"
+      },
+      {
+        "canonical": "gemini-3-pro-preview",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2026-01-21",
+        "to": "2026-03-09"
+      },
+      {
+        "canonical": "gemini-3.1-pro-preview",
+        "citation": "https://ai.google.dev/gemini-api/docs/changelog",
+        "from": "2026-03-09",
+        "to": null
+      }
+    ],
+    "gpt-5.6": [
+      {
+        "canonical": "gpt-5.6-sol",
+        "citation": "https://platform.openai.com/docs/models/gpt-5.6-sol.md",
+        "from": null,
+        "to": null
+      }
+    ],
+    "gpt-daybreak-blue-latest": [
+      {
+        "canonical": "gpt-5.6-sol",
+        "citation": "https://platform.openai.com/docs/models/gpt-daybreak-blue-latest.md",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-0309": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-0309": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-0309-non-reasoning": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-0309-reasoning": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-latest": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-latest-non-reasoning": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-latest-reasoning": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-non-reasoning": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-beta-reasoning": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-0304": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-0304-non-reasoning": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-0304-reasoning": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-latest": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-non-reasoning-latest": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-experimental-beta-reasoning-latest": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-multi-agent-beta-0309": [
+      {
+        "canonical": "grok-4.20-multi-agent",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-multi-agent-beta-latest": [
+      {
+        "canonical": "grok-4.20-multi-agent",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-multi-agent-experimental-beta-0304": [
+      {
+        "canonical": "grok-4.20-multi-agent",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-multi-agent-experimental-beta-latest": [
+      {
+        "canonical": "grok-4.20-multi-agent",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-multi-agent-latest": [
+      {
+        "canonical": "grok-4.20-multi-agent",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-non-reasoning-gv2": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-non-reasoning-latest": [
+      {
+        "canonical": "grok-4.20-non-reasoning",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-reasoning": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-reasoning-gv2": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.20-reasoning-latest": [
+      {
+        "canonical": "grok-4.20",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.3-latest": [
+      {
+        "canonical": "grok-4.3",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-4.5-latest": [
+      {
+        "canonical": "grok-4.5",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-build-latest": [
+      {
+        "canonical": "grok-4.5",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-code-fast": [
+      {
+        "canonical": "grok-build-0.1",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-code-fast-1": [
+      {
+        "canonical": "grok-build-0.1",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "grok-code-fast-1-0825": [
+      {
+        "canonical": "grok-build-0.1",
+        "citation": "https://docs.x.ai/docs/models",
+        "from": null,
+        "to": null
+      }
+    ],
+    "mistral-large-latest": [
+      {
+        "canonical": "mistral-large-2407",
+        "citation": "https://docs.mistral.ai/resources/changelogs",
+        "from": "2024-07-24",
+        "to": "2024-11-18"
+      },
+      {
+        "canonical": "mistral-large-2512",
+        "citation": "https://docs.mistral.ai/resources/changelogs",
+        "from": "2025-12-02",
+        "to": null
+      }
+    ]
+  },
+  "version": 4
+}

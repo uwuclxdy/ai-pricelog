@@ -1,0 +1,135 @@
+{
+  "providers": {
+    "ai21": {
+      "kind": "first_party",
+      "name": "AI21",
+      "vendor": "ai21"
+    },
+    "anthropic": {
+      "kind": "first_party",
+      "name": "Anthropic",
+      "vendor": "anthropic"
+    },
+    "avian": {
+      "kind": "reseller",
+      "name": "Avian"
+    },
+    "baseten": {
+      "kind": "reseller",
+      "name": "Baseten"
+    },
+    "cerebras": {
+      "kind": "reseller",
+      "name": "Cerebras"
+    },
+    "cloudflare": {
+      "kind": "reseller",
+      "name": "Cloudflare"
+    },
+    "cohere": {
+      "kind": "first_party",
+      "name": "Cohere",
+      "vendor": "cohere"
+    },
+    "dashscope": {
+      "kind": "first_party",
+      "name": "DashScope",
+      "vendor": "alibaba"
+    },
+    "databricks": {
+      "kind": "reseller",
+      "name": "Databricks"
+    },
+    "deepinfra": {
+      "kind": "reseller",
+      "name": "DeepInfra"
+    },
+    "deepseek": {
+      "kind": "first_party",
+      "name": "DeepSeek",
+      "vendor": "deepseek"
+    },
+    "digitalocean": {
+      "kind": "reseller",
+      "name": "DigitalOcean"
+    },
+    "fireworks": {
+      "kind": "reseller",
+      "name": "Fireworks"
+    },
+    "google": {
+      "kind": "first_party",
+      "name": "Google",
+      "vendor": "google"
+    },
+    "groq": {
+      "kind": "reseller",
+      "name": "Groq"
+    },
+    "minimax": {
+      "kind": "first_party",
+      "name": "MiniMax",
+      "vendor": "minimax"
+    },
+    "mistral": {
+      "kind": "first_party",
+      "name": "Mistral",
+      "vendor": "mistral"
+    },
+    "moonshot": {
+      "kind": "first_party",
+      "name": "Moonshot AI",
+      "vendor": "moonshot"
+    },
+    "novita": {
+      "kind": "reseller",
+      "name": "Novita"
+    },
+    "openai": {
+      "kind": "first_party",
+      "name": "OpenAI",
+      "vendor": "openai"
+    },
+    "openrouter": {
+      "kind": "reseller",
+      "name": "OpenRouter"
+    },
+    "perplexity": {
+      "kind": "first_party",
+      "name": "Perplexity",
+      "vendor": "perplexity"
+    },
+    "publicai": {
+      "kind": "reseller",
+      "name": "PublicAI"
+    },
+    "sambanova": {
+      "kind": "reseller",
+      "name": "SambaNova"
+    },
+    "scaleway": {
+      "kind": "reseller",
+      "name": "Scaleway"
+    },
+    "together": {
+      "kind": "reseller",
+      "name": "Together AI"
+    },
+    "watsonx": {
+      "kind": "first_party",
+      "name": "IBM watsonx",
+      "vendor": "ibm"
+    },
+    "xai": {
+      "kind": "first_party",
+      "name": "xAI",
+      "vendor": "xai"
+    },
+    "zai": {
+      "kind": "first_party",
+      "name": "Z.AI",
+      "vendor": "zai"
+    }
+  },
+  "version": 4
+}

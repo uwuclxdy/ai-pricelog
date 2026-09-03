@@ -7,8 +7,9 @@ from the committed snapshot is an announcement change: the pipeline reports it
 old->new on every draft PR it opens and commits the fresh snapshot on the PR
 branch, so a channel settles only under a human-reviewed PR. With no PR opened
 the snapshot stays stale and the change re-surfaces next run (skip-and-retry).
-Confirmed billing-rule semantics land in the committed data/billing-rules.json,
-human-written per rule; the pipeline never writes it.
+Confirmed billing-rule semantics land in the committed
+data/catalog/billing-rules.json, human-written per rule; the pipeline never
+writes it.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ from ai_pricelog.store import _atomic_write
 
 ANNOUNCE_DIR = "state/announce"
 ANNOUNCE_INDEX = "state/announce/index.json"
-BILLING_RULES_FILE = "data/billing-rules.json"
+BILLING_RULES_FILE = "data/catalog/billing-rules.json"
 
 
 @dataclass(frozen=True)
