@@ -22,17 +22,18 @@ detectors scrape provider pricing pages and the openrouter api daily. every obse
 
 ## What it is
 
-one repo holds two files:
+one repo holds the observations and one generated view of them:
 
 | file | contents |
 |---|---|
-| `data/history.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever |
+| `data/history/<source>.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever, one file per source |
 | `data/index.json` | the current price of every watched model, generated from the history |
+| `data/schema/row.v4.json` | the json-schema a row is checked against, and the contract a consumer can read |
 
 a row:
 
 ```json
-{"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","input_mtok":0.435,"output_mtok":0.87,"cache_read_mtok":0.0036,"max_tokens_in":1048576,"max_tokens_out":393216,"window_rates":[{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"input_mtok":0.87,"output_mtok":1.74},{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[600,1000],"input_mtok":0.87,"output_mtok":1.74}],"effective_at":"2026-08-23","url":"https://api-docs.deepseek.com/quick_start/pricing"}
+{"schema":4,"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","effective_at":"2026-08-23","rates":{"input":0.66,"output":1.98,"cache_read":0.022},"overrides":[{"when":{"days":["monday","tuesday","wednesday","thursday","friday"],"window":[100,400],"timezone":"Asia/Shanghai"},"rates":{"input":1.32,"output":3.96,"cache_read":0.044}}],"limits":{"context":1048576,"output":393216},"provenance":{"url":"https://api-docs.deepseek.com/quick_start/pricing"}}
 ```
 
 a removal row (one per source/model ever; the index stamps the entry `removed_at` until the model reappears):
@@ -124,14 +125,14 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 **how do i see every price a model ever had?**
 
 ```sh
-rg 'deepseek-v4-pro' data/history.ndjson
+rg 'deepseek-v4-pro' data/history/deepseek.ndjson
 ```
 
 each matching row is one observed change.
 
 **what does a peak/off-peak model look like?**
 
-deepseek rows carry `window_rates`: the plain `input_mtok`/`output_mtok` are the off-peak default, and one entry per peak window overrides them with the peak rates on its `days` (weekdays, matching the beijing-time weekend rule; `effective_at` stamps the rule's date).
+deepseek rows carry `overrides`: the base `rates` are the off-peak default, and one entry per peak window overrides them with the peak rates on its `when.days` (weekdays, matching the beijing-time weekend rule; `effective_at` stamps the rule's date). an absent axis in an override inherits the base rate.
 
 ## Comparison
 
