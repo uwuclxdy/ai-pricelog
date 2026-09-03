@@ -285,9 +285,12 @@ def is_resold(entry: Mapping[str, object], provider: Mapping[str, object]) -> bo
     """Whether a provider serving a catalog entry resells it.
 
     Plan decision 29: a row is resold when the model's maker differs from the
-    provider's vendor; a provider carrying no vendor resells everything.
+    provider's vendor; a provider carrying no vendor resells everything, and a
+    model whose maker the catalog cannot name is nobody's first-party row. A
+    bare inequality would read those two nulls as a match.
     """
-    return entry.get("vendor") != provider.get("vendor")
+    provider_vendor = provider.get("vendor")
+    return provider_vendor is None or entry.get("vendor") != provider_vendor
 
 
 def seed_entries(

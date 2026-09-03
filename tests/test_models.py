@@ -353,6 +353,14 @@ def test_is_resold_compares_model_and_provider_vendors():
     assert is_resold(entry, {"kind": "reseller"}) is True
 
 
+def test_a_vendorless_provider_resells_a_vendorless_model():
+    """Both sides null is the seeded shape, and equality would call it first-party."""
+    unknown = {"vendor": None, "curated": False, "sources": {"together": ["rnj-1-instruct"]}}
+    assert is_resold(unknown, {"kind": "reseller"}) is True
+    # a maker the table cannot name is not evidence the serving provider made it
+    assert is_resold(unknown, {"vendor": "deepseek", "kind": "first_party"}) is True
+
+
 def test_save_models_round_trips(tmp_path):
     mapping = {
         "m1": {"vendor": "v", "curated": True, "sources": {"a": ["m1"]}},

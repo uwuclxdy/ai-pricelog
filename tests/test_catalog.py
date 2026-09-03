@@ -41,6 +41,13 @@ def test_resold_is_the_vendor_comparison():
     assert models.is_resold(catalog["watsonx/llama-3-3-70b-instruct"], providers["watsonx"]) is True
     # any row on a vendorless reseller: deepinfra has no vendor
     assert models.is_resold(catalog["claude-fable-5"], providers["deepinfra"]) is True
+    # every null-vendor entry the seeding left behind sits on a vendorless
+    # reseller, so equality alone would hand a consumer 17 first-party rows
+    nulls = [c for c, e in catalog.items() if e["vendor"] is None]
+    assert nulls
+    for canonical in nulls:
+        for source in catalog[canonical]["sources"]:
+            assert models.is_resold(catalog[canonical], providers[source]) is True
 
 
 def test_seeded_entries_are_machine_seeds():
