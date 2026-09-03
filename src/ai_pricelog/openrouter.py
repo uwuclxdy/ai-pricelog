@@ -1,10 +1,10 @@
-"""OpenRouter public models API: fetch and parse model entries, map them to store rows.
+"""OpenRouter public models API: fetch and parse model entries, map them to v4 store rows.
 
 https://openrouter.ai/api/v1/models is keyless. Per-token price strings are
 converted to per-megatoken floats with the same rounding as pricing.py.
-Scheduled overrides (utc_days / utc_start / utc_end) map to `window_rates`;
-volume-threshold overrides (min_prompt_tokens) map to `volume_rates`;
-unmapped pricing keys stay verbatim under `extra`.
+Scheduled overrides (utc_days / utc_start / utc_end) and volume-threshold
+overrides (min_prompt_tokens) both map to v4 `overrides` entries; unmapped
+pricing keys stay verbatim under `unmapped`.
 """
 
 from __future__ import annotations
@@ -48,40 +48,41 @@ OBSERVED_KEYS = frozenset(
     {"prompt", "completion", "input_cache_read", "input_cache_write", "input_cache_write_1h"}
 )
 
-# source pricing key -> row mtok field, shared by the base mapping and the
-# per-window rates so the two can never drift apart
+# source pricing key -> v4 rate axis; the one table shared by the base
+# mapping, window overrides and volume overrides so the three can never
+# drift apart
 _PRICE_KEYS = (
-    ("prompt", "input_mtok"),
-    ("completion", "output_mtok"),
-    ("input_cache_read", "cache_read_mtok"),
-    ("input_cache_write", "cache_write_mtok"),
-    ("input_cache_write_1h", "cache_write_1h_mtok"),
+    ("prompt", "input"),
+    ("completion", "output"),
+    ("input_cache_read", "cache_read"),
+    ("input_cache_write", "cache_write"),
+    ("input_cache_write_1h", "cache_write_1h"),
 )
 
-# source modality key -> typed row mtok field (schema v3): promoted out of
-# `extra` so consumers can query and validate them. web_search stays out: it
-# prices per request (a flat USD fee), not per token, and lands as
-# web_search_usd below
+# source modality key -> v4 rate axis, promoted out of `unmapped` so consumers
+# can query and validate them. web_search stays out: it prices per request (a
+# flat USD fee), not per token, and lands in the fees dict below
 _MODALITY_KEYS = (
-    ("image", "image_mtok"),
-    ("audio", "audio_mtok"),
-    ("input_audio_cache", "input_audio_cache_mtok"),
-    ("internal_reasoning", "internal_reasoning_mtok"),
-    ("image_output", "image_output_mtok"),
-    ("audio_output", "audio_output_mtok"),
+    ("image", "image"),
+    ("audio", "audio"),
+    ("input_audio_cache", "input_audio_cache"),
+    ("internal_reasoning", "internal_reasoning"),
+    ("image_output", "image_output"),
+    ("audio_output", "audio_output"),
 )
 _MODALITY_SOURCE_KEYS = frozenset(key for key, _ in _MODALITY_KEYS)
 # per-request fee keys, typed as plain USD fields (never per-token)
 _FEE_SOURCE_KEYS = frozenset({"web_search"})
 
-# every source pricing key the typed mapping consumes; the one mapping table
-# shared by the row builder and the store's index normalization
+# every source pricing key the typed mapping consumes; the migration splits
+# v3 `extra` rows on this set so a known pricing key re-maps and everything
+# else stays unmapped
 SOURCE_KEYS = frozenset(
     {*(key for key, _ in _PRICE_KEYS), *_MODALITY_SOURCE_KEYS, *_FEE_SOURCE_KEYS}
 )
 
 # the override keys that make an override a schedule rather than a threshold;
-# any override carrying one of them maps to window_rates
+# any override carrying one of them maps to a scheduled override entry
 _SCHEDULE_KEYS = frozenset({"utc_days", "utc_start", "utc_end"})
 
 # override keys recognized in a volume-threshold override: the threshold plus
@@ -101,15 +102,17 @@ _WEEKDAYS = (
 )
 
 
-def map_typed_fields(source_pricing: Mapping[str, object], label: str) -> dict[str, object]:
-    """source pricing keys -> typed row fields, via the one shared mapping.
+def map_typed_fields(
+    source_pricing: Mapping[str, object], label: str
+) -> tuple[dict[str, object], dict[str, object]]:
+    """source pricing keys -> (rates, fees), via the one shared mapping.
 
     per-token strings convert to mtok (round 6); web_search is a per-request
     USD fee and lands verbatim. zero (free) keys stay; negative ("no fixed
     price") keys drop. a non-numeric value is a shape break.
     """
-    fields: dict[str, object] = {}
-    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
+    rates: dict[str, object] = {}
+    for key, axis in (*_PRICE_KEYS, *_MODALITY_KEYS):
         value = source_pricing.get(key)
         if value is None:
             continue
@@ -121,7 +124,8 @@ def map_typed_fields(source_pricing: Mapping[str, object], label: str) -> dict[s
                 f" per-token string, got {type(value).__name__}"
             ) from exc
         if rate >= 0:
-            fields[field_name] = to_mtok(rate)
+            rates[axis] = to_mtok(rate)
+    fees: dict[str, object] = {}
     web_search = source_pricing.get("web_search")
     if web_search is not None:
         try:
@@ -132,27 +136,20 @@ def map_typed_fields(source_pricing: Mapping[str, object], label: str) -> dict[s
                 f" per-request dollar string, got {type(web_search).__name__}"
             ) from exc
         if fee >= 0:
-            fields["web_search_usd"] = fee
-    return fields
+            fees["web_search"] = fee
+    return rates, fees
 
 
-def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | None:
+def build_row(
+    model: OpenrouterModel, observed_at: str, schema_version: int
+) -> dict[str, object] | None:
     if model.alias_target or model.variant_snapshot:
         return None
-    row: dict[str, object] = {
-        "source": "openrouter",
-        "model_id": model.id,
-        "observed_at": observed_at,
-    }
-    if model.name:
-        row["name"] = model.name
-    row.update(map_typed_fields(model.pricing, model.id))
-    if model.context_length > 0:
-        row["max_tokens_in"] = model.context_length
-    overrides = model.pricing.get("overrides")
-    window_rates: list[dict[str, object]] = []
-    volume_rates: list[dict[str, object]] = []
+    rates, fees = map_typed_fields(model.pricing, model.id)
+    schedule_entries: list[dict[str, object]] = []
+    volume_entries: list[dict[str, object]] = []
     leftover_overrides: list[dict[str, object]] = []
+    overrides = model.pricing.get("overrides")
     if overrides is not None:
         if not isinstance(overrides, list) or not all(
             isinstance(override, dict) for override in overrides
@@ -160,18 +157,12 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
             raise ValueError(f"model {model.id!r}: pricing 'overrides' must be a list of objects")
         for override in overrides:
             if not _SCHEDULE_KEYS.isdisjoint(override):
-                window_rates.extend(_window_entry(model.id, override))
+                schedule_entries.extend(_window_entry(model.id, override))
             elif "min_prompt_tokens" in override:
-                volume_rates.append(_volume_entry(model.id, override))
+                volume_entries.append(_volume_entry(model.id, override))
             else:
                 leftover_overrides.append(override)
-    if window_rates:
-        row["window_rates"] = window_rates
-        # schedule entries are clock windows; the source spells them in UTC
-        row["timezone"] = "UTC"
-    if volume_rates:
-        row["volume_rates"] = volume_rates
-    extra = {
+    unmapped = {
         key: value
         for key, value in model.pricing.items()
         if key not in OBSERVED_KEYS
@@ -180,22 +171,45 @@ def build_row(model: OpenrouterModel, observed_at: str) -> dict[str, object] | N
         and key != "overrides"
     }
     if leftover_overrides:
-        extra["overrides"] = leftover_overrides
-    if extra:
-        row["extra"] = extra
+        unmapped["overrides"] = leftover_overrides
+    row: dict[str, object] = {
+        "schema": schema_version,
+        "source": "openrouter",
+        "model_id": model.id,
+        "observed_at": observed_at,
+    }
+    if rates:
+        row["rates"] = rates
+    if schedule_entries or volume_entries:
+        row["overrides"] = [*schedule_entries, *volume_entries]
+    if fees:
+        row["fees"] = fees
+    limits: dict[str, object] = {}
+    if model.context_length > 0:
+        limits["context"] = model.context_length
+    if limits:
+        row["limits"] = limits
+    if unmapped:
+        row["unmapped"] = unmapped
+    provenance: dict[str, object] = {}
+    if model.name:
+        provenance["name"] = model.name
+    if provenance:
+        row["provenance"] = provenance
     return row
 
 
 def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, object]]:
-    """One scheduled override as window_rates entries (a wrap window splits into two).
+    """One scheduled override as v4 override entries (a wrap window splits into two).
 
     The entries keep the source encoding: days are the lowercase weekday
     names in calendar order, the window is the [utc_start, utc_end] HHMM
     clock pair with a utc_end of 0 normalized to 2400 (midnight as the END
     of the day). Absent utc_days (every day) and absent bounds (whole day)
-    stay absent.
+    stay absent. The source spells its windows in UTC, so every entry's when
+    carries "timezone": "UTC".
     """
-    entry: dict[str, object] = {}
+    when: dict[str, object] = {}
     days = override.get("utc_days")
     if days is not None:
         if not isinstance(days, list) or not days or not all(isinstance(day, str) for day in days):
@@ -211,7 +225,7 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
             )
         # calendar order, deduped: a repeated day adds no information, and
         # the order is stable across source reorderings
-        entry["days"] = sorted(set(days), key=_WEEKDAYS.index)
+        when["days"] = sorted(set(days), key=_WEEKDAYS.index)
     start = override.get("utc_start")
     end = override.get("utc_end")
     if (start is None) != (end is None):
@@ -230,7 +244,8 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
             windows = [[start_clock, 2400], [0, end_clock]]
         else:
             windows = [[start_clock, end_clock]]
-    for key, field_name in _PRICE_KEYS:
+    rates: dict[str, object] = {}
+    for key, axis in _PRICE_KEYS:
         value = override.get(key)
         if value is None:
             continue
@@ -249,7 +264,7 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
         if rate > 0:
             # zero (free) and negative ("no fixed price") keys inherit the
             # base price, mirroring _price: the key drops from the entry
-            entry[field_name] = to_mtok(rate)
+            rates[axis] = to_mtok(rate)
     unknown = set(override) - _WINDOW_ENTRY_KEYS
     if unknown:
         raise ValueError(
@@ -257,15 +272,19 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
             " not mapped; fix: extend the window mapping or drop the key"
         )
     if windows is None:
-        return [entry]
-    return [{**entry, "window": window} for window in windows]
+        when["timezone"] = "UTC"
+        return [{"when": when, "rates": rates}]
+    return [
+        {"when": {**when, "window": window, "timezone": "UTC"}, "rates": dict(rates)}
+        for window in windows
+    ]
 
 
 def _volume_entry(model_id: str, override: dict[str, object]) -> dict[str, object]:
-    """One volume-threshold override as a volume_rates entry.
+    """One volume-threshold override as a v4 override entry.
 
-    min_prompt_tokens lands as min_tokens; the price keys map to their mtok
-    fields with the same zero/negative inherit-base rule as window entries.
+    min_prompt_tokens lands as when.min_tokens; the price keys map to their
+    rate axes with the same zero/negative inherit-base rule as window entries.
     A key outside the known volume set is a shape break.
     """
     min_tokens = override.get("min_prompt_tokens")
@@ -279,8 +298,8 @@ def _volume_entry(model_id: str, override: dict[str, object]) -> dict[str, objec
             f"model {model_id!r}: override min_prompt_tokens must be a positive"
             f" integer, got {min_tokens!r}"
         )
-    entry: dict[str, object] = {"min_tokens": int(min_tokens)}
-    for key, field_name in (*_PRICE_KEYS, *_MODALITY_KEYS):
+    rates: dict[str, object] = {}
+    for key, axis in (*_PRICE_KEYS, *_MODALITY_KEYS):
         value = override.get(key)
         if value is None:
             continue
@@ -297,14 +316,14 @@ def _volume_entry(model_id: str, override: dict[str, object]) -> dict[str, objec
                 f" per-token number string, got {value!r}"
             ) from exc
         if rate > 0:
-            entry[field_name] = to_mtok(rate)
+            rates[axis] = to_mtok(rate)
     unknown = set(override) - _VOLUME_SOURCE_KEYS - {"min_prompt_tokens"}
     if unknown:
         raise ValueError(
             f"model {model_id!r}: volume override key(s) {sorted(unknown)!r} are"
             " not mapped; fix: extend the volume mapping or drop the key"
         )
-    return entry
+    return {"when": {"min_tokens": int(min_tokens)}, "rates": rates}
 
 
 def _clock(model_id: str, key: str, value: object) -> int:

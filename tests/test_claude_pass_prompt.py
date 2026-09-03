@@ -51,10 +51,14 @@ def test_row_schema_carries_the_current_vocabulary() -> None:
     # it stale sends the next review against a dead shape
     schema = _section_body(PROMPT.read_text(), "row schema", "##")
     for term in (
+        "overrides",
+        "min_tokens",
+        "fx_rate",
         "quota_multiplier",
-        "volume_rates",
-        "timezone",
-        "web_search_usd",
+        "rates",
+        "fees",
+        "limits",
+        "provenance",
         "final price snapshot",
         "zero price is a price",
     ):

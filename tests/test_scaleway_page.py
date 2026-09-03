@@ -20,6 +20,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import scaleway_page as detector
 from ai_pricelog.scrapers import scaleway_page as scraper
 from ai_pricelog.store import build_row, resolve_rate
+from ai_pricelog.validate import load_schema_keys
 from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://www.scaleway.com/en/pricing/model-as-a-service/"
@@ -43,6 +44,9 @@ EXPECTED_IDS = [
     "gpt-oss-120b",
     "bge-multilingual-gemma2",
 ]
+
+
+VERSION = load_schema_keys(Path(__file__).resolve().parents[1]).version
 
 
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
@@ -349,21 +353,21 @@ def test_build_row_converts_eur_quote_to_usd(live_page):
     pricing = scraper.scrape(make_cfg(), "glm-5.2")
     assert pricing is not None
     resolve = partial(resolve_rate, {"EUR": {"2026-08-28": 1.1643}}, None)
-    row = build_row("scaleway", "glm-5.2", pricing, "2026-08-28", PAGE_URL, resolve=resolve)
+    row = build_row(
+        "scaleway", "glm-5.2", pricing, "2026-08-28", PAGE_URL, VERSION, resolve=resolve
+    )
     assert list(row) == [
+        "schema",
         "source",
         "model_id",
         "observed_at",
         "currency",
-        "currency_rate",
-        "currency_rate_date",
-        "input_mtok",
-        "output_mtok",
-        "url",
+        "rates",
+        "provenance",
     ]
     assert row["currency"] == "EUR"
-    assert row["currency_rate"] == 1.1643
-    assert row["currency_rate_date"] == "2026-08-28"
-    assert row["input_mtok"] == pytest.approx(1.80 * 1.1643)
-    assert row["output_mtok"] == pytest.approx(5.50 * 1.1643)
-    assert row["url"] == PAGE_URL
+    assert row["provenance"]["fx_rate"] == 1.1643
+    assert row["provenance"]["fx_rate_date"] == "2026-08-28"
+    assert row["rates"]["input"] == pytest.approx(1.80 * 1.1643)
+    assert row["rates"]["output"] == pytest.approx(5.50 * 1.1643)
+    assert row["provenance"]["url"] == PAGE_URL

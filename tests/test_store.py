@@ -6,9 +6,9 @@ from functools import partial
 
 import pytest
 
-from ai_pricelog import validate
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.store import (
+    SHARD_DIR,
     FxError,
     build_removal_row,
     build_row,
@@ -16,12 +16,18 @@ from ai_pricelog.store import (
     last,
     load,
     load_fx,
+    load_shard,
+    load_shards,
     newest,
     resolve_rate,
     save,
+    save_shard,
+    shard_name,
     union,
     write_index,
 )
+
+VERSION = 4
 
 EUR_FX: dict[str, dict[str, float]] = {
     "EUR": {"2026-08-20": 1.05, "2026-08-26": 1.1, "2026-08-28": 1.1643}
@@ -60,8 +66,8 @@ def test_load_non_object_line_names_file_and_line(tmp_path):
 
 def test_save_load_roundtrip_preserves_order_and_trailing_newline(tmp_path):
     rows = [
-        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.5, "url": "u"},
-        {"source": "b", "model_id": "n", "observed_at": "t2", "input_mtok": 2.5, "url": "ü"},
+        {"schema": 4, "source": "a", "model_id": "m", "observed_at": "t1", "rates": {"input": 1.5}},
+        {"schema": 4, "source": "b", "model_id": "n", "observed_at": "t2", "rates": {"input": 2.5}},
     ]
     path = tmp_path / "history.ndjson"
     save(rows, path)
@@ -70,6 +76,64 @@ def test_save_load_roundtrip_preserves_order_and_trailing_newline(tmp_path):
         json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows
     )
     assert path.read_text(encoding="utf-8") == expected
+
+
+def test_shard_dir_constant():
+    assert SHARD_DIR == "data/history"
+
+
+def test_shard_name_appends_ndjson():
+    assert shard_name("deepseek") == "deepseek.ndjson"
+
+
+def test_shard_name_refuses_a_non_segment_source():
+    for bad in ("../escaped", "a/b", "a b", "", ".", "UPPER"):
+        with pytest.raises(ValueError, match="cannot name a shard file"):
+            shard_name(bad)
+
+
+def test_save_shard_sorts_by_model_then_date(tmp_path):
+    rows = [
+        {"schema": 4, "source": "a", "model_id": "b", "observed_at": "2026-08-20"},
+        {"schema": 4, "source": "a", "model_id": "a", "observed_at": "2026-08-22"},
+        {"schema": 4, "source": "a", "model_id": "b", "observed_at": "2026-08-19"},
+    ]
+    save_shard(rows, tmp_path, "a")
+    loaded = load_shard(tmp_path, "a")
+    assert [(r["model_id"], r["observed_at"]) for r in loaded] == [
+        ("a", "2026-08-22"),
+        ("b", "2026-08-19"),
+        ("b", "2026-08-20"),
+    ]
+    text = (tmp_path / "a.ndjson").read_text(encoding="utf-8")
+    assert '", "' not in text
+    assert ": " not in text
+
+
+def test_save_shard_refuses_a_source_that_escapes(tmp_path):
+    with pytest.raises(ValueError, match="cannot name a shard file"):
+        save_shard([], tmp_path, "../escaped")
+    assert not (tmp_path.parent / "escaped.ndjson").exists()
+
+
+def test_load_shard_reads_one_source(tmp_path):
+    save_shard([{"schema": 4, "source": "a", "model_id": "m", "observed_at": "t1"}], tmp_path, "a")
+    save_shard([{"schema": 4, "source": "b", "model_id": "m", "observed_at": "t2"}], tmp_path, "b")
+    assert [r["source"] for r in load_shard(tmp_path, "a")] == ["a"]
+    assert load_shard(tmp_path, "missing") == []
+
+
+def test_load_shards_concatenates_in_filename_order(tmp_path):
+    (tmp_path / "a.ndjson").write_text(
+        '{"schema":4,"source":"a","model_id":"m","observed_at":"t1"}\n', encoding="utf-8"
+    )
+    (tmp_path / "b.ndjson").write_text(
+        '{"schema":4,"source":"b","model_id":"m","observed_at":"t2"}\n', encoding="utf-8"
+    )
+    (tmp_path / "z.ndjson").write_text(
+        '{"schema":4,"source":"z","model_id":"m","observed_at":"t3"}\n', encoding="utf-8"
+    )
+    assert [r["source"] for r in load_shards(tmp_path)] == ["a", "b", "z"]
 
 
 def test_union_dedupes_by_source_model_observed_at():
@@ -91,10 +155,8 @@ def test_union_preserves_base_rows_and_order():
 
 
 def test_union_keeps_removal_row_sharing_a_landed_price_key():
-    # a same-day landed price row and a pending removal row share the
-    # (source, model_id, observed_at) key; the removal must survive the dedupe
     base = [
-        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
+        {"source": "a", "model_id": "m", "observed_at": "t1", "rates": {"input": 1.0}},
     ]
     extra = [
         {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
@@ -103,11 +165,9 @@ def test_union_keeps_removal_row_sharing_a_landed_price_key():
 
 
 def test_union_dedupes_carried_removal_copy():
-    # a pending branch's full-store snapshot repeats a landed removal; the
-    # copy appends nothing (one removal row per key ever)
     base = [
         {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
-        {"source": "a", "model_id": "n", "observed_at": "t2", "input_mtok": 1.0},
+        {"source": "a", "model_id": "n", "observed_at": "t2", "rates": {"input": 1.0}},
     ]
     extra = [
         {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True},
@@ -129,160 +189,226 @@ def test_last_returns_latest_row_per_source_and_model():
     assert last(rows, "a", "missing") is None
 
 
+def test_last_skips_removed_rows():
+    rows = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "rates": {"input": 1.0}},
+        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
+    ]
+    assert last(rows, "a", "m")["observed_at"] == "t1"
+    assert last([rows[1]], "a", "m") is None
+
+
+def test_newest_returns_the_newest_row_removal_included():
+    rows = [
+        {"source": "a", "model_id": "m", "observed_at": "t1", "rates": {"input": 1.0}},
+        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
+    ]
+    assert newest(rows, "a", "m")["observed_at"] == "t2"
+    assert newest(rows, "a", "m")["removed"] is True
+    assert newest(rows, "a", "n") is None
+
+
 def test_changed_is_true_for_first_row():
-    row = {"source": "a", "model_id": "m", "observed_at": "t", "input_mtok": 1.0}
+    row = {"schema": 4, "source": "a", "model_id": "m", "observed_at": "t", "rates": {"input": 1.0}}
     assert changed(row, None) is True
 
 
 def test_changed_ignores_observed_at_only_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
-    assert changed(row, prev) is False
-
-
-def test_changed_detects_value_and_added_field_differences():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 2.0}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
-    assert changed(row, prev) is True
-
-
-def test_changed_ignores_url_only_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "url": "v2"}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0, "url": "v1"}
-    assert changed(row, prev) is False
-
-
-def test_changed_ignores_name_only_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "name": "n2"}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
-    assert changed(row, prev) is False
-
-
-def test_changed_treats_legacy_max_tokens_as_max_tokens_in():
-    # pre-split rows store the context under max_tokens; the rename alone is
-    # not a change
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "max_tokens_in": 131072}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "max_tokens": 131072}
-    assert changed(row, prev) is False
-
-
-def test_changed_detects_legacy_max_tokens_value_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "max_tokens_in": 1048576}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "max_tokens": 393216}
-    assert changed(row, prev) is True
-
-
-def test_changed_detects_window_rates_value_difference():
     row = {
-        "source": "openrouter",
-        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
         "observed_at": "t2",
-        "input_mtok": 0.66,
-        "window_rates": [{"window": [100, 400], "input_mtok": 1.32}],
+        "rates": {"input": 1.0},
     }
     prev = {
-        "source": "openrouter",
-        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
         "observed_at": "t1",
-        "input_mtok": 0.66,
-        "window_rates": [{"window": [100, 400], "input_mtok": 0.66}],
+        "rates": {"input": 1.0},
     }
-    assert changed(row, prev) is True
+    assert changed(row, prev) is False
 
 
-def test_changed_detects_window_rates_appearance():
+def test_changed_ignores_schema_stamp_only_difference():
     row = {
-        "source": "openrouter",
-        "model_id": "deepseek/deepseek-v4-pro-0813",
-        "observed_at": "t2",
-        "input_mtok": 0.66,
-        "window_rates": [{"window": [100, 400], "input_mtok": 1.32}],
+        "schema": 5,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "rates": {"input": 1.0},
     }
     prev = {
-        "source": "openrouter",
-        "model_id": "deepseek/deepseek-v4-pro-0813",
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
         "observed_at": "t1",
-        "input_mtok": 0.66,
+        "rates": {"input": 1.0},
     }
-    assert changed(row, prev) is True
+    assert changed(row, prev) is False
 
 
-def test_changed_fires_when_an_extra_key_moves_to_a_standard_field():
-    # the 2026-08-28 key migration: stored openrouter rows carry the write
-    # rate verbatim under extra; the next row moves it to cache_write_mtok,
-    # and the move is a change (one refresh row per priced model, human-reviewed)
+def test_changed_ignores_provenance_only_difference():
     row = {
-        "source": "openrouter",
-        "model_id": "a/b",
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
         "observed_at": "t2",
-        "input_mtok": 1.0,
-        "cache_write_mtok": 12.5,
+        "rates": {"input": 1.0},
+        "provenance": {"url": "v2"},
     }
     prev = {
-        "source": "openrouter",
-        "model_id": "a/b",
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
         "observed_at": "t1",
-        "input_mtok": 1.0,
-        "extra": {"input_cache_write": "0.0000125"},
+        "rates": {"input": 1.0},
+        "provenance": {"url": "v1"},
+    }
+    assert changed(row, prev) is False
+
+
+def test_changed_ignores_fx_refresh_only_difference():
+    row = {
+        "schema": 4,
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 1.1643},
+        "currency": "EUR",
+        "provenance": {"fx_rate": 1.1643, "fx_rate_date": "2026-08-28"},
+    }
+    prev = {
+        "schema": 4,
+        "source": "scaleway",
+        "model_id": "m",
+        "observed_at": "t1",
+        "rates": {"input": 1.1643},
+        "currency": "EUR",
+        "provenance": {"fx_rate": 1.1, "fx_rate_date": "2026-08-26"},
+    }
+    assert changed(row, prev) is False
+
+
+def test_changed_detects_rates_difference():
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 2.0},
+    }
+    prev = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "rates": {"input": 1.0},
     }
     assert changed(row, prev) is True
 
 
-def test_changed_detects_cache_write_value_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "cache_write_mtok": 12.5}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "cache_write_mtok": 15.0}
+def test_changed_detects_added_field_difference():
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 1.0},
+        "limits": {"context": 4096},
+    }
+    prev = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "rates": {"input": 1.0},
+    }
     assert changed(row, prev) is True
 
 
 def test_changed_detects_dropped_field():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 1.0},
+    }
     prev = {
+        "schema": 4,
         "source": "a",
         "model_id": "m",
         "observed_at": "t1",
-        "input_mtok": 1.0,
-        "output_mtok": 0.5,
+        "rates": {"input": 1.0, "output": 0.5},
     }
     assert changed(row, prev) is True
 
 
+def test_changed_detects_currency_difference():
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 1.0},
+        "currency": "EUR",
+    }
+    prev = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "rates": {"input": 1.0},
+    }
+    assert changed(row, prev) is True
+
+
+def test_changed_treats_a_removed_last_row_as_first():
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "rates": {"input": 1.0},
+    }
+    removed = {"schema": 4, "source": "a", "model_id": "m", "observed_at": "t1", "removed": True}
+    assert changed(row, removed) is True
+
+
 def test_build_row_maps_per_token_to_mtok_and_rounds():
     pricing = Pricing(input_cost_per_token=0.000000435, output_cost_per_token=0.000001, mode="flex")
-    row = build_row("deepseek", "deepseek/model", pricing, "2026-08-26T00:00:00Z", "https://x")
-    assert list(row) == ["source", "model_id", "observed_at", "input_mtok", "output_mtok", "url"]
+    row = build_row(
+        "deepseek", "deepseek/model", pricing, "2026-08-26T00:00:00Z", "https://x", VERSION
+    )
+    assert list(row) == ["schema", "source", "model_id", "observed_at", "rates", "provenance"]
+    assert row["schema"] == VERSION
     assert row["source"] == "deepseek"
     assert row["model_id"] == "deepseek/model"
     assert row["observed_at"] == "2026-08-26T00:00:00Z"
-    assert row["input_mtok"] == 0.435
-    assert row["output_mtok"] == 1.0
-    assert row["url"] == "https://x"
+    assert row["rates"] == {"input": 0.435, "output": 1.0}
+    assert row["provenance"] == {"url": "https://x"}
 
 
-def test_build_row_omits_optional_fields_when_absent():
+def test_build_row_omits_empty_containers():
     pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
-    row = build_row("a", "m", pricing, "t", "u")
-    assert "cache_read_mtok" not in row
-    assert "max_tokens_in" not in row
-    assert "max_tokens_out" not in row
-    assert "peak_windows" not in row
-    assert "peak_input_mtok" not in row
-    assert "peak_output_mtok" not in row
-    assert "peak_cache_read_mtok" not in row
-    # the quote slot reads USD per 1M tokens when omitted
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert "overrides" not in row
+    assert "fees" not in row
+    assert "limits" not in row
+    assert "unmapped" not in row
     assert "currency" not in row
-    assert "unit" not in row
-    assert "currency_rate" not in row
-    assert "currency_rate_date" not in row
     assert "effective_at" not in row
 
 
 def test_build_row_copies_effective_at():
     pricing = Pricing(1e-6, 2e-6, "flex", effective_at="2026-08-23")
-    row = build_row("deepseek", "m", pricing, "2026-08-30", "u")
+    row = build_row("deepseek", "m", pricing, "2026-08-30", "u", VERSION)
     assert row["effective_at"] == "2026-08-23"
 
 
-def test_build_row_includes_cache_read_and_max_tokens():
+def test_build_row_includes_cache_read_and_limits():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -291,10 +417,9 @@ def test_build_row_includes_cache_read_and_max_tokens():
         max_tokens_in=200000,
         max_tokens_out=8192,
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["cache_read_mtok"] == 0.1
-    assert row["max_tokens_in"] == 200000
-    assert row["max_tokens_out"] == 8192
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["rates"]["cache_read"] == 0.1
+    assert row["limits"] == {"context": 200000, "output": 8192}
 
 
 def test_build_row_includes_cache_write_tiers():
@@ -305,14 +430,12 @@ def test_build_row_includes_cache_write_tiers():
         cache_write_cost_per_token=1.25e-6,
         cache_write_1h_cost_per_token=2e-6,
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["cache_write_mtok"] == 1.25
-    assert row["cache_write_1h_mtok"] == 2.0
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["rates"]["cache_write"] == 1.25
+    assert row["rates"]["cache_write_1h"] == 2.0
 
 
-def test_build_row_maps_peak_fields_to_window_rates():
-    # the base mtok fields stay the off-peak default; one window_rates entry
-    # per peak window carries the override rates
+def test_build_row_maps_peak_fields_to_overrides():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -322,66 +445,16 @@ def test_build_row_maps_peak_fields_to_window_rates():
         peak_cache_read_cost_per_token=0.0000005,
         peak_windows=((0, 400), (600, 1000)),
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["window_rates"] == [
-        {"window": [0, 400], "input_mtok": 2.0, "output_mtok": 4.0, "cache_read_mtok": 0.5},
-        {"window": [600, 1000], "input_mtok": 2.0, "output_mtok": 4.0, "cache_read_mtok": 0.5},
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [
+        {"when": {"window": [0, 400]}, "rates": {"input": 2.0, "output": 4.0, "cache_read": 0.5}},
+        {
+            "when": {"window": [600, 1000]},
+            "rates": {"input": 2.0, "output": 4.0, "cache_read": 0.5},
+        },
     ]
     assert "peak_windows" not in row
     assert "peak_input_mtok" not in row
-    assert "peak_output_mtok" not in row
-    assert "peak_cache_read_mtok" not in row
-
-
-def test_build_row_appends_prebuilt_window_rates_entries():
-    # pricing.window_rates carries scraper-built entries (zai quota
-    # multipliers); they ride the row after any peak-derived entries
-    pricing = Pricing(
-        input_cost_per_token=1e-6,
-        output_cost_per_token=2e-6,
-        mode="flex",
-        window_rates=(
-            {"quota_multiplier": 0.4},
-            {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
-        ),
-    )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["window_rates"] == [
-        {"quota_multiplier": 0.4},
-        {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
-    ]
-
-
-def test_build_row_stamps_schedule_timezone():
-    # a schedule row stamps the pricing's IANA zone (deepseek's weekday rule
-    # is beijing-derived); no schedule, no stamp
-    pricing = Pricing(
-        input_cost_per_token=1e-6,
-        output_cost_per_token=2e-6,
-        mode="flex",
-        window_rates=({"quota_multiplier": 0.4},),
-        timezone="Asia/Shanghai",
-    )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["timezone"] == "Asia/Shanghai"
-    plain = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
-    assert "timezone" not in build_row("a", "m", plain, "t", "u")
-
-
-def test_build_row_stamps_the_page_the_scraper_read():
-    # the scraper's own url names the row unless the scrape resolved another
-    # page (moonshot reads the index to find the per-model page)
-    pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
-    row = build_row("a", "m", pricing, "t", "https://index")
-    assert row["url"] == "https://index"
-    pricing = Pricing(
-        input_cost_per_token=1e-6,
-        output_cost_per_token=2e-6,
-        mode="flex",
-        url="https://resolved-page",
-    )
-    row = build_row("a", "m", pricing, "t", "https://index")
-    assert row["url"] == "https://resolved-page"
 
 
 def test_build_row_peak_cache_read_alone_triggers_peak_block():
@@ -392,13 +465,11 @@ def test_build_row_peak_cache_read_alone_triggers_peak_block():
         peak_cache_read_cost_per_token=0.0000005,
         peak_windows=((0, 400),),
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["window_rates"] == [{"window": [0, 400], "cache_read_mtok": 0.5}]
-    assert "peak_cache_read_mtok" not in row
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [{"when": {"window": [0, 400]}, "rates": {"cache_read": 0.5}}]
 
 
 def test_build_row_peak_days_without_windows_builds_day_only_entry():
-    # a weekday-only peak schedule (no clock windows) stays expressible
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -406,405 +477,82 @@ def test_build_row_peak_days_without_windows_builds_day_only_entry():
         peak_input_cost_per_token=0.000002,
         peak_days=("monday", "tuesday", "wednesday", "thursday", "friday"),
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["window_rates"] == [
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [
         {
-            "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
-            "input_mtok": 2.0,
+            "when": {"days": ["monday", "tuesday", "wednesday", "thursday", "friday"]},
+            "rates": {"input": 2.0},
         }
     ]
-    validate.validate_row(row)
 
 
-def test_build_row_peak_prices_without_windows_or_days_builds_and_validation_rejects():
+def test_build_row_peak_prices_without_windows_or_days_builds_rates_only_override():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
         mode="flex",
         peak_input_cost_per_token=0.000002,
     )
-    row = build_row("a", "m", pricing, "t", "u")
-    assert row["window_rates"] == [{"input_mtok": 2.0}]
-    # one malformed scrape must fail only its own row, not the whole run
-    with pytest.raises(validate.ValidationError, match="days' set"):
-        validate.validate_row(row)
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    # the row still builds; the schedule-less override is validate's to reject
+    assert row["overrides"] == [{"rates": {"input": 2.0}}]
 
 
-def test_deepseek_weekend_schedule_prices_saturday_at_off_peak():
-    # todo 20 acceptance check: a consumer pricing a saturday deepseek call
-    # inside a peak window resolves the off-peak (base) rates, since the
-    # window entries carry weekday day-sets
+def test_build_row_appends_converted_window_rates_entries():
     pricing = Pricing(
-        input_cost_per_token=0.22 / 1e6,
-        output_cost_per_token=0.66 / 1e6,
-        cache_read_cost_per_token=0.007 / 1e6,
-        mode="chat",
-        peak_input_cost_per_token=0.44 / 1e6,
-        peak_output_cost_per_token=1.32 / 1e6,
-        peak_cache_read_cost_per_token=0.014 / 1e6,
-        peak_windows=((100, 400), (600, 1000)),
-        peak_days=("monday", "tuesday", "wednesday", "thursday", "friday"),
-        effective_at="2026-08-23",
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        window_rates=(
+            {"quota_multiplier": 0.4},
+            {"days": ["monday", "tuesday"], "window": [600, 1000], "quota_multiplier": 1.2},
+            {"days": ["saturday"], "input_mtok": 0.9, "output_mtok": 1.8},
+        ),
     )
-    row = build_row("deepseek", "deepseek-v4-flash", pricing, "2026-08-30", "u")
-    assert row["effective_at"] == "2026-08-23"
-    assert _schedule_rate(row, "saturday", 200) == (
-        row["input_mtok"],
-        row["output_mtok"],
-        row["cache_read_mtok"],
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [
+        {"quota_multiplier": 0.4},
+        {
+            "when": {"days": ["monday", "tuesday"], "window": [600, 1000]},
+            "quota_multiplier": 1.2,
+        },
+        {"when": {"days": ["saturday"]}, "rates": {"input": 0.9, "output": 1.8}},
+    ]
+
+
+def test_build_row_stamps_timezone_inside_scheduled_override_when():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        window_rates=(
+            {"quota_multiplier": 0.4},
+            {"days": ["monday"], "window": [600, 1000], "quota_multiplier": 1.2},
+        ),
+        timezone="Asia/Singapore",
     )
-    assert _schedule_rate(row, "monday", 200) == (0.44, 1.32, 0.014)
-
-
-def _schedule_rate(row: dict[str, object], day: str, clock: int) -> tuple[object, object, object]:
-    """The consumer-side resolution the window_rates shape promises."""
-    base = (row["input_mtok"], row["output_mtok"], row["cache_read_mtok"])
-    for entry in row["window_rates"]:
-        days = entry.get("days")
-        window = entry.get("window")
-        if days is not None and day not in days:
-            continue
-        if window is not None and not (window[0] <= clock < window[1]):
-            continue
-        return (
-            entry.get("input_mtok", base[0]),
-            entry.get("output_mtok", base[1]),
-            entry.get("cache_read_mtok", base[2]),
-        )
-    return base
-
-
-def test_write_index_normalizes_legacy_shapes(tmp_path):
-    # legacy rows normalize at index build only: max_tokens renames, flat
-    # peak fields become window_rates entries, extra modality keys become
-    # typed fields; the history file itself stays append-only
-    rows = [
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [
+        {"quota_multiplier": 0.4},
         {
-            "source": "openrouter",
-            "model_id": "a/b",
-            "observed_at": "2026-08-26",
-            "input_mtok": 1.0,
-            "output_mtok": 2.0,
-            "max_tokens": 1000000,
-            "name": "A",
-            "extra": {
-                "web_search": "0.01",
-                "image": "0.0000005",
-                "some_unknown_key": "0.005",
-                "overrides": [{"min_prompt_tokens": 100}],
-            },
-        },
-        {
-            "source": "deepseek",
-            "model_id": "deepseek-chat",
-            "observed_at": "2026-08-26",
-            "input_mtok": 0.27,
-            "output_mtok": 1.1,
-            "peak_input_mtok": 0.54,
-            "peak_output_mtok": 2.2,
-            "peak_windows": [["01:00:00Z", "04:00:00Z"], ["06:00:00Z", "10:00:00Z"]],
+            "when": {"days": ["monday"], "window": [600, 1000], "timezone": "Asia/Singapore"},
+            "quota_multiplier": 1.2,
         },
     ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    index = json.loads(path.read_text(encoding="utf-8"))
-    entry = index["sources"]["openrouter"]["a/b"]
-    assert entry["max_tokens_in"] == 1000000
-    assert "max_tokens" not in entry
-    assert entry["web_search_usd"] == 0.01
-    assert entry["image_mtok"] == 0.5
-    # consumed keys leave extra; unknown keys and the legacy overrides stay
-    assert entry["extra"] == {
-        "some_unknown_key": "0.005",
-        "overrides": [{"min_prompt_tokens": 100}],
-    }
-    deepseek = index["sources"]["deepseek"]["deepseek-chat"]
-    assert deepseek["input_mtok"] == 0.27
-    assert deepseek["window_rates"] == [
-        {"window": [100, 400], "input_mtok": 0.54, "output_mtok": 2.2},
-        {"window": [600, 1000], "input_mtok": 0.54, "output_mtok": 2.2},
-    ]
-    assert "peak_input_mtok" not in deepseek
-    assert "peak_windows" not in deepseek
-    # the input rows are untouched: history stays append-only
-    assert "max_tokens" in rows[0]
-    assert "peak_windows" in rows[1]
-    assert rows[0]["extra"]["web_search"] == "0.01"
 
 
-def test_write_index_normalization_prefers_an_existing_typed_field(tmp_path):
-    # a row already carrying the typed field keeps it: the newer shape wins
-    rows = [
-        {
-            "source": "openrouter",
-            "model_id": "a/b",
-            "observed_at": "2026-08-26",
-            "input_mtok": 1.0,
-            "image_mtok": 9.0,
-            "extra": {"image": "0.0000005"},
-        }
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    index = json.loads(path.read_text(encoding="utf-8"))
-    entry = index["sources"]["openrouter"]["a/b"]
-    assert entry["image_mtok"] == 9.0
-    assert "extra" not in entry
-
-
-def test_write_index_normalization_rejects_a_bad_peak_window(tmp_path):
-    for windows in (
-        [["01:00:00Z", "99:99:99Z"]],
-        [["25:00:00Z", "26:00:00Z"]],
-        [["04:00:00Z", "01:00:00Z"]],
-    ):
-        rows = [
-            {
-                "source": "deepseek",
-                "model_id": "deepseek-chat",
-                "observed_at": "2026-08-26",
-                "input_mtok": 0.27,
-                "peak_input_mtok": 0.54,
-                "peak_windows": windows,
-            }
-        ]
-        with pytest.raises(ValueError, match="peak window"):
-            write_index(rows, tmp_path / "index.json")
-
-
-def test_write_index_normalization_prefers_a_typed_max_tokens(tmp_path):
-    rows = [
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-26",
-            "input_mtok": 1.0,
-            "max_tokens": 1000,
-            "max_tokens_in": 2000,
-        }
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    assert entry["max_tokens_in"] == 2000
-    assert "max_tokens" not in entry
-
-
-def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
-    rows = [
-        {
-            "source": "z",
-            "model_id": "m1",
-            "observed_at": "2026-08-20",
-            "input_mtok": 1.0,
-            "url": "z1",
-        },
-        {
-            "source": "a",
-            "model_id": "m2",
-            "observed_at": "2026-08-21",
-            "input_mtok": 2.0,
-            "url": "a1",
-        },
-        {
-            "source": "a",
-            "model_id": "m1",
-            "observed_at": "2026-08-22",
-            "input_mtok": 3.0,
-            "output_mtok": 0.5,
-            "url": "a2",
-        },
-        {
-            "source": "a",
-            "model_id": "m1",
-            "observed_at": "2026-08-19",
-            "input_mtok": 4.0,
-            "url": "a0",
-        },
-        {
-            "source": "a",
-            "model_id": "m1",
-            "observed_at": "2026-08-23",
-            "input_mtok": 5.0,
-            "url": "a3",
-        },
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    index = json.loads(path.read_text(encoding="utf-8"))
-    assert index["version"] == validate.SCHEMA_VERSION
-    sources = index["sources"]
-    assert list(sources) == ["a", "z"]
-    assert list(sources["a"]) == ["m1", "m2"]
-    m1 = sources["a"]["m1"]
-    # latest row fields win: input_mtok from the last row, output_mtok dropped
-    assert m1["input_mtok"] == 5.0
-    assert m1["url"] == "a3"
-    assert "output_mtok" not in m1
-    # first_seen is the earliest observed_at even when appended out of order
-    assert m1["observed_at"] == "2026-08-23"
-    assert m1["first_seen"] == "2026-08-19"
-    assert list(m1) == ["source", "model_id", "observed_at", "input_mtok", "url", "first_seen"]
-    assert sources["a"]["m2"]["first_seen"] == "2026-08-21"
-    assert sources["z"]["m1"]["first_seen"] == "2026-08-20"
-
-
-def test_write_index_picks_max_observed_at_not_last_row(tmp_path):
-    rows = [
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-23",
-            "input_mtok": 5.0,
-            "url": "new",
-        },
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-19",
-            "input_mtok": 4.0,
-            "url": "old",
-        },
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    assert entry["input_mtok"] == 5.0
-    assert entry["observed_at"] == "2026-08-23"
-    assert entry["first_seen"] == "2026-08-19"
-
-
-def test_last_skips_removed_rows():
-    rows = [
-        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
-        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
-    ]
-    assert last(rows, "a", "m")["observed_at"] == "t1"
-    assert last([rows[1]], "a", "m") is None
-
-
-def test_newest_returns_the_newest_row_removal_included():
-    rows = [
-        {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0},
-        {"source": "a", "model_id": "m", "observed_at": "t2", "removed": True},
-    ]
-    assert newest(rows, "a", "m")["observed_at"] == "t2"
-    assert newest(rows, "a", "m")["removed"] is True
-    assert newest(rows, "a", "n") is None
-
-
-def test_changed_treats_a_removed_last_row_as_first():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0}
-    removed = {"source": "a", "model_id": "m", "observed_at": "t1", "removed": True}
-    assert changed(row, removed) is True
-
-
-def test_build_removal_row_shape():
-    assert build_removal_row("deepseek", "deepseek-chat", "2026-08-26") == {
-        "source": "deepseek",
-        "model_id": "deepseek-chat",
-        "observed_at": "2026-08-26",
-        "removed": True,
-    }
-
-
-def test_build_removal_row_copies_the_final_price_snapshot():
-    last_row = {
-        "source": "a",
-        "model_id": "m",
-        "observed_at": "t1",
-        "input_mtok": 1.0,
-        "output_mtok": 2.0,
-        "max_tokens_in": 4096,
-        "window_rates": [{"days": ["saturday"], "input_mtok": 0.5}],
-        "currency": "EUR",
-        "currency_rate": 1.1643,
-        "currency_rate_date": "2026-08-28",
-        "url": "https://example.com/pricing",
-        "name": "M",
-    }
-    removal = build_removal_row("a", "m", "t2", last_row)
-    assert removal == {
-        "source": "a",
-        "model_id": "m",
-        "observed_at": "t2",
-        "removed": True,
-        "input_mtok": 1.0,
-        "output_mtok": 2.0,
-        "max_tokens_in": 4096,
-        "window_rates": [{"days": ["saturday"], "input_mtok": 0.5}],
-        "currency": "EUR",
-        "currency_rate": 1.1643,
-        "currency_rate_date": "2026-08-28",
-    }
-
-
-def test_build_removal_row_without_a_last_row_stays_bare():
-    assert build_removal_row("a", "m", "t2") == {
-        "source": "a",
-        "model_id": "m",
-        "observed_at": "t2",
-        "removed": True,
-    }
-
-
-def test_write_index_removed_at_stamps_and_clears(tmp_path):
-    rows = [
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-20",
-            "input_mtok": 1.0,
-            "url": "u1",
-        },
-        {"source": "a", "model_id": "m", "observed_at": "2026-08-22", "removed": True},
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    # the entry keeps the last priced row's fields, stamped removed_at
-    assert entry["input_mtok"] == 1.0
-    assert entry["url"] == "u1"
-    assert entry["removed_at"] == "2026-08-22"
-    assert "removed" not in entry
-    rows.append(
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-24",
-            "input_mtok": 1.0,
-            "url": "u2",
-        }
+def test_build_row_stamps_the_page_the_scraper_read():
+    pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="flex")
+    row = build_row("a", "m", pricing, "t", "https://index", VERSION)
+    assert row["provenance"]["url"] == "https://index"
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        url="https://resolved-page",
     )
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    assert "removed_at" not in entry
-    assert entry["observed_at"] == "2026-08-24"
-    assert entry["url"] == "u2"
-
-
-def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):
-    rows = [
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-23",
-            "input_mtok": 4.0,
-            "url": "first",
-        },
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-23",
-            "input_mtok": 5.0,
-            "url": "second",
-        },
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    assert entry["input_mtok"] == 5.0
-    assert entry["url"] == "second"
+    row = build_row("a", "m", pricing, "t", "https://index", VERSION)
+    assert row["provenance"]["url"] == "https://resolved-page"
 
 
 def test_build_row_converts_eur_quote_to_usd():
@@ -814,35 +562,48 @@ def test_build_row_converts_eur_quote_to_usd():
         mode="flex",
         currency="EUR",
     )
-    row = build_row("scaleway", "m", pricing, "2026-08-28", "u", resolve=eur_resolve())
+    row = build_row("scaleway", "m", pricing, "2026-08-28", "u", VERSION, resolve=eur_resolve())
     assert list(row) == [
+        "schema",
         "source",
         "model_id",
         "observed_at",
         "currency",
-        "currency_rate",
-        "currency_rate_date",
-        "input_mtok",
-        "output_mtok",
-        "url",
+        "rates",
+        "provenance",
     ]
     assert row["currency"] == "EUR"
-    assert row["currency_rate"] == 1.1643
-    assert row["currency_rate_date"] == "2026-08-28"
-    assert row["input_mtok"] == 1.1643
-    assert row["output_mtok"] == 2.3286
-    assert row["url"] == "u"
+    assert row["rates"] == {"input": 1.1643, "output": 2.3286}
+    assert row["provenance"] == {"url": "u", "fx_rate": 1.1643, "fx_rate_date": "2026-08-28"}
+
+
+def test_build_row_converts_a_scheduled_rate_too():
+    # the scheduled rates arrive already per-million, so they scale by the fx
+    # factor rather than re-converting. without the factor a non-USD provider
+    # with a schedule would store source-currency values under USD axes
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        currency="EUR",
+        window_rates=({"days": ["saturday"], "input_mtok": 0.9},),
+    )
+    row = build_row("scaleway", "m", pricing, "2026-08-28", "u", VERSION, resolve=eur_resolve())
+    assert row["rates"]["input"] == 1.1643
+    assert row["overrides"] == [
+        {"when": {"days": ["saturday"]}, "rates": {"input": round(0.9 * 1.1643, 6)}}
+    ]
 
 
 def test_build_row_picks_latest_rate_on_or_before_observation():
     pricing = Pricing(1e-6, 2e-6, "flex", currency="EUR")
-    row = build_row("scaleway", "m", pricing, "2026-08-27", "u", resolve=eur_resolve())
-    assert row["currency_rate"] == 1.1
-    assert row["currency_rate_date"] == "2026-08-26"
-    assert row["input_mtok"] == 1.1
+    row = build_row("scaleway", "m", pricing, "2026-08-27", "u", VERSION, resolve=eur_resolve())
+    assert row["provenance"]["fx_rate"] == 1.1
+    assert row["provenance"]["fx_rate_date"] == "2026-08-26"
+    assert row["rates"]["input"] == 1.1
 
 
-def test_build_row_converts_every_price_field_but_not_max_tokens():
+def test_build_row_converts_every_price_field_but_not_limits():
     pricing = Pricing(
         input_cost_per_token=1e-6,
         output_cost_per_token=2e-6,
@@ -858,23 +619,22 @@ def test_build_row_converts_every_price_field_but_not_max_tokens():
         max_tokens_out=8192,
         currency="EUR",
     )
-    row = build_row("scaleway", "m", pricing, "2026-08-26", "u", resolve=eur_resolve())
-    assert row["input_mtok"] == 1.1
-    assert row["output_mtok"] == 2.2
-    assert row["cache_read_mtok"] == 0.55
-    assert row["cache_write_mtok"] == 1.375
-    assert row["cache_write_1h_mtok"] == 2.2
-    assert row["window_rates"] == [
-        {"window": [0, 400], "input_mtok": 2.2, "output_mtok": 4.4, "cache_read_mtok": 0.55}
+    row = build_row("scaleway", "m", pricing, "2026-08-26", "u", VERSION, resolve=eur_resolve())
+    assert row["rates"]["input"] == 1.1
+    assert row["rates"]["output"] == 2.2
+    assert row["rates"]["cache_read"] == 0.55
+    assert row["rates"]["cache_write"] == 1.375
+    assert row["rates"]["cache_write_1h"] == 2.2
+    assert row["overrides"] == [
+        {"when": {"window": [0, 400]}, "rates": {"input": 2.2, "output": 4.4, "cache_read": 0.55}}
     ]
-    assert row["max_tokens_in"] == 200000
-    assert row["max_tokens_out"] == 8192
+    assert row["limits"] == {"context": 200000, "output": 8192}
 
 
 def test_build_row_requires_resolver_for_non_usd_quote():
     pricing = Pricing(1e-6, 2e-6, "flex", currency="EUR")
     with pytest.raises(FxError, match="resolver"):
-        build_row("scaleway", "m", pricing, "2026-08-28", "u")
+        build_row("scaleway", "m", pricing, "2026-08-28", "u", VERSION)
 
 
 def test_build_row_dbu_quote_converts_via_provider_rate():
@@ -885,21 +645,245 @@ def test_build_row_dbu_quote_converts_via_provider_rate():
         pricing,
         "2026-08-28",
         "u",
+        VERSION,
         resolve=partial(resolve_rate, {}, 0.55),
     )
     assert row["currency"] == "DBU"
-    assert row["currency_rate"] == 0.55
-    assert row["currency_rate_date"] == "2026-08-28"
-    assert row["input_mtok"] == 0.0385
-    assert row["output_mtok"] == 0.077
+    assert row["provenance"]["fx_rate"] == 0.55
+    assert row["provenance"]["fx_rate_date"] == "2026-08-28"
+    assert row["rates"]["input"] == 0.0385
+    assert row["rates"]["output"] == 0.077
 
 
 def test_build_row_refuses_non_token_units():
-    # per-minute or per-character quotes price a different axis than the mtok
-    # fields: the row must not convert them, the scraper must drop the model
     pricing = Pricing(1e-6, 2e-6, "flex", unit="minutes")
     with pytest.raises(ValueError, match="non-token"):
-        build_row("a", "m", pricing, "2026-08-28", "u")
+        build_row("a", "m", pricing, "2026-08-28", "u", VERSION)
+
+
+def test_build_removal_row_shape():
+    assert build_removal_row("deepseek", "deepseek-chat", "2026-08-26", VERSION) == {
+        "schema": 4,
+        "source": "deepseek",
+        "model_id": "deepseek-chat",
+        "observed_at": "2026-08-26",
+        "removed": True,
+    }
+
+
+def test_build_removal_row_copies_the_final_price_snapshot():
+    last_row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t1",
+        "effective_at": "2026-08-23",
+        "currency": "EUR",
+        "rates": {"input": 1.0, "output": 2.0},
+        "overrides": [{"when": {"days": ["saturday"]}, "rates": {"input": 0.5}}],
+        "limits": {"context": 4096},
+        "provenance": {
+            "url": "https://example.com/pricing",
+            "fx_rate": 1.1643,
+            "fx_rate_date": "2026-08-28",
+        },
+    }
+    removal = build_removal_row("a", "m", "t2", VERSION, last_row)
+    assert list(removal) == [
+        "schema",
+        "source",
+        "model_id",
+        "observed_at",
+        "effective_at",
+        "removed",
+        "currency",
+        "rates",
+        "overrides",
+        "limits",
+        "provenance",
+    ]
+    assert removal == {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "effective_at": "2026-08-23",
+        "removed": True,
+        "currency": "EUR",
+        "rates": {"input": 1.0, "output": 2.0},
+        "overrides": [{"when": {"days": ["saturday"]}, "rates": {"input": 0.5}}],
+        "limits": {"context": 4096},
+        "provenance": {"fx_rate": 1.1643, "fx_rate_date": "2026-08-28"},
+    }
+
+
+def test_build_removal_row_without_a_last_row_stays_bare():
+    assert build_removal_row("a", "m", "t2", VERSION) == {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t2",
+        "removed": True,
+    }
+
+
+def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
+    rows = [
+        {
+            "schema": 4,
+            "source": "z",
+            "model_id": "m1",
+            "observed_at": "2026-08-20",
+            "rates": {"input": 1.0},
+            "provenance": {"url": "z1"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m2",
+            "observed_at": "2026-08-21",
+            "rates": {"input": 2.0},
+            "provenance": {"url": "a1"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m1",
+            "observed_at": "2026-08-22",
+            "rates": {"input": 3.0, "output": 0.5},
+            "provenance": {"url": "a2"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m1",
+            "observed_at": "2026-08-19",
+            "rates": {"input": 4.0},
+            "provenance": {"url": "a0"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m1",
+            "observed_at": "2026-08-23",
+            "rates": {"input": 5.0},
+            "provenance": {"url": "a3"},
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path, VERSION)
+    index = json.loads(path.read_text(encoding="utf-8"))
+    assert index["version"] == VERSION
+    sources = index["sources"]
+    assert list(sources) == ["a", "z"]
+    assert list(sources["a"]) == ["m1", "m2"]
+    m1 = sources["a"]["m1"]
+    # latest row fields win: input from the last row, output dropped
+    assert m1["rates"] == {"input": 5.0}
+    assert m1["provenance"] == {"url": "a3"}
+    # first_seen is the earliest observed_at even when appended out of order
+    assert m1["observed_at"] == "2026-08-23"
+    assert m1["first_seen"] == "2026-08-19"
+    assert list(m1) == [
+        "schema",
+        "source",
+        "model_id",
+        "observed_at",
+        "rates",
+        "provenance",
+        "first_seen",
+    ]
+    assert sources["a"]["m2"]["first_seen"] == "2026-08-21"
+    assert sources["z"]["m1"]["first_seen"] == "2026-08-20"
+
+
+def test_write_index_picks_max_observed_at_not_last_row(tmp_path):
+    rows = [
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "rates": {"input": 5.0},
+            "provenance": {"url": "new"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-19",
+            "rates": {"input": 4.0},
+            "provenance": {"url": "old"},
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path, VERSION)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["rates"]["input"] == 5.0
+    assert entry["observed_at"] == "2026-08-23"
+    assert entry["first_seen"] == "2026-08-19"
+
+
+def test_write_index_removed_at_stamps_and_clears(tmp_path):
+    rows = [
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "rates": {"input": 1.0},
+            "provenance": {"url": "u1"},
+        },
+        {"schema": 4, "source": "a", "model_id": "m", "observed_at": "2026-08-22", "removed": True},
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path, VERSION)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["rates"] == {"input": 1.0}
+    assert entry["provenance"] == {"url": "u1"}
+    assert entry["removed_at"] == "2026-08-22"
+    assert "removed" not in entry
+    rows.append(
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-24",
+            "rates": {"input": 1.0},
+            "provenance": {"url": "u2"},
+        }
+    )
+    write_index(rows, path, VERSION)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert "removed_at" not in entry
+    assert entry["observed_at"] == "2026-08-24"
+    assert entry["provenance"] == {"url": "u2"}
+
+
+def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):
+    rows = [
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "rates": {"input": 4.0},
+            "provenance": {"url": "first"},
+        },
+        {
+            "schema": 4,
+            "source": "a",
+            "model_id": "m",
+            "observed_at": "2026-08-23",
+            "rates": {"input": 5.0},
+            "provenance": {"url": "second"},
+        },
+    ]
+    path = tmp_path / "index.json"
+    write_index(rows, path, VERSION)
+    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
+    assert entry["rates"]["input"] == 5.0
+    assert entry["provenance"] == {"url": "second"}
 
 
 def test_resolve_rate_returns_none_for_usd():
@@ -926,8 +910,6 @@ def test_resolve_rate_dbu_uses_provider_rate_with_observation_date():
 
 
 def test_resolve_rate_dbu_ignores_an_fx_table_dbu_key():
-    # DBU is the provider's configured rate, never a dated fx currency: an fx
-    # table carrying a DBU key must not override it
     assert resolve_rate({"DBU": {"2026-08-20": 9.99}}, 0.55, "DBU", "2026-08-28") == (
         0.55,
         "2026-08-28",
@@ -965,75 +947,3 @@ def test_load_fx_rejects_bad_date_key(tmp_path):
     path.write_text('{"EUR": {"2026-8-28": 1.1643}}\n', encoding="utf-8")
     with pytest.raises(FxError, match="2026-8-28"):
         load_fx(path)
-
-
-def test_changed_ignores_rate_refresh_only_difference():
-    # a rate refresh with unchanged USD prices must not append a row
-    row = {
-        "source": "scaleway",
-        "model_id": "m",
-        "observed_at": "t2",
-        "input_mtok": 1.1643,
-        "currency": "EUR",
-        "currency_rate": 1.1643,
-        "currency_rate_date": "2026-08-28",
-    }
-    prev = {
-        "source": "scaleway",
-        "model_id": "m",
-        "observed_at": "t1",
-        "input_mtok": 1.1643,
-        "currency": "EUR",
-        "currency_rate": 1.1,
-        "currency_rate_date": "2026-08-26",
-    }
-    assert changed(row, prev) is False
-
-
-def test_changed_detects_currency_difference():
-    row = {
-        "source": "a",
-        "model_id": "m",
-        "observed_at": "t2",
-        "input_mtok": 1.0,
-        "currency": "EUR",
-        "currency_rate": 1.1643,
-        "currency_rate_date": "2026-08-28",
-    }
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
-    assert changed(row, prev) is True
-
-
-def test_changed_detects_unit_difference():
-    row = {"source": "a", "model_id": "m", "observed_at": "t2", "input_mtok": 1.0, "unit": "dbu"}
-    prev = {"source": "a", "model_id": "m", "observed_at": "t1", "input_mtok": 1.0}
-    assert changed(row, prev) is True
-
-
-def test_write_index_keeps_currency_and_unit_from_newest_row(tmp_path):
-    rows = [
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-20",
-            "input_mtok": 1.05,
-            "currency": "EUR",
-            "currency_rate": 1.05,
-            "currency_rate_date": "2026-08-20",
-        },
-        {
-            "source": "a",
-            "model_id": "m",
-            "observed_at": "2026-08-28",
-            "input_mtok": 1.1643,
-            "currency": "EUR",
-            "currency_rate": 1.1643,
-            "currency_rate_date": "2026-08-28",
-        },
-    ]
-    path = tmp_path / "index.json"
-    write_index(rows, path)
-    entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
-    assert entry["currency"] == "EUR"
-    assert entry["currency_rate"] == 1.1643
-    assert entry["currency_rate_date"] == "2026-08-28"

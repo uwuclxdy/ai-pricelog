@@ -18,18 +18,27 @@ from ai_pricelog import openrouter, store, validate
 HISTORY_FILE = "data/history.ndjson"
 SHARD_DIR = "data/history"
 
-# the v3 mtok fields and the flat peak trio, borrowed from the validator that
-# owns them. the v4 axis name is the field minus its suffix, and a test pins
-# that derived set against the contract in both directions
-_RATE_FIELDS = validate._PRICE_FIELDS
-_PEAK_FIELDS = validate._PEAK_PRICE_FIELDS
+# this module is now the last owner of the v3 vocabulary: validate.py describes
+# the v4 row, so the migration keeps its own literal v3 field tuples here.
+_RATE_FIELDS = (
+    "input_mtok",
+    "output_mtok",
+    "cache_read_mtok",
+    "cache_write_mtok",
+    "cache_write_1h_mtok",
+    "image_mtok",
+    "audio_mtok",
+    "input_audio_cache_mtok",
+    "internal_reasoning_mtok",
+    "image_output_mtok",
+    "audio_output_mtok",
+)
+_PEAK_FIELDS = ("peak_input_mtok", "peak_output_mtok", "peak_cache_read_mtok")
 
 _TOP_KEYS = ("source", "model_id", "observed_at", "effective_at", "removed", "currency")
 
-# every v3 key this migration PLACES. deliberately not derived from
-# validate.ROW_KEYS: a key added there with no mapping here must raise, and a
-# derived set would recognize it and then drop it silently. a test pins that
-# ROW_KEYS stays a subset, so the two cannot drift apart unnoticed.
+# every v3 key this migration PLACES. a key outside this set raises instead of
+# migrating silently, so an unmapped v3 key cannot drop out of the history.
 _RECOGNIZED = frozenset(
     {
         *_TOP_KEYS,
@@ -52,10 +61,38 @@ _RECOGNIZED = frozenset(
 )
 
 _MT = "_mtok"
-_USD = "_usd"
 
-# a source names a shard file, so it must be one plain path segment
-_SAFE_SOURCE = re.compile(r"[a-z0-9][a-z0-9_-]*")
+# store no longer reads the v3 window-string shape, so this migration keeps
+# its own copy, as the last owner of the v3 vocabulary.
+_WINDOW_STR_RE = re.compile(r"^(\d{2}):(\d{2}):\d{2}Z$")
+
+
+def _window_hhmm(window: object, model_id: str) -> list[int]:
+    """a legacy `["HH:MM:SSZ", "HH:MM:SSZ"]` pair -> `[start, end]` HHMM ints."""
+    if (
+        not isinstance(window, list)
+        or len(window) != 2
+        or not all(isinstance(part, str) for part in window)
+    ):
+        raise ValueError(
+            f"row {model_id!r}: peak window {window!r} outside the [start, end]"
+            " string-pair shape; fix: the row or extend the normalization"
+        )
+    parts: list[int] = []
+    for part in window:
+        match = _WINDOW_STR_RE.fullmatch(part)
+        if match is None or int(match.group(1)) > 23 or int(match.group(2)) > 59:
+            raise ValueError(
+                f"row {model_id!r}: peak window {part!r} outside the HH:MM:SSZ shape;"
+                " fix: the row or extend the normalization"
+            )
+        parts.append(int(match.group(1)) * 100 + int(match.group(2)))
+    if parts[0] >= parts[1]:
+        raise ValueError(
+            f"row {model_id!r}: peak window start must precede its end;"
+            " fix: the row or extend the normalization"
+        )
+    return parts
 
 
 def migrate_row(row: dict[str, object], schema_version: int) -> dict[str, object]:
@@ -124,7 +161,7 @@ def migrate_row(row: dict[str, object], schema_version: int) -> dict[str, object
                 " to land on; fix: the row, or extend the migration"
             )
         for window in windows:
-            when: dict[str, object] = {"window": store._window_hhmm(window, str(model_id))}
+            when: dict[str, object] = {"window": _window_hhmm(window, str(model_id))}
             if timezone:
                 when["timezone"] = timezone
             overrides.append({"when": when, "rates": dict(peak_rates)})
@@ -152,16 +189,11 @@ def migrate_row(row: dict[str, object], schema_version: int) -> dict[str, object
             )
         source_pricing = {key: extra[key] for key in extra if key in openrouter.SOURCE_KEYS}
         if source_pricing:
-            for field, value in openrouter.map_typed_fields(source_pricing, str(model_id)).items():
-                if field.endswith(_MT):
-                    rates.setdefault(field[: -len(_MT)], value)
-                elif field.endswith(_USD):
-                    fees.setdefault(field[: -len(_USD)], value)
-                else:
-                    raise ValueError(
-                        f"row {label!r}: cannot place typed field {field!r};"
-                        " fix: extend the migration"
-                    )
+            typed_rates, typed_fees = openrouter.map_typed_fields(source_pricing, str(model_id))
+            for axis, value in typed_rates.items():
+                rates.setdefault(axis, value)
+            for fee, value in typed_fees.items():
+                fees.setdefault(fee, value)
         unmapped = {key: value for key, value in extra.items() if key not in openrouter.SOURCE_KEYS}
 
     out: dict[str, object] = {"schema": schema_version}
@@ -217,20 +249,6 @@ def _volume_override(entry: dict[str, object], label: tuple[object, ...]) -> dic
     return {"when": when, "rates": rates}
 
 
-def shard_name(source: object, label: tuple[object, ...]) -> str:
-    """The shard filename for a source, refusing anything but one path segment.
-
-    A source reaches a filesystem path here and `store.save` creates parent
-    directories, so an unchecked value writes wherever it points.
-    """
-    if not isinstance(source, str) or _SAFE_SOURCE.fullmatch(source) is None:
-        raise ValueError(
-            f"row {label!r}: source {source!r} cannot name a shard file;"
-            " fix: lowercase letters, digits, '_' and '-', starting alphanumeric"
-        )
-    return f"{source}.ndjson"
-
-
 def _shard_order(row: dict[str, object]) -> tuple[str, str]:
     """Shard sort key: a new row lands beside its siblings in the review diff."""
     return (str(row["model_id"]), str(row["observed_at"]))
@@ -256,8 +274,7 @@ def run_migration(input_path: Path, output_dir: Path, root: Path, overwrite: boo
     by_shard: dict[str, list[dict[str, object]]] = {}
     for row in rows:
         migrated = migrate_row(row, version)
-        label = (row.get("source"), row.get("model_id"), row.get("observed_at"))
-        by_shard.setdefault(shard_name(migrated.get("source"), label), []).append(migrated)
+        by_shard.setdefault(store.shard_name(migrated.get("source")), []).append(migrated)
     output_dir.mkdir(parents=True, exist_ok=True)
     # a stale shard from an earlier run would otherwise survive --overwrite and
     # leave the store carrying a source nothing produced

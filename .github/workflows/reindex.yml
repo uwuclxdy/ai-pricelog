@@ -1,8 +1,8 @@
-# post-merge reindex: regenerate data/index.json from data/history.ndjson and
-# push a correcting commit when it drifts. the push authenticates with
-# checkout's persisted GITHUB_TOKEN: pushes made with GITHUB_TOKEN create no
-# new workflow runs, so the correcting commit cannot retrigger this workflow
-# (a PAT push like autopr's GH_TOKEN would).
+# post-merge reindex: regenerate data/index.json from the per-source history
+# shards and push a correcting commit when it drifts. the push authenticates
+# with checkout's persisted GITHUB_TOKEN: pushes made with GITHUB_TOKEN create
+# no new workflow runs, so the correcting commit cannot retrigger this
+# workflow (a PAT push like autopr's GH_TOKEN would).
 
 name: reindex
 
@@ -36,8 +36,8 @@ jobs:
       - name: uv sync
         run: uv sync --frozen
 
-      - name: regenerate index.json from history.ndjson
-        run: uv run python -c "from pathlib import Path; from ai_pricelog.store import load, write_index; write_index(load(Path('data/history.ndjson')), Path('data/index.json'))"
+      - name: regenerate index.json from the history shards
+        run: uv run python -c "from pathlib import Path; from ai_pricelog.store import load_shards, write_index; from ai_pricelog.validate import load_schema_keys; write_index(load_shards(Path('data/history')), Path('data/index.json'), load_schema_keys(Path('.')).version)"
 
       - name: commit and push when drifted
         run: |

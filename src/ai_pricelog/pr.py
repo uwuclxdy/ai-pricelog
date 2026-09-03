@@ -126,7 +126,7 @@ class PrSpec:
             lines += [""]
         if prices:
             lines += self._rows_table(prices)
-            lines += self._window_rates_table(prices)
+            lines += self._overrides_table(prices)
         if self.source_url:
             lines += ["", f"source: {self.source_url}"]
         if self.announce:
@@ -173,57 +173,50 @@ class PrSpec:
             "## new rows",
             "",
             "| source | model | observed | input (/1M) | cache read (/1M) |"
-            " cache write 5m/1h (/1M) | output (/1M) | peak (/1M) |",
-            "|---|---|---|---|---|---|---|---|",
+            " cache write 5m/1h (/1M) | output (/1M) |",
+            "|---|---|---|---|---|---|---|",
         ]
         lines.extend(self._row_line(row) for row in rows)
         return lines
 
-    def _window_rates_table(self, rows: list[dict[str, object]]) -> list[str]:
-        """One line per windowed-rate entry: the scheduled rates a reviewer checks."""
+    def _overrides_table(self, rows: list[dict[str, object]]) -> list[str]:
+        """One line per override entry: the condition plus its rates."""
         lines: list[str] = []
         for row in rows:
-            for entry in row.get("window_rates") or []:
+            for entry in row.get("overrides") or []:
                 if not lines:
                     lines = [
                         "",
-                        "## windowed rates",
+                        "## overrides",
                         "",
-                        "| model | days | window (UTC) | input (/1M) | cache read (/1M) |"
+                        "| model | when | input (/1M) | cache read (/1M) |"
                         " cache write 5m/1h (/1M) | output (/1M) | quota multiplier |",
-                        "|---|---|---|---|---|---|---|---|",
+                        "|---|---|---|---|---|---|---|",
                     ]
+                rates = entry.get("rates") if isinstance(entry.get("rates"), dict) else {}
                 lines.append(
-                    f"| `{row['model_id']}` | {_days(entry)} | {_window(entry)} | "
-                    f"{_fmt(entry.get('input_mtok'))} | {_fmt(entry.get('cache_read_mtok'))} | "
-                    f"{_cache_write(entry)} | {_fmt(entry.get('output_mtok'))} | "
-                    f"{_fmt(entry.get('quota_multiplier'))} |"
+                    f"| `{row['model_id']}` | {_when(entry)} | {_fmt(rates.get('input'))} | "
+                    f"{_fmt(rates.get('cache_read'))} | {_cache_write(rates)} | "
+                    f"{_fmt(rates.get('output'))} | {_fmt(entry.get('quota_multiplier'))} |"
                 )
         return lines
 
     def _row_line(self, row: dict[str, object]) -> str:
-        peak = "—"
-        if "peak_windows" in row:
-            windows = " and ".join(f"{start} - {end}" for start, end in row["peak_windows"])
-            peak = (
-                f"{_fmt(row.get('peak_input_mtok'))}/{_fmt(row.get('peak_output_mtok'))} {windows}"
-            )
+        rates = row.get("rates") if isinstance(row.get("rates"), dict) else {}
         line = (
             f"| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
-            f"{_fmt(row.get('input_mtok'))} | {_fmt(row.get('cache_read_mtok'))} | "
-            f"{_cache_write(row)} | {_fmt(row.get('output_mtok'))} | {peak} |"
+            f"{_fmt(rates.get('input'))} | {_fmt(rates.get('cache_read'))} | "
+            f"{_cache_write(rates)} | {_fmt(rates.get('output'))} |"
         )
-        if row.get("currency") is None or row.get("currency_rate") is None:
+        provenance = row.get("provenance") if isinstance(row.get("provenance"), dict) else {}
+        fx_rate = provenance.get("fx_rate")
+        if row.get("currency") is None or fx_rate is None:
             return line
-        unit = str(row.get("unit") or "tokens")
-        # the slot is a base word ("dbu" -> "dbus"), already-plural values
-        # ("tokens") stay as they are
-        plural = f"{unit}s" if not unit.endswith("s") else unit
         return (
             line + f"\n| {row['source']} | `{row['model_id']}` | {row['observed_at']} | "
-            f"quoted `{_quoted_mtok(row)} {row['currency']} per 1M {plural}`, rate "
-            f"`{_fmt(row['currency_rate'])}` on `{row.get('currency_rate_date') or '—'}` |"
-            " | | | |"
+            f"quoted `{_quoted_mtok(row)} {row['currency']} per 1M tokens`, rate "
+            f"`{_fmt(fx_rate)}` on `{provenance.get('fx_rate_date') or '—'}` |"
+            " | | |"
         )
 
     def _disclaimer(self) -> str:
@@ -240,9 +233,8 @@ class PrSpec:
             lines.append("- [ ] peak/off-peak rates match the page")
         lines += [
             "- [ ] provider name correct",
-            "- [ ] a sibling merge conflict: concatenate both histories, dedupe"
-            " exact lines only (a key-based union drops same-day updates);"
-            " index.json heals on the next push",
+            "- [ ] a sibling merge conflict: concatenate both shards, dedupe"
+            " exact lines only (a key-based union drops same-day updates)",
         ]
         return lines
 
@@ -254,33 +246,36 @@ def _fmt(value: object) -> str:
 def _removal_snapshot(row: dict[str, object]) -> str:
     """The removal's final prices as `name value` pairs, or the absence."""
     names = {
-        "input_mtok": "input",
-        "cache_read_mtok": "cache read",
-        "cache_write_mtok": "cache write",
-        "cache_write_1h_mtok": "cache write 1h",
-        "output_mtok": "output",
+        "input": "input",
+        "cache_read": "cache read",
+        "cache_write": "cache write",
+        "cache_write_1h": "cache write 1h",
+        "output": "output",
     }
+    rates = row.get("rates") if isinstance(row.get("rates"), dict) else {}
     parts = [
-        f"{label} {_fmt(row[field])}"
-        for field, label in names.items()
-        if row.get(field) is not None
+        f"{label} {_fmt(rates[axis])}"
+        for axis, label in names.items()
+        if rates.get(axis) is not None
     ]
     return " / ".join(parts) if parts else "not carried"
 
 
 def _quoted_mtok(row: dict[str, object]) -> str:
     """The source-quote input rate, recovered from the USD row as USD / rate."""
-    input_mtok = row.get("input_mtok")
-    rate = row.get("currency_rate")
-    if not isinstance(input_mtok, float) or not isinstance(rate, float):
+    rates = row.get("rates") if isinstance(row.get("rates"), dict) else {}
+    input_mtok = rates.get("input")
+    provenance = row.get("provenance") if isinstance(row.get("provenance"), dict) else {}
+    rate = provenance.get("fx_rate")
+    if not isinstance(input_mtok, (int, float)) or not isinstance(rate, (int, float)):
         return "—"
     return _fmt(input_mtok / rate)
 
 
-def _cache_write(row: dict[str, object]) -> str:
+def _cache_write(rates: dict[str, object]) -> str:
     """The 5m write rate, the 1h tier appended when the row carries one."""
-    five = row.get("cache_write_mtok")
-    one_h = row.get("cache_write_1h_mtok")
+    five = rates.get("cache_write")
+    one_h = rates.get("cache_write_1h")
     if five is None and one_h is None:
         return "—"
     if one_h is None:
@@ -288,21 +283,29 @@ def _cache_write(row: dict[str, object]) -> str:
     return f"{_fmt(five)}/{_fmt(one_h)}"
 
 
-def _days(entry: dict[str, object]) -> str:
-    days = entry.get("days")
-    if not isinstance(days, list):
-        return "every day"
-    return ", ".join(str(day) for day in days)
-
-
-def _window(entry: dict[str, object]) -> str:
-    window = entry.get("window")
-    if not isinstance(window, list) or len(window) != 2:
+def _when(entry: dict[str, object]) -> str:
+    """The override condition, rendered compactly."""
+    when = entry.get("when")
+    if not isinstance(when, dict) or not when:
         return "—"
-    start, end = window
-    if not isinstance(start, int) or not isinstance(end, int):
-        return "—"
-    return f"{_hhmm(start)} - {_hhmm(end)}"
+    parts: list[str] = []
+    days = when.get("days")
+    if isinstance(days, list) and days:
+        parts.append(", ".join(str(day) for day in days))
+    window = when.get("window")
+    if (
+        isinstance(window, list)
+        and len(window) == 2
+        and all(isinstance(part, int) for part in window)
+    ):
+        parts.append(f"{_hhmm(window[0])}-{_hhmm(window[1])}")
+    min_tokens = when.get("min_tokens")
+    if isinstance(min_tokens, int):
+        parts.append(f"min {min_tokens} tokens")
+    timezone = when.get("timezone")
+    if isinstance(timezone, str):
+        parts.append(timezone)
+    return " ".join(parts) if parts else "—"
 
 
 def _hhmm(clock: int) -> str:
@@ -416,20 +419,20 @@ def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner, cwd: Path) -
 def fetch_pending_rows(
     runner: PrRunner,
     repo_root: Path,
-    history_file: str,
+    shard_dir: str,
     open_prs: Sequence[OpenPr],
 ) -> list[dict[str, object]]:
     """The rows on open PRs' pricelog branches of origin, under refs/remotes/pending.
 
-    Every open PR branch carries a full store snapshot; its rows unique over
-    the local store are what a new PR branch must union in, so sibling PRs
-    stop rewriting the same files. A branch whose pr was closed keeps its
-    head ref out of open_prs and contributes no rows, so a rejected pr's rows
-    drop out of the union and its model re-candidates on the next run. The
-    fetch is forced and pruned: pending branches are force-pushed, and refs
-    of branches deleted upstream must not linger. A run without an origin
-    remote (local dev) or a branch without the file just yields no pending
-    rows.
+    Every open PR branch carries one shard per source it changed; its rows
+    unique over the local store are what a new PR branch must union in, so
+    sibling PRs stop rewriting the same files. A branch whose pr was closed
+    keeps its head ref out of open_prs and contributes no rows, so a rejected
+    pr's rows drop out of the union and its model re-candidates on the next
+    run. The fetch is forced and pruned: pending branches are force-pushed,
+    and refs of branches deleted upstream must not linger. A run without an
+    origin remote (local dev) or a branch without the shard directory just
+    yields no pending rows.
     """
     try:
         runner.run(
@@ -454,15 +457,25 @@ def fetch_pending_rows(
             log.debug("pending ref %s has no open pr; skipping", ref)
             continue
         try:
-            text = runner.run(["git", "show", f"{ref}:{history_file}"], cwd=repo_root)
+            paths = runner.run(
+                ["git", "ls-tree", "--name-only", ref, f"{shard_dir}/"], cwd=repo_root
+            ).splitlines()
         except PrError as exc:
-            log.info("pending branch %s has no %s; skipping: %s", ref, history_file, exc)
+            log.info("pending branch %s has no %s; skipping: %s", ref, shard_dir, exc)
             continue
-        try:
-            rows.extend(store.parse(text, ref))
-        except ValueError as exc:
-            log.warning("pending branch %s history unreadable; skipping: %s", ref, exc)
-            continue
+        for path in paths:
+            if not path:
+                continue
+            try:
+                text = runner.run(["git", "show", f"{ref}:{path}"], cwd=repo_root)
+            except PrError as exc:
+                log.info("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
+                continue
+            try:
+                rows.extend(store.parse(text, f"{ref}:{path}"))
+            except ValueError as exc:
+                log.warning("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
+                continue
     return rows
 
 

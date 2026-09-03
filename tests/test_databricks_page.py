@@ -17,6 +17,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import databricks_page as detector
 from ai_pricelog.scrapers import databricks_page as scraper
 from ai_pricelog.store import build_row, resolve_rate
+from ai_pricelog.validate import load_schema_keys
 from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://www.databricks.com/product/pricing/foundation-model-serving"
@@ -48,6 +49,9 @@ EXPECTED_IDS = [
     "gte",
     "bge-large",
 ]
+
+
+VERSION = load_schema_keys(Path(__file__).resolve().parents[1]).version
 
 
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
@@ -349,23 +353,22 @@ def test_build_row_converts_dbu_quote_via_provider_rate(live_page):
     pricing = scraper.scrape(make_cfg(), "kimi-k3")
     assert pricing is not None
     resolve = partial(resolve_rate, {}, 0.07)
-    row = build_row("databricks", "kimi-k3", pricing, "2026-08-28", PAGE_URL, resolve=resolve)
+    row = build_row(
+        "databricks", "kimi-k3", pricing, "2026-08-28", PAGE_URL, VERSION, resolve=resolve
+    )
     assert list(row) == [
+        "schema",
         "source",
         "model_id",
         "observed_at",
         "currency",
-        "currency_rate",
-        "currency_rate_date",
-        "input_mtok",
-        "output_mtok",
-        "cache_read_mtok",
-        "url",
+        "rates",
+        "provenance",
     ]
     assert row["currency"] == "DBU"
-    assert row["currency_rate"] == 0.07
-    assert row["currency_rate_date"] == "2026-08-28"
-    assert row["input_mtok"] == pytest.approx(42.857 * 0.07)
-    assert row["output_mtok"] == pytest.approx(214.286 * 0.07)
-    assert row["cache_read_mtok"] == pytest.approx(4.286 * 0.07)
-    assert row["url"] == PAGE_URL
+    assert row["provenance"]["fx_rate"] == 0.07
+    assert row["provenance"]["fx_rate_date"] == "2026-08-28"
+    assert row["rates"]["input"] == pytest.approx(42.857 * 0.07)
+    assert row["rates"]["output"] == pytest.approx(214.286 * 0.07)
+    assert row["rates"]["cache_read"] == pytest.approx(4.286 * 0.07)
+    assert row["provenance"]["url"] == PAGE_URL

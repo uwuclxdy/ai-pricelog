@@ -17,6 +17,10 @@ from ai_pricelog.validate import ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
 FROZEN = ROOT / "tests" / "fixtures" / "history-v3-frozen.ndjson"
+# store._normalize_entry produced these, row for row, at 318266c. it was the
+# v3 index normalizer and the v4 switch deleted it, so the guard freezes its
+# output instead of chasing the function through every later refactor
+NORMALIZED = ROOT / "tests" / "fixtures" / "normalized-v3-frozen.ndjson"
 VERSION = validate.load_schema_keys(ROOT).version
 
 EXPECTED_SOURCE_COUNTS = {
@@ -185,20 +189,22 @@ def test_round_trip_matches_normalize_except_deepseek_legacy(
         if row["source"] == "deepseek" and "max_tokens" in row
     }
     assert len(expected) == 10
+    oracle = [json.loads(line) for line in NORMALIZED.read_text(encoding="utf-8").splitlines()]
+    assert len(oracle) == len(frozen_rows)
     diverged = []
-    for row in frozen_rows:
+    for row, normalized in zip(frozen_rows, oracle, strict=True):
         back = v4_to_v3(migrate_v4.migrate_row(row, VERSION))
-        normalized = store._normalize_entry(row, row["model_id"])
         if back != normalized:
             diverged.append((row["source"], row["model_id"], row["observed_at"]))
     assert set(diverged) == expected
     legacy_deepseek = [
-        row for row in frozen_rows if row["source"] == "deepseek" and "max_tokens" in row
+        (row, normalized)
+        for row, normalized in zip(frozen_rows, oracle, strict=True)
+        if row["source"] == "deepseek" and "max_tokens" in row
     ]
     assert len(legacy_deepseek) == 10
-    for row in legacy_deepseek:
+    for row, normalized in legacy_deepseek:
         back = v4_to_v3(migrate_v4.migrate_row(row, VERSION))
-        normalized = store._normalize_entry(row, row["model_id"])
         assert back["max_tokens_out"] == 393216
         assert normalized["max_tokens_in"] == 393216
         assert {k: v for k, v in back.items() if k != "max_tokens_out"} == {
@@ -272,9 +278,11 @@ def test_extra_never_shadows_a_typed_field(frozen_rows: list[dict[str, object]])
         for key in extra:
             if key not in openrouter.SOURCE_KEYS:
                 continue
-            mapped = openrouter.map_typed_fields({key: extra[key]}, row["model_id"])
-            for field in mapped:
-                assert field not in row
+            rates, fees = openrouter.map_typed_fields({key: extra[key]}, row["model_id"])
+            for axis in rates:
+                assert f"{axis}_mtok" not in row
+            for fee in fees:
+                assert f"{fee}_usd" not in row
 
 
 def test_context_movers_keep_legacy_as_context(frozen_rows: list[dict[str, object]]) -> None:
@@ -407,13 +415,6 @@ def test_shards_sort_by_model_then_date(tmp_path: Path) -> None:
         assert order == sorted(order), f"{path.name} is not sorted"
 
 
-def test_recognized_covers_every_producible_v3_key() -> None:
-    # a key added to the v3 row schema without a mapping here must raise, never
-    # migrate silently. `unit` is the one exclusion: v4 prices tokens by
-    # definition and store.build_row already refuses a non-token quote
-    assert {"unit"} == validate.ROW_KEYS - migrate_v4._RECOGNIZED
-
-
 def test_a_source_cannot_escape_the_shard_directory(tmp_path: Path) -> None:
     history = tmp_path / "history.ndjson"
     history.write_text(
@@ -439,7 +440,8 @@ def test_timezone_rides_the_override_it_describes() -> None:
         "window_rates": [{"days": ["monday"], "input_mtok": 0.9}],
         "timezone": "Asia/Shanghai",
     }
-    validate.validate_row(row)
+    # a shape v3's validator accepted; nothing validates v3 any more, so the
+    # migration is the only thing left that reads it
     overrides = migrate_v4.migrate_row(row, VERSION)["overrides"]
     # v4_to_v3 collapses every zone into one top-level key, so it cannot see
     # WHICH override carries it; this reads the placement directly
@@ -460,6 +462,5 @@ def test_a_timezone_with_no_schedule_to_describe_refuses() -> None:
         "window_rates": [{"quota_multiplier": 0.4}],
         "timezone": "Asia/Singapore",
     }
-    validate.validate_row(row)
     with pytest.raises(ValueError, match="no scheduled override to describe"):
         migrate_v4.migrate_row(row, VERSION)

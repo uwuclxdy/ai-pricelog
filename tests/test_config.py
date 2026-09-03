@@ -177,3 +177,13 @@ def test_load_bad_toml_names_the_file(tmp_path):
 def test_load_injected_providers_missing_file_is_ok(tmp_path):
     cfg = config.load(providers=(), providers_path=tmp_path / "nope.toml")
     assert cfg.providers == ()
+
+
+def test_provider_key_that_cannot_name_a_shard_is_refused(tmp_path):
+    # the key names data/history/<key>.ndjson, so a bad one reaches a
+    # filesystem path. refusing at load keeps the failure off a PR branch,
+    # where the raise lands after `git switch -C` and strands the checkout
+    path = tmp_path / "providers.toml"
+    path.write_text(HAPPY_TOML.replace("[deepseek]", "[DeepSeek]"))
+    with pytest.raises(config.ConfigError, match="cannot name a shard file"):
+        config.load(providers_path=path)

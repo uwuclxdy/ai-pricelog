@@ -1,6 +1,6 @@
-"""Append-only model history: one compact ndjson row per line plus a generated index.
+"""Append-only model history: one compact ndjson shard per source plus a generated index.
 
-Price rows carry the pricing fields; a removal row marks a model delisted
+Price rows carry the v4 pricing shape; a removal row marks a model delisted
 from its source. The index entry keeps the last priced row's fields and gains
 a removed_at stamp while the newest row for the key is a removal. Non-USD
 quotes convert to USD at row build through an fx resolver backed by the
@@ -17,7 +17,6 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from ai_pricelog import openrouter, validate
 from ai_pricelog.pricing import Pricing, to_mtok
 
 
@@ -56,16 +55,59 @@ def save(rows: list[dict[str, object]], path: Path) -> None:
     _atomic_write(payload, path)
 
 
+SHARD_DIR = "data/history"
+INDEX_FILE = "data/index.json"
+
+# a source names a shard file, so it must be one plain path segment
+_SAFE_SOURCE = re.compile(r"[a-z0-9][a-z0-9_-]*")
+
+
+def shard_name(source: object) -> str:
+    """The shard filename for a source, refusing anything but one path segment.
+
+    A source reaches a filesystem path here and _atomic_write creates parent
+    directories, so an unchecked value writes wherever it points.
+    """
+    if not isinstance(source, str) or _SAFE_SOURCE.fullmatch(source) is None:
+        raise ValueError(
+            f"source {source!r} cannot name a shard file;"
+            " fix: lowercase letters, digits, '_' and '-', starting alphanumeric"
+        )
+    return f"{source}.ndjson"
+
+
+def load_shards(directory: Path) -> list[dict[str, object]]:
+    """Every shard row, in filename order, concatenated."""
+    rows: list[dict[str, object]] = []
+    for path in sorted(directory.glob("*.ndjson")):
+        rows.extend(load(path))
+    return rows
+
+
+def load_shard(directory: Path, source: str) -> list[dict[str, object]]:
+    """The rows of one source's shard."""
+    return load(directory / shard_name(source))
+
+
+def _shard_order(row: dict[str, object]) -> tuple[str, str]:
+    """Shard sort key: a new row lands beside its siblings in the review diff."""
+    return (str(row["model_id"]), str(row["observed_at"]))
+
+
+def save_shard(rows: list[dict[str, object]], directory: Path, source: str) -> None:
+    """Write one source's shard, sorted by (model_id, observed_at)."""
+    save(sorted(rows, key=_shard_order), directory / shard_name(source))
+
+
 def union(rows: list[dict[str, object]], extra: list[dict[str, object]]) -> list[dict[str, object]]:
     """rows plus the extra rows not already present, keyed by (source, model_id, observed_at).
 
-    Pending PR branches each carry a full store snapshot, so their union over
-    the loaded store repeats every load-time row; the key dedupe collapses
-    those while keeping the rows unique to a pending branch. a removal row
-    dedupes against removal rows only: it must survive a same-day landed price
-    row sharing its key (the price row must not hide the removal), but a
-    carried copy of an already-union'd removal appends nothing, since one
-    removal row per key ever is the store's invariant.
+    The key dedupe collapses repeated rows across the two inputs while keeping
+    the rows unique to `extra`. a removal row dedupes against removal rows
+    only: it must survive a same-day landed price row sharing its key (the
+    price row must not hide the removal), but a carried copy of an
+    already-union'd removal appends nothing, since one removal row per key
+    ever is the store's invariant.
     """
     seen = {(row.get("source"), row.get("model_id"), row.get("observed_at")) for row in rows}
     removed_keys = {
@@ -178,28 +220,15 @@ def newest(rows: list[dict[str, object]], source: str, model_id: str) -> dict[st
     return None
 
 
-# provenance fields describe where a row came from, never what it costs; a
-# difference in them alone is not an observed price change. currency_rate /
-# currency_rate_date are conversion provenance: a rate refresh with unchanged
-# USD prices must not append a row
-_PROVENANCE_FIELDS = frozenset(
-    {"observed_at", "url", "name", "currency_rate", "currency_rate_date"}
-)
+# three names, not a maintained field list: a new pricing key lands inside
+# `rates`, so it joins the comparable diff without anyone remembering to add
+# it here.
+_PROVENANCE_KEYS = frozenset({"schema", "observed_at", "provenance"})
 
 
 def _comparable(row: dict[str, object]) -> dict[str, object]:
-    """The row minus provenance, with the legacy max_tokens key renamed.
-
-    rows before 2026-08-27 store the context window (deepseek: max output)
-    under `max_tokens`; the split into `max_tokens_in` / `max_tokens_out`
-    renamed the field. treating the legacy key as `max_tokens_in` keeps the
-    rename from reading as a price change on the next re-scrape of every
-    still-legacy row.
-    """
-    fields = {k: v for k, v in row.items() if k not in _PROVENANCE_FIELDS}
-    if "max_tokens" in fields and "max_tokens_in" not in fields:
-        fields["max_tokens_in"] = fields.pop("max_tokens")
-    return fields
+    """The row minus the version stamp, the observation date, and provenance."""
+    return {k: v for k, v in row.items() if k not in _PROVENANCE_KEYS}
 
 
 def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
@@ -208,80 +237,8 @@ def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
     return _comparable(row) != _comparable(last_row)
 
 
-_WINDOW_STR_RE = re.compile(r"^(\d{2}):(\d{2}):\d{2}Z$")
-_PEAK_TO_BASE = {field: field.removeprefix("peak_") for field in validate._PEAK_PRICE_FIELDS}
-
-
-def _window_hhmm(window: object, model_id: str) -> list[int]:
-    """a legacy `["HH:MM:SSZ", "HH:MM:SSZ"]` pair -> `[start, end]` HHMM ints."""
-    if (
-        not isinstance(window, list)
-        or len(window) != 2
-        or not all(isinstance(part, str) for part in window)
-    ):
-        raise ValueError(
-            f"row {model_id!r}: peak window {window!r} outside the [start, end]"
-            " string-pair shape; fix: the row or extend the normalization"
-        )
-    parts: list[int] = []
-    for part in window:
-        match = _WINDOW_STR_RE.fullmatch(part)
-        if match is None or int(match.group(1)) > 23 or int(match.group(2)) > 59:
-            raise ValueError(
-                f"row {model_id!r}: peak window {part!r} outside the HH:MM:SSZ shape;"
-                " fix: the row or extend the normalization"
-            )
-        parts.append(int(match.group(1)) * 100 + int(match.group(2)))
-    if parts[0] >= parts[1]:
-        raise ValueError(
-            f"row {model_id!r}: peak window start must precede its end;"
-            " fix: the row or extend the normalization"
-        )
-    return parts
-
-
-def _normalize_entry(row: dict[str, object], model_id: str) -> dict[str, object]:
-    """The index entry's typed shape; the history stays append-only.
-
-    legacy shapes normalize at index build only, so index consumers need no
-    shims: `max_tokens` -> `max_tokens_in`, flat `peak_*` fields ->
-    `window_rates` entries (the base fields stay off-peak), and `extra`
-    modality keys -> typed fields via the shared openrouter mapping. a
-    consumed key leaves `extra`, and an empty `extra` drops entirely.
-    """
-    entry = dict(row)
-    if "max_tokens" in entry:
-        # an existing typed field wins: the newer shape already rode the row
-        entry.setdefault("max_tokens_in", entry.pop("max_tokens"))
-    if any(field in entry for field in validate._PEAK_PRICE_FIELDS):
-        rates = {
-            _PEAK_TO_BASE[field]: entry.pop(field)
-            for field in validate._PEAK_PRICE_FIELDS
-            if field in entry
-        }
-        entries = list(entry.get("window_rates") or [])
-        for window in entry.pop("peak_windows", []) or []:
-            entries.append({"window": _window_hhmm(window, model_id), **rates})
-        if entries:
-            entry["window_rates"] = entries
-    extra = entry.get("extra")
-    if isinstance(extra, dict) and extra:
-        source = {key: extra[key] for key in extra if key in openrouter.SOURCE_KEYS}
-        if source:
-            mapped = openrouter.map_typed_fields(source, model_id)
-            for field, value in mapped.items():
-                # an existing typed field wins: the newer shape already rode
-                # the row
-                entry.setdefault(field, value)
-            extra = {key: value for key, value in extra.items() if key not in source}
-            if extra:
-                entry["extra"] = extra
-            else:
-                del entry["extra"]
-    return entry
-
-
-def write_index(rows: list[dict[str, object]], path: Path) -> None:
+def write_index(rows: list[dict[str, object]], path: Path, schema_version: int) -> None:
+    """Build the published index: the newest priced row per key plus first_seen."""
     first_seen: dict[tuple[str, str], str] = {}
     priced: dict[tuple[str, str], dict[str, object]] = {}
     newest: dict[tuple[str, str], dict[str, object]] = {}
@@ -309,18 +266,20 @@ def write_index(rows: list[dict[str, object]], path: Path) -> None:
         base = priced.get((source, model_id))
         if base is None:
             # removal rows only ever follow a priced row for the key; fall
-            # back to the removal's own provenance fields if one sneaks in
+            # back to the removal's own comparable fields if one sneaks in
             base = {k: v for k, v in row.items() if k != "removed"}
-        entry = _normalize_entry(base, str(model_id))
+        entry = dict(base)
         entry["first_seen"] = first_seen[(source, model_id)]
         if row.get("removed") is True:
             entry["removed_at"] = row["observed_at"]
         sources.setdefault(source, {})[model_id] = entry
     _atomic_write(
-        json.dumps({"sources": sources, "version": validate.SCHEMA_VERSION}, ensure_ascii=False)
-        + "\n",
+        json.dumps({"sources": sources, "version": schema_version}, ensure_ascii=False) + "\n",
         path,
     )
+
+
+_RATE_SUFFIX = "_mtok"
 
 
 def build_row(
@@ -329,15 +288,16 @@ def build_row(
     pricing: Pricing,
     observed_at: str,
     url: str,
+    schema_version: int,
     resolve: Callable[[str, str], tuple[float, str] | None] | None = None,
 ) -> dict[str, object]:
-    """Build one price row: every mtok price field holds USD.
+    """Build one v4 price row: every rate axis holds USD.
 
     `resolve` maps a non-USD quote currency to its USD rate and the rate's
     date; without one, a non-USD quote is refused instead of passing through
-    unconverted. max_tokens fields are never converted. a non-token unit
-    (per-minute, per-character) is refused: the mtok fields price tokens,
-    and a converted non-token price would misstate the billing axis.
+    unconverted. limit fields are never converted. a non-token unit
+    (per-minute, per-character) is refused: the rate axes price tokens, and a
+    converted non-token price would misstate the billing axis.
     """
     if pricing.unit != "tokens":
         raise ValueError(
@@ -354,60 +314,95 @@ def build_row(
             )
         conversion = resolve(pricing.currency, observed_at)
     factor = 1.0 if conversion is None else conversion[0]
+
+    rates: dict[str, object] = {
+        "input": to_mtok(pricing.input_cost_per_token * factor),
+        "output": to_mtok(pricing.output_cost_per_token * factor),
+    }
+    if pricing.cache_read_cost_per_token is not None:
+        rates["cache_read"] = to_mtok(pricing.cache_read_cost_per_token * factor)
+    if pricing.cache_write_cost_per_token is not None:
+        rates["cache_write"] = to_mtok(pricing.cache_write_cost_per_token * factor)
+    if pricing.cache_write_1h_cost_per_token is not None:
+        rates["cache_write_1h"] = to_mtok(pricing.cache_write_1h_cost_per_token * factor)
+
+    limits: dict[str, object] = {}
+    if pricing.max_tokens_in > 0:
+        limits["context"] = pricing.max_tokens_in
+    if pricing.max_tokens_out > 0:
+        limits["output"] = pricing.max_tokens_out
+
+    overrides: list[dict[str, object]] = []
+    peak_rates = {
+        axis: to_mtok(cost * factor)
+        for axis, cost in (
+            ("input", pricing.peak_input_cost_per_token),
+            ("output", pricing.peak_output_cost_per_token),
+            ("cache_read", pricing.peak_cache_read_cost_per_token),
+        )
+        if cost is not None
+    }
+    if peak_rates:
+        for window in pricing.peak_windows or (None,):
+            when: dict[str, object] = {}
+            if window is not None:
+                when["window"] = list(window)
+            if pricing.peak_days:
+                when["days"] = list(pricing.peak_days)
+            if when and pricing.timezone is not None:
+                when["timezone"] = pricing.timezone
+            override: dict[str, object] = {"rates": dict(peak_rates)}
+            if when:
+                override["when"] = when
+            # no assert on an empty `when`: a scrape that found peak costs but
+            # no schedule must still BUILD, so validate_row rejects this one
+            # row and the run skips the model, instead of an error killing it
+            overrides.append(override)
+    for entry in pricing.window_rates:
+        when = {}
+        if "days" in entry:
+            when["days"] = entry["days"]
+        if "window" in entry:
+            when["window"] = entry["window"]
+        if when and pricing.timezone is not None:
+            when["timezone"] = pricing.timezone
+        # the scraper hands these already per-million, so they take the fx
+        # factor the same way the base rates do; without it a non-USD provider
+        # with a scheduled rate would store source-currency values as USD
+        entry_rates = {
+            key[: -len(_RATE_SUFFIX)]: round(value * factor, 6)
+            for key, value in entry.items()
+            if key.endswith(_RATE_SUFFIX) and isinstance(value, (int, float))
+        }
+        override = {}
+        if when:
+            override["when"] = when
+        if entry_rates:
+            override["rates"] = entry_rates
+        if "quota_multiplier" in entry:
+            override["quota_multiplier"] = entry["quota_multiplier"]
+        overrides.append(override)
+
     row: dict[str, object] = {
+        "schema": schema_version,
         "source": source,
         "model_id": model_id,
         "observed_at": observed_at,
     }
-    if pricing.currency != "USD":
-        row["currency"] = pricing.currency
     if pricing.effective_at is not None:
         row["effective_at"] = pricing.effective_at
+    if pricing.currency != "USD":
+        row["currency"] = pricing.currency
+    row["rates"] = rates
+    if overrides:
+        row["overrides"] = overrides
+    if limits:
+        row["limits"] = limits
+    provenance: dict[str, object] = {"url": pricing.url or url}
     if conversion is not None:
-        row["currency_rate"] = conversion[0]
-        row["currency_rate_date"] = conversion[1]
-    row["input_mtok"] = to_mtok(pricing.input_cost_per_token * factor)
-    row["output_mtok"] = to_mtok(pricing.output_cost_per_token * factor)
-    if pricing.cache_read_cost_per_token is not None:
-        row["cache_read_mtok"] = to_mtok(pricing.cache_read_cost_per_token * factor)
-    if pricing.cache_write_cost_per_token is not None:
-        row["cache_write_mtok"] = to_mtok(pricing.cache_write_cost_per_token * factor)
-    if pricing.cache_write_1h_cost_per_token is not None:
-        row["cache_write_1h_mtok"] = to_mtok(pricing.cache_write_1h_cost_per_token * factor)
-    if pricing.max_tokens_in > 0:
-        row["max_tokens_in"] = pricing.max_tokens_in
-    if pricing.max_tokens_out > 0:
-        row["max_tokens_out"] = pricing.max_tokens_out
-    peak_rates = {
-        field: to_mtok(cost * factor)
-        for field, cost in (
-            ("input_mtok", pricing.peak_input_cost_per_token),
-            ("output_mtok", pricing.peak_output_cost_per_token),
-            ("cache_read_mtok", pricing.peak_cache_read_cost_per_token),
-        )
-        if cost is not None
-    }
-    entries: list[dict[str, object]] = []
-    if peak_rates:
-        # the peak schedule lands as window_rates entries: the base mtok
-        # fields stay the off-peak default, one entry per window overrides
-        # them. no assert on peak_windows here: the row must build even when
-        # the scrape left the windows empty, so validate.validate_row rejects
-        # THIS row instead of an AssertionError killing the whole run
-        for window in pricing.peak_windows or (None,):
-            entry: dict[str, object] = {}
-            if window is not None:
-                entry["window"] = list(window)
-            if pricing.peak_days:
-                entry["days"] = list(pricing.peak_days)
-            entry.update(peak_rates)
-            entries.append(entry)
-    entries.extend(pricing.window_rates)
-    if entries:
-        row["window_rates"] = entries
-        if pricing.timezone is not None:
-            row["timezone"] = pricing.timezone
-    row["url"] = pricing.url or url
+        provenance["fx_rate"] = conversion[0]
+        provenance["fx_rate_date"] = conversion[1]
+    row["provenance"] = provenance
     return row
 
 
@@ -415,29 +410,44 @@ def build_removal_row(
     source: str,
     model_id: str,
     observed_at: str,
+    schema_version: int,
     last_row: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """The removal row: one per (source, model_id) ever, carrying the final
     price snapshot so the closing record stays self-contained.
 
     `last_row` is the last priced row for the key (store.last); its comparable
-    fields ride the removal row. the currency-rate pair is conversion
-    provenance but rides along when the snapshot quotes non-USD, so the row
-    still validates. a missing last row builds the bare removal row.
+    fields ride the removal row. the fx pair is conversion provenance but
+    rides along when the snapshot quotes non-USD, so the row still validates.
+    a missing last row builds the bare removal row.
     """
     row: dict[str, object] = {
+        "schema": schema_version,
         "source": source,
         "model_id": model_id,
         "observed_at": observed_at,
-        "removed": True,
     }
-    if last_row is None:
-        return row
-    row.update(_comparable(last_row))
-    if last_row.get("currency") not in (None, "USD"):
-        for field in ("currency_rate", "currency_rate_date"):
-            if field in last_row:
-                row[field] = last_row[field]
+    comparable = _comparable(last_row) if last_row is not None else {}
+    if "effective_at" in comparable:
+        row["effective_at"] = comparable["effective_at"]
+    row["removed"] = True
+    if "currency" in comparable:
+        row["currency"] = comparable["currency"]
+    if "rates" in comparable:
+        row["rates"] = comparable["rates"]
+    if "overrides" in comparable:
+        row["overrides"] = comparable["overrides"]
+    if "fees" in comparable:
+        row["fees"] = comparable["fees"]
+    if "limits" in comparable:
+        row["limits"] = comparable["limits"]
+    if "unmapped" in comparable:
+        row["unmapped"] = comparable["unmapped"]
+    if last_row is not None and last_row.get("currency") not in (None, "USD"):
+        provenance = last_row.get("provenance") or {}
+        fx = {key: provenance[key] for key in ("fx_rate", "fx_rate_date") if key in provenance}
+        if fx:
+            row["provenance"] = fx
     return row
 
 

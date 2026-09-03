@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ai_pricelog import store
+
 
 class ConfigError(Exception):
     """provider config or provider-module resolution failure."""
@@ -42,6 +44,12 @@ def load_providers(path: Path) -> tuple[ProviderCfg, ...]:
     for section, values in data.items():
         if not isinstance(values, dict):
             raise ConfigError(f"providers file '{path}': section '{section}' must be a table")
+        # the key names the source's history shard file, so it has to be one
+        # plain path segment; refusing here keeps the failure at load time
+        try:
+            store.shard_name(section)
+        except ValueError as exc:
+            raise ConfigError(f"providers file '{path}': {exc}") from exc
         for key in values:
             if key not in _REQUIRED_KEYS and key not in ("announce_urls", "currency_rate"):
                 raise ConfigError(

@@ -7,17 +7,24 @@ default branch, which github reads as a merged PR. the pass passes only
 branches it verified, and this module re-checks each branch mechanically:
 
 - the branch is a `pricelog/` automation branch, never the seed branch
-- the branch changes only pipeline files (history, index, README, announce,
-  absence, billing-rules plus its test pin)
+- the branch changes only pipeline files (the per-source history shards,
+  announce, absence, billing-rules plus its test pin)
 - the pipeline files are committed and nothing else is staged: every stage
   names its paths, so unrelated dirt in the checkout cannot ride the merge
-- the history lands as an exact-line union: every HEAD line survives, the
-  branch's lines not already present append in branch order. a key-based
-  union drops same-day update rows, so the merge dedupes exact lines only
-- index.json and the README stats regenerate from the union via the same
-  codepath the pipeline uses (`store.write_index`, `stats.render`)
-- announce.json and absence.json keep HEAD's copy on intermediate merges;
-  the last (newest) branch's copies land with the final merge
+- each shard the branch touched lands as an exact-line union: every HEAD
+  line survives, the branch's lines not already present append in branch
+  order. a key-based union drops same-day update rows, so the merge dedupes
+  exact lines only. the union then re-sorts on (model_id, observed_at), the
+  order every shard writer holds, so a merged shard still puts a new row
+  beside its siblings in the review diff
+- index.json regenerates here, from the merged shards, so the served index
+  is correct when the push lands rather than whenever a workflow next runs.
+  reindex.yml still covers a human push; whether THIS push also triggers it
+  depends on which credential git picks for it, which nothing here pins
+- the README stats stay stale until the publish job owns their regen
+- announce.json and absence.json take the last (newest) branch's copies with
+  the final merge; the intermediates keep whatever the git merge produced,
+  which is identical across one run's branches
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -30,16 +37,15 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import models, pr, stats, store
+from ai_pricelog import pr, store, validate
 from ai_pricelog.absence import ABSENCE_FILE
 from ai_pricelog.announce import ANNOUNCE_FILE, BILLING_RULES_FILE
-from ai_pricelog.pipeline import HISTORY_FILE, INDEX_FILE, README_FILE
 
-PIPELINE_FILES = frozenset(
+SHARD_DIR = store.SHARD_DIR
+INDEX_FILE = store.INDEX_FILE
+
+PIPELINE_EXACT_FILES = frozenset(
     {
-        HISTORY_FILE,
-        INDEX_FILE,
-        README_FILE,
         ANNOUNCE_FILE,
         ABSENCE_FILE,
         BILLING_RULES_FILE,
@@ -65,6 +71,48 @@ def _branch_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -
     return runner.run(["git", "show", f"origin/{branch}:{path}"], cwd=repo_root)
 
 
+def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
+    """The union re-sorted on (model_id, observed_at), reordering bytes only.
+
+    The lines carry their original serialization, so sorting indices instead
+    of re-serializing keeps a merged shard byte-comparable with what its
+    writers produced. The pass is authorized to hand-edit a branch row, so a
+    line it cannot read stops the merge by name rather than by traceback.
+    """
+    try:
+        rows = store.parse("\n".join(lines), path)
+        if len(rows) != len(lines):
+            raise ValueError(f"{len(lines)} line(s) parsed as {len(rows)} row(s)")
+        order = sorted(range(len(lines)), key=lambda index: store._shard_order(rows[index]))
+    except (ValueError, KeyError, IndexError) as exc:
+        raise AutoMergeError(
+            f"branch {branch}: {path} does not read as sorted rows: {exc};"
+            " fix: the offending line on the branch, one json object per line"
+            " carrying model_id and observed_at"
+        ) from exc
+    return [lines[index] for index in order]
+
+
+def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
+    """HEAD's copy of a shard; a shard HEAD never had reads as empty."""
+    try:
+        return runner.run(["git", "show", f"HEAD:{path}"], cwd=repo_root)
+    except pr.PrError:
+        return ""
+
+
+def _branch_shard_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
+    """The shard paths one branch changed, relative to HEAD."""
+    paths = runner.run(
+        # three-dot: what the BRANCH changed since the merge base. two-dot also
+        # lists a file HEAD gained and the branch never had, and `git show
+        # origin/<branch>:<that path>` then raises mid-merge
+        ["git", "diff", "--name-only", f"HEAD...origin/{branch}"],
+        cwd=repo_root,
+    ).splitlines()
+    return sorted(path for path in paths if path.startswith(SHARD_DIR + "/"))
+
+
 def _line_union(head: list[str], branch: list[str]) -> list[str]:
     """head's lines, then the branch lines not already present, in branch order."""
     seen = set(head)
@@ -74,6 +122,19 @@ def _line_union(head: list[str], branch: list[str]) -> list[str]:
             seen.add(line)
             union.append(line)
     return union
+
+
+def _is_pipeline_path(path: str) -> bool:
+    """A path the merge owns: one shard file under data/history, or an exact pipeline file.
+
+    The shard rule mirrors `store.shard_name`: exactly one segment under the
+    directory. A nested path would union-merge and commit as data nothing
+    reads, since `load_shards` globs one level.
+    """
+    if path in PIPELINE_EXACT_FILES or path == INDEX_FILE:
+        return True
+    prefix = SHARD_DIR + "/"
+    return path.startswith(prefix) and "/" not in path[len(prefix) :]
 
 
 def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
@@ -87,7 +148,16 @@ def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
     """
     staged = runner.run(["git", "diff", "--cached", "--name-only"], cwd=repo_root).splitlines()
     dirty = runner.run(
-        ["git", "status", "--porcelain", "--", *sorted(PIPELINE_FILES)], cwd=repo_root
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--",
+            SHARD_DIR,
+            INDEX_FILE,
+            *sorted(PIPELINE_EXACT_FILES),
+        ],
+        cwd=repo_root,
     ).splitlines()
     return [f"staged {path}" for path in staged] + [line.strip() for line in dirty]
 
@@ -99,12 +169,15 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
         if not branch.startswith("pricelog/"):
             raise AutoMergeError(f"branch {branch}: not a pricelog automation branch")
         paths = set(
+            # three-dot for the same reason as _branch_shard_paths: two-dot
+            # counts what HEAD gained since the branch forked, so every PR
+            # older than one burst would read as changing that burst's files
             runner.run(
-                ["git", "diff", "--name-only", "HEAD", f"origin/{branch}"],
+                ["git", "diff", "--name-only", f"HEAD...origin/{branch}"],
                 cwd=repo_root,
             ).splitlines()
         )
-        outside = sorted(paths - PIPELINE_FILES)
+        outside = sorted(path for path in paths if not _is_pipeline_path(path))
         if outside:
             raise AutoMergeError(
                 f"branch {branch}: changes {outside}; only pipeline files may ride"
@@ -163,25 +236,27 @@ def merge_branches(
 
         # HEAD's copies come from git, never the worktree: the in-flight merge
         # left conflict markers in the conflicted files
-        head_text = runner.run(["git", "show", f"HEAD:{HISTORY_FILE}"], cwd=repo_root)
-        union = _line_union(
-            head_text.splitlines(),
-            _branch_text(runner, repo_root, branch, HISTORY_FILE).splitlines(),
-        )
-        union_text = "\n".join(union) + ("\n" if union else "")
-        (repo_root / HISTORY_FILE).write_text(union_text, encoding="utf-8")
+        appended = 0
+        for shard_path in _branch_shard_paths(runner, repo_root, branch):
+            head_text = _head_text(runner, repo_root, shard_path)
+            union = _line_union(
+                head_text.splitlines(),
+                _branch_text(runner, repo_root, branch, shard_path).splitlines(),
+            )
+            appended += len(union) - len(head_text.splitlines())
+            union = _sorted_lines(union, branch, shard_path)
+            union_text = "\n".join(union) + ("\n" if union else "")
+            (repo_root / shard_path).write_text(union_text, encoding="utf-8")
 
-        rows = store.parse(union_text, HISTORY_FILE)
-        store.write_index(rows, repo_root / INDEX_FILE)
-        readme_path = repo_root / README_FILE
-        readme_text = runner.run(["git", "show", f"HEAD:{README_FILE}"], cwd=repo_root)
-        readme_path.write_text(
-            stats.render(
-                readme_text,
-                stats.compute(rows, models.load_models(repo_root / models.MODELS_FILE)),
-            ),
-            encoding="utf-8",
+        # the merge owns the served index: reindex.yml runs on push, and
+        # whether this push triggers a workflow depends on which credential
+        # git picks for it. regenerating here needs no answer to that
+        store.write_index(
+            store.load_shards(repo_root / SHARD_DIR),
+            repo_root / INDEX_FILE,
+            validate.load_schema_keys(repo_root).version,
         )
+
         if last:
             (repo_root / ANNOUNCE_FILE).write_text(
                 _branch_text(runner, repo_root, branch, ANNOUNCE_FILE), encoding="utf-8"
@@ -195,9 +270,8 @@ def merge_branches(
                 "git",
                 "add",
                 "--",
-                HISTORY_FILE,
+                SHARD_DIR,
                 INDEX_FILE,
-                README_FILE,
                 ANNOUNCE_FILE,
                 ABSENCE_FILE,
                 BILLING_RULES_FILE,
@@ -208,7 +282,6 @@ def merge_branches(
         # the staged tree must carry no conflict markers (a file both sides
         # changed that this merge does not own would stage them)
         runner.run(["git", "diff", "--cached", "--check"], cwd=repo_root)
-        appended = len(union) - len(head_text.splitlines())
         # the merge commit keeps the branch's own subject: the repo convention
         # for burst merges is one commit per branch, subject as the branch's
         subject = runner.run(

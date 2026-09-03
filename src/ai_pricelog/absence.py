@@ -3,7 +3,7 @@
 data/absence.json mirrors announce.json: the pipeline computes a fresh state
 each run, and the state lands only on PR branches (skip-and-retry). A stored
 model absent from its source's page twice, both observations landed, gets a
-removal row in history.ndjson; its entry stays at 2 on the branch until the
+removal row in the source's history shard; its entry stays at 2 on the branch until the
 pipeline's landed-removal cleanup drops it. a present model's entry is
 deleted too. With no PR opened the state stays stale and the next run
 re-derives it, so a flaky page never fakes a delisting.

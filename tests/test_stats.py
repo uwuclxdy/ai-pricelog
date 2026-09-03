@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from ai_pricelog import models, stats
-from ai_pricelog.store import load
+from ai_pricelog.store import load_shards
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -60,6 +60,6 @@ def test_render_missing_marker_raises():
 
 def test_committed_readme_stats_recompute_from_data():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    rows = load(ROOT / "data" / "history.ndjson")
+    rows = load_shards(ROOT / "data" / "history")
     mapping = models.load_models(ROOT / "data" / "models.json")
     assert stats.render(readme, stats.compute(rows, mapping)) == readme

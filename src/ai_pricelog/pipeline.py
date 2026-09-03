@@ -9,7 +9,8 @@ branch (never the default branch). Rows for models whose pr cannot open stay
 out of every branch: the human review of each draft pr is the only guard
 against a misread price, so a row lands only under its own pr or the seed,
 and a skipped model re-candidates against the landed store on the next run.
-The index and the recomputed README stats ride the same branch commit. The
+The store is one ndjson shard per source under data/history; a per-source pr
+branch writes only its own shard, and the seed pr writes every shard. The
 tree is restored to HEAD after each pr, so every pr branch starts from the
 default branch tip. When the store was empty at load, one seed pr carries
 all rows; while that seed pr is still open, the run skips itself.
@@ -33,14 +34,12 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from ai_pricelog import absence, announce, config, models, openrouter, pr, stats, store, validate
+from ai_pricelog import absence, announce, config, models, openrouter, pr, store, validate
 
 log = logging.getLogger(__name__)
 
-HISTORY_FILE = "data/history.ndjson"
-INDEX_FILE = "data/index.json"
+HISTORY_DIR = store.SHARD_DIR
 FX_FILE = "data/fx-rates.json"
-README_FILE = "README.md"
 MARKER_FILE = ".run-changed"
 
 
@@ -82,11 +81,11 @@ def run(
     runner = runner or pr.PrRunner()
     today = today or date.today().isoformat()
     stamp = now or datetime.now().strftime("%H%M%S")
-    history_path = repo_root / HISTORY_FILE
     marker_path = repo_root / MARKER_FILE
     marker_path.unlink(missing_ok=True)
 
-    rows = store.load(history_path)
+    rows = store.load_shards(repo_root / HISTORY_DIR)
+    keys = validate.load_schema_keys(repo_root)
     fx = store.load_fx(repo_root / FX_FILE)
     seed = not rows
     report = RunReport()
@@ -104,7 +103,7 @@ def run(
         return report
 
     landed_rows = rows
-    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_FILE, open_prs))
+    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs))
 
     snapshot = announce.load_snapshot(repo_root / announce.ANNOUNCE_FILE)
     fetch = announce.fetch_channels(cfg, snapshot, today)
@@ -172,6 +171,7 @@ def run(
             open_prs,
             today,
             resolve,
+            keys,
         )
         _refresh_drift(
             pcfg,
@@ -184,6 +184,7 @@ def run(
             open_prs,
             today,
             resolve,
+            keys,
         )
         _track_provider_absence(
             pcfg,
@@ -195,10 +196,11 @@ def run(
             removal_groups,
             open_prs,
             today,
+            keys,
         )
 
     _openrouter_rows(
-        rows, landed_rows, plan, report, open_prs, today, fresh_absence, removal_groups
+        rows, landed_rows, plan, report, open_prs, today, fresh_absence, removal_groups, keys
     )
 
     fresh_absence = {source: entries for source, entries in fresh_absence.items() if entries}
@@ -255,7 +257,6 @@ def run(
             runner,
             announce_updates,
             fresh_absence if absence_diff else None,
-            mapping,
         )
         if url is None:
             for group in plan.values():
@@ -306,7 +307,6 @@ def run(
             runner,
             announce_updates,
             fresh_absence if absence_diff else None,
-            mapping,
         )
         if url is None:
             # a failed open commits nothing: the rows re-derive against the
@@ -357,6 +357,7 @@ def _add_candidates(
     open_prs: Sequence[pr.OpenPr],
     today: str,
     resolve: Callable[[str, str], tuple[float, str] | None],
+    keys: validate.SchemaKeys,
 ) -> None:
     """First rows for ids the store has never seen under any spelling.
 
@@ -388,9 +389,9 @@ def _add_candidates(
             continue
         try:
             row = store.build_row(
-                pcfg.key, model_id, pricing, today, pcfg.scraper_url, resolve=resolve
+                pcfg.key, model_id, pricing, today, pcfg.scraper_url, keys.version, resolve=resolve
             )
-            validate.validate_row(row)
+            validate.validate_row(row, keys)
         except validate.ValidationError as exc:
             log.warning("entry %s failed validation for %s: %s", model_id, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
@@ -413,6 +414,7 @@ def _refresh_drift(
     open_prs: Sequence[pr.OpenPr],
     today: str,
     resolve: Callable[[str, str], tuple[float, str] | None],
+    keys: validate.SchemaKeys,
 ) -> None:
     """Drift-check every detected page id against its stored rows.
 
@@ -442,9 +444,9 @@ def _refresh_drift(
             continue
         try:
             row = store.build_row(
-                pcfg.key, stored, pricing, today, pcfg.scraper_url, resolve=resolve
+                pcfg.key, stored, pricing, today, pcfg.scraper_url, keys.version, resolve=resolve
             )
-            validate.validate_row(row)
+            validate.validate_row(row, keys)
         except validate.ValidationError as exc:
             log.warning("refresh for %s skipped in %s: %s", stored, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
@@ -473,6 +475,7 @@ def _openrouter_rows(
     today: str,
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
+    keys: validate.SchemaKeys,
 ) -> None:
     """OpenRouter rows: the API is the source, store membership settles ids."""
     or_report = report.providers["openrouter"] = ProviderReport()
@@ -485,14 +488,14 @@ def _openrouter_rows(
     or_report.detected = [model.id for model in models]
     rowable: set[str] = set()
     for model in models:
-        row = openrouter.build_row(model, today)
+        row = openrouter.build_row(model, today, keys.version)
         if row is None:
             # alias entries and dated-canonical snapshots are not priced rows
             or_report.skipped_no_pricing.append(model.id)
             continue
         rowable.add(row["model_id"])
         try:
-            validate.validate_row(row)
+            validate.validate_row(row, keys)
         except validate.ValidationError as exc:
             log.warning("entry %s failed validation for openrouter: %s", model.id, exc)
             or_report.errors.append(_describe(exc))
@@ -526,6 +529,7 @@ def _openrouter_rows(
         removal_groups,
         open_prs,
         today,
+        keys,
     )
 
 
@@ -539,6 +543,7 @@ def _track_provider_absence(
     removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
     today: str,
+    keys: validate.SchemaKeys,
 ) -> None:
     """Absence counters for one provider: page ids mapped to stored spellings.
 
@@ -572,6 +577,7 @@ def _track_provider_absence(
         removal_groups,
         open_prs,
         today,
+        keys,
     )
 
 
@@ -587,6 +593,7 @@ def _track_absence(
     removal_groups: list[_PrGroup],
     open_prs: Sequence[pr.OpenPr],
     today: str,
+    keys: validate.SchemaKeys,
 ) -> None:
     """Move the per-model absence counters and plan removal rows.
 
@@ -631,8 +638,10 @@ def _track_absence(
             # the removal row is already on record: one per key ever
             del source_state[model_id]
             continue
-        row = store.build_removal_row(source, model_id, today, store.last(rows, source, model_id))
-        validate.validate_row(row)
+        row = store.build_removal_row(
+            source, model_id, today, keys.version, store.last(rows, source, model_id)
+        )
+        validate.validate_row(row, keys)
         group = _PrGroup(source, provider, source_url)
         group.rows.append(row)
         removal_groups.append(group)
@@ -649,32 +658,26 @@ def _open_group_pr(
     runner: pr.PrRunner,
     announce_updates: dict[str, dict[str, dict[str, str]]] | None = None,
     absence_updates: dict[str, dict[str, dict[str, object]]] | None = None,
-    mapping: dict[str, dict[str, object]] | None = None,
 ) -> str | None:
     """Write the PR branch, push it, open the draft, restore the tree.
 
     The branch carries the landed store plus only the rows its own PR covers,
     plus the fresh announce snapshot and absence state when they changed this
-    run. The default branch is never committed or pushed, and the tree is
-    restored to the pre-run head after every PR, so each branch starts from
-    the same base.
+    run. A per-source branch writes only its own source's shard; the seed
+    branch writes every shard. The default branch is never committed or
+    pushed, and the tree is restored to the pre-run head after every PR, so
+    each branch starts from the same base.
     """
     branch = spec.branch
-    history_path = repo_root / HISTORY_FILE
-    index_path = repo_root / INDEX_FILE
+    shard_dir = repo_root / HISTORY_DIR
     try:
         runner.run(["git", "switch", "-C", branch], cwd=repo_root)
-        store.save(full_rows, history_path)
-        store.write_index(full_rows, index_path)
-        readme_path = repo_root / README_FILE
-        readme_path.write_text(
-            stats.render(
-                readme_path.read_text(encoding="utf-8"),
-                stats.compute(full_rows, mapping or {}),
-            ),
-            encoding="utf-8",
-        )
-        add_cmd = ["git", "add", HISTORY_FILE, INDEX_FILE, README_FILE]
+        _write_shards(shard_dir, spec, full_rows)
+        add_cmd = ["git", "add"]
+        if spec.seed:
+            add_cmd.append(HISTORY_DIR)
+        else:
+            add_cmd.append(str(shard_dir / store.shard_name(spec.source)))
         if announce_updates is not None:
             announce.save_snapshot(announce_updates, repo_root / announce.ANNOUNCE_FILE)
             add_cmd.append(announce.ANNOUNCE_FILE)
@@ -704,6 +707,19 @@ def _open_group_pr(
         return None
     _restore(repo_root, original_branch, base_sha, runner)
     return url
+
+
+def _write_shards(shard_dir: Path, spec: pr.PrSpec, full_rows: list[dict[str, object]]) -> None:
+    """Write the shards this PR carries: one per-source shard, or every shard for a seed."""
+    if spec.seed:
+        by_source: dict[str, list[dict[str, object]]] = {}
+        for row in full_rows:
+            by_source.setdefault(str(row["source"]), []).append(row)
+        for source, rows in by_source.items():
+            store.save_shard(rows, shard_dir, source)
+        return
+    source = spec.source
+    store.save_shard([row for row in full_rows if row.get("source") == source], shard_dir, source)
 
 
 def _delete_remote_branch(repo_root: Path, branch: str, runner: pr.PrRunner) -> None:

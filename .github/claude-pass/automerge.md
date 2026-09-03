@@ -19,7 +19,7 @@ a row is verified when you re-read its rate on its `url` page (the api for openr
 
 openrouter reseller rates flip-flop: a row can record a transient the api reverted in a day. land a row that differs from today's api when BOTH hold:
 
-1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history.ndjson`)
+1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history/<source>.ndjson`)
 2. the row itself records the transient state it saw
 
 a rate that moved again since the row leaves condition 1 unanswerable against today's api. a later run settles it: every run diffs the api against `origin/mommy`, so a newer branch carrying no row for that (source, model_id) proves the api was back at the prior stored value when it ran. that silence is the revert.
@@ -31,7 +31,7 @@ the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/m
 | case | how to recognize it |
 |---|---|
 | seed PR | the branch is `pricelog/seed` (the first full snapshot; never automerged) |
-| code PR | the branch diff changes any file outside `data/history.ndjson`, `data/index.json`, `README.md`, `data/announce.json`, `data/absence.json`, `data/billing-rules.json`, `tests/test_billing_rules.py` |
+| code PR | the branch diff changes any file outside `data/history/`, `data/announce.json`, `data/absence.json`, `data/billing-rules.json`, `tests/test_billing_rules.py` |
 | other billing-rule classes | rate changes, tier changes, promo windows, free-tier flips: name the semantics and flag them for the human, who owns those calls |
 | unverifiable rows | the source page fetch fails (bot wall, 403) |
 | ambiguous announce semantics | the rubric answer is not clear-cut |
@@ -55,11 +55,11 @@ uv run ai-pricelog-automerge <branch>...
 with the merge-eligible branches in order, oldest PR first, newest last. the script:
 
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
-- per branch: a two-parent merge commit, exact-line history union (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), `index.json` and the README stats regenerated via the pipeline's own codepath
+- per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`, then `index.json` regenerated from the merged shards
 - `announce.json` + `absence.json`: HEAD's copies during intermediate merges; the last (newest) branch's copies with the final merge (every branch of one run carries the same fresh snapshots)
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
-github auto-marks each PR merged once its head lands in the default branch. the push uses the checkout's persisted token, so no workflow re-runs fire; the script regenerates everything itself.
+github auto-marks each PR merged once its head lands in the default branch. the merge regenerates `index.json` itself, so the served index is correct the moment the push lands; the reindex workflow is the backstop for a human push.
 
 when the script fails: do not retry it. report the error in your final message, leave every PR open, delete nothing. the next run re-derives the rows.
 

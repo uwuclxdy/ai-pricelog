@@ -7,20 +7,21 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import automerge, pr, store
+from ai_pricelog import automerge, pr, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
-from ai_pricelog.pipeline import HISTORY_FILE, INDEX_FILE, README_FILE
 from conftest import git, git_init_repo
+
+SCHEMA_VERSION = validate.load_schema_keys(Path(__file__).resolve().parents[1]).version
 
 
 def make_row(source: str, model_id: str, observed_at: str, input_mtok: float) -> dict:
     return {
+        "schema": SCHEMA_VERSION,
         "source": source,
         "model_id": model_id,
         "observed_at": observed_at,
-        "input_mtok": input_mtok,
-        "output_mtok": input_mtok * 2,
-        "url": "https://example.com/pricing",
+        "rates": {"input": input_mtok, "output": input_mtok * 2},
+        "provenance": {"url": "https://example.com/pricing"},
     }
 
 
@@ -29,10 +30,17 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     repo = tmp_path / "repo"
     git_init_repo(repo)
     (repo / "data").mkdir()
-    store.save([make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)], repo / HISTORY_FILE)
-    store.write_index(store.load(repo / HISTORY_FILE), repo / INDEX_FILE)
-    (repo / README_FILE).write_text(
-        "<!-- stats:start -->x<!-- stats:end -->\n<!-- stats-row:start -->x<!-- stats-row:end -->\n"
+    # the merge regenerates the index, and write_index takes the version the
+    # committed contract declares
+    schema_src = Path(__file__).resolve().parents[1] / "data" / "schema" / "row.v4.json"
+    (repo / "data" / "schema").mkdir()
+    (repo / "data" / "schema" / "row.v4.json").write_text(
+        schema_src.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    store.save_shard(
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)],
+        repo / "data" / "history",
+        "deepseek",
     )
     (repo / "data" / "announce.json").write_text(json.dumps({}) + "\n")
     (repo / "data" / "absence.json").write_text(json.dumps({}) + "\n")
@@ -58,8 +66,12 @@ def make_branch(
 ) -> None:
     """Open a pricelog branch off main: append rows, snapshots, push, return to main."""
     git(repo, "switch", "-c", name)
-    store.save(store.load(repo / HISTORY_FILE) + rows, repo / HISTORY_FILE)
-    store.write_index(store.load(repo / HISTORY_FILE), repo / INDEX_FILE)
+    shard_dir = repo / "data" / "history"
+    by_source: dict[str, list[dict]] = {}
+    for row in rows:
+        by_source.setdefault(row["source"], []).append(row)
+    for source, source_rows in by_source.items():
+        store.save_shard(store.load_shard(shard_dir, source) + source_rows, shard_dir, source)
     if announce is not None:
         (repo / "data" / "announce.json").write_text(json.dumps(announce) + "\n")
     if absence is not None:
@@ -74,8 +86,9 @@ def make_branch(
     git(repo, "fetch", "origin")
 
 
-def history_lines(repo: Path) -> list[str]:
-    return (repo / HISTORY_FILE).read_text(encoding="utf-8").splitlines()
+def shard_lines(repo: Path, source: str = "deepseek") -> list[str]:
+    path = repo / "data" / "history" / f"{source}.ndjson"
+    return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
 
 
 def test_line_union_appends_only_new_exact_lines():
@@ -84,7 +97,7 @@ def test_line_union_appends_only_new_exact_lines():
     assert automerge._line_union(head, branch) == ["a", "b", "c"]
 
 
-def test_merge_lands_union_and_regens(tmp_path):
+def test_merge_lands_union(tmp_path):
     repo, bare = build_repo(tmp_path)
     r1 = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
     r2 = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.45)
@@ -118,21 +131,11 @@ def test_merge_lands_union_and_regens(tmp_path):
     assert [r.branch for r in results] == ["pricelog/alpha-00000000", "pricelog/beta-11111111"]
     assert [r.appended for r in results] == [2, 1]
     # the union: HEAD's row, alpha's pair (same-day update kept), beta's own row
-    expected = history_lines(repo)
+    expected = shard_lines(repo)
     assert len(expected) == 4
     assert r1 in [json.loads(line) for line in expected]
     assert r2 in [json.loads(line) for line in expected]
     assert r4 in [json.loads(line) for line in expected]
-    # index regenerated from the union: the same-key tie resolves to the later
-    # row in the file, so r2 wins
-    index = json.loads((repo / INDEX_FILE).read_text(encoding="utf-8"))
-    entry = index["sources"]["deepseek"]["deepseek-v4-pro"]
-    assert entry["input_mtok"] == 0.45
-    assert index["sources"]["deepseek"]["deepseek-v4-flash"]["input_mtok"] == 0.05
-    # README stats regenerated: 2 models, 4 rows
-    readme = (repo / README_FILE).read_text(encoding="utf-8")
-    assert "| models tracked | **2** |" in readme
-    assert "| dated rows | 4 |" in readme
     # the freshest announce/absence snapshots come from the newest branch
     announce = json.loads((repo / "data" / "announce.json").read_text(encoding="utf-8"))
     assert announce["deepseek"]["https://example.com/u"]["text"] == "newer"
@@ -150,6 +153,59 @@ def test_merge_lands_union_and_regens(tmp_path):
     assert not any("pricelog/" in ref for ref in refs)
     # the merged tree is clean
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_re_sorts_the_shard_it_unions(tmp_path):
+    # the union appends the branch's lines at the end. without a re-sort the
+    # merged shard on the default branch loses the (model_id, observed_at)
+    # order every writer holds, and the review diff stops putting a new row
+    # beside its siblings
+    repo, _bare = build_repo(tmp_path)
+    flash = make_row("deepseek", "deepseek-v4-flash", "2026-08-31", 0.05)
+    pro = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    make_branch(repo, "pricelog/alpha-00000000", [pro, flash])
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    rows = [json.loads(line) for line in shard_lines(repo)]
+    order = [(row["model_id"], row["observed_at"]) for row in rows]
+    assert order == sorted(order)
+    assert order[0][0] == "deepseek-v4-flash"
+
+
+def test_merge_regenerates_the_index(tmp_path):
+    # the push carries the checkout's GITHUB_TOKEN and starts no workflow run,
+    # so the reindex workflow never sees this path: a merge that does not
+    # regenerate leaves the served index stale on the default branch
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+
+    automerge.merge_branches(["pricelog/zeta-55555555"], repo, pr.PrRunner(), "main", push=False)
+
+    index = json.loads((repo / "data" / "index.json").read_text(encoding="utf-8"))
+    assert (
+        index["version"] == validate.load_schema_keys(Path(__file__).resolve().parents[1]).version
+    )
+    assert set(index["sources"]) == {"deepseek", "zai"}
+    assert index["sources"]["zai"]["glm-5"]["rates"]["input"] == 0.1
+    # it rides the merge commit, never the worktree
+    assert git(repo, "status", "--porcelain") == ""
+    assert "data/index.json" in git(repo, "show", "--name-only", "--format=", "HEAD")
+
+
+def test_merge_lands_a_new_source_shard(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/zeta-55555555"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [1]
+    assert [json.loads(line) for line in shard_lines(repo, "zai")] == [
+        make_row("zai", "glm-5", "2026-08-31", 0.1)
+    ]
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
 
 
 def test_seed_branch_refused(tmp_path):

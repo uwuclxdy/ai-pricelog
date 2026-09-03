@@ -23,11 +23,11 @@ def spec(**overrides) -> pr.PrSpec:
         source_url="https://api-docs.deepseek.com/quick_start/pricing/",
         rows=(
             {
+                "schema": 4,
                 "source": "deepseek",
                 "model_id": "deepseek-chat",
                 "observed_at": "2026-08-26",
-                "input_mtok": 0.27,
-                "output_mtok": 1.1,
+                "rates": {"input": 0.27, "output": 1.1},
             },
         ),
         batch_key=BATCH_KEY,
@@ -38,12 +38,12 @@ def spec(**overrides) -> pr.PrSpec:
 
 def removal_row(model_id: str = "deepseek-chat") -> dict:
     return {
+        "schema": 4,
         "source": "deepseek",
         "model_id": model_id,
         "observed_at": "2026-08-26",
         "removed": True,
-        "input_mtok": 0.27,
-        "output_mtok": 1.1,
+        "rates": {"input": 0.27, "output": 1.1},
     }
 
 
@@ -85,11 +85,11 @@ def test_spec_titles():
 def test_spec_mixed_title_counts_both():
     rows = (
         {
+            "schema": 4,
             "source": "deepseek",
             "model_id": "deepseek-chat",
             "observed_at": "2026-08-26",
-            "input_mtok": 0.27,
-            "output_mtok": 1.1,
+            "rates": {"input": 0.27, "output": 1.1},
         },
         removal_row("deepseek-old"),
     )
@@ -112,7 +112,7 @@ def test_spec_body_disclaimer_falls_back_to_actions_tab():
 def test_spec_body_flat_row_table():
     body = spec().body
     assert "## new rows" in body
-    assert "| deepseek | `deepseek-chat` | 2026-08-26 | 0.27 | — | — | 1.1 | — |" in body
+    assert "| deepseek | `deepseek-chat` | 2026-08-26 | 0.27 | — | — | 1.1 |" in body
     assert "source: https://api-docs.deepseek.com/quick_start/pricing/" in body
 
 
@@ -129,14 +129,17 @@ def test_spec_body_mapping_candidates_section():
 
 def test_spec_body_cache_write_column():
     row = {
+        "schema": 4,
         "source": "openrouter",
         "model_id": "anthropic/claude-opus-5-fast",
         "observed_at": "2026-08-28",
-        "input_mtok": 10.0,
-        "output_mtok": 50.0,
-        "cache_read_mtok": 1.0,
-        "cache_write_mtok": 12.5,
-        "cache_write_1h_mtok": 20.0,
+        "rates": {
+            "input": 10.0,
+            "output": 50.0,
+            "cache_read": 1.0,
+            "cache_write": 12.5,
+            "cache_write_1h": 20.0,
+        },
     }
     body = spec(
         source="openrouter",
@@ -146,101 +149,107 @@ def test_spec_body_cache_write_column():
     ).body
     assert (
         "| openrouter | `anthropic/claude-opus-5-fast` | 2026-08-28 "
-        "| 10 | 1 | 12.5/20 | 50 | — |" in body
+        "| 10 | 1 | 12.5/20 | 50 |" in body
     )
 
 
-def test_spec_body_deepseek_windowed_row():
-    # deepseek peak rows render as window_rates: the rows table shows the
-    # base (off-peak) rates, the windowed table the scheduled peak overrides
+def test_spec_body_deepseek_override_row():
+    # deepseek peak rows render as overrides: the rows table shows the base
+    # (off-peak) rates, the overrides table the conditional peak rates
     row = {
+        "schema": 4,
         "source": "deepseek",
         "model_id": "deepseek-v4-flash",
         "observed_at": "2026-08-30",
-        "input_mtok": 0.22,
-        "output_mtok": 0.66,
-        "window_rates": [
+        "rates": {"input": 0.22, "output": 0.66},
+        "overrides": [
             {
-                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
-                "window": [100, 400],
-                "input_mtok": 0.44,
-                "output_mtok": 1.32,
+                "when": {
+                    "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                    "window": [100, 400],
+                },
+                "rates": {"input": 0.44, "output": 1.32},
             }
         ],
     }
     body = spec(rows=(row,)).body
-    assert "| deepseek | `deepseek-v4-flash` | 2026-08-30 | 0.22 | — | — | 0.66 | — |" in body
+    assert "| deepseek | `deepseek-v4-flash` | 2026-08-30 | 0.22 | — | — | 0.66 |" in body
+    assert "## overrides" in body
     assert (
         "| `deepseek-v4-flash` | monday, tuesday, wednesday, thursday, friday"
-        " | 01:00 - 04:00 | 0.44 | — | — | 1.32 |" in body
+        " 01:00-04:00 | 0.44 | — | — | 1.32 | — |" in body
     )
 
 
-def test_spec_body_legacy_peak_row():
-    # pre-move rows carry flat peak_* fields; their peak column still renders
+def test_spec_body_overrides_table_renders_quota_multipliers():
     row = {
-        "source": "deepseek",
-        "model_id": "deepseek-v4-flash",
-        "observed_at": "2026-08-26",
-        "input_mtok": 0.22,
-        "output_mtok": 0.66,
-        "peak_input_mtok": 0.44,
-        "peak_output_mtok": 1.32,
-        "peak_windows": [["01:00:00Z", "04:00:00Z"]],
-    }
-    body = spec(rows=(row,)).body
-    assert "| 0.44/1.32 01:00:00Z - 04:00:00Z |" in body
-
-
-def test_spec_body_windowed_rates_table_renders_quota_multipliers():
-    row = {
+        "schema": 4,
         "source": "zai",
         "model_id": "glm-5.3",
         "observed_at": "2026-08-30",
-        "input_mtok": 1.4,
-        "output_mtok": 4.4,
-        "window_rates": [
+        "rates": {"input": 1.4, "output": 4.4},
+        "overrides": [
             {
-                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
-                "window": [600, 1000],
+                "when": {
+                    "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                    "window": [600, 1000],
+                },
                 "quota_multiplier": 3.0,
             },
         ],
     }
     body = spec(source="zai", provider="Z.AI", rows=(row,)).body
     assert "| quota multiplier |" in body
-    assert "| `glm-5.3` | monday, tuesday, wednesday, thursday, friday |" in body
-    assert "| 3 |" in body
+    assert "| `glm-5.3` | monday, tuesday, wednesday, thursday, friday 06:00-10:00 |" in body
+    assert "| — | — | — | — | 3 |" in body
 
 
-def test_spec_body_windowed_rates_table():
+def test_spec_body_overrides_table_renders_timezone_and_threshold():
     row = {
+        "schema": 4,
+        "source": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "observed_at": "2026-08-30",
+        "rates": {"input": 0.66, "output": 1.98, "cache_read": 0.022},
+        "overrides": [
+            {
+                "when": {"min_tokens": 128000, "timezone": "UTC"},
+                "rates": {"input": 0.5},
+            },
+        ],
+    }
+    body = spec(rows=(row,)).body
+    assert "| `deepseek-v4-pro` | min 128000 tokens UTC | 0.5 | — | — | — | — |" in body
+
+
+def test_spec_body_overrides_table():
+    row = {
+        "schema": 4,
         "source": "openrouter",
         "model_id": "deepseek/deepseek-v4-pro-0813",
         "observed_at": "2026-08-28",
-        "input_mtok": 0.66,
-        "output_mtok": 1.98,
-        "window_rates": [
+        "rates": {"input": 0.66, "output": 1.98, "cache_read": 0.022},
+        "overrides": [
             {
-                "days": ["saturday", "sunday"],
-                "input_mtok": 0.66,
-                "output_mtok": 1.98,
-                "cache_read_mtok": 0.022,
+                "when": {"days": ["saturday", "sunday"]},
+                "rates": {"input": 0.66, "output": 1.98, "cache_read": 0.022},
             },
             {
-                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
-                "window": [100, 400],
-                "input_mtok": 1.32,
-                "output_mtok": 3.96,
-                "cache_read_mtok": 0.044,
-                "cache_write_mtok": 12.5,
-                "cache_write_1h_mtok": 20.0,
+                "when": {
+                    "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                    "window": [100, 400],
+                },
+                "rates": {
+                    "input": 1.32,
+                    "output": 3.96,
+                    "cache_read": 0.044,
+                    "cache_write": 12.5,
+                    "cache_write_1h": 20.0,
+                },
             },
             {
-                "window": [1600, 2400],
-                "input_mtok": 0.0825,
-                "output_mtok": 0.33,
-                "cache_read_mtok": 0.020625,
+                "when": {"window": [1600, 2400]},
+                "rates": {"input": 0.0825, "output": 0.33, "cache_read": 0.020625},
             },
         ],
     }
@@ -250,55 +259,52 @@ def test_spec_body_windowed_rates_table():
         source_url="",
         rows=(row,),
     ).body
-    assert "## windowed rates" in body
+    assert "## overrides" in body
     assert (
-        "| `deepseek/deepseek-v4-pro-0813` | saturday, sunday | — "
-        "| 0.66 | 0.022 | — | 1.98 |" in body
+        "| `deepseek/deepseek-v4-pro-0813` | saturday, sunday "
+        "| 0.66 | 0.022 | — | 1.98 | — |" in body
     )
     assert (
         "| `deepseek/deepseek-v4-pro-0813` | monday, tuesday, wednesday, thursday,"
-        " friday | 01:00 - 04:00 | 1.32 | 0.044 | 12.5/20 | 3.96 |" in body
+        " friday 01:00-04:00 | 1.32 | 0.044 | 12.5/20 | 3.96 | — |" in body
     )
     assert (
-        "| `deepseek/deepseek-v4-pro-0813` | every day | 16:00 - 24:00 "
-        "| 0.0825 | 0.020625 | — | 0.33 |" in body
+        "| `deepseek/deepseek-v4-pro-0813` | 16:00-24:00 "
+        "| 0.0825 | 0.020625 | — | 0.33 | — |" in body
     )
 
 
-def test_spec_body_without_window_rates_has_no_window_section():
-    assert "## windowed rates" not in spec().body
+def test_spec_body_without_overrides_has_no_override_section():
+    assert "## overrides" not in spec().body
 
 
 def test_spec_body_quoted_line_for_non_usd_row():
     row = {
+        "schema": 4,
         "source": "scaleway",
         "model_id": "m",
         "observed_at": "2026-08-28",
-        "input_mtok": 1.0,
-        "output_mtok": 2.0,
+        "rates": {"input": 1.0, "output": 2.0},
         "currency": "EUR",
-        "currency_rate": 2.0,
-        "currency_rate_date": "2026-08-28",
+        "provenance": {"fx_rate": 2.0, "fx_rate_date": "2026-08-28"},
     }
     body = spec(source="scaleway", provider="Scaleway", source_url="", rows=(row,)).body
-    assert "| scaleway | `m` | 2026-08-28 | 1 | — | — | 2 | — |" in body
+    assert "| scaleway | `m` | 2026-08-28 | 1 | — | — | 2 |" in body
     assert "quoted `0.5 EUR per 1M tokens`, rate `2` on `2026-08-28`" in body
 
 
-def test_spec_body_quoted_line_uses_the_row_unit():
+def test_spec_body_quoted_line_for_dbu_row():
     row = {
+        "schema": 4,
         "source": "databricks",
         "model_id": "m",
         "observed_at": "2026-08-28",
-        "input_mtok": 0.385,
-        "output_mtok": 0.77,
+        "rates": {"input": 0.385, "output": 0.77},
         "currency": "DBU",
-        "unit": "dbu",
-        "currency_rate": 0.55,
-        "currency_rate_date": "2026-08-28",
+        "provenance": {"fx_rate": 0.55, "fx_rate_date": "2026-08-28"},
     }
     body = spec(source="databricks", provider="Databricks", source_url="", rows=(row,)).body
-    assert "quoted `0.7 DBU per 1M dbus`, rate `0.55` on `2026-08-28`" in body
+    assert "quoted `0.7 DBU per 1M tokens`, rate `0.55` on `2026-08-28`" in body
 
 
 def test_spec_body_has_no_quoted_line_without_currency():
@@ -330,18 +336,18 @@ def test_spec_body_review_checklist():
 def test_spec_body_seed_snapshot_line():
     rows = (
         {
+            "schema": 4,
             "source": "deepseek",
             "model_id": "a",
             "observed_at": "2026-08-26",
-            "input_mtok": 0.1,
-            "output_mtok": 0.2,
+            "rates": {"input": 0.1, "output": 0.2},
         },
         {
+            "schema": 4,
             "source": "zai",
             "model_id": "b",
             "observed_at": "2026-08-26",
-            "input_mtok": 0.3,
-            "output_mtok": 0.4,
+            "rates": {"input": 0.3, "output": 0.4},
         },
     )
     body = spec(seed=True, source_url="", rows=rows).body
@@ -374,11 +380,11 @@ def test_removal_spec_body_lists_the_removal_with_its_snapshot():
 def test_mixed_spec_body_renders_both_sections():
     rows = (
         {
+            "schema": 4,
             "source": "deepseek",
             "model_id": "deepseek-chat",
             "observed_at": "2026-08-26",
-            "input_mtok": 0.27,
-            "output_mtok": 1.1,
+            "rates": {"input": 0.27, "output": 1.1},
         },
         removal_row("deepseek-old"),
     )
@@ -469,10 +475,10 @@ def test_open_pull_requests_rejects_invalid_json():
 
 def test_fetch_pending_rows_no_remote_returns_empty():
     fake = FakeRunner().on("git fetch", failure=pr.PrError("no such remote: origin"))
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", []) == []
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", []) == []
 
 
-def test_fetch_pending_rows_reads_branch_histories():
+def test_fetch_pending_rows_reads_branch_shards():
     lines = (
         '{"source": "deepseek", "model_id": "x", "observed_at": "t", "url": "u"}\n'
         '{"source": "deepseek", "model_id": "y", "observed_at": "t", "url": "u"}\n'
@@ -481,23 +487,24 @@ def test_fetch_pending_rows_reads_branch_histories():
         FakeRunner()
         .on("git fetch")
         .on("git for-each-ref", output="refs/remotes/pending/x-12345678\n")
+        .on("git ls-tree", output="data/history/deepseek.ndjson\n")
         .on("git show", output=lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == [
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == [
         json.loads(line) for line in lines.splitlines()
     ]
 
 
-def test_fetch_pending_rows_skips_branch_without_history():
+def test_fetch_pending_rows_skips_branch_without_shards():
     fake = (
         FakeRunner()
         .on("git fetch")
         .on("git for-each-ref", output="refs/remotes/pending/bad\n")
-        .on("git show", failure=pr.PrError("path does not exist in the tree"))
+        .on("git ls-tree", output="")
     )
     open_prs = [pr.OpenPr("Add bad pricing", "", "pricelog/bad")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == []
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == []
 
 
 def test_fetch_pending_rows_skips_branches_without_open_pr():
@@ -512,18 +519,19 @@ def test_fetch_pending_rows_skips_branches_without_open_pr():
             "git for-each-ref",
             output="refs/remotes/pending/open-12345678\nrefs/remotes/pending/closed-12345678\n",
         )
+        .on("git ls-tree", output="data/history/open.ndjson\n")
         .on("git show refs/remotes/pending/open", output=open_lines)
         .on("git show refs/remotes/pending/closed", output=closed_lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/open-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", open_prs) == [
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == [
         json.loads(open_lines)
     ]
 
 
 def test_fetch_pending_rows_fetch_is_forced_and_pruned():
     fake = FakeRunner().on("git fetch").on("git for-each-ref", output="")
-    pr.fetch_pending_rows(fake, Path("."), "data/history.ndjson", [])
+    pr.fetch_pending_rows(fake, Path("."), "data/history", [])
     (cmd, _cwd) = fake.calls[0]
     assert cmd == [
         "git",

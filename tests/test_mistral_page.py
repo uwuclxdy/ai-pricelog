@@ -10,6 +10,9 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import mistral_page
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.scrapers import mistral_page as mistral_scraper
+from ai_pricelog.validate import load_schema_keys
+
+VERSION = load_schema_keys(Path(__file__).resolve().parents[1]).version
 
 FIXTURES = Path(__file__).parent / "fixtures" / "mistral_page"
 CARDS_URL = "https://docs.mistral.ai/models/model-cards/"
@@ -311,8 +314,8 @@ def test_scrape_cache_read_row_mtok(live_pricing):
     cfg = make_cfg()
     pricing = mistral_scraper.scrape(cfg, "zai-glm-5-2")
     assert pricing is not None
-    row = store.build_row(cfg.key, "zai-glm-5-2", pricing, "2026-08-26", cfg.scraper_url)
-    assert row["cache_read_mtok"] == 0.14
+    row = store.build_row(cfg.key, "zai-glm-5-2", pricing, "2026-08-26", cfg.scraper_url, VERSION)
+    assert row["rates"]["cache_read"] == 0.14
 
 
 def test_scrape_non_token_units_return_none(live_pricing):
