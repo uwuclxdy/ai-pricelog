@@ -11,9 +11,12 @@ store's build_row, build_removal_row, and openrouter.build_row.
 
 from __future__ import annotations
 
+import functools
+import json
 import math
 import re
-from typing import Any
+from pathlib import Path
+from typing import Any, NamedTuple
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
@@ -332,3 +335,88 @@ def _check_price(row: dict[str, Any], field: str, value: Any) -> None:
         raise ValidationError(
             f"row field '{field}' has bad value {value!r}; fix: use a finite float >= 0"
         )
+
+
+# the v4 row contract, keyed by the committed schema file. validate_row keeps
+# checking the v3 shape until the orchestrator switches the store over; the
+# migration and its round-trip guard read the v4 key sets from here so the
+# tool cannot drift from the published contract.
+SCHEMA_PATH = "data/schema/row.v4.json"
+
+
+class SchemaKeys(NamedTuple):
+    """What a v4 row is built from, derived from row.v4.json."""
+
+    version: int
+    required: frozenset[str]
+    row: frozenset[str]
+    rate_axes: frozenset[str]
+    fees: frozenset[str]
+    limits: frozenset[str]
+    provenance: frozenset[str]
+    when: frozenset[str]
+    override: frozenset[str]
+
+
+# keyed by root, and a process sees one or two of those; an unbounded cache
+# cannot evict the repo's own entry to serve a test's temp copy
+@functools.cache
+def load_schema_keys(root: Path) -> SchemaKeys:
+    """Derive the v4 key sets from the committed schema, cached.
+
+    Every key name comes from the schema's ``properties`` / ``$defs``; none is
+    hardcoded. ``root`` is the repo root, passed the way every other data path
+    in this package reaches its caller.
+    """
+    path = root / SCHEMA_PATH
+    try:
+        schema = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise ValidationError(
+            f"schema file '{path}' is missing; fix: restore {SCHEMA_PATH}"
+        ) from None
+    except json.JSONDecodeError as exc:
+        raise ValidationError(
+            f"schema file '{path}' is invalid json: {exc.msg}; fix: repair the file"
+        ) from exc
+    if not isinstance(schema, dict):
+        raise ValidationError(f"schema file '{path}' must be a json object; fix: restore the file")
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        raise ValidationError(
+            f"schema file '{path}' has no 'properties' object; fix: restore the file"
+        )
+    defs = schema.get("$defs")
+    if not isinstance(defs, dict):
+        raise ValidationError(f"schema file '{path}' has no '$defs' object; fix: restore the file")
+
+    def key_set(node: object, what: str) -> frozenset[str]:
+        if not isinstance(node, dict) or not isinstance(node.get("properties"), dict):
+            raise ValidationError(
+                f"schema file '{path}': '{what}' must carry a 'properties' object;"
+                " fix: restore the file"
+            )
+        return frozenset(node["properties"])
+
+    version = (properties.get("schema") or {}).get("const")
+    if not isinstance(version, int) or isinstance(version, bool):
+        raise ValidationError(
+            f"schema file '{path}': 'properties.schema.const' must be an integer,"
+            f" got {version!r}; fix: restore the file"
+        )
+    required = schema.get("required")
+    if not isinstance(required, list) or not all(isinstance(key, str) for key in required):
+        raise ValidationError(
+            f"schema file '{path}': 'required' must be a list of key names; fix: restore the file"
+        )
+    return SchemaKeys(
+        version=version,
+        required=frozenset(required),
+        row=frozenset(properties),
+        rate_axes=key_set(defs.get("axes"), "$defs/axes"),
+        fees=key_set(properties.get("fees"), "properties/fees"),
+        limits=key_set(properties.get("limits"), "properties/limits"),
+        provenance=key_set(properties.get("provenance"), "properties/provenance"),
+        when=key_set(defs.get("when"), "$defs/when"),
+        override=key_set(defs.get("override"), "$defs/override"),
+    )
