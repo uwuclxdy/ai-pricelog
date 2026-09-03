@@ -59,7 +59,7 @@ with the merge-eligible branches in order, oldest PR first, newest last. the scr
 - `state/announce/`: the last (newest) branch's copy lands with the final merge (every branch of one run carries the same fresh snapshot). `state/absence/<source>.json`: each source's own branch carries its file, so the merge accumulates them
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
-github auto-marks each PR merged once its head lands in the default branch. the merge regenerates `index.json` itself, so the served index is correct the moment the push lands; the reindex workflow is the backstop for a human push.
+github auto-marks each PR merged once its head lands in the default branch. the merge regenerates `index.json` itself, so the served index is correct the moment the push lands; the publish workflow is the backstop for a human push, and it owns the `dist` branch and the README stats outright.
 
 when the script fails: do not retry it. report the error in your final message, leave every PR open, delete nothing. the next run re-derives the rows.
 

@@ -19,9 +19,10 @@ branches it verified, and this module re-checks each branch mechanically:
   beside its siblings in the review diff
 - index.json regenerates here, from the merged shards, so the served index
   is correct when the push lands rather than whenever a workflow next runs.
-  reindex.yml still covers a human push; whether THIS push also triggers it
+  publish.yml still covers a human push; whether THIS push also triggers it
   depends on which credential git picks for it, which nothing here pins
-- the README stats stay stale until the publish job owns their regen
+- the README stats and the dist branch belong to publish.yml, which fires on
+  a push to the default branch; the merge regenerates neither
 - the announce tree takes the last (newest) branch's copy with the final
   merge; a source's absence file lands on that source's branch, so the merge
   accumulates them without a last-branch copy
@@ -360,7 +361,7 @@ def merge_branches(
                 encoding="utf-8",
             )
 
-        # the merge owns the served index: reindex.yml runs on push, and
+        # the merge owns the served index: publish.yml runs on push, and
         # whether this push triggers a workflow depends on which credential
         # git picks for it. regenerating here needs no answer to that
         store.write_index(

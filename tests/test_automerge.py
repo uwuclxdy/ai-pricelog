@@ -199,7 +199,7 @@ def test_merge_re_sorts_the_shard_it_unions(tmp_path):
 
 def test_merge_regenerates_the_index(tmp_path):
     # the push carries the checkout's GITHUB_TOKEN and starts no workflow run,
-    # so the reindex workflow never sees this path: a merge that does not
+    # so the publish workflow never sees this path: a merge that does not
     # regenerate leaves the served index stale on the default branch
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])

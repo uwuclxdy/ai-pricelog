@@ -2,7 +2,7 @@
 # and the openrouter api, append observed rows, open draft PRs), followed by a
 # claude code review pass when the run changed something; weekly (monday 05:17
 # utc) a live smoke probe checks the moonshot .md endpoints. push/PR gates stay
-# in ci.yml + reindex.yml. GH_TOKEN = the cloudybot PAT with repo scope (repo
+# in ci.yml + publish.yml. GH_TOKEN = the cloudybot PAT with repo scope (repo
 # secret); falls back to GITHUB_TOKEN. the claude pass reads ANTHROPIC_API_KEY and optional
 # ANTHROPIC_BASE_URL / ANTHROPIC_MODEL overrides from repo secrets.
 
