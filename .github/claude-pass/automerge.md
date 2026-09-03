@@ -22,6 +22,8 @@ openrouter reseller rates flip-flop: a row can record a transient the api revert
 1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history.ndjson`)
 2. the row itself records the transient state it saw
 
+a rate that moved again since the row leaves condition 1 unanswerable against today's api. a later run settles it: every run diffs the api against `origin/mommy`, so a newer branch carrying no row for that (source, model_id) proves the api was back at the prior stored value when it ran. that silence is the revert.
+
 the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/mythomax-l2-13b (0.35/0.6 for one day), qwen/qwen3-235b-a22b-2507 (0.09/0.55), deepseek/deepseek-v4-pro-0813 (a uniform 1.69x step), deepseek/deepseek-v4-pro (1% reseller drift), and tencent/hy3's base-rate oscillation (0.132/0.0825 across runs; its window_rates carry the schedule either way). when a flip-flop row's correction does not arrive on the next run, the class flips from transient to misread: comment needs human and point at `openrouter.py`.
 
 ## always human: comment needs-human and stop
