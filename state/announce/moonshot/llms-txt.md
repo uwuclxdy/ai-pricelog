@@ -39,7 +39,7 @@ Install OpenClaw and configure your Kimi API key.
 - [Chat Completions API](https://platform.kimi.ai/docs/api/chat.md): Create a chat completion: send messages to Kimi models and get replies, with streaming, tool calling, and vision input.
 - [Responses API](https://platform.kimi.ai/docs/api/responses.md): Creates a model response.
 Provide text or image inputs to generate text or JSON outputs.
-Have the model call the function tools you define.
+Have the model call the function tools you define, or use server-side web search.
 - [Messages API](https://platform.kimi.ai/docs/api/messages.md): Call Kimi models with an Anthropic Messages API compatible format, supporting streaming, tool use, image input, thinking, and structured output.
 - [List Models](https://platform.kimi.ai/docs/api/list-models.md): List currently available models and their IDs.
 - [Estimate Tokens](https://platform.kimi.ai/docs/api/estimate.md): Estimate the token count of your input before sending a request.
@@ -81,4 +81,4 @@ It is different from products such as Kimi Membership and Kimi Code — please d
 - [Terms of Service for Kimi OpenPlatform](https://platform.kimi.ai/docs/agreement/modeluse.md): Review the rules for accounts, API usage, billing, data, compliance, and the rights and obligations of Kimi Open Platform users.
 - [Kimi OpenPlatform Privacy Policy](https://platform.kimi.ai/docs/agreement/userprivacy.md): Learn how Kimi Open Platform collects, uses, stores, shares, and protects personal information and how users can exercise their data rights.
 - [Platform Changelog](https://platform.kimi.ai/docs/platform-changelog.md): Review historical Kimi Open Platform feature releases, model launches, product improvements, and issue fixes.
-## OpenAPI Specs - [openapi](/docs/api-reference/openapi.json) - [openapi](/docs/openapi.json)
+## OpenAPI Specs - [openapi](/docs/openapi.json)

@@ -189,6 +189,15 @@
       },
       "vendor": "nvidia"
     },
+    "cerebras/qwen-3.8-27b": {
+      "curated": false,
+      "sources": {
+        "cerebras": [
+          "qwen-3.8-27b"
+        ]
+      },
+      "vendor": "alibaba"
+    },
     "claude-fable-5": {
       "curated": true,
       "name": "Claude Fable 5",
@@ -5040,6 +5049,15 @@
         ]
       },
       "vendor": "inception"
+    },
+    "openrouter/inclusionai/ling-3.0-flash-fin": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-flash-fin"
+        ]
+      },
+      "vendor": "inclusionai"
     },
     "openrouter/inclusionai/ling-3.0-flash-fin:free": {
       "curated": false,

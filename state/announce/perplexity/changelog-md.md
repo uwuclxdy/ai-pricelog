@@ -1,7 +1,9 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.perplexity.ai/llms.txt > Use this file to discover all available pages before exploring further.
 # Changelog <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **GLM 5.3** The Agent API and Router API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
+</Tip> <Update label="September 2026" tags={["Agent API", "Router", "Models"]}> **GLM 5.3 Flash** The Agent API and Router API now support `perplexity/glm-5.3-flash` at \$0.15 per million uncached-input tokens, \$0.03 per million cached-input tokens, and \$0.50 per million output tokens.
+See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
+</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **GLM 5.3** The Agent API and Router API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Presets"]}> **Prompt caching for presets** Agent API presets now use stable prompt cache keys automatically, allowing independent requests with the same preset to reuse the shared prompt prefix (system prompt and tool definitions).
 No request changes are required, and an explicit `prompt_cache_key` still overrides the preset default.
@@ -11,7 +13,7 @@ The [current preset values](/docs/agent-api/presets#current-preset-values) inclu
 Dynamic `fast` preset requests pick up the change automatically.
 If you use a [frozen configuration](/docs/agent-api/presets#current-preset-values), update the model and reasoning effort and set `service_tier` to `priority`.
 Priority processing uses 2× the model's standard token prices.
-</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **Gemini 3.7 Flash** The Agent API and Router API now support `google/gemini-3.7-flash` at launch pricing of \$0.375 per million input tokens, \$0.0375 per million cached-input tokens, and \$1.875 per million output tokens.
+</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **Gemini 3.7 Flash** Pricing for `google/gemini-3.7-flash` increased on August 27, 2026 to \$0.75 per million input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **Grok 4.6** The Agent API now supports `xai/grok-4.6`, xAI's latest flagship reasoning and agentic model.
 See pricing in the [Agent API Models reference](/docs/agent-api/models).
