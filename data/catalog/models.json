@@ -5581,6 +5581,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/nemotron-3.5-content-safety": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-content-safety"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/nemotron-3.5-content-safety:free": {
       "curated": false,
       "sources": {
