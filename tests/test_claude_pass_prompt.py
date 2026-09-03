@@ -1,31 +1,19 @@
-"""The claude pass prompt snapshots domain-knowledge sections for CI, where
-docs/ does not exist. This test pins the snapshot against the live sections;
-it skips where docs/ is absent (the actions checkout)."""
+"""The CI claude pass reads `.github/claude-pass/prompt.md` on a checkout with no
+docs/ tree, so the prompt carries every fact the pass needs. These pin the surfaces
+a rename or a schema change would otherwise break silently."""
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 PROMPT = ROOT / ".github" / "claude-pass" / "prompt.md"
-DOMAIN = ROOT / "docs" / "domain-knowledge.md"
-
-SECTIONS = [
-    "provider page facts, 2026-08-24 re-probe additions",
-    "deepseek page move",
-    "deepseek peak schedule",
-    "announce channels",
-    "scaleway + databricks (added 2026-08-29, todo #17)",
-    "dashscope omni split (added 2026-08-30)",
-]
 
 
-def _section_body(text: str, title: str, level: str) -> str:
-    """The lines of the `##/### title` section, blank edges stripped."""
-    pattern = re.compile(rf"^{level} {re.escape(title)}\s*$", re.M)
+def _section_body(text: str, title: str) -> str:
+    """The lines of the `## title` section, blank edges stripped."""
+    pattern = re.compile(rf"^## {re.escape(title)}\s*$", re.M)
     match = pattern.search(text)
     assert match is not None, f"section {title!r} not found"
     rest = text[match.end() :]
@@ -34,22 +22,10 @@ def _section_body(text: str, title: str, level: str) -> str:
     return body.strip()
 
 
-@pytest.mark.parametrize("title", SECTIONS)
-def test_quirks_snapshot_matches_domain(title: str) -> None:
-    if not DOMAIN.exists():
-        pytest.skip("docs/ not present (ci checkout)")
-    prompt_body = _section_body(PROMPT.read_text(), title, "###")
-    domain_body = _section_body(DOMAIN.read_text(), title, "##")
-    assert prompt_body == domain_body, (
-        f"claude pass prompt section {title!r} drifted from domain-knowledge; "
-        "re-copy the section verbatim"
-    )
-
-
 def test_row_schema_carries_the_current_vocabulary() -> None:
     # the pass judges rows against this section; a schema change that leaves
     # it stale sends the next review against a dead shape
-    schema = _section_body(PROMPT.read_text(), "row schema", "##")
+    schema = _section_body(PROMPT.read_text(), "row schema")
     for term in (
         "overrides",
         "min_tokens",

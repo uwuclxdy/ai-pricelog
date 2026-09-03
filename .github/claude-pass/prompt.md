@@ -48,7 +48,7 @@ each source's rows live in `data/history/<source>.ndjson`, one json object per l
 
 ## domain quirks
 
-verbatim copies of the domain-knowledge quirks sections, 2026-08-26. drift-checked locally by `tests/test_claude_pass_prompt.py`.
+per-source page and channel facts the pass judges rows against. this file holds them: the pass runs on a checkout with no `docs/` tree, so nothing else can.
 
 ### provider page facts, 2026-08-24 re-probe additions
 
@@ -71,9 +71,18 @@ the live pricing page carries v4 peak/off-peak subrows plus the footnote "Peak h
 
 billing rule effective 2026-08-23 00:00 beijing time (billing-rules.json `deepseek-weekend-off-peak`; team email received 2026-08-22): weekdays (monday-friday, beijing time) keep the peak/off-peak split; weekends (saturday-sunday, beijing time) bill uniformly at the off-peak rate. the weekday day-set expresses the rule because every window ends before 16:00 UTC (beijing midnight), so each window's UTC weekday equals its beijing weekday. with the weekday clause present, the scraper raises when a window ends after 16:00 UTC, so a window move past the boundary fails loudly instead of mis-scheduling; without the clause the windows stay expressible (every-day schedules need no weekday equivalence). rows carrying the weekday schedule stamp `effective_at` = the rule date, so consumers clamp sessions from 2026-08-23 on.
 
+### scaleway + databricks (added 2026-08-29, todo #17)
+
+- scaleway: the model-as-a-service page serves the per-1M-token table statically in EUR ("€1.80 / million tokens"), no USD column. ids = Name-cell slugs stored unprefixed; the Try-link modelName query cross-checks when present (parse_id falls back to the Name cell alone when a row carries no link). "Free" output = a zero rate (the embedding convention). known unpriced: per-audio-minute rows. dedup: deepseek-v4-flash-0731 -> deepseek-v4-flash, mistral-small-3.2-24b-instruct-2506 -> mistral-small-3.2-24b-instruct. the committed fixture is a content-derived slice of the live capture (byte offsets drift with css-class hashes; the guard is a fixture-shape pin: one thead row + 15 tbody rows with the complete last-row Try link). announce: docs changelog + its rss (same content twice, harmless).
+- databricks: the foundation-model-serving page serves the DBU rate table statically (DBU / M input, output, cache-read tokens per display name, "Kimi K3 42.857 / 214.286 / 4.286"). ids = an explicit display-name dict derived from the stored openrouter id set (vendor prefix stripped; "(Priority)" -> "-priority"; the U+2316 regional-uplift marker strips). a priced row with an unmapped name skips with a warning (plan #22), so one new model can no longer blind the provider; the GLM-5.3 and GLM-5.3 Flash rows mapped 2026-09-02 (the 2026-08-29 dict had neither). the matched row's cells stay strict (an unknown rate-cell shape raises), rows the scan passes over are tolerated. "n/a" output = embedding rows bill input only, stored with output 0.0. dedup: deepseek-v4-pro-0813 -> deepseek-v4-pro, deepseek-v4-flash-0731 -> deepseek-v4-flash. the DBU->USD rate is 0.07 (the pricing-page AI card, client-rendered; cited via google's index + third-party consensus; DBU rates differ per cloud, the announce watches /aws/ so re-probe before trusting another cloud). announce: docs release-notes index (sub-page links client-rendered).
+
+### dashscope omni split (added 2026-08-30)
+
+- the omni pricing tables split the input span into text/audio/image sub-columns and the output span into three modes (text-only, multimodal, text+audio); the header carries the colspans and a sub-header row names the sub-columns. the base rates are the first sub-columns: text input and text-only output (qwen2.5-omni-7b 0.10/0.40, qwen-omni-turbo 0.07/0.27, per 1M). a table whose output span splits with an unsplit input (the Non-Thinking/Thinking tables) reads the same first-output position either way. OBSERVED 2026-08-30 (live model-pricing page).
+
 ### announce channels
 
-billing-rule announcement surfaces per provider, watched every run via `providers.toml` `announce_urls`. OBSERVED 2026-08-26 against the live pages (full probe evidence in `docs/research/announce-channels/`).
+billing-rule announcement surfaces per provider, watched every run via `providers.toml` `announce_urls`. OBSERVED 2026-08-26 against the live pages.
 
 - deepseek: `/updates/` is the live static changelog (the 2026-08-13 entry carries the "API Pricing Adjustment" peak/off-peak section). `/news` is a JS shell, individual `/news/news*` pages are static, and `sitemap.xml` lists them, so a new news page surfaces there first. no rss anywhere on api-docs.deepseek.com.
 - zai: release notes (`new-released.md`) carry model launches only; billing-class changes land on the devpack plan notice pages (`usage-revision`, `transition`) and the pricing page (in-place edits). `llms.txt` enumerates the docs, so a new notice page surfaces there. the 2026-08-27 `transition.md` diff was rejected as a billing rule (subscription mechanics, cloudy 2026-08-28); future diffs of the same class get the same answer.
@@ -101,12 +110,3 @@ for each changed announce channel, answer: does this change billing semantics (r
 - no PR comments when you find nothing: say so in your final message only.
 - never comment on PRs the run did not open. the only pushes to the default branch and the only branch-ref deletions are the ones `ai-pricelog-automerge` performs; never do either by hand.
 - your final message summarizes per PR: findings, the verdict, and what the merge did (merged / needs human / failed with the script's error); the PR comments are the durable record.
-
-### scaleway + databricks (added 2026-08-29, todo #17)
-
-- scaleway: the model-as-a-service page serves the per-1M-token table statically in EUR ("€1.80 / million tokens"), no USD column. ids = Name-cell slugs stored unprefixed; the Try-link modelName query cross-checks when present (parse_id falls back to the Name cell alone when a row carries no link). "Free" output = a zero rate (the embedding convention). known unpriced: per-audio-minute rows. dedup: deepseek-v4-flash-0731 -> deepseek-v4-flash, mistral-small-3.2-24b-instruct-2506 -> mistral-small-3.2-24b-instruct. the committed fixture is a content-derived slice of the live capture (byte offsets drift with css-class hashes; the guard is a fixture-shape pin: one thead row + 15 tbody rows with the complete last-row Try link). announce: docs changelog + its rss (same content twice, harmless).
-- databricks: the foundation-model-serving page serves the DBU rate table statically (DBU / M input, output, cache-read tokens per display name, "Kimi K3 42.857 / 214.286 / 4.286"). ids = an explicit display-name dict derived from the stored openrouter id set (vendor prefix stripped; "(Priority)" -> "-priority"; the U+2316 regional-uplift marker strips). a priced row with an unmapped name skips with a warning (plan #22), so one new model can no longer blind the provider; the GLM-5.3 and GLM-5.3 Flash rows mapped 2026-09-02 (the 2026-08-29 dict had neither). the matched row's cells stay strict (an unknown rate-cell shape raises), rows the scan passes over are tolerated. "n/a" output = embedding rows bill input only, stored with output 0.0. dedup: deepseek-v4-pro-0813 -> deepseek-v4-pro, deepseek-v4-flash-0731 -> deepseek-v4-flash. the DBU->USD rate is 0.07 (the pricing-page AI card, client-rendered; cited via google's index + third-party consensus; DBU rates differ per cloud, the announce watches /aws/ so re-probe before trusting another cloud). announce: docs release-notes index (sub-page links client-rendered).
-
-### dashscope omni split (added 2026-08-30)
-
-- the omni pricing tables split the input span into text/audio/image sub-columns and the output span into three modes (text-only, multimodal, text+audio); the header carries the colspans and a sub-header row names the sub-columns. the base rates are the first sub-columns: text input and text-only output (qwen2.5-omni-7b 0.10/0.40, qwen-omni-turbo 0.07/0.27, per 1M). a table whose output span splits with an unsplit input (the Non-Thinking/Thinking tables) reads the same first-output position either way. OBSERVED 2026-08-30 (live model-pricing page).
