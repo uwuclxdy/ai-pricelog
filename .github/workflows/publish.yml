@@ -1,0 +1,69 @@
+# publish the dist branch: rebuild every derived view from the committed store
+# and force-push the tree as one commit, then commit data/index.json + README.md
+# back to mommy when they drifted. both pushes authenticate with GITHUB_TOKEN:
+# a GITHUB_TOKEN push creates no workflow run, so neither push can retrigger
+# this workflow (a PAT push like autopr's GH_TOKEN would).
+
+name: publish
+
+on:
+  push:
+    branches: [mommy]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  UV_FROZEN: "1"
+
+concurrency:
+  group: publish
+  # newest run wins: its checkout has the newest store, an older run would push from a stale one
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    # dist serves the default branch's store and nothing else. workflow_dispatch
+    # takes any ref, checkout hands that ref's tree to the force-push, and the
+    # mommy step would push the dispatched branch instead
+    if: github.ref == 'refs/heads/mommy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      - name: build dist tree
+        run: uv run ai-pricelog-publish --out "${{ runner.temp }}/dist"
+
+      - name: publish dist branch
+        working-directory: ${{ runner.temp }}/dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q -b dist
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "publish ${GITHUB_SHA}"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:dist
+
+      - name: commit derived files back to mommy
+        run: |
+          if git diff --quiet -- data/index.json README.md; then
+            echo "derived files in sync, nothing to push"
+            exit 0
+          fi
+          echo "derived files drifted; committing the refresh"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/index.json README.md
+          git commit -m "chore(data): refresh derived files"
+          git push
