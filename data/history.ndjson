@@ -2083,3 +2083,4 @@
 {"source":"openrouter","model_id":"z-ai/glm-4.6","observed_at":"2026-09-03","name":"GLM 4.6","input_mtok":0.55,"output_mtok":2.2,"cache_read_mtok":0.11,"max_tokens_in":204800}
 {"source":"openrouter","model_id":"qwen/qwen3-14b","observed_at":"2026-09-03","name":"Qwen3 14B","input_mtok":0.2275,"output_mtok":0.91,"max_tokens_in":131072}
 {"source":"openrouter","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-09-03","name":"Llama 3.3 70B Instruct","input_mtok":0.1,"output_mtok":0.32,"max_tokens_in":131072}
+{"source":"novita","model_id":"mindai/macaron-v1-venti","observed_at":"2026-09-03","input_mtok":0.825,"output_mtok":2.475,"cache_read_mtok":0.165,"max_tokens_in":1048576,"url":"https://novita.ai/pricing"}
