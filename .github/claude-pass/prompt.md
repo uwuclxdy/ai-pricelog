@@ -4,11 +4,11 @@ you review the draft PRs this run opened, on this repo, then merge the ones you 
 
 ## your job
 
-1. for each draft PR the run opened: diff `origin/mommy` against the PR branch.
+1. for each draft PR the run opened: diff `origin/mommy...<branch>` against the PR branch.
 2. check every new row in `data/history/<source>.ndjson` on the branch against its source page (the row carries `provenance.url`; a first-party row names the provider page, an openrouter row names the openrouter api). for a price row: re-read the rate on the page, then compare. for a `removed: true` row: confirm the model is absent from its source (the PR body names the source and date).
 
-a branch carries its source's shard: the landed rows for that source, rows from still-open PR branches, and its own. only the rows the PR body's table names are this PR's own new rows. judge those against their source pages, and never treat carried rows or the state files (`data/absence.json`, `data/announce.json`) as scope noise: `data/announce.json` settles the run's channel changes. a branch carries no `data/index.json`; the merge regenerates it.
-3. for the announce diff: the log lists channel changes as `announce change: <provider> <url> <old sha8> -> <new sha8>`. for each changed channel, diff `origin/mommy..<branch>` on `data/announce.json` and answer the rubric question.
+a branch carries its source's shard: the landed rows for that source, rows from still-open PR branches, and its own. only the rows the PR body's table names are this PR's own new rows. judge those against their source pages, and never treat carried rows or the state files (`state/absence/<source>.json`, `state/announce/`) as scope noise: the `state/announce/<source>/<slug>.md` diff settles the run's channel changes. a branch carries no `data/index.json`; the merge regenerates it.
+3. for the announce diff: the log lists channel changes as `announce change: <provider> <url> <old sha8> -> <new sha8>`. for each changed channel, diff `origin/mommy...<branch>` on `state/announce/<source>/<slug>.md` (index.json maps the url to its file) and answer the rubric question.
 4. post findings as PR comments: one comment per PR, findings plus your verdict. comment only on PRs this run opened.
 5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. pushes happen only through the merge job below.
 
