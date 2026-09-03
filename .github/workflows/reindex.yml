@@ -14,6 +14,9 @@ on:
 permissions:
   contents: write
 
+env:
+  UV_FROZEN: "1"
+
 concurrency:
   group: reindex
   # newest run wins: its checkout has the newest history, an older run would push from a stale one
