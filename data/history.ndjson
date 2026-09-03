@@ -2091,3 +2091,4 @@
 {"source":"openrouter","model_id":"qwen/qwen2.5-vl-72b-instruct","observed_at":"2026-09-03","name":"Qwen2.5 VL 72B Instruct","input_mtok":0.8,"output_mtok":1.0,"cache_read_mtok":0.4,"max_tokens_in":128000}
 {"source":"openrouter","model_id":"deepseek/deepseek-chat","observed_at":"2026-09-03","name":"DeepSeek V3","input_mtok":0.32,"output_mtok":0.89,"max_tokens_in":163840}
 {"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b:batch","observed_at":"2026-09-03","removed":true,"input_mtok":0.6,"output_mtok":3.6,"cache_read_mtok":0.2,"max_tokens_in":512288}
+{"source":"cerebras","model_id":"qwen-3.8-27b","observed_at":"2026-09-03","input_mtok":0.0,"output_mtok":0.0,"url":"https://api.cerebras.ai/public/v1/models"}
