@@ -8,6 +8,11 @@ on:
     branches: [mommy]
   pull_request:
 
+# the gate runs the committed lock: an unfrozen `uv run` re-resolves it here,
+# since the lock records resolver settings the runner does not carry
+env:
+  UV_FROZEN: "1"
+
 jobs:
   check:
     runs-on: ubuntu-latest

@@ -19,6 +19,13 @@ permissions:
   pull-requests: write
   issues: write
 
+# an unfrozen `uv run` re-resolves the committed lock here, because the lock
+# records the resolver settings that wrote it and this runner carries none of
+# them. the rewritten uv.lock leaves the checkout dirty, which the merge step
+# reads as a tree it must not touch
+env:
+  UV_FROZEN: "1"
+
 jobs:
   run:
     runs-on: ubuntu-latest
