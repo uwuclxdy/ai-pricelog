@@ -31,7 +31,7 @@ the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/m
 | case | how to recognize it |
 |---|---|
 | seed PR | the branch is `pricelog/seed` (the first full snapshot; never automerged) |
-| code PR | the branch diff changes any file outside `data/history/`, `state/announce/`, `state/absence/`, `data/billing-rules.json`, `tests/test_billing_rules.py` |
+| code PR | the branch diff changes any file outside `data/history/`, `state/announce/`, `state/absence/`, `data/catalog/models.json`, `data/catalog/billing-rules.json`, `tests/test_billing_rules.py` |
 | other billing-rule classes | rate changes, tier changes, promo windows, free-tier flips: name the semantics and flag them for the human, who owns those calls |
 | unverifiable rows | the source page fetch fails (bot wall, 403) |
 | ambiguous announce semantics | the rubric answer is not clear-cut |
@@ -40,7 +40,7 @@ the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/m
 
 a confirmed deprecation or retirement of priced models (the channel prose names the models and the change in when their rates apply):
 
-- append ONE entry at the END of the `rules` array in `data/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
+- append ONE entry at the END of the `rules` array in `data/catalog/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
 - in the SAME commit bump the count pin: `tests/test_billing_rules.py` `test_committed_billing_rules_pass_schema` asserts `len(rules) == N`. the rules and the pin land atomically, or the next CI run reds
 - edit the file on the PR branch, name the rule in your comment, then merge the branch
 

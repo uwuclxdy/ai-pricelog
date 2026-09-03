@@ -18,7 +18,7 @@ after every PR the run opened is judged, read `.github/claude-pass/automerge.md`
 
 - classify each PR: merge-eligible (verified, flip-flop, confirmed deprecation/retirement) or needs human (seed PRs, code PRs, promo/tier/free-tier rule changes, bot-blocked pages, anything unverified)
 - post the `needs human` comment on every excluded PR
-- a confirmed deprecation/retirement: write the `data/billing-rules.json` entry on that PR branch, bump the `len(rules) == N` pin in `tests/test_billing_rules.py` in the same commit, then treat the PR as merge-eligible
+- a confirmed deprecation/retirement: write the `data/catalog/billing-rules.json` entry on that PR branch, bump the `len(rules) == N` pin in `tests/test_billing_rules.py` in the same commit, then treat the PR as merge-eligible
 - merge the eligible set with `uv run ai-pricelog-automerge <branch>...`, oldest PR first, newest last. the script refuses the seed branch, code PRs, and anything outside the pipeline file set, so pass it only what you judged
 - if the script fails: do not retry it; report the error in your final message, leave every PR open, delete nothing
 
@@ -40,7 +40,7 @@ each source's rows live in `data/history/<source>.ndjson`, one json object per l
 - a zero price is a price: `0.0` rate fields are real rows, negative amounts read as unpriced.
 - `data/index.json` is derived, never carried on a branch: the merge regenerates it from the shards, latest row per `(source, model_id)` plus `first_seen`. a removed model keeps its last prices and gains `removed_at`. the top-level `version` mirrors the row schema version.
 - `data/schema/row.v4.json` is the row-format contract; a new or renamed top-level row key bumps the version together with the validation key set.
-- `data/billing-rules.json` is human-written billing-rule semantics per provider. a channel diff confirming a deprecation or retirement of priced models changes when their rates apply: write the entry into `data/billing-rules.json` on the PR branch yourself (one entry per change, fields like the existing entries: `id` as `<provider>-<what>-<date>`, `provider`, `effective`, `timezone`, `statement` naming the models and their migrations, `citation` = the channel url) and name it in your comment. other rule classes (rate and tier changes, promo windows, free-tier flips) stay flagged for the human, who owns those calls.
+- `data/catalog/billing-rules.json` is human-written billing-rule semantics per provider. a channel diff confirming a deprecation or retirement of priced models changes when their rates apply: write the entry into `data/catalog/billing-rules.json` on the PR branch yourself (one entry per change, fields like the existing entries: `id` as `<provider>-<what>-<date>`, `provider`, `effective`, `timezone`, `statement` naming the models and their migrations, `citation` = the channel url) and name it in your comment. other rule classes (rate and tier changes, promo windows, free-tier flips) stay flagged for the human, who owns those calls.
 
 ## source urls
 
