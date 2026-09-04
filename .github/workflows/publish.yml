@@ -1,6 +1,6 @@
 # publish the dist branch: rebuild every derived view from the committed store
-# and force-push the tree as one commit, then commit data/index.json + README.md
-# back to mommy when they drifted. both pushes authenticate with GITHUB_TOKEN:
+# and force-push the tree as one commit, then commit README.md back to mommy
+# when it drifted. both pushes authenticate with GITHUB_TOKEN:
 # a GITHUB_TOKEN push creates no workflow run, so neither push can retrigger
 # this workflow (a PAT push like autopr's GH_TOKEN would).
 
@@ -57,13 +57,13 @@ jobs:
 
       - name: commit derived files back to mommy
         run: |
-          if git diff --quiet -- data/index.json README.md; then
+          if git diff --quiet -- README.md; then
             echo "derived files in sync, nothing to push"
             exit 0
           fi
           echo "derived files drifted; committing the refresh"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/index.json README.md
+          git add README.md
           git commit -m "chore(data): refresh derived files"
           git push

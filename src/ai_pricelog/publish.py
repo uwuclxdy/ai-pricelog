@@ -1,9 +1,8 @@
-"""Rebuild the dist branch tree and refresh the two committed derived files.
+"""Rebuild the dist branch tree and refresh the committed README stats.
 
 `build_dist` emits every derived view a consumer of the `dist` branch reads;
-`refresh_committed` rewrites data/index.json and the README stats blocks that
-stay on the mommy branch. The CI publish job runs both from the committed
-store.
+`refresh_committed` rewrites the README stats blocks that stay on the mommy
+branch. The CI publish job runs both from the committed store.
 """
 
 from __future__ import annotations
@@ -107,25 +106,20 @@ def build_dist(
     _copy(root / validate.SCHEMA_PATH, out / "schema" / Path(validate.SCHEMA_PATH).name)
 
 
-def refresh_committed(
-    rows: list[dict[str, object]],
-    root: Path,
-    schema_version: int,
-) -> None:
-    """Rewrite data/index.json and both README stats blocks from the store rows."""
+def refresh_committed(rows: list[dict[str, object]], root: Path) -> None:
+    """Rewrite both README stats blocks from the store rows."""
     mapping = models.load_models(root / models.MODELS_FILE, allow_missing=False)
     readme_path = root / "README.md"
     rendered = stats.render(readme_path.read_text(encoding="utf-8"), stats.compute(rows, mapping))
-    store.write_index(rows, root / store.INDEX_FILE, schema_version)
     # the README is a committed file the workflow's drift gate diffs; a torn
-    # write would commit half a file, so it lands the way the index does
+    # write would commit half a file
     _atomic_write(rendered, readme_path)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="ai-pricelog-publish",
-        description="rebuild the dist tree and refresh the committed derived files",
+        description="rebuild the dist tree and refresh the committed README stats",
     )
     parser.add_argument("--root", default=".")
     parser.add_argument("--out", required=True)
@@ -134,5 +128,5 @@ def main() -> int:
     schema_version = validate.load_schema_keys(root).version
     rows = store.load_shards(root / store.SHARD_DIR)
     build_dist(rows, root, Path(args.out), schema_version)
-    refresh_committed(rows, root, schema_version)
+    refresh_committed(rows, root)
     return 0

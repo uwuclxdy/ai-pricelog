@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import publish, store, validate
+from ai_pricelog import publish, store
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -203,13 +203,15 @@ def test_rows_and_shard_files_must_agree_on_the_source_set(tmp_path):
         publish.build_dist(_rows(), root, out, 4)
 
 
-def test_refresh_committed_rewrites_index_and_readme(tmp_path):
+def test_refresh_committed_rewrites_only_the_readme(tmp_path):
     root = _fixture_root(tmp_path, readme=README)
-    rows = _rows()
-    publish.refresh_committed(rows, root, 4)
-    expected_index = tmp_path / "expected-index.json"
-    store.write_index(rows, expected_index, 4)
-    assert (root / "data" / "index.json").read_bytes() == expected_index.read_bytes()
+    stale = root / "data" / "index.json"
+    stale.write_text("stale\n", encoding="utf-8")
+    publish.refresh_committed(_rows(), root)
+    assert stale.read_text(encoding="utf-8") == "stale\n"
+    stale.unlink()
+    publish.refresh_committed(_rows(), root)
+    assert not stale.exists()
     readme = (root / "README.md").read_text()
     assert "| models tracked | **3** |" in readme
     assert "| sources | 2 |" in readme
@@ -223,7 +225,7 @@ def test_refresh_committed_rewrites_index_and_readme(tmp_path):
 def test_refresh_committed_raises_when_a_readme_marker_is_missing(tmp_path):
     root = _fixture_root(tmp_path, readme="<!-- stats:start -->x<!-- stats:end -->\n")
     with pytest.raises(ValueError):
-        publish.refresh_committed(_rows(), root, 4)
+        publish.refresh_committed(_rows(), root)
 
 
 def test_main_builds_the_tree_and_refreshes_the_committed_files(tmp_path, monkeypatch):
@@ -245,17 +247,6 @@ def test_main_builds_the_tree_and_refreshes_the_committed_files(tmp_path, monkey
 
     assert _relpaths(out) == DIST_PATHS
     assert "OLD" not in (root / "README.md").read_text()
-    assert (root / "data" / "index.json").read_bytes() == (out / "index.json").read_bytes()
     # one read feeds both writers: two reads could see different trees and
-    # publish an index the committed one disagrees with
+    # publish README stats the dist tree disagrees with
     assert loads == [root / store.SHARD_DIR]
-
-
-def test_build_dist_index_matches_the_committed_index(tmp_path):
-    rows = store.load_shards(ROOT / "data" / "history")
-    schema_version = validate.load_schema_keys(ROOT).version
-    out = tmp_path / "out"
-    publish.build_dist(rows, ROOT, out, schema_version)
-    # bytes, not parsed dicts: the workflow's drift gate is `git diff`, so a
-    # serialization change would commit a no-op refresh on every push
-    assert (out / "index.json").read_bytes() == (ROOT / "data" / "index.json").read_bytes()

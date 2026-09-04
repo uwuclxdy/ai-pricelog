@@ -56,7 +56,6 @@ def save(rows: list[dict[str, object]], path: Path) -> None:
 
 
 SHARD_DIR = "data/history"
-INDEX_FILE = "data/index.json"
 
 # a source names a shard file, so it must be one plain path segment
 _SAFE_SOURCE = re.compile(r"[a-z0-9][a-z0-9_-]*")

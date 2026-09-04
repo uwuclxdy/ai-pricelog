@@ -17,12 +17,8 @@ branches it verified, and this module re-checks each branch mechanically:
   exact lines only. the union then re-sorts on (model_id, observed_at), the
   order every shard writer holds, so a merged shard still puts a new row
   beside its siblings in the review diff
-- index.json regenerates here, from the merged shards, so the served index
-  is correct when the push lands rather than whenever a workflow next runs.
-  publish.yml still covers a human push; whether THIS push also triggers it
-  depends on which credential git picks for it, which nothing here pins
 - the README stats and the dist branch belong to publish.yml, which fires on
-  a push to the default branch; the merge regenerates neither
+  a push to the default branch; the merge regenerates no derived file at all
 - the announce tree takes the last (newest) branch's copy with the final
   merge; a source's absence file lands on that source's branch, so the merge
   accumulates them without a last-branch copy
@@ -39,12 +35,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import models, pr, store, validate
+from ai_pricelog import models, pr, store
 from ai_pricelog.absence import ABSENCE_DIR
 from ai_pricelog.announce import ANNOUNCE_DIR, BILLING_RULES_FILE
 
 SHARD_DIR = store.SHARD_DIR
-INDEX_FILE = store.INDEX_FILE
 
 PIPELINE_EXACT_FILES = frozenset(
     {
@@ -219,7 +214,7 @@ def _is_pipeline_path(path: str) -> bool:
     ``<source>/<slug>.md`` file; the absence rule allows one ``<source>.json``
     file per source.
     """
-    if path in PIPELINE_EXACT_FILES or path == INDEX_FILE or path == models.MODELS_FILE:
+    if path in PIPELINE_EXACT_FILES or path == models.MODELS_FILE:
         return True
     prefix = SHARD_DIR + "/"
     if path.startswith(prefix) and "/" not in path[len(prefix) :]:
@@ -254,7 +249,6 @@ def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
             "--porcelain",
             "--",
             SHARD_DIR,
-            INDEX_FILE,
             models.MODELS_FILE,
             *sorted(PIPELINE_EXACT_FILES),
             *PIPELINE_STATE_DIRS,
@@ -361,21 +355,11 @@ def merge_branches(
                 encoding="utf-8",
             )
 
-        # the merge owns the served index: publish.yml runs on push, and
-        # whether this push triggers a workflow depends on which credential
-        # git picks for it. regenerating here needs no answer to that
-        store.write_index(
-            store.load_shards(repo_root / SHARD_DIR),
-            repo_root / INDEX_FILE,
-            validate.load_schema_keys(repo_root).version,
-        )
-
         if last:
             _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
 
         add_paths = [
             SHARD_DIR,
-            INDEX_FILE,
             BILLING_RULES_FILE,
             "tests/test_billing_rules.py",
         ]

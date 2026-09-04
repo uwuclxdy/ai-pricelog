@@ -29,14 +29,6 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     """A clone with a bare origin: main carries one row and the pipeline files."""
     repo = tmp_path / "repo"
     git_init_repo(repo)
-    (repo / "data").mkdir()
-    # the merge regenerates the index, and write_index takes the version the
-    # committed contract declares
-    schema_src = Path(__file__).resolve().parents[1] / "data" / "schema" / "row.v4.json"
-    (repo / "data" / "schema").mkdir()
-    (repo / "data" / "schema" / "row.v4.json").write_text(
-        schema_src.read_text(encoding="utf-8"), encoding="utf-8"
-    )
     store.save_shard(
         [make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)],
         repo / "data" / "history",
@@ -197,26 +189,6 @@ def test_merge_re_sorts_the_shard_it_unions(tmp_path):
     assert order[0][0] == "deepseek-v4-flash"
 
 
-def test_merge_regenerates_the_index(tmp_path):
-    # the push carries the checkout's GITHUB_TOKEN and starts no workflow run,
-    # so the publish workflow never sees this path: a merge that does not
-    # regenerate leaves the served index stale on the default branch
-    repo, _bare = build_repo(tmp_path)
-    make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
-
-    automerge.merge_branches(["pricelog/zeta-55555555"], repo, pr.PrRunner(), "main", push=False)
-
-    index = json.loads((repo / "data" / "index.json").read_text(encoding="utf-8"))
-    assert (
-        index["version"] == validate.load_schema_keys(Path(__file__).resolve().parents[1]).version
-    )
-    assert set(index["sources"]) == {"deepseek", "zai"}
-    assert index["sources"]["zai"]["glm-5"]["rates"]["input"] == 0.1
-    # it rides the merge commit, never the worktree
-    assert git(repo, "status", "--porcelain") == ""
-    assert "data/index.json" in git(repo, "show", "--name-only", "--format=", "HEAD")
-
-
 def test_merge_lands_a_new_source_shard(tmp_path):
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/zeta-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
@@ -290,15 +262,22 @@ def test_seed_branch_refused(tmp_path):
         automerge.merge_branches(["pricelog/seed"], repo, pr.PrRunner(), "main", push=False)
 
 
-def test_non_pipeline_file_refused(tmp_path):
+@pytest.mark.parametrize(
+    "extra_file",
+    [
+        "src/ai_pricelog/pipeline.py",
+        "data/index.json",
+    ],
+)
+def test_non_pipeline_file_refused(tmp_path, extra_file):
     repo, _bare = build_repo(tmp_path)
     make_branch(
         repo,
         "pricelog/gamma-22222222",
         [make_row("zai", "glm-5", "2026-08-31", 0.1)],
-        extra_file="src/ai_pricelog/pipeline.py",
+        extra_file=extra_file,
     )
-    with pytest.raises(automerge.AutoMergeError, match="pipeline.py"):
+    with pytest.raises(automerge.AutoMergeError, match=extra_file):
         automerge.merge_branches(
             ["pricelog/gamma-22222222"], repo, pr.PrRunner(), "main", push=False
         )
