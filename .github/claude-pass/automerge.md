@@ -55,11 +55,11 @@ uv run ai-pricelog-automerge <branch>...
 with the merge-eligible branches in order, oldest PR first, newest last. the script:
 
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
-- per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`, then `index.json` regenerated from the merged shards
+- per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`
 - `state/announce/`: the last (newest) branch's copy lands with the final merge (every branch of one run carries the same fresh snapshot). `state/absence/<source>.json`: each source's own branch carries its file, so the merge accumulates them
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
-github auto-marks each PR merged once its head lands in the default branch. the merge regenerates `index.json` itself, so the served index is correct the moment the push lands; the publish workflow is the backstop for a human push, and it owns the `dist` branch and the README stats outright.
+github auto-marks each PR merged once its head lands in the default branch. the merge writes no derived file: the publish workflow owns the `dist` branch and the README stats outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
 
 when the script fails: do not retry it. report the error in your final message, leave every PR open, delete nothing. the next run re-derives the rows.
 

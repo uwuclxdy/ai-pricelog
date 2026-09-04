@@ -27,7 +27,7 @@ one repo holds the observations and one generated view of them:
 | file | contents |
 |---|---|
 | `data/history/<source>.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever, one file per source |
-| `data/index.json` | the current price of every watched model, generated from the history |
+| `dist` branch | the served views, rebuilt per publish: `index.json` (current price of every model), `history.ndjson`, per-source index/history copies, the catalog |
 | `data/schema/row.v4.json` | the json-schema a row is checked against, and the contract a consumer can read |
 
 a row:
@@ -120,7 +120,7 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 
 **where do i find the current price of a model?**
 
-`data/index.json` under `sources`, keyed by provider and model id.
+`https://raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/index.json` under `sources`, keyed by provider and model id. one provider alone: `.../dist/index/<source>.json`.
 
 **how do i see every price a model ever had?**
 
