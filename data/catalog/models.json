@@ -6652,6 +6652,15 @@
       },
       "vendor": "writer"
     },
+    "openrouter/x-ai/grok-4.3:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-4.3:batch"
+        ]
+      },
+      "vendor": "x-ai"
+    },
     "openrouter/z-ai/glm-5.2:batch": {
       "curated": false,
       "sources": {
