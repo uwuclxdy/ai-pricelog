@@ -4366,6 +4366,15 @@
       },
       "vendor": "openai"
     },
+    "openai/gpt-6-astra": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-6-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/aion-labs/aion-2.0": {
       "curated": false,
       "sources": {

@@ -28,6 +28,7 @@
 {"schema":4,"source":"openai","model_id":"gpt-5.6-luna","observed_at":"2026-08-29","rates":{"input":0.2,"output":1.2,"cache_read":0.02,"cache_write":0.25},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
 {"schema":4,"source":"openai","model_id":"gpt-5.6-sol","observed_at":"2026-08-29","rates":{"input":4.0,"output":20.0,"cache_read":0.4,"cache_write":5.0},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
 {"schema":4,"source":"openai","model_id":"gpt-5.6-terra","observed_at":"2026-08-29","rates":{"input":2.0,"output":12.0,"cache_read":0.2,"cache_write":2.5},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
+{"schema":4,"source":"openai","model_id":"gpt-6-astra","observed_at":"2026-09-03","rates":{"input":10.0,"output":50.0,"cache_read":1.0,"cache_write":12.5},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
 {"schema":4,"source":"openai","model_id":"o1","observed_at":"2026-08-29","rates":{"input":15.0,"output":60.0,"cache_read":7.5},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
 {"schema":4,"source":"openai","model_id":"o1-pro","observed_at":"2026-08-29","rates":{"input":150.0,"output":600.0},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
 {"schema":4,"source":"openai","model_id":"o3","observed_at":"2026-08-29","rates":{"input":2.0,"output":8.0,"cache_read":0.5},"provenance":{"url":"https://platform.openai.com/docs/pricing"}}
