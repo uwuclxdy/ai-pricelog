@@ -98,8 +98,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "2a5cbe1adb5b5c8a680b48f0241dc1aac338f4ff1c31a4125f034e5c38935cb5",
-      "fetched": "2026-09-03"
+      "sha256": "9fa8c616ff907304d935396f95c819cd13b7bd6c7b027eb87a4e417ce6de4ce7",
+      "fetched": "2026-09-04"
     }
   },
   "fireworks": {
@@ -119,8 +119,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "8138e6c6b4fa058739f5d8382bc860411adea0afea7b262e6b29406db1d1fb01",
-      "fetched": "2026-09-03"
+      "sha256": "4e53a5b3a2e0f70d59b61aae4b4937aba4789d7f075908e8859ed233d10d2d2c",
+      "fetched": "2026-09-04"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
