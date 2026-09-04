@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/schema/row.v4.json",
+  "title": "ai-pricelog history row, schema 4",
+  "description": "One observation: what one source listed for one model on one day. The key set and the coarse types are the published contract; value semantics a json-schema cannot express (window start before end, clock minutes under 60) live in ai_pricelog.validate, which derives its key sets from this file.",
+  "type": "object",
+  "required": ["schema", "source", "model_id", "observed_at"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 4,
+      "description": "The row format version, per row. Excluded from the comparable diff, so the next bump fires no rows."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The provider key the row was read from. Keys the shard file and, with model_id, the store."
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The source's own spelling. The canonical id stays out of the row: the mapping moves whenever review merges twins."
+    },
+    "observed_at": {
+      "$ref": "#/$defs/date",
+      "description": "The day the scraper saw it. Provenance, excluded from the comparable diff."
+    },
+    "effective_at": {
+      "$ref": "#/$defs/date",
+      "description": "The day the rate applies from; absent means valid at observation."
+    },
+    "removed": {
+      "const": true,
+      "description": "The one delisting row per key ever. It may carry the last priced row's comparable fields, and a bare row is legal."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "The quote currency, omitted at the USD default. Every rate holds USD regardless; the fx pair rides provenance."
+    },
+    "rates": {
+      "$ref": "#/$defs/axes",
+      "description": "Base rate axes, USD per million tokens. A new axis is a key here, never a top-level key."
+    },
+    "overrides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/override"},
+      "description": "Conditional rates. An absent axis inherits the base rates value; later entries override earlier matching ones."
+    },
+    "fees": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "web_search": {"$ref": "#/$defs/fee"}
+      },
+      "description": "Per-request USD fees, never per token."
+    },
+    "limits": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "context": {"$ref": "#/$defs/tokens"},
+        "output": {"$ref": "#/$defs/tokens"}
+      },
+      "description": "Token counts, never currency-converted."
+    },
+    "unmapped": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Source pricing keys the mapping does not consume, verbatim. Comparable on purpose: a new source key fires one row, so review sees the shape change."
+    },
+    "provenance": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "url": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "fx_rate": {"type": "number", "exclusiveMinimum": 0},
+        "fx_rate_date": {"$ref": "#/$defs/date"}
+      },
+      "description": "Where the row came from, never what it costs. Excluded from the comparable diff, so an fx refresh at unchanged USD prices appends nothing."
+    }
+  },
+  "$defs": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "tokens": {
+      "type": "integer",
+      "exclusiveMinimum": 0
+    },
+    "fee": {
+      "type": "number",
+      "minimum": 0
+    },
+    "axes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "input": {"$ref": "#/$defs/amount"},
+        "output": {"$ref": "#/$defs/amount"},
+        "cache_read": {"$ref": "#/$defs/amount"},
+        "cache_write": {"$ref": "#/$defs/amount"},
+        "cache_write_1h": {"$ref": "#/$defs/amount"},
+        "image": {"$ref": "#/$defs/amount"},
+        "audio": {"$ref": "#/$defs/amount"},
+        "input_audio_cache": {"$ref": "#/$defs/amount"},
+        "internal_reasoning": {"$ref": "#/$defs/amount"},
+        "image_output": {"$ref": "#/$defs/amount"},
+        "audio_output": {"$ref": "#/$defs/amount"}
+      }
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "USD per million tokens. Zero is a price: a free model is priced, not unpriced."
+    },
+    "when": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+          },
+          "description": "The window's UTC calendar days. Never re-derived from timezone."
+        },
+        "window": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"type": "integer", "minimum": 0, "maximum": 2400},
+          "description": "[start, end] HHMM clock numbers. validate enforces start < end and minutes under 60."
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA zone, provenance on the schedule. validate enforces that it resolves."
+        },
+        "min_tokens": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "A volume threshold: the override applies from this prompt size up."
+        }
+      },
+      "allOf": [
+        {
+          "if": {"required": ["timezone"]},
+          "then": {"anyOf": [{"required": ["days"]}, {"required": ["window"]}]},
+          "$comment": "A zone with no schedule describes nothing."
+        }
+      ]
+    },
+    "override": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "when": {"$ref": "#/$defs/when"},
+        "rates": {
+          "$ref": "#/$defs/axes",
+          "$comment": "One axis list feeds base and override rates, so the two can never drift apart. An override rate of zero is indistinguishable from inheriting the base rate, so validate rejects it here while allowing it in base rates."
+        },
+        "quota_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "A consumption weight, never a rate. A consumer must never price a session from it."
+        }
+      },
+      "anyOf": [{"required": ["rates"]}, {"required": ["quota_multiplier"]}],
+      "allOf": [
+        {
+          "if": {"required": ["rates"]},
+          "then": {
+            "required": ["when"],
+            "properties": {
+              "when": {
+                "anyOf": [
+                  {"required": ["days"]},
+                  {"required": ["window"]},
+                  {"required": ["min_tokens"]}
+                ]
+              }
+            }
+          },
+          "$comment": "A rate override must be conditional; an unconditional one is the base rate. A multiplier-only entry may cover the whole day by design (a plan-quota weight)."
+        }
+      ]
+    }
+  }
+}
