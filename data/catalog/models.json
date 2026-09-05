@@ -6364,6 +6364,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3.8-max-0902": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.8-max-0902"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/rekaai/reka-edge": {
       "curated": false,
       "sources": {
