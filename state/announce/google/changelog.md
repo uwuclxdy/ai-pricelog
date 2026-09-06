@@ -5,9 +5,8 @@ Safety guidance Frameworks LangChain & LangGraph CrewAI LlamaIndex Vercel AI SDK
 Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 3.8 Flash is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
-September 3, 2026 Lyria 3.5 in public preview : Released the next generation of Google's music generation models: lyria-3.5-clip-preview : Optimized for 30-second clips, loops, and rapid experimentation.
-lyria-3.5-pro-preview : Full-length song generation with improved musical coherence, natural vocals, and fine-grained duration and structural control.
-Both models support text and image inputs and generate high-fidelity 44.1 kHz stereo audio.
+September 3, 2026 Lyria 3.5 in public preview : Released the next generation of Google's music generation model: lyria-3.5 : Full-length song generation with improved musical coherence, natural vocals, and fine-grained duration and structural control.
+The model supports text and image inputs and generates high-fidelity 44.1 kHz stereo audio.
 See the Music generation guide for details and code samples.
 September 2, 2026 Gemini 3.8 Flash generally available (GA) : Released gemini-3.8-flash , our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows.
 To get started, see the Gemini 3.8 Flash model page and the Latest model guide .
@@ -339,5 +338,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-09-03 UTC.
+Last updated 2026-09-04 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
