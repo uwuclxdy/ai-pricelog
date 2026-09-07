@@ -19,9 +19,12 @@ branches it verified, and this module re-checks each branch mechanically:
   beside its siblings in the review diff
 - the README stats and the dist branch belong to publish.yml, which fires on
   a push to the default branch; the merge regenerates no derived file at all
-- the announce tree takes the last (newest) branch's copy with the final
-  merge; a source's absence file lands on that source's branch, so the merge
-  accumulates them without a last-branch copy
+- the announce tree takes every branch's copy in merge order, so the
+  last (newest) write is the freshest snapshot and a burst spanning
+  several runs (whose branches carry different fetched dates) resolves
+  its own add/add conflicts on the state files. a source's absence file
+  lands on that source's branch and the merge takes each file from the
+  newest branch that carries it
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -134,6 +137,25 @@ def _replace_tree(runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: s
     for path in sorted(tree.rglob("*"), reverse=True):
         if path.is_dir() and not any(path.iterdir()):
             path.rmdir()
+
+
+def _merge_absence(runner: pr.PrRunner, repo_root: Path, branch: str) -> None:
+    """Lay the branch's absence files over the worktree, newest carrier wins.
+
+    Each source's ``state/absence/<source>.json`` lands on that source's own
+    branch, so files this branch does not carry stay as an earlier branch (or
+    HEAD) left them. Git reports add/add conflicts on the files its run did
+    carry (cross-run counters diverge), and this write resolves them with the
+    branch's copy: merge order is oldest first, so the newest carrier's file
+    is the last write. A file whose entries cleared is not carried by the
+    branch at all (save_absence deletes it), and HEAD's stale copy keeps
+    tracking until the next run rewrites it — the same skip-and-retry the
+    pipeline itself uses for state.
+    """
+    for path in _branch_tree_paths(runner, repo_root, branch, ABSENCE_DIR):
+        (repo_root / path).write_text(
+            _branch_text(runner, repo_root, branch, path), encoding="utf-8"
+        )
 
 
 def _branch_diff_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
@@ -307,8 +329,7 @@ def merge_branches(
     pr.ensure_author(repo_root, runner)
 
     results: list[MergeResult] = []
-    for number, branch in enumerate(branches):
-        last = number == len(branches) - 1
+    for branch in branches:
         merge = subprocess.run(
             # --no-ff forces the two-parent commit; --no-commit alone
             # fast-forwards a descendant branch and moves HEAD onto it
@@ -344,6 +365,11 @@ def merge_branches(
             union_text = "\n".join(union) + ("\n" if union else "")
             (repo_root / shard_path).write_text(union_text, encoding="utf-8")
 
+        # cross-run bursts carry different announce snapshots and absence
+        # counters per branch (the 2026-09-07 shape): git then reports
+        # add/add conflicts on the state files, so every state tree is
+        # resolved by writing the branch's copy over the worktree before
+        # the by-path stage, each branch in merge order
         changed = set(_branch_diff_paths(runner, repo_root, branch))
         models_changed = models.MODELS_FILE in changed
         if models_changed:
@@ -355,9 +381,14 @@ def merge_branches(
                 encoding="utf-8",
             )
 
-        if last:
-            _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
-
+        # the announce tree: each branch's snapshot in merge order. the
+        # last (newest) branch's copy is the freshest fetched date, and
+        # writing each branch's tree resolves the add/add conflicts its
+        # snapshot diverged from its siblings' on; a burst of one run carries
+        # one shared snapshot, so this is one write for the single-run shape
+        _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
+        _merge_absence(runner, repo_root, branch)
+        # the announce tree
         add_paths = [
             SHARD_DIR,
             BILLING_RULES_FILE,

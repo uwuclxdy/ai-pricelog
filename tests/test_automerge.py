@@ -52,7 +52,7 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     return repo, bare
 
 
-def announce_snapshot(texts: dict[str, dict[str, str]]) -> dict:
+def announce_snapshot(texts: dict[str, dict[str, str]], fetched: str = "2026-08-31") -> dict:
     """An in-memory announce snapshot from ``{source: {url: text}}``."""
     snapshot: dict[str, dict[str, dict[str, str]]] = {}
     for source, urls in texts.items():
@@ -62,7 +62,7 @@ def announce_snapshot(texts: dict[str, dict[str, str]]) -> dict:
                 "file": files[url],
                 "text": text,
                 "sha256": announce._sha256(text),
-                "fetched": "2026-08-31",
+                "fetched": fetched,
             }
     return snapshot
 
@@ -75,6 +75,7 @@ def make_branch(
     absence_data: dict | None = None,
     extra_file: str | None = None,
     catalog_models: dict | None = None,
+    announce_fetched: str = "2026-08-31",
 ) -> None:
     """Open a pricelog branch off main: append rows, snapshots, push, return to main."""
     git(repo, "switch", "-c", name)
@@ -85,7 +86,7 @@ def make_branch(
     for source, source_rows in by_source.items():
         store.save_shard(store.load_shard(shard_dir, source) + source_rows, shard_dir, source)
     if announce_texts is not None:
-        announce.save_snapshot(announce_snapshot(announce_texts), repo)
+        announce.save_snapshot(announce_snapshot(announce_texts, announce_fetched), repo)
     if absence_data is not None:
         absence.save_absence(absence_data, repo)
     if catalog_models is not None:
@@ -373,3 +374,77 @@ def test_push_failure_keeps_refs(tmp_path):
         )
     refs = git(repo, "ls-remote", "origin").splitlines()
     assert any("pricelog/epsilon-44444444" in ref for ref in refs)
+
+
+def test_cross_run_burst_merges(tmp_path):
+    # the 09-07 shape (PRs 153-164): sibling branches span several runs, so
+    # their announce snapshots carry different fetched dates and their
+    # absence counters diverge per source. the merge must take each
+    # announce tree in merge order (the last write wins, and every branch's
+    # tree resolves the add/add conflicts on index.json) and each absence
+    # file from the newest branch that carries it
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-04", 0.44)],
+        announce_texts={"deepseek": {"https://example.com/u": "old run prose"}},
+        announce_fetched="2026-09-04",
+        absence_data={"deepseek": {"gone-old": {"absent_runs": 1, "since": "2026-09-04"}}},
+    )
+    make_branch(
+        repo,
+        "pricelog/middle-00000002",
+        [make_row("zai", "glm-5.3", "2026-09-05", 0.2)],
+        announce_texts={"deepseek": {"https://example.com/u": "old run prose"}},
+        announce_fetched="2026-09-05",
+        absence_data={"zai": {"gone-mid": {"absent_runs": 1, "since": "2026-09-05"}}},
+    )
+    make_branch(
+        repo,
+        "pricelog/newest-00000003",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-07", 0.46)],
+        announce_texts={"deepseek": {"https://example.com/u": "old run prose"}},
+        announce_fetched="2026-09-07",
+        # the newest branch dropped its own absence file (its entries
+        # cleared); the merge still keeps the sources only older branches
+        # carry
+        absence_data={"zai": {"gone-mid": {"absent_runs": 2, "since": "2026-09-05"}}},
+    )
+
+    sha, results = automerge.merge_branches(
+        [
+            "pricelog/older-00000001",
+            "pricelog/middle-00000002",
+            "pricelog/newest-00000003",
+        ],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    # every branch's rows union into the shards (deepseek twice, zai once)
+    deepseek_rows = [json.loads(line) for line in shard_lines(repo, "deepseek")]
+    zai_rows = [json.loads(line) for line in shard_lines(repo, "zai")]
+    assert len(deepseek_rows) == 3  # the seed row + the older and newest rows
+    assert len(zai_rows) == 1  # the middle branch's row
+    # the announce tree: the newest branch's copy lands (last write, the
+    # freshest fetched date), and every branch's tree was written in order
+    # so the merge never sees a conflict marker in index.json
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert index["deepseek"]["https://example.com/u"]["fetched"] == "2026-09-07"
+    # the absence files: each source's file comes from the newest branch
+    # that carries it, not from the last branch wholesale
+    deepseek = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert deepseek == {"gone-old": {"absent_runs": 1, "since": "2026-09-04"}}
+    zai = json.loads((repo / "state" / "absence" / "zai.json").read_text(encoding="utf-8"))
+    assert zai == {"gone-mid": {"absent_runs": 2, "since": "2026-09-05"}}
+    # the merged tree is clean and the merge commits carry the branch order
+    assert git(repo, "status", "--porcelain") == ""
+    assert [r.branch for r in results] == [
+        "pricelog/older-00000001",
+        "pricelog/middle-00000002",
+        "pricelog/newest-00000003",
+    ]
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
