@@ -5077,6 +5077,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.0-flash-sante:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-flash-sante:free"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/kwaipilot/kat-coder-air-v2.5": {
       "curated": false,
       "sources": {
@@ -6000,6 +6009,24 @@
       "sources": {
         "openrouter": [
           "openai/gpt-5:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-astra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-astra-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-astra-pro"
         ]
       },
       "vendor": "openai"
