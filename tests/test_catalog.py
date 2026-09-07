@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from ai_pricelog import models, store
+from ai_pricelog.testing import default_branch_test
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -18,6 +21,7 @@ def _providers() -> dict[str, dict[str, str]]:
     return json.loads((ROOT / "data" / "catalog" / "providers.json").read_text())["providers"]
 
 
+@pytest.mark.skipif(not default_branch_test, reason=default_branch_test.skip_reason)
 def test_coverage_invariant_over_the_real_tree():
     rows = store.load_shards(ROOT / "data" / "history")
     keys = {(row["source"], row["model_id"]) for row in rows}

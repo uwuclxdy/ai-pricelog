@@ -6,6 +6,7 @@ import pytest
 
 from ai_pricelog import models, stats
 from ai_pricelog.store import load_shards
+from ai_pricelog.testing import default_branch_test
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -59,6 +60,7 @@ def test_render_missing_marker_raises():
         )
 
 
+@pytest.mark.skipif(not default_branch_test, reason=default_branch_test.skip_reason)
 def test_committed_readme_stats_recompute_from_data():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     rows = load_shards(ROOT / "data" / "history")
