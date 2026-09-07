@@ -1709,6 +1709,15 @@
       },
       "vendor": "google"
     },
+    "digitalocean/gpt-6-astra": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
     "digitalocean/llama-4-maverick-17b-128e-instruct": {
       "curated": false,
       "sources": {
