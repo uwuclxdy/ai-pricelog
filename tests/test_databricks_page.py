@@ -150,9 +150,9 @@ def test_detect_merged_glm_row_covers_both_store_ids(live_page):
 
 
 def test_detect_matches_both_pay_per_token_tables(monkeypatch: pytest.MonkeyPatch):
-    # both watched tables share the Input | Output | Cache read sub-header;
-    # the tier span in the first header row distinguishes them from the
-    # per-hour tables
+    # both watched tables pin the Input | Output | Cache read sub-header; the
+    # per-hour table never matches the pin (its sub-header names reservation
+    # terms), so only the standard and priority tables yield rows
     _detect_serve(
         monkeypatch,
         [

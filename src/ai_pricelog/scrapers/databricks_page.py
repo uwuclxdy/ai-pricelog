@@ -18,8 +18,8 @@ None = the model id is not on the page, or its row carries no per-token
 input rate. zero rates scrape as 0.0 (free is a price), so a fully free
 row lands a 0.0 price row; the detector still emits the id, so a stored
 model whose row turns free stays mapped. FetchError = the fetch failed,
-the page has no per-token table, or the matched row's rate cells are
-outside the known shapes.
+the page has no per-token table, a tier span reworded past the pin, or
+the matched row's rate cells are outside the known shapes.
 """
 
 from __future__ import annotations

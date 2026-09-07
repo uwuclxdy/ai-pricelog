@@ -55,7 +55,7 @@ _FOLDED_PRIORITY_SPAN = fold_heading(_PRIORITY_SPAN)
 _FOLDED_STANDARD_SPAN = fold_heading(_STANDARD_SPAN)
 _RATE_RE = re.compile(r"^\d+(?:\.\d+)?$")
 _DASH = "-"
-_UPIIFT = "⌖"  # the ⌖ regional-uplift marker glued onto some names
+_UPLIFT = "⌖"  # the ⌖ regional-uplift marker glued onto some names
 
 # display name -> canonical ids, standard table. the ids are the stored
 # openrouter id set's spellings minus the vendor prefix
@@ -181,7 +181,7 @@ def _rate(cell: Tag, url: str) -> float | None:
 
 def parse_id(cell: Tag, url: str, priority: bool = False) -> tuple[str, ...]:
     """the row's canonical ids for its display name; unknown names raise."""
-    name = cell.get_text(" ", strip=True).replace(_UPIIFT, "").strip()
+    name = cell.get_text(" ", strip=True).replace(_UPLIFT, "").strip()
     model_ids = (_PRIORITY_DISPLAYS if priority else _DISPLAY_IDS).get(name)
     if model_ids is None:
         raise FetchError(f"unmapped model name {name!r} on {url}")
