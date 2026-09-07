@@ -6031,6 +6031,24 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6-astra-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-astra-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-astra:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-astra:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-audio": {
       "curated": false,
       "sources": {
