@@ -29,6 +29,9 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     """A clone with a bare origin: main carries one row and the pipeline files."""
     repo = tmp_path / "repo"
     git_init_repo(repo)
+    schema_src = Path(__file__).resolve().parents[1] / "data" / "schema" / "row.v4.json"
+    (repo / "data" / "schema").mkdir(parents=True)
+    (repo / "data" / "schema" / "row.v4.json").write_text(schema_src.read_text(encoding="utf-8"))
     store.save_shard(
         [make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)],
         repo / "data" / "history",
@@ -254,6 +257,115 @@ def test_merge_skips_a_seed_whose_key_head_claims(tmp_path):
     catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
     assert catalog["models"] == curated
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path):
+    # the pass is authorized to hand-edit a branch row, so the exact-line union
+    # is the one path a contract-breaking shape can take into the store: the
+    # merge stops naming the branch and nothing lands
+    repo, _bare = build_repo(tmp_path)
+    bad = make_row("zai", "glm-5", "2026-08-31", 0.1)
+    bad["surprise"] = "hand edit"
+    make_branch(repo, "pricelog/iota-88888888", [bad])
+    before = git(repo, "rev-parse", "main").strip()
+
+    with pytest.raises(
+        automerge.AutoMergeError,
+        match=(
+            "pricelog/iota-88888888: origin/pricelog/iota-88888888:data/history/zai.ndjson line 1"
+        ),
+    ):
+        automerge.merge_branches(
+            ["pricelog/iota-88888888"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert git(repo, "rev-parse", "main").strip() == before
+
+
+def test_merge_leaves_rows_head_already_holds_unvalidated(tmp_path):
+    # a line already in the store predates this gate: only the lines a branch
+    # appends validate, or one legacy bad line would block every later merge
+    repo, _bare = build_repo(tmp_path)
+    shard = repo / "data" / "history" / "deepseek.ndjson"
+    legacy = json.loads(shard.read_text(encoding="utf-8").splitlines()[0])
+    legacy["surprise"] = "legacy"
+    shard.write_text(json.dumps(legacy, separators=(",", ":")) + "\n", encoding="utf-8")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "legacy line")
+    git(repo, "push", "origin", "main")
+    fresh = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    make_branch(repo, "pricelog/kappa-99999999", [fresh])
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/kappa-99999999"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [1]
+    rows = [json.loads(line) for line in shard_lines(repo)]
+    assert len(rows) == 2
+    assert rows[0]["surprise"] == "legacy"
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_merge_refused_row_names_the_branch_line(tmp_path):
+    # two branches merge in one call: the first lands a good row, so HEAD gains a
+    # line the second branch's copy does not carry. the bad row is then branch
+    # line 2, union line 3, appended-subset line 1; the error must name line 2
+    repo, _bare = build_repo(tmp_path)
+    good = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    make_branch(repo, "pricelog/alpha-11111111", [good])
+    bad = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    bad["surprise"] = "hand edit"
+    make_branch(repo, "pricelog/beta-22222222", [bad])
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/alpha-11111111", "pricelog/beta-22222222"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/beta-22222222: origin/pricelog/beta-22222222:data/history/"
+        "deepseek.ndjson line 2 fails the row contract: row field(s) ['surprise']"
+        " are not part of the row schema; fix: drop them, or extend the schema and"
+        " bump the version. do not retry: report the error and leave every PR open"
+    )
+    assert len(git(repo, "show", "HEAD:data/history/deepseek.ndjson").splitlines()) == 2
+
+
+def test_merge_invalid_json_names_the_branch_line(tmp_path):
+    # the same discriminating fixture: the first branch lands a good row, the
+    # second carries an invalid-json second line. the error must name the
+    # branch's line 2, not union line 3
+    repo, _bare = build_repo(tmp_path)
+    good = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    make_branch(repo, "pricelog/alpha-11111111", [good])
+    git(repo, "switch", "-c", "pricelog/mu-33333333")
+    shard = repo / "data" / "history" / "deepseek.ndjson"
+    shard.write_text(shard.read_text(encoding="utf-8") + "{not json\n", encoding="utf-8")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "corrupt a row")
+    git(repo, "push", "origin", "pricelog/mu-33333333")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/alpha-11111111", "pricelog/mu-33333333"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/mu-33333333: history file 'origin/pricelog/mu-33333333:data/"
+        "history/deepseek.ndjson': line 2: invalid json: Expecting property name enclosed"
+        " in double quotes. do not retry: report the error and leave every PR open"
+    )
 
 
 def test_seed_branch_refused(tmp_path):

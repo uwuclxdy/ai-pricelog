@@ -1417,6 +1417,87 @@ def test_pending_removal_keeps_the_counter_until_the_row_lands(tmp_path, fake_mo
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
+def test_removal_row_failing_validation_skips_and_reports(tmp_path, fake_modules, repo_root):
+    # a last stored row the contract refuses (say a hand-edited branch row that
+    # landed) makes build_removal_row inherit the bad shape: the removal skips
+    # with a provider error instead of the exception killing the run, and the
+    # counter stays at 2 for the next run to retry
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    prior = deepseek_prior()
+    prior["rates"] = {"input": 1, "output": 2}  # ints: not the contract's floats
+    seed_store(repo_root, [prior])
+    seed_absence(repo_root, {"deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}})
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    deepseek_report = report.providers["deepseek"]
+    assert [model_id for model_id, _url in deepseek_report.prs] == ["deepseek-new"]
+    assert any("rates" in error for error in deepseek_report.errors)
+    rows = branch_rows(repo_root, batch_branch("deepseek"), "deepseek")
+    assert all(row.get("removed") is not True for row in rows)
+    assert branch_absence(repo_root, batch_branch("deepseek")) == {
+        "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
+    }
+
+
+def test_pending_only_rows_keep_the_absence_entry(tmp_path, fake_modules, repo_root):
+    # an entry can name a model whose rows sit only on a pending branch (say a
+    # hand merge that landed the state file without its shard): the
+    # landed-removal cleanup reads no row for it and must keep the entry
+    # instead of crashing on None
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new", "deepseek-other"]
+    scrape["deepseek"] = {
+        "deepseek-new": pricing(3.0e-7, 1.2e-6),
+        "deepseek-other": pricing(),
+    }
+    cfg = make_cfg("deepseek")
+    seed_store(
+        repo_root,
+        [
+            store.build_row(
+                "deepseek",
+                "deepseek-other",
+                pricing(),
+                "2026-08-19",
+                "https://example.com/pricing",
+                VERSION,
+            )
+        ],
+    )
+    seed_absence(repo_root, {"deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}})
+    pending_branch = pr.branch_name("deepseek-chat")
+    git(repo_root, "switch", "-C", pending_branch)
+    shard_dir = repo_root / "data" / "history"
+    pending_shard = store.load_shard(shard_dir, "deepseek") + [deepseek_prior()]
+    store.save_shard(pending_shard, shard_dir, "deepseek")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "sibling pr for the model's only row")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Add deepseek-chat pricing",
+                "body": "",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-new"]
+    assert report.providers["deepseek"].errors == []
+    assert branch_absence(repo_root, batch_branch("deepseek")) == {
+        "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
+    }
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
 def test_flaky_absent_run_without_pr_leaves_no_trace(tmp_path, fake_modules, repo_root):
     # a run with no pr opens nothing: the counter at 1 never lands, so the
     # next run re-derives from the committed (empty) state

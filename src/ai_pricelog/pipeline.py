@@ -103,7 +103,7 @@ def run(
         return report
 
     landed_rows = rows
-    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs))
+    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs, keys))
 
     snapshot = announce.load_snapshot(repo_root)
     fetch = announce.fetch_channels(cfg, snapshot, today)
@@ -197,6 +197,7 @@ def run(
             open_prs,
             today,
             keys,
+            provider_report.errors,
         )
 
     _openrouter_rows(
@@ -555,6 +556,7 @@ def _openrouter_rows(
         open_prs,
         today,
         keys,
+        or_report.errors,
     )
 
 
@@ -569,6 +571,7 @@ def _track_provider_absence(
     open_prs: Sequence[pr.OpenPr],
     today: str,
     keys: validate.SchemaKeys,
+    errors: list[str],
 ) -> None:
     """Absence counters for one provider: page ids mapped to stored spellings.
 
@@ -603,6 +606,7 @@ def _track_provider_absence(
         open_prs,
         today,
         keys,
+        errors,
     )
 
 
@@ -619,6 +623,7 @@ def _track_absence(
     open_prs: Sequence[pr.OpenPr],
     today: str,
     keys: validate.SchemaKeys,
+    errors: list[str],
 ) -> None:
     """Move the per-model absence counters and plan removal rows.
 
@@ -638,9 +643,14 @@ def _track_absence(
     # a landed removal ends tracking: the row is the record, and re-counting
     # would churn the state (and the CI marker) on every later run. only a
     # LANDED row counts: a pending removal still has an open pr, and dropping
-    # its entry early would lose the counters if that pr gets rejected
+    # its entry early would lose the counters if that pr gets rejected. an id
+    # with no landed row at all (its rows ride a pending branch) has no landed
+    # removal either, so its entry stays
     for model_id in [
-        mid for mid in source_state if store.newest(landed_rows, source, mid).get("removed") is True
+        mid
+        for mid in source_state
+        if (newest := store.newest(landed_rows, source, mid)) is not None
+        and newest.get("removed") is True
     ]:
         del source_state[model_id]
     absent_ids = {
@@ -663,10 +673,18 @@ def _track_absence(
             # the removal row is already on record: one per key ever
             del source_state[model_id]
             continue
-        row = store.build_removal_row(
-            source, model_id, today, keys.version, store.last(rows, source, model_id)
-        )
-        validate.validate_row(row, keys)
+        try:
+            row = store.build_removal_row(
+                source, model_id, today, keys.version, store.last(rows, source, model_id)
+            )
+            validate.validate_row(row, keys)
+        except validate.ValidationError as exc:
+            # a last stored row the contract refuses (say a hand-edited branch
+            # row that landed) leaks its shape into the removal: skip and
+            # report, the entry stays at 2 and the next run retries
+            log.warning("removal for %s failed validation in %s: %s", model_id, source, exc)
+            errors.append(_describe(exc))
+            continue
         group = _PrGroup(source, provider, source_url)
         group.rows.append(row)
         removal_groups.append(group)

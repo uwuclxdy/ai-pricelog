@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import announce, store
+from ai_pricelog import announce, store, validate
 
 log = logging.getLogger(__name__)
 
@@ -434,6 +434,7 @@ def fetch_pending_rows(
     repo_root: Path,
     shard_dir: str,
     open_prs: Sequence[OpenPr],
+    keys: validate.SchemaKeys,
 ) -> list[dict[str, object]]:
     """The rows on open PRs' pricelog branches of origin, under refs/remotes/pending.
 
@@ -442,10 +443,13 @@ def fetch_pending_rows(
     sibling PRs stop rewriting the same files. A branch whose pr was closed
     keeps its head ref out of open_prs and contributes no rows, so a rejected
     pr's rows drop out of the union and its model re-candidates on the next
-    run. The fetch is forced and pruned: pending branches are force-pushed,
-    and refs of branches deleted upstream must not linger. A run without an
-    origin remote (local dev) or a branch without the shard directory just
-    yields no pending rows.
+    run. Each row must pass validate_row: the pass is authorized to hand-edit
+    a branch row, so a shape the contract refuses drops out here (logged;
+    automerge rejects it before the store) instead of shaping this run's
+    branches. The fetch is forced and pruned: pending branches are
+    force-pushed, and refs of branches deleted upstream must not linger. A
+    run without an origin remote (local dev) or a branch without the shard
+    directory just yields no pending rows.
     """
     try:
         runner.run(
@@ -485,10 +489,23 @@ def fetch_pending_rows(
                 log.info("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
                 continue
             try:
-                rows.extend(store.parse(text, f"{ref}:{path}"))
+                branch_rows = store.parse(text, f"{ref}:{path}")
             except ValueError as exc:
                 log.warning("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
                 continue
+            for row in branch_rows:
+                try:
+                    validate.validate_row(row, keys)
+                except validate.ValidationError as exc:
+                    log.warning(
+                        "pending branch %s shard %s row failed the row contract;"
+                        " dropping it from the union: %s",
+                        ref,
+                        path,
+                        exc,
+                    )
+                    continue
+                rows.append(row)
     return rows
 
 

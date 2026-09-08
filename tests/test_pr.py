@@ -6,10 +6,24 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import announce, pr
+from ai_pricelog import announce, pr, validate
 from conftest import FakeRunner
 
 BATCH_KEY = "deepseek@2026-08-26-000000"
+
+SCHEMA_KEYS = validate.load_schema_keys(Path(__file__).resolve().parents[1])
+
+
+def pending_row(model_id: str) -> dict:
+    """A row a pending branch shard can legally carry through the union."""
+    return {
+        "schema": SCHEMA_KEYS.version,
+        "source": "deepseek",
+        "model_id": model_id,
+        "observed_at": "2026-08-26",
+        "rates": {"input": 0.27, "output": 1.1},
+        "provenance": {"url": "https://example.com/pricing"},
+    }
 
 
 def _sha8(key: str) -> str:
@@ -475,14 +489,11 @@ def test_open_pull_requests_rejects_invalid_json():
 
 def test_fetch_pending_rows_no_remote_returns_empty():
     fake = FakeRunner().on("git fetch", failure=pr.PrError("no such remote: origin"))
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", []) == []
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", [], SCHEMA_KEYS) == []
 
 
 def test_fetch_pending_rows_reads_branch_shards():
-    lines = (
-        '{"source": "deepseek", "model_id": "x", "observed_at": "t", "url": "u"}\n'
-        '{"source": "deepseek", "model_id": "y", "observed_at": "t", "url": "u"}\n'
-    )
+    lines = json.dumps(pending_row("x")) + "\n" + json.dumps(pending_row("y")) + "\n"
     fake = (
         FakeRunner()
         .on("git fetch")
@@ -491,7 +502,7 @@ def test_fetch_pending_rows_reads_branch_shards():
         .on("git show", output=lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == [
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [
         json.loads(line) for line in lines.splitlines()
     ]
 
@@ -504,14 +515,14 @@ def test_fetch_pending_rows_skips_branch_without_shards():
         .on("git ls-tree", output="")
     )
     open_prs = [pr.OpenPr("Add bad pricing", "", "pricelog/bad")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == []
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == []
 
 
 def test_fetch_pending_rows_skips_branches_without_open_pr():
     # a closed pr keeps its branch on origin; its head ref is no longer in
     # the open-pr list, so its rows must not ride any future pr branch
-    open_lines = '{"source": "deepseek", "model_id": "x", "observed_at": "t", "url": "u"}\n'
-    closed_lines = '{"source": "deepseek", "model_id": "stale", "observed_at": "t", "url": "u"}\n'
+    open_lines = json.dumps(pending_row("x")) + "\n"
+    closed_lines = json.dumps(pending_row("stale")) + "\n"
     fake = (
         FakeRunner()
         .on("git fetch")
@@ -524,14 +535,14 @@ def test_fetch_pending_rows_skips_branches_without_open_pr():
         .on("git show refs/remotes/pending/closed", output=closed_lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/open-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs) == [
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [
         json.loads(open_lines)
     ]
 
 
 def test_fetch_pending_rows_fetch_is_forced_and_pruned():
     fake = FakeRunner().on("git fetch").on("git for-each-ref", output="")
-    pr.fetch_pending_rows(fake, Path("."), "data/history", [])
+    pr.fetch_pending_rows(fake, Path("."), "data/history", [], SCHEMA_KEYS)
     (cmd, _cwd) = fake.calls[0]
     assert cmd == [
         "git",
@@ -540,6 +551,25 @@ def test_fetch_pending_rows_fetch_is_forced_and_pruned():
         "+refs/heads/pricelog/*:refs/remotes/pending/*",
         "--prune",
     ]
+
+
+def test_fetch_pending_rows_drops_a_row_the_contract_forbids():
+    # the pass is authorized to hand-edit a branch row, so a pending row can
+    # break the row contract: it drops out of the union (logged, so the model
+    # re-candidates) instead of shaping this run's branches
+    good = pending_row("x")
+    bad = pending_row("bad")
+    bad["surprise"] = "hand edit"
+    lines = json.dumps(good) + "\n" + json.dumps(bad) + "\n"
+    fake = (
+        FakeRunner()
+        .on("git fetch")
+        .on("git for-each-ref", output="refs/remotes/pending/x-12345678\n")
+        .on("git ls-tree", output="data/history/deepseek.ndjson\n")
+        .on("git show", output=lines)
+    )
+    open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
+    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [good]
 
 
 def test_open_pr_uses_spec_title_and_body():

@@ -9,6 +9,11 @@ branches it verified, and this module re-checks each branch mechanically:
 - the branch is a `pricelog/` automation branch, never the seed branch
 - the branch changes only pipeline files (the per-source history shards,
   the state/announce and state/absence trees, billing-rules plus its test pin)
+- each shard line the union appends passes `validate_row` before it lands:
+  the pass is authorized to hand-edit a branch row, so the merge is the one
+  path a shape the contract forbids can take into the store, and a refused
+  line stops the merge by name. HEAD's own lines are exempt, they already
+  sit in the append-only store
 - the pipeline files are committed and nothing else is staged: every stage
   names its paths, so unrelated dirt in the checkout cannot ride the merge
 - each shard the branch touched lands as an exact-line union: every HEAD
@@ -38,7 +43,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import models, pr, store
+from ai_pricelog import models, pr, store, validate
 from ai_pricelog.absence import ABSENCE_DIR
 from ai_pricelog.announce import ANNOUNCE_DIR, BILLING_RULES_FILE
 
@@ -94,6 +99,39 @@ def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
             " carrying model_id and observed_at"
         ) from exc
     return [lines[index] for index in order]
+
+
+def _validate_appended(
+    head_lines: list[str], branch_text: str, branch: str, path: str, keys: validate.SchemaKeys
+) -> None:
+    """Every branch line HEAD does not hold must pass validate_row before it lands.
+
+    store.parse reads the branch's own copy, so a json error names the branch
+    line the fix instruction points at. a line HEAD holds stays exempt: it
+    already sits in the append-only store. the pass is authorized to hand-edit
+    a branch row, so the exact-line union is the one path a contract-breaking
+    shape can take into the store.
+    """
+    branch_lines = branch_text.splitlines()
+    label = f"origin/{branch}:{path}"
+    try:
+        rows = store.parse(branch_text, label)
+    except ValueError as exc:
+        raise AutoMergeError(
+            f"branch {branch}: {exc}. do not retry: report the error and leave every PR open"
+        ) from exc
+    seen = set(head_lines)
+    for number, (line, row) in enumerate(zip(branch_lines, rows, strict=True), start=1):
+        if line in seen:
+            continue
+        seen.add(line)
+        try:
+            validate.validate_row(row, keys)
+        except ValueError as exc:
+            raise AutoMergeError(
+                f"branch {branch}: {label} line {number} fails the row contract:"
+                f" {exc}. do not retry: report the error and leave every PR open"
+            ) from exc
 
 
 def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
@@ -327,6 +365,7 @@ def merge_branches(
     _check_branches(branches, repo_root, runner)
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
+    keys = validate.load_schema_keys(repo_root)
 
     results: list[MergeResult] = []
     for branch in branches:
@@ -355,12 +394,11 @@ def merge_branches(
         # left conflict markers in the conflicted files
         appended = 0
         for shard_path in _branch_shard_paths(runner, repo_root, branch):
-            head_text = _head_text(runner, repo_root, shard_path)
-            union = _line_union(
-                head_text.splitlines(),
-                _branch_text(runner, repo_root, branch, shard_path).splitlines(),
-            )
-            appended += len(union) - len(head_text.splitlines())
+            head_lines = _head_text(runner, repo_root, shard_path).splitlines()
+            branch_text = _branch_text(runner, repo_root, branch, shard_path)
+            union = _line_union(head_lines, branch_text.splitlines())
+            appended += len(union) - len(head_lines)
+            _validate_appended(head_lines, branch_text, branch, shard_path, keys)
             union = _sorted_lines(union, branch, shard_path)
             union_text = "\n".join(union) + ("\n" if union else "")
             (repo_root / shard_path).write_text(union_text, encoding="utf-8")

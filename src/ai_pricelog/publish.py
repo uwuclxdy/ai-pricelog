@@ -34,10 +34,9 @@ def _history_order(row: dict[str, object]) -> tuple[str, str, str]:
 def _row_field(row: dict[str, object], key: str) -> str:
     """One required row field, naming the row when it is missing.
 
-    The publish job fires on a push to mommy, the one path that reaches the
-    store without `validate_row`: a hand-edited branch row rides `automerge`'s
-    line union unvalidated, so a bare KeyError here names neither the shard nor
-    the line.
+    A human push to mommy can commit a row no gate ever saw (the merge
+    validates only pipeline branches), and a bare KeyError here names neither
+    the shard nor the line.
     """
     try:
         return str(row[key])
