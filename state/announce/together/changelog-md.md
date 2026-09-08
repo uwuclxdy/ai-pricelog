@@ -1,5 +1,16 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="August 31, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.8-Flash`: 1,000,000 context length.
+# Changelog <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
+See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
+## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
+Recommended replacement: `Qwen/Qwen3.5-9B`.
+* `google/gemma-4-31B-it`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+* `thinkingmachines/Inkling-Small`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+* `intfloat/multilingual-e5-large-instruct`.
+All except `intfloat/multilingual-e5-large-instruct` remain available through on-demand [dedicated endpoints](/docs/dedicated-endpoints).
+See [Deprecations](/docs/deprecations) for migration options.
+</Update> <Update label="August 31, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.8-Flash`: 1,000,000 context length.
 Pricing: \$0.15 input / \$0.47 output (per 1M tokens).
 </Update> <Update label="August 28, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
 Pricing: \$1.40 input / \$4.40 output / \$0.26 cached input (per 1M tokens).

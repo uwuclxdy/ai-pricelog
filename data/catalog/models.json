@@ -4816,6 +4816,15 @@
       },
       "vendor": "deepseek"
     },
+    "openrouter/deepseek/deepseek-v4-flash-vision-exp:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepseek/deepseek-v4-flash-vision-exp:batch"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "openrouter/deepseek/deepseek-v4-pro-0813:batch": {
       "curated": false,
       "sources": {
@@ -6738,6 +6747,15 @@
       "sources": {
         "openrouter": [
           "z-ai/glm-5.3-flash:batch"
+        ]
+      },
+      "vendor": "z-ai"
+    },
+    "openrouter/z-ai/glm-5.3:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "z-ai/glm-5.3:batch"
         ]
       },
       "vendor": "z-ai"
