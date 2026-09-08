@@ -19,7 +19,7 @@ after every PR the run opened is judged, read `.github/claude-pass/automerge.md`
 - classify each PR: merge-eligible (verified, flip-flop, confirmed deprecation/retirement) or needs human (seed PRs, code PRs, promo/tier/free-tier rule changes, bot-blocked pages, anything unverified)
 - post the `needs human` comment on every excluded PR
 - a confirmed deprecation/retirement: write the `data/catalog/billing-rules.json` entry on that PR branch, bump the `len(rules) == N` pin in `tests/test_billing_rules.py` in the same commit, then treat the PR as merge-eligible
-- merge the eligible set with `uv run ai-pricelog-automerge <branch>...`, oldest PR first, newest last. the script refuses the seed branch, code PRs, and anything outside the pipeline file set, so pass it only what you judged
+- merge the eligible set with `uv run ai-pricelog-automerge <branch>...`, oldest PR first, newest last. the script refuses the seed branch, code PRs, anything outside the pipeline file set, and any appended row that does not read as one json object per line or pass the row contract, so pass it only what you judged
 - if the script fails: do not retry it; report the error in your final message, leave every PR open, delete nothing
 
 ## row schema

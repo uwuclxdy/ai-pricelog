@@ -55,6 +55,7 @@ uv run ai-pricelog-automerge <branch>...
 with the merge-eligible branches in order, oldest PR first, newest last. the script:
 
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
+- every line of the branch's copy must read as one json object per line, and each line the union appends must pass the row contract (`data/schema/row.v4.json`); a refused line stops the merge naming the branch and its line in the branch's own copy (`origin/<branch>:<path>`)
 - per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`
 - `state/announce/`: every branch's copy lands in merge order, so the final (newest) write is the freshest snapshot and a burst spanning runs resolves its own add/add conflicts. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
