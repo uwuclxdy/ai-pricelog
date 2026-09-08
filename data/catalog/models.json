@@ -5050,6 +5050,15 @@
       },
       "vendor": "inception"
     },
+    "openrouter/inception/mercury-2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inception/mercury-2.5"
+        ]
+      },
+      "vendor": "inception"
+    },
     "openrouter/inception/mercury-2.5-preview": {
       "curated": false,
       "sources": {
@@ -5505,6 +5514,24 @@
       "sources": {
         "openrouter": [
           "nex-agi/nex-n2-pro"
+        ]
+      },
+      "vendor": "nex-agi"
+    },
+    "openrouter/nex-agi/nex-n2.5-mini:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nex-agi/nex-n2.5-mini:free"
+        ]
+      },
+      "vendor": "nex-agi"
+    },
+    "openrouter/nex-agi/nex-n2.5-pro:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nex-agi/nex-n2.5-pro:free"
         ]
       },
       "vendor": "nex-agi"
