@@ -60,8 +60,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "936386a70dce75326f1bf65bb20d3878a6a5a23dc6afb6708caeeef4dffacbc4",
-      "fetched": "2026-09-03"
+      "sha256": "d1032971b5afb55b4134f581f2851addcb16d97253907a1dfb5806f2d2f1204c",
+      "fetched": "2026-09-08"
     }
   },
   "mistral": {
@@ -72,8 +72,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "662a0c59a7e9013d5e8f3aa1908ef465bee443f3415ce3448e7831496ccb6a86",
-      "fetched": "2026-09-03"
+      "sha256": "3fcbac61aed3854ddcf67840b6f96a0be5e28810bbb1f857750a719aa3eaa694",
+      "fetched": "2026-09-08"
     }
   },
   "perplexity": {
@@ -86,8 +86,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "a6f5e5b05325330f2dcf48f3a25e861d78a1af5f229f57387e74145ab576a317",
-      "fetched": "2026-09-03"
+      "sha256": "87518d32620dc5e22414071f22969e99dd1193020554260cddd202892e3214db",
+      "fetched": "2026-09-08"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -98,8 +98,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "9fa8c616ff907304d935396f95c819cd13b7bd6c7b027eb87a4e417ce6de4ce7",
-      "fetched": "2026-09-07"
+      "sha256": "413175fe7d5ee31d3af272e3d291c5c6cf10d779cac8ed4080c4f381e8ee140b",
+      "fetched": "2026-09-08"
     }
   },
   "fireworks": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "6690b9aa01950e72431b29028ddec94da4583e294245ed5b028f8ec1cd8bf8cf",
-      "fetched": "2026-09-07"
+      "sha256": "d02cbc4c9f2a1b2d6708064a0b9bc8120486f817725de41a7b67cd6d7624d11e",
+      "fetched": "2026-09-08"
     }
   },
   "scaleway": {
@@ -150,8 +150,8 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "ec9b8656fc5c0ef95a967a7bbc62dcc04e746353cda63ae119864af0f64adfad",
-      "fetched": "2026-09-03"
+      "sha256": "7414ec1b28238c01fed4780a0ccc17f59d8f2dfd470bf8361157c40cacfc017a",
+      "fetched": "2026-09-08"
     }
   },
   "databricks": {
