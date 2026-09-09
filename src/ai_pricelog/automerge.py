@@ -377,7 +377,9 @@ def merge_branches(
             capture_output=True,
             text=True,
         )
-        if "already up to date" in merge.stdout:
+        # git prints "Already up to date." (capital A); match case-insensitively
+        # or a merged branch falls through to a bare `git commit` failure
+        if "already up to date" in merge.stdout.lower():
             raise AutoMergeError(
                 f"branch {branch}: already merged into HEAD; drop it from the merge list"
             )

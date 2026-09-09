@@ -476,6 +476,21 @@ def test_no_push_lands_locally_and_keeps_refs(tmp_path):
     assert any("pricelog/delta-33333333" in ref for ref in refs)
 
 
+def test_merged_branch_refused_by_name(tmp_path):
+    # git prints "Already up to date." (capital A); a case-sensitive match
+    # reads as a clean no-op and the run dies later at git commit with no
+    # diagnosis. observed 2026-09-09: automerge run from a checkout already
+    # on the target branch
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-99999999", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    automerge.merge_branches(["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False)
+    with pytest.raises(automerge.AutoMergeError, match="merged-99999999.*already merged"):
+        automerge.merge_branches(
+            ["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False
+        )
+    assert git(repo, "status", "--porcelain") == ""
+
+
 def test_push_failure_keeps_refs(tmp_path):
     repo, bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/epsilon-44444444", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
