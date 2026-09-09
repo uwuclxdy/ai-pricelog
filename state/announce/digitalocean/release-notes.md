@@ -199,11 +199,6 @@ For information on our model deprecation policy and recommended replacement mode
 Claude Fable 5 is no longer available on DigitalOcean Inference.
 Access to all other Anthropic models remains available.
 For more information, see the Anthropic statement on Claude Fable 5 .
-10 June We support passthrough tool search on the Messages API for Anthropic models and the Responses API for OpenAI models, enabling deferred loading of tools in agentic workflows.
-There is no additional cost to using tool search.
-For more information, see Tool Search .
-Debian 12 reached end of life on 10 June 2026.
-Per our image deprecation policy , this image is available exclusively via the API for the next 30 days before we remove it from our platform.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

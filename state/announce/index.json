@@ -72,8 +72,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "662a0c59a7e9013d5e8f3aa1908ef465bee443f3415ce3448e7831496ccb6a86",
-      "fetched": "2026-09-03"
+      "sha256": "3fcbac61aed3854ddcf67840b6f96a0be5e28810bbb1f857750a719aa3eaa694",
+      "fetched": "2026-09-08"
     }
   },
   "perplexity": {
@@ -86,8 +86,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "a6f5e5b05325330f2dcf48f3a25e861d78a1af5f229f57387e74145ab576a317",
-      "fetched": "2026-09-03"
+      "sha256": "87518d32620dc5e22414071f22969e99dd1193020554260cddd202892e3214db",
+      "fetched": "2026-09-08"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -98,8 +98,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "9fa8c616ff907304d935396f95c819cd13b7bd6c7b027eb87a4e417ce6de4ce7",
-      "fetched": "2026-09-07"
+      "sha256": "413175fe7d5ee31d3af272e3d291c5c6cf10d779cac8ed4080c4f381e8ee140b",
+      "fetched": "2026-09-08"
     }
   },
   "fireworks": {
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "b81de63fd56c8fc5af255e27b632d36c70f5ac6151a1a0427ccfdf3f6f3ab061",
+      "sha256": "d02cbc4c9f2a1b2d6708064a0b9bc8120486f817725de41a7b67cd6d7624d11e",
       "fetched": "2026-09-08"
     }
   },
