@@ -347,6 +347,32 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
         )
 
 
+def _check_checkout(repo_root: Path, runner: pr.PrRunner, base: str) -> None:
+    """Refuse a merge run from a checkout that is not the base branch.
+
+    Every pricelog branch is a descendant of the base, so a merge started
+    from one pushes as a fast-forward: the branch's own unverified commits
+    ride into the default branch's history. The sanctioned states are a
+    checkout at the remote base tip (a detached CI checkout included) and a
+    checkout on the base branch itself, which a local ``--no-push`` run
+    advances past it.
+    """
+    try:
+        base_tip = runner.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"origin/{base}"], cwd=repo_root
+        ).strip()
+    except pr.PrError:
+        # no origin ref to compare against: the push would fail loudly anyway
+        return
+    head = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
+    branch = runner.run(["git", "branch", "--show-current"], cwd=repo_root).strip()
+    if head == base_tip or branch == base:
+        return
+    raise AutoMergeError(
+        f"checkout is on {branch or head[:7]}, not {base}; run the merge from the default branch"
+    )
+
+
 def merge_branches(
     branches: list[str],
     repo_root: Path,
@@ -363,6 +389,7 @@ def merge_branches(
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
     _check_branches(branches, repo_root, runner)
+    _check_checkout(repo_root, runner, base)
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
     keys = validate.load_schema_keys(repo_root)

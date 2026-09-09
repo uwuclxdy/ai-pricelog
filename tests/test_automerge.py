@@ -483,10 +483,29 @@ def test_merged_branch_refused_by_name(tmp_path):
     # on the target branch
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/merged-99999999", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
-    automerge.merge_branches(["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False)
+    # land the branch on main directly, the state a double-merge attempt sees
+    git(repo, "push", "origin", "origin/pricelog/merged-99999999:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
     with pytest.raises(automerge.AutoMergeError, match="merged-99999999.*already merged"):
         automerge.merge_branches(
             ["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False
+        )
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refused_from_a_non_base_checkout(tmp_path):
+    # a merge run from any branch but the base rides that branch's own
+    # commits into the push: every branch off the base pushes as a
+    # fast-forward, so the merged history claims them as ancestors.
+    # observed 2026-09-09: automerge run from the PR branch itself
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/wrong-00000000", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    make_branch(repo, "pricelog/right-11111111", [make_row("zai", "glm-5", "2026-09-01", 0.2)])
+    git(repo, "switch", "pricelog/wrong-00000000")
+    with pytest.raises(automerge.AutoMergeError, match="run the merge from the default branch"):
+        automerge.merge_branches(
+            ["pricelog/right-11111111"], repo, pr.PrRunner(), "main", push=False
         )
     assert git(repo, "status", "--porcelain") == ""
 
