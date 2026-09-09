@@ -204,7 +204,6 @@ There is no additional cost to using tool search.
 For more information, see Tool Search .
 Debian 12 reached end of life on 10 June 2026.
 Per our image deprecation policy , this image is available exclusively via the API for the next 30 days before we remove it from our platform.
-9 June The following Anthropic model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : Claude Fable 5 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
