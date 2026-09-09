@@ -83,6 +83,26 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "digitalocean-model-deprecation-2026-09-08",
+      "provider": "digitalocean",
+      "effective": "2026-09-08",
+      "timezone": "UTC",
+      "statement": "the release notes deprecate Kimi K2.5, GLM 5, GLM-5.1 and Nemotron-3-Super-120B (Public Preview) from DigitalOcean Inference as of 8 September 2026, with migrations: Kimi K2.5 to Kimi K3 (kimi-k3), GLM 5 and GLM-5.1 to GLM-5.3 (glm-5.3), Nemotron-3-Super-120B to Nemotron 3 Ultra (nemotron-3-ultra-550b). the page names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.digitalocean.com/release-notes/"
+      ]
+    },
+    {
+      "id": "together-serverless-deprecation-2026-09-14",
+      "provider": "together",
+      "effective": "2026-09-14",
+      "timezone": "UTC",
+      "statement": "the changelog removes openai/gpt-oss-20b, google/gemma-4-31B-it, thinkingmachines/Inkling-Small and intfloat/multilingual-e5-large-instruct from serverless on 2026-09-14, recommending Qwen/Qwen3.5-9B for gpt-oss-20b and zai-org/GLM-5.3-Flash for gemma-4-31B-it and Inkling-Small; all except intfloat/multilingual-e5-large-instruct stay available through on-demand dedicated endpoints. the page names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.together.ai/docs/changelog.md"
+      ]
     }
   ]
 }

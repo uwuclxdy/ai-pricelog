@@ -43,11 +43,14 @@ def test_pr_event_name_skips(monkeypatch: pytest.MonkeyPatch, event: str):
 
 
 @pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch"])
-def test_ci_events_run(monkeypatch: pytest.MonkeyPatch, event: str):
+def test_ci_events_run(monkeypatch: pytest.MonkeyPatch, event: str, tmp_path: Path):
     # ci.yml's push trigger fires only on the default branch, and the
-    # scheduled workflows check it out, so any non-PR event is one of those
+    # scheduled workflows check it out, so any non-PR event is one of those.
+    # resolved against a clean fixture repo: the ambient tree can sit
+    # mid-merge (this suite runs inside the pre-commit gate during a burst),
+    # which the guard answers before the event legs
     monkeypatch.setenv("GITHUB_EVENT_NAME", event)
-    assert testing.default_branch_test
+    assert testing._resolve(seeded_repo(tmp_path))[0]
 
 
 def seeded_repo(tmp_path: Path) -> Path:
@@ -72,6 +75,21 @@ def test_local_detached_skips(tmp_path: Path):
     git(repo, "checkout", "-q", "--detach")
     assert not testing._resolve(repo)[0]
     assert "detached checkout" in testing._resolve(repo)[1]
+
+
+def test_local_mid_merge_skips(tmp_path: Path):
+    # a burst merge on the default branch stages rows the committed derived
+    # files do not reflect, so the real-tree invariants red by construction
+    # inside the pre-commit gate (observed 2026-09-09, the 165-174 burst)
+    repo = seeded_repo(tmp_path)
+    git(repo, "switch", "-c", "pricelog/data-2026-09-09-sim000000")
+    (repo / "row.ndjson").write_text("{}\n")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "feat: row")
+    git(repo, "switch", "main")
+    git(repo, "merge", "--no-ff", "--no-commit", "pricelog/data-2026-09-09-sim000000")
+    assert not testing._resolve(repo)[0]
+    assert "merge in progress" in testing._resolve(repo)[1]
 
 
 def test_local_plain_branch_runs(tmp_path: Path):

@@ -46,6 +46,11 @@ def _resolve(repo_root: Path) -> tuple[bool, str]:
     event = os.environ.get("GITHUB_EVENT_NAME")
     if event in ("pull_request", "pull_request_target"):
         return False, f"{event} event: {_REASON}"
+    # a burst merge in flight holds the pipeline-branch shape on the default
+    # branch: staged rows the committed derived files do not reflect yet, so
+    # the pre-commit gate would red by construction before the merge lands
+    if (repo_root / ".git" / "MERGE_HEAD").exists():
+        return False, "merge in progress: staged pipeline rows predate the publish refresh"
     if event:
         # push: ci.yml's own trigger gates pushes to the default branch;
         # schedule and workflow_dispatch check out the default branch

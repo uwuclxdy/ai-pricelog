@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 8
+    assert len(rules) == 10
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -81,6 +81,18 @@ def test_committed_billing_rules_pass_schema():
     assert novita["provider"] == "novita"
     assert novita["effective"] == "2026-09-30"
     assert "Multimodal Model Deprecation Notice" in novita["statement"]
+    do = rules[8]
+    assert do["id"] == "digitalocean-model-deprecation-2026-09-08"
+    assert do["provider"] == "digitalocean"
+    assert do["effective"] == "2026-09-08"
+    assert "Nemotron-3-Super-120B" in do["statement"]
+    assert "https://docs.digitalocean.com/release-notes/" in do["citation"]
+    together = rules[9]
+    assert together["id"] == "together-serverless-deprecation-2026-09-14"
+    assert together["provider"] == "together"
+    assert together["effective"] == "2026-09-14"
+    assert "gpt-oss-20b" in together["statement"]
+    assert "https://docs.together.ai/docs/changelog.md" in together["citation"]
 
 
 @pytest.mark.parametrize(
