@@ -1,4 +1,7 @@
-Mistral AI Blog Latest news and updates from Mistral AI https://mistral.ai/ Mistral raises €3B to make sovereign, open-weight AI the technology frontier https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ Mistral today announced that it has raised €3 billion in a Series D funding round at a post-money valuation of more than €21 billion.
+Mistral AI Blog Latest news and updates from Mistral AI https://mistral.ai/ Modernizing complex legacy code with AI agents.
+https://mistral.ai/news/legacy-code-modernization/ https://mistral.ai/news/legacy-code-modernization/ Mistral helped a European energy operator migrate 40,000 lines of Fortran 77 to C++.
+Learn how it was done, and the lessons to carry forward.
+Mistral raises €3B to make sovereign, open-weight AI the technology frontier https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ Mistral today announced that it has raised €3 billion in a Series D funding round at a post-money valuation of more than €21 billion.
 Mistral x HUMAIN https://mistral.ai/news/mistral-x-humain/ https://mistral.ai/news/mistral-x-humain/ Agentic Search.
 More accurate and efficient results from your AI systems.
 https://mistral.ai/news/agentic-search/ https://mistral.ai/news/agentic-search/ The retrieval layer that helps AI systems navigate, read, and verify information inside even the most complex documents In-region inference, open models, and new European infrastructure for sovereign AI.
