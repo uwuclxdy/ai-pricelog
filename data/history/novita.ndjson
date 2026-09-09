@@ -154,3 +154,4 @@
 {"schema":4,"source":"novita","model_id":"zai-org/glm-5.2","observed_at":"2026-08-26","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"zai-org/glm-5.3","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"zai-org/glm-5.3-flash","observed_at":"2026-08-29","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"zai-org/glm-5.3-flash","observed_at":"2026-09-09","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}

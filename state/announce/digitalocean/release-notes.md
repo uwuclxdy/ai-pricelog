@@ -5,7 +5,9 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 8 September The following models are deprecated from DigitalOcean Inference as of 8 September 2026: Kimi K2.5 GLM 5 GLM-5.1 Nemotron-3-Super-120B (Public Preview) Migrate Kimi K2.5 to Kimi K3 ( kimi-k3 ), GLM 5 and GLM-5.1 to GLM-5.3 ( glm-5.3 ), and Nemotron-3-Super-120B (Public Preview) to Nemotron 3 Ultra ( nemotron-3-ultra-550b ) to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
 1 September DigitalOcean Kubernetes (DOKS) now supports Isolated Worker Nodes in public preview .
 Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
