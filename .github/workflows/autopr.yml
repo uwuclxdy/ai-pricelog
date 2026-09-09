@@ -62,7 +62,11 @@ jobs:
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
           [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
           claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "Bash(uv run *)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
-          if rg -q "401 Authentication Fails|unrecognized_model" /tmp/pass.log; then
+          # grep, never rg: the github runner image ships no rg (observed
+          # 2026-09-09: the check died "command not found" inside the if,
+          # the 127 read as a clean exit, and every pass failure shipped
+          # silently for 7 runs)
+          if grep -Eq "401 Authentication Fails|unrecognized_model|No available channel|API Error" /tmp/pass.log; then
             echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
           fi
         env:
