@@ -105,8 +105,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "b1ca7d9c6241e0eeb46b270b79b5047eb58d94892b62ce6563ca968da2b3df5a",
-      "fetched": "2026-09-03"
+      "sha256": "9f242574c70cc1e124f6a5ab56496505605cd8aca7d3f2d8bc11a938a6ea5778",
+      "fetched": "2026-09-08"
     }
   },
   "cohere": {
@@ -157,8 +157,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "6d8247e313d23cdb1260835aae94165bf0b58e408f18f57a17b6eed77b9a734a",
-      "fetched": "2026-09-03"
+      "sha256": "63b18fa7f4c4d3783266e785052a9d6dcd7c32c22b04ca90bf18bf48b6010b0c",
+      "fetched": "2026-09-08"
     }
   }
 }
