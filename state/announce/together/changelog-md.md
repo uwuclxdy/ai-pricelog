@@ -1,5 +1,16 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="August 31, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.8-Flash`: 1,000,000 context length.
+# Changelog <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
+See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
+## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
+Recommended replacement: `Qwen/Qwen3.5-9B`.
+* `google/gemma-4-31B-it`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+* `thinkingmachines/Inkling-Small`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+* `intfloat/multilingual-e5-large-instruct`.
+All except `intfloat/multilingual-e5-large-instruct` remain available through on-demand [dedicated endpoints](/docs/dedicated-endpoints).
+See [Deprecations](/docs/deprecations) for migration options.
+</Update> <Update label="August 31, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.8-Flash`: 1,000,000 context length.
 Pricing: \$0.15 input / \$0.47 output (per 1M tokens).
 </Update> <Update label="August 28, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
 Pricing: \$1.40 input / \$4.40 output / \$0.26 cached input (per 1M tokens).
@@ -113,6 +124,10 @@ Pricing: \$0.35 input / \$1.50 output / \$0.04 cached input (per 1M tokens).
 * `ByteDance/Seedance-2.5`: Pricing: \$0.115/sec at 480p.
 ## New models available for fine-tuning You can now fine-tune the following models: * `deepseek-ai/DeepSeek-V4-Flash-0731`.
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
+</Update> <Update label="August 10, 2026" tags={["New releases"]}> ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](/docs/dedicated-endpoints/manage#placement-profiles) deployments now accepts an optional `compliancePolicy` object.
+Set `hipaa: true` so replicas only schedule on HIPAA-attested clusters.
+The policy is always enforced strictly, regardless of `constraint`, and the deployment stays unscheduled while no qualifying cluster is available.
+See [Compliance policy](/docs/dedicated-endpoints/manage#compliance-policy).
 </Update> <Update label="August 10, 2026" tags={["Improvements"]}> ## Tokenized dataset download in the fine-tuning console Open a job on the [fine-tuning jobs dashboard](https://api.together.ai/fine-tuning).
 When the job has a tokenized dataset archive, the job details show a **Tokenized dataset** row with **Download**.
 Selecting **Download** opens a presigned archive URL in a new tab.
@@ -282,6 +297,13 @@ Only endpoints with at least one live deployment are listed.
 See [Supported models](/docs/evaluations-supported-models#dedicated-models).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `MiniMaxAI/MiniMax-M2.7`.
 See [Deprecations](/docs/deprecations) for migration options.
+</Update> <Update label="July 27, 2026" tags={["Improvements"]}> ## GPU quota rejections return HTTP 429 Creating or updating a [dedicated endpoint](/docs/dedicated-endpoints/manage) deployment that would exceed your project or organization GPU quota now returns HTTP `429` with a message that names the GPU type and the would-be usage against the limit.
+Platform-wide capacity checks return the same status and ask you to retry later.
+See [Error codes](/docs/error-codes) and [Troubleshooting](/docs/dedicated-endpoints/manage#troubleshooting).
+</Update> <Update label="July 27, 2026" tags={["Improvements"]}> ## CLI get by endpoint or deployment name `tg beta endpoints get` now accepts endpoint and deployment names in addition to IDs (`ep_...`, `dep_...`).
+You can also pass the name or ID directly as `tg beta endpoints <name_or_id>`.
+If a bare deployment name matches more than one deployment, the CLI asks for a deployment ID or a fully qualified name.
+See [Get](/reference/cli/endpoints-beta#get).
 </Update> <Update label="July 27, 2026" tags={["New models", "Improvements"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `moonshotai/Kimi-K3`: 1,000,000 context length.
 Pricing: \$3.00 input / \$15.00 output / \$0.30 cached input (per 1M tokens).
 Supports function calling, structured outputs, and vision inputs.

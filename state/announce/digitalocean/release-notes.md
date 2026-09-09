@@ -5,7 +5,9 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 8 September The following models are deprecated from DigitalOcean Inference as of 8 September 2026: Kimi K2.5 GLM 5 GLM-5.1 Nemotron-3-Super-120B (Public Preview) Migrate Kimi K2.5 to Kimi K3 ( kimi-k3 ), GLM 5 and GLM-5.1 to GLM-5.3 ( glm-5.3 ), and Nemotron-3-Super-120B (Public Preview) to Nemotron 3 Ultra ( nemotron-3-ultra-550b ) to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
 1 September DigitalOcean Kubernetes (DOKS) now supports Isolated Worker Nodes in public preview .
 Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
@@ -199,12 +201,6 @@ For information on our model deprecation policy and recommended replacement mode
 Claude Fable 5 is no longer available on DigitalOcean Inference.
 Access to all other Anthropic models remains available.
 For more information, see the Anthropic statement on Claude Fable 5 .
-10 June We support passthrough tool search on the Messages API for Anthropic models and the Responses API for OpenAI models, enabling deferred loading of tools in agentic workflows.
-There is no additional cost to using tool search.
-For more information, see Tool Search .
-Debian 12 reached end of life on 10 June 2026.
-Per our image deprecation policy , this image is available exclusively via the API for the next 30 days before we remove it from our platform.
-9 June The following Anthropic model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : Claude Fable 5 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

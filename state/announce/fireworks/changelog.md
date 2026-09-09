@@ -1,7 +1,18 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation API & SDK Reference CLI Reference Demos Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy page ​ 2026-09-01 Inference ​ Serverless rate limit ceilings now scale by model size Serverless adaptive rate limit ceilings now vary by model size tier.
+⌘ K Changelog On this page 2026-09-08 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy page ​ 2026-09-08 Platform ​ Deployment tags and annotation API changes Deployment tags are customer-managed entries stored in a deployment’s
+annotations map.
+firectl presents logical keys such as environment ; the REST API represents the same key as custom/environment .
+firectl: Version 1.8.3 adds deployment tag set , unset , and list , including atomic batch operations.
+REST writes: Customer-managed annotation keys must begin with custom/ .
+Bare keys now return HTTP 403 ( PERMISSION_DENIED ).
+REST reads: For regular account users, GetDeployment and ListDeployments return only custom/* annotation entries.
+Keys outside that namespace are omitted without an error.
+Existing stored annotations were not rewritten.
+Clients using a bare key such as environment should set custom/environment and update reads to use that canonical key.
+See Deployment Tags for commands, REST examples, validation rules, and migration guidance.
+​ 2026-09-01 Inference ​ Serverless rate limit ceilings now scale by model size Serverless adaptive rate limit ceilings now vary by model size tier.
 Smaller models (< 400B parameters) get higher ceilings; medium models (400B – < 1.6T) get intermediate ceilings; large models (≥ 1.6T) keep the previous base ceilings.
 See Serverless rate limits for tier thresholds and ceiling values.
 ​ 2026-08-30 Training ​ New Serverless Training models: DeepSeek V4 Flash 0731, Qwen 3.8 27B, and Muse Glimmer 30B The following models are now available for LoRA workloads on the shared Serverless Training pool: DeepSeek V4 Flash 0731 with up to 262K context Qwen 3.8 27B with up to 128K context Muse Glimmer 30B with up to 128K context See the Serverless Training guide for setup and the training model catalog for current availability.
