@@ -5,7 +5,11 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 8 September The following models are deprecated from DigitalOcean Inference as of 8 September 2026: Kimi K2.5 GLM 5 GLM-5.1 Nemotron-3-Super-120B (Public Preview) Migrate Kimi K2.5 to Kimi K3 ( kimi-k3 ), GLM 5 and GLM-5.1 to GLM-5.3 ( glm-5.3 ), and Nemotron-3-Super-120B (Public Preview) to Nemotron 3 Ultra ( nemotron-3-ultra-550b ) to avoid service disruption.
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
+You can run worker nodes on interruptible Spot GPU capacity for AMD Instinct MI350X and MI355X and NVIDIA B300 GPUs, at a lower, variable rate than on-demand GPU nodes.
+Spot GPU node pools work with the cluster autoscaler, and you can pair them with an on-demand GPU node pool as a configurable fallback.
+For supported GPU shapes, regions, pricing, and behavior, see Spot GPU node pools .
+8 September The following models are deprecated from DigitalOcean Inference as of 8 September 2026: Kimi K2.5 GLM 5 GLM-5.1 Nemotron-3-Super-120B (Public Preview) Migrate Kimi K2.5 to Kimi K3 ( kimi-k3 ), GLM 5 and GLM-5.1 to GLM-5.3 ( glm-5.3 ), and Nemotron-3-Super-120B (Public Preview) to Nemotron 3 Ultra ( nemotron-3-ultra-550b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
 1 September DigitalOcean Kubernetes (DOKS) now supports Isolated Worker Nodes in public preview .
