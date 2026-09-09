@@ -49,6 +49,11 @@ jobs:
 
       - name: claude review pass
         continue-on-error: true
+        # the pass itself gets 30 min: the whole job is capped at 60, and a
+        # pass that finished its work but hung (observed 2026-09-09: merged
+        # everything by min 45, then sat idle until the job cap cancelled it)
+        # must die early enough that the tripwire below still runs
+        timeout-minutes: 30
         run: |
           [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
           npm install -g @anthropic-ai/claude-code@2 >/dev/null
@@ -61,13 +66,25 @@ jobs:
           export ANTHROPIC_API_KEY
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
           [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
+          # claude -p under a step timeout leaves pass.log complete (tee
+          # flushes per line), so the tripwire runs even on a killed pass
+          set +e
           claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "Bash(uv run *)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          pass_rc=$?
+          set -e
           # grep, never rg: the github runner image ships no rg (observed
           # 2026-09-09: the check died "command not found" inside the if,
           # the 127 read as a clean exit, and every pass failure shipped
-          # silently for 7 runs)
-          if grep -Eq "401 Authentication Fails|unrecognized_model|No available channel|API Error" /tmp/pass.log; then
+          # silently for 7 runs). unrecognized_model telemetry fires on
+          # every healthy run too (a base-url model outside the client
+          # catalog), so it is NOT a failure signature on its own
+          if grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
             echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
+          fi
+          # a cancelled or crashed pass is also silent shipping: the step
+          # is continue-on-error, so the job reads green either way
+          if [ "$pass_rc" -ne 0 ]; then
+            echo "::warning::the claude pass exited $pass_rc; rows shipped unverified. read the pass log in this run."
           fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
