@@ -54,6 +54,7 @@ uv run ai-pricelog-automerge <branch>...
 
 with the merge-eligible branches in order, oldest PR first, newest last. the script:
 
+- refuses a checkout that is not the default branch (or at its remote tip): every pricelog branch is a base descendant, so a merge started elsewhere would push as a fast-forward and ride that branch's own unverified commits into the default branch's history
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
 - every line of the branch's copy must read as one json object per line, and each line the union appends must pass the row contract (`data/schema/row.v4.json`); a refused line stops the merge naming the branch and its line in the branch's own copy (`origin/<branch>:<path>`)
 - per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`
