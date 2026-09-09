@@ -103,6 +103,17 @@
       "citation": [
         "https://docs.together.ai/docs/changelog.md"
       ]
+    },
+    {
+      "id": "perplexity-gemini-3.8-flash-promo-2026-09-09",
+      "provider": "perplexity",
+      "effective": "2026-09-09",
+      "timezone": "UTC",
+      "statement": "the perplexity Agent API supports google/gemini-3.8-flash at promotional pricing through 2026-12-31: $0.75 per million uncached-input tokens, $0.075 per million cached-input tokens, and $3.75 per million output and reasoning tokens (the pricing page's Agent API table shows the same rates). the changelog names no post-promo rates; UTC is the recorded frame. no store row lands: the perplexity detector watches the sonar Token Pricing table only, and the model sits in the Agent API table",
+      "citation": [
+        "https://docs.perplexity.ai/docs/resources/changelog.md",
+        "https://docs.perplexity.ai/guides/pricing"
+      ]
     }
   ]
 }

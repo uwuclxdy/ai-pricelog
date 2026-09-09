@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 10
+    assert len(rules) == 11
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -93,6 +93,12 @@ def test_committed_billing_rules_pass_schema():
     assert together["effective"] == "2026-09-14"
     assert "gpt-oss-20b" in together["statement"]
     assert "https://docs.together.ai/docs/changelog.md" in together["citation"]
+    promo_ppx = rules[10]
+    assert promo_ppx["id"] == "perplexity-gemini-3.8-flash-promo-2026-09-09"
+    assert promo_ppx["provider"] == "perplexity"
+    assert promo_ppx["effective"] == "2026-09-09"
+    assert "2026-12-31" in promo_ppx["statement"]
+    assert "https://docs.perplexity.ai/docs/resources/changelog.md" in promo_ppx["citation"]
 
 
 @pytest.mark.parametrize(
