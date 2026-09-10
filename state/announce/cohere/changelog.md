@@ -1,7 +1,18 @@
 Release Notes | Cohere For AI agents: a documentation index is available at the root level at /llms.txt.
 Append /llms.txt to any URL for a page-level index, or .md for the markdown version of any page.
-docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI v2 API v2 API Guides and concepts API Reference Release Notes LLMU Cookbooks DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Light On this page August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical details Getting started Availability December 11, 2025 Technical Details
-Example Query August 28, 2025 Key Features Getting Started Availability August 21, 2025 Getting Started Release Notes Subscribe via RSS August 27, 2026 August 27, 2026 July 7, 2026 July 7, 2026 June 9, 2026 June 9, 2026 May 20, 2026 May 20, 2026 April 4, 2026 April 4, 2026 March 26, 2026 March 26, 2026 December 11, 2025 December 11, 2025 September 16, 2025 September 16, 2025 August 28, 2025 August 28, 2025 August 21, 2025 August 21, 2025 Older posts Next Built with Meet Cohere Parse Today we are releasing Cohere Parse .
+docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI v2 API v2 API Guides and concepts API Reference Release Notes LLMU Cookbooks DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Light On this page September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical details
+Getting started Availability December 11, 2025 Technical Details Example Query August 28, 2025 Key Features Getting Started Availability Release Notes Subscribe via RSS September 9, 2026 September 9, 2026 August 27, 2026 August 27, 2026 July 7, 2026 July 7, 2026 June 9, 2026 June 9, 2026 May 20, 2026 May 20, 2026 April 4, 2026 April 4, 2026 March 26, 2026 March 26, 2026 December 11, 2025 December 11, 2025 September 16, 2025 September 16, 2025 August 28, 2025 August 28, 2025 Older posts Next Built with Announcing Cohere's North Small Translate We’re pleased to announce the release of North
+Small Translate , an open-weights mixture-of-experts model purpose-built for machine translation across more than 50 languages.
+North Small Translate is designed to give researchers, developers, and enterprises flexible ways to evaluate and deploy machine translation while retaining control over their data and infrastructure.
+Key features Purpose-built translation : Optimized for machine translation across more than 50 languages and locale variants.
+Efficient MoE architecture : 218 billion total parameters with 25 billion active parameters.
+Flexible deployment : Available through the free-tier Chat V2 API, as FP8 open weights for non-commercial use, and through Model Vault with a commercial license.
+Private deployment : Suggested deployment hardware is two H100 GPUs or one B200 GPU.
+Technical details Model name : north-small-translate-1-0 Context length : 16K License : Creative Commons Attribution-NonCommercial 4.0 Open-weights format : FP8 Availability North Small Translate is available on the free tier through the Chat V2 API .
+The FP8 weights are available on Hugging Face for non-commercial use under the CC BY-NC 4.0 license.
+For production use, enterprises can purchase a commercial license and deploy North Small Translate through Model Vault .
+For supported languages, use cases, and an API example, see the model documentation .
+Meet Cohere Parse Today we are releasing Cohere Parse .
 Parse (model ID: parse-v5.0 ) turns complex documents into clean, structured Markdown ready for downstream AI workflows.
 The 2.3B-parameter multimodal model extracts text in reading order, tables, lists, forms, images and captions, page boundaries, and visual element locations.
 Outputs include Markdown/HTML content, HTML-formatted tables, bounding boxes, and image descriptions — preserving both document structure and layout for easier rendering and processing.
@@ -80,19 +91,3 @@ chat ( 6 model = " command-a-translate-08-2025 " , 7 messages = [ 8 { 9 " role "
 " , 11 } 12 ], 13 ) Availability Command A Translate ( command-a-translate-08-2025 ) is now available for all Cohere users through our standard API endpoints.
 For enterprise customers, private deployment options are available to ensure maximum security and control over your translation workflows.
 For more detailed information about Command A Translate, including technical specifications and implementation examples, visit our model documentation .
-Announcing Cohere's Command A Reasoning Model We’re excited to announce the release of Command A Reasoning , a hybrid reasoning model designed to excel at complex agentic tasks, in English and 22 other languages.
-With 111 billion parameters and a 256K context length, this model brings advanced reasoning capabilities to your applications through the familiar Command API interface.
-Key Features Tool Use : Provides the strongest tool use performance out of the Command family of models.
-Agentic Applications : Demonstrates proactive problem-solving, autonomously using tools and resources to complete highly complex tasks.
-Multilingual : With 23 languages supported, the model solves reasoning and agentic problems in the language your business operates in.
-Technical Specifications Model Name : command-a-reasoning-08-2025 Context Length : 256K tokens Maximum Output : 32K tokens API Endpoint : Chat API Getting Started Integrating Command A Reasoning is straightforward using the Chat API.
-Here’s a non-streaming example: PYTHON PYTHON (Streaming) 1 from cohere import ClientV2 2 3 co = ClientV2 ( " <YOUR_API_KEY> " ) 4 5 prompt = """ 6 Alice has 3 brothers and she also has 2 sisters.
-How many sisters does Alice's brother have?
-7 """ 8 9 response = co .
-chat ( 10 model = " command-a-reasoning-08-2025 " , 11 messages = [ 12 { 13 " role " : " user " , 14 " content " : prompt , 15 } 16 ], 17 ) 18 19 for content in response .
-message .
-content : 20 if content .
-type == " thinking " : 21 print ( " Thinking: " , content .
-thinking ) 22 23 if content .
-type == " text " : 24 print ( " Response: " , content .
-text ) Customization Options You can enable and disable thinking capabilities using the thinking parameter, and steer the model’s output with a flexible user-controlled thinking budget; for more details on token budgets, advanced configurations, and best practices, refer to our dedicated Reasoning documentation .
