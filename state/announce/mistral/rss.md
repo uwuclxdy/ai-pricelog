@@ -1,4 +1,5 @@
-Mistral AI Blog Latest news and updates from Mistral AI https://mistral.ai/ Modernizing complex legacy code with AI agents.
+Mistral AI Blog Latest news and updates from Mistral AI https://mistral.ai/ Cloudera and Mistral Partner to Bring Specialized, Sovereign Intelligence to Enterprise Data https://mistral.ai/news/mistral-x-cloudera/ https://mistral.ai/news/mistral-x-cloudera/ Cloudera and Mistral join forces to bring specialized, sovereign AI intelligence to enterprise data, helping regulated industries innovate on their own terms.
+Modernizing complex legacy code with AI agents.
 https://mistral.ai/news/legacy-code-modernization/ https://mistral.ai/news/legacy-code-modernization/ Mistral helped a European energy operator migrate 40,000 lines of Fortran 77 to C++.
 Learn how it was done, and the lessons to carry forward.
 Mistral raises €3B to make sovereign, open-weight AI the technology frontier https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ https://mistral.ai/news/mistral-makes-sovereign-open-weight-ai-to-frontier/ Mistral today announced that it has raised €3 billion in a Series D funding round at a post-money valuation of more than €21 billion.

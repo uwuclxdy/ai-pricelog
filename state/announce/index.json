@@ -2,13 +2,13 @@
   "deepseek": {
     "https://api-docs.deepseek.com/updates/": {
       "file": "state/announce/deepseek/updates.md",
-      "sha256": "50aa132e67e61d789160659b84c651b3048b8aba46c3f40eabaf689cf89036f7",
-      "fetched": "2026-09-03"
+      "sha256": "74e58f33dc89998ec7aabaa65f3d4a34c40c984b0be351fb17844ef78670eed7",
+      "fetched": "2026-09-10"
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
-      "sha256": "5c7803fd7c398648607e9c208f615bc184a504e0d30407535825908636456246",
-      "fetched": "2026-09-03"
+      "sha256": "aab931c7368ca4d51aaf64ee8c65fd7f6abf0ed9aa6a31df28a94d989ee2e1c6",
+      "fetched": "2026-09-10"
     }
   },
   "zai": {
@@ -72,8 +72,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "1bff80ccd5c5cbf6a1dfccb2b0c274d0ff25d12073529af5080cdc05f4499875",
-      "fetched": "2026-09-09"
+      "sha256": "f6211dfd9b48c03f6bf692241f38d1ce79e5f1fea896e185a4835d9e5c97d746",
+      "fetched": "2026-09-10"
     }
   },
   "perplexity": {
@@ -105,8 +105,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "9f242574c70cc1e124f6a5ab56496505605cd8aca7d3f2d8bc11a938a6ea5778",
-      "fetched": "2026-09-09"
+      "sha256": "129f6cac95f2b4fb837f4d8fa0676e1ace0a0a50a85d2e15d2bcc3a778293084",
+      "fetched": "2026-09-10"
     }
   },
   "cohere": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "e270334f77d05d01004418f092b9162458adeb2d5e22eae5585d8749741c202b",
-      "fetched": "2026-09-09"
+      "sha256": "a20ece9de37124cc911f87e5fdbbaaa30941cbca892d428789e5ad8bd567cc91",
+      "fetched": "2026-09-10"
     }
   },
   "scaleway": {
@@ -150,8 +150,8 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "7414ec1b28238c01fed4780a0ccc17f59d8f2dfd470bf8361157c40cacfc017a",
-      "fetched": "2026-09-09"
+      "sha256": "44dd0096d09e712ec366ba96bdd1b4346a48d5e11d55c06b35218a161b0d59f2",
+      "fetched": "2026-09-10"
     }
   },
   "databricks": {
