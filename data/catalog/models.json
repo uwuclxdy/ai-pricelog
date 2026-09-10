@@ -4135,6 +4135,15 @@
       },
       "vendor": "deepseek"
     },
+    "novita/deepseek/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "deepseek/deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "novita/inclusionai/ling-3.0-flash-fast": {
       "curated": false,
       "sources": {
