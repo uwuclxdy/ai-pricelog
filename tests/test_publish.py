@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -144,7 +145,7 @@ DIST_PATHS = sorted(
         "index.json",
         "index/alpha.json",
         "index/beta.json",
-        "flat-v1.json",
+        "flat-v2.json",
         "flat/alpha.json",
         "flat/beta.json",
         "history.ndjson",
@@ -320,7 +321,7 @@ def _build_flat(tmp_path, rows):
     out = tmp_path / "out"
     publish.build_dist(rows, root, out, 4)
     return (
-        json.loads((out / "flat-v1.json").read_text()),
+        json.loads((out / "flat-v2.json").read_text()),
         json.loads((out / "flat" / "alpha.json").read_text()),
         json.loads((out / "flat" / "beta.json").read_text()),
         json.loads((out / "index.json").read_text()),
@@ -367,6 +368,34 @@ def test_flat_export_carries_vendor_and_row_fields(tmp_path):
     assert m5["removed_at"] == "2026-08-06"
     assert "removed" not in m5
     assert m5["first_seen"] == "2026-08-01"
+    # the full chain: the price row closed by the removal's own observed_at,
+    # the removal item open-ended and flagged
+    assert m5["intervals"] == [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-06",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-06",
+            "valid_to": None,
+            "observed_at": "2026-08-06",
+            "removed": True,
+        },
+    ]
+    assert list(m5) == [
+        "source",
+        "model_id",
+        "vendor",
+        "name",
+        "schema",
+        "rates",
+        "observed_at",
+        "first_seen",
+        "intervals",
+        "removed_at",
+    ]
     # first_seen on a single-row key
     assert entries[("beta", "m6")]["first_seen"] == "2026-08-05"
     # the field set is exactly the contract, no provenance leaks
@@ -379,6 +408,7 @@ def test_flat_export_carries_vendor_and_row_fields(tmp_path):
         "rates",
         "observed_at",
         "first_seen",
+        "intervals",
     ]
 
 
@@ -397,7 +427,7 @@ def test_flat_export_updated_at_is_the_newest_observed_at(tmp_path):
     # the whole tree's newest observed_at, including removal rows
     assert flat["updated_at"] == "2026-08-06"
     assert flat["version"] == 4
-    assert flat["flat_version"] == 1
+    assert flat["flat_version"] == 2
     # the per-source twin carries its own source's newest observed_at
     assert alpha_flat["updated_at"] == "2026-08-03"
     assert beta_flat["updated_at"] == "2026-08-06"
@@ -415,13 +445,135 @@ def test_flat_export_is_sorted_deterministically(tmp_path):
     assert keys == sorted(keys)
 
 
+# validity intervals: the oracle is the prose consumer rule, implemented from
+# the brief, never from the code under test. the day-walk prices every day of
+# the key's span and checks the emitted chain names the oracle's row.
+
+
+def _start(r: dict[str, object]) -> str:
+    """A row's chain start: effective_at ?? observed_at, except a removal row
+    which starts at its own observed_at (build_removal_row copies the last
+    priced row's effective_at onto it, a snapshot artifact that would
+    misstate the delisting date).
+    """
+    if r.get("removed") is True:
+        return str(r["observed_at"])
+    return str(r.get("effective_at") or r["observed_at"])
+
+
+def _oracle(rows: list[dict[str, object]], day: str) -> dict[str, object] | None:
+    """The prose rule over ALL the key's rows: the greatest observed_at among
+    rows whose start (see `_start`) <= day, ties to the later row in input
+    order. A removal row can win that dominance and prices nothing the day
+    it covers, until a later-observed price row whose own start reaches the
+    day out-dominates it (the reappearance rule).
+    """
+    elig = [(i, r) for i, r in enumerate(rows) if _start(r) <= day]
+    if not elig:
+        return None
+    winner = max(elig, key=lambda p: (p[1]["observed_at"], p[0]))[1]
+    return None if winner.get("removed") is True else winner
+
+
+def _days(start: str, end: str):
+    """Every YYYY-MM-DD from start to end, inclusive."""
+    d = date.fromisoformat(start)
+    stop = date.fromisoformat(end)
+    while d <= stop:
+        yield d.isoformat()
+        d += timedelta(days=1)
+
+
+def _containing(items: list[dict[str, object]], day: str) -> list[dict[str, object]]:
+    return [
+        it
+        for it in items
+        if it["valid_from"] <= day and (it["valid_to"] is None or day < it["valid_to"])
+    ]
+
+
+def test_flat_intervals_reproduce_the_consumer_rule(tmp_path):
+    flat, _, _, _ = _build_flat(tmp_path, _flat_rows())
+    rows_by_key: dict[tuple[str, str], list[dict[str, object]]] = {}
+    for row in _flat_rows():
+        rows_by_key.setdefault((row["source"], row["model_id"]), []).append(row)
+    for entry in flat["entries"]:
+        key = (entry["source"], entry["model_id"])
+        rows = rows_by_key[key]
+        items = entry["intervals"]
+        lo = min(_start(r) for r in rows)
+        hi = (
+            date.fromisoformat(max(r["observed_at"] for r in rows)) + timedelta(days=2)
+        ).isoformat()
+        for day in _days(lo, hi):
+            sel = _oracle(rows, day)
+            containing = _containing(items, day)
+            if sel is None:
+                # a removal-only day: no price item may own it
+                assert [it for it in containing if it.get("removed") is not True] == [], (
+                    key,
+                    day,
+                )
+            else:
+                matches = [
+                    it
+                    for it in containing
+                    if it["observed_at"] == sel["observed_at"]
+                    and (it.get("removed") is True) == (sel.get("removed") is True)
+                ]
+                assert len(matches) == 1, (key, day, sel, items)
+                assert len([it for it in containing if it.get("removed") is not True]) == 1, (
+                    key,
+                    day,
+                )
+
+
+def test_index_entry_gains_the_entry_rows_own_pair(tmp_path):
+    _, _, _, index = _build_flat(tmp_path, _flat_rows())
+    # removal-newest: the price row's own interval, closed by the removal
+    m5 = index["sources"]["beta"]["m5"]
+    assert m5["valid_from"] == "2026-08-01"
+    assert m5["valid_to"] == "2026-08-06"
+    assert m5["removed_at"] == "2026-08-06"
+    assert list(m5)[-4:] == ["first_seen", "valid_from", "valid_to", "removed_at"]
+    # price-newest single-row key: open-ended
+    m6 = index["sources"]["beta"]["m6"]
+    assert m6["valid_from"] == "2026-08-05"
+    assert m6["valid_to"] is None
+    assert list(m6)[-3:] == ["first_seen", "valid_from", "valid_to"]
+
+
+def test_flat_and_index_agree_on_the_entry_row_pair(tmp_path):
+    flat, _, _, index = _build_flat(tmp_path, _flat_rows())
+    index_entries = {
+        (source, model_id): entry
+        for source, models in index["sources"].items()
+        for model_id, entry in models.items()
+    }
+    for entry in flat["entries"]:
+        key = (entry["source"], entry["model_id"])
+        index_entry = index_entries[key]
+        # the entry's own row is the index entry's row: same observed_at, a
+        # price row, and among same-observed_at peers the largest valid_to
+        own = [
+            it
+            for it in entry["intervals"]
+            if it["observed_at"] == index_entry["observed_at"] and it.get("removed") is not True
+        ]
+        assert own, key
+        own_item = max(own, key=lambda it: (it["valid_to"] is None, it["valid_to"]))
+        assert own_item["valid_from"] == index_entry["valid_from"], key
+        assert own_item["valid_to"] == index_entry["valid_to"], key
+        assert own_item.get("rates") == index_entry.get("rates"), key
+
+
 @pytest.mark.skipif(not default_branch_test, reason=default_branch_test.skip_reason)
 def test_flat_export_over_the_real_tree(tmp_path):
     """The verify clauses against the committed store: counts, names, updated_at."""
     rows = store.load_shards(ROOT / "data" / "history")
     out = tmp_path / "out"
     publish.build_dist(rows, ROOT, out, validate.load_schema_keys(ROOT).version)
-    flat = json.loads((out / "flat-v1.json").read_text())
+    flat = json.loads((out / "flat-v2.json").read_text())
     index = json.loads((out / "index.json").read_text())
     index_keys = {
         (source, model_id) for source, models in index["sources"].items() for model_id in models
@@ -449,3 +601,108 @@ def test_flat_export_over_the_real_tree(tmp_path):
                 by_key[(source, model_id)] = entry
     for e in nulls:
         assert by_key[(e["source"], e["model_id"])]["curated"] is False
+
+
+@pytest.mark.skipif(not default_branch_test, reason=default_branch_test.skip_reason)
+def test_intervals_over_the_real_tree_match_the_oracle(tmp_path):
+    """The verify clauses against the committed store.
+
+    Every key's emitted chain must equal the oracle across its whole span,
+    partition it, and its entry pair must agree across the flat and index
+    views. A real key that cannot satisfy the invariants is a ruling gap:
+    the test fails with the key's rows rather than resolving it silently.
+    """
+    rows = store.load_shards(ROOT / "data" / "history")
+    out = tmp_path / "out"
+    publish.build_dist(rows, ROOT, out, validate.load_schema_keys(ROOT).version)
+    flat = json.loads((out / "flat-v2.json").read_text())
+    index = json.loads((out / "index.json").read_text())
+    rows_by_key: dict[tuple[str, str], list[dict[str, object]]] = {}
+    for row in rows:
+        rows_by_key.setdefault((row["source"], row["model_id"]), []).append(row)
+    index_entries = {
+        (source, model_id): entry
+        for source, models in index["sources"].items()
+        for model_id, entry in models.items()
+    }
+    needs_confirm: list[tuple[object, ...]] = []
+    for entry in flat["entries"]:
+        key = (entry["source"], entry["model_id"])
+        key_rows = rows_by_key[key]
+        items = entry["intervals"]
+        # (a) the chain selects exactly the oracle's row every day
+        lo = min(_start(r) for r in key_rows)
+        hi = (
+            date.fromisoformat(max(r["observed_at"] for r in key_rows)) + timedelta(days=2)
+        ).isoformat()
+        diverged = False
+        for day in _days(lo, hi):
+            sel = _oracle(key_rows, day)
+            containing = _containing(items, day)
+            if sel is None:
+                stray = [it for it in containing if it.get("removed") is not True]
+                if stray:
+                    needs_confirm.append(
+                        ("oracle selects nothing but a price item covers", key, day, key_rows)
+                    )
+                    diverged = True
+                    break
+            else:
+                matches = [
+                    it
+                    for it in containing
+                    if it["observed_at"] == sel["observed_at"]
+                    and (it.get("removed") is True) == (sel.get("removed") is True)
+                ]
+                if len(matches) != 1:
+                    needs_confirm.append(
+                        ("selected row not named by exactly one item", key, day, key_rows)
+                    )
+                    diverged = True
+                    break
+        if diverged:
+            continue
+        # (b) ordered by valid_from; the non-empty items partition the span
+        if [it["valid_from"] for it in items] != sorted(it["valid_from"] for it in items):
+            needs_confirm.append(("chain not ordered by valid_from", key, key_rows))
+            continue
+        if any(it["valid_to"] is not None and it["valid_to"] < it["valid_from"] for it in items):
+            needs_confirm.append(("item ends before it starts", key, items, key_rows))
+            continue
+        nonempty = [
+            it for it in items if it["valid_to"] is None or it["valid_to"] > it["valid_from"]
+        ]
+        for a, b in zip(nonempty, nonempty[1:], strict=False):
+            if b["valid_from"] != a["valid_to"]:
+                needs_confirm.append(("non-empty intervals do not partition", key, a, b, key_rows))
+                break
+        # (c) the open price end is null exactly when the newest row is a price
+        newest = max(key_rows, key=lambda r: (r["observed_at"], key_rows.index(r)))
+        price_nonempty = [it for it in nonempty if it.get("removed") is not True]
+        if price_nonempty and (price_nonempty[-1]["valid_to"] is None) != (
+            newest.get("removed") is not True
+        ):
+            needs_confirm.append(("open-end flag disagrees with the newest row", key, key_rows))
+        # (d) the index pair equals the entry row's own chain item
+        index_entry = index_entries[key]
+        own = [
+            it
+            for it in items
+            if it["observed_at"] == index_entry["observed_at"] and it.get("removed") is not True
+        ]
+        if not own:
+            needs_confirm.append(("entry row has no chain item", key, key_rows))
+            continue
+        own_item = max(own, key=lambda it: (it["valid_to"] is None, it["valid_to"]))
+        if (
+            own_item["valid_from"] != index_entry["valid_from"]
+            or own_item["valid_to"] != index_entry["valid_to"]
+        ):
+            needs_confirm.append(
+                ("flat and index pairs disagree", key, own_item, index_entry, key_rows)
+            )
+    if needs_confirm:
+        pytest.fail(
+            "needs-confirm: real keys the rulings do not cover:\n"
+            + "\n".join(repr(item) for item in needs_confirm)
+        )

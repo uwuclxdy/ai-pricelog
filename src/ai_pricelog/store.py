@@ -245,24 +245,123 @@ class Partition(TypedDict):
     first_seen: dict[tuple[str, str], str]
     priced: dict[tuple[str, str], dict[str, object]]
     newest: dict[tuple[str, str], dict[str, object]]
+    intervals: dict[tuple[str, str], list[dict[str, object]]]
+    # row object identity -> its chain item; resolves an entry's own interval
+    # exactly where a (observed_at, removed) filter is ambiguous
+    row_items: dict[tuple[str, str], dict[int, dict[str, object]]]
+
+
+# the interval item emits the pair, the observation stamp, then the row's own
+# pricing fields when present; provenance and the key's identity stay out, the
+# same surface rule as the flat export's row fields, minus the removal row's
+# copied effective_at: it is a snapshot artifact and would contradict the
+# item's own valid_from (the delisting starts at the removal's observed_at).
+_INTERVAL_ROW_FIELDS = ("currency", "rates", "overrides", "limits", "fees")
+
+
+def _derive_intervals(
+    rows: list[dict[str, object]], source: str, model_id: str
+) -> tuple[list[dict[str, object]], dict[int, dict[str, object]]]:
+    """The validity chain for one key's rows, input order, sorted by valid_from,
+    plus an id(row) -> that row's own item side index.
+
+    A row starts at (effective_at ?? observed_at) — a removal row at its own
+    observed_at, its copied effective_at is a snapshot artifact — and ends at
+    the earliest start among the rows dominating it (greater observed_at, or
+    equal observed_at and later input position); the open end stays null. A
+    dominated row whose end lands on or before its start clamps to an empty
+    interval, which prices no day. The removal item closes like any other:
+    open-ended only when the removal is the key's newest row, closed at the
+    revival row's start when a later-observed price row reopens the key.
+
+    The side index is the identity the published views match their entry's
+    own interval through — exact where a (observed_at, removed) filter is
+    not, since same-day priced peers can clamp to different ends. it MUST be
+    built before the sort reorders the chain, or a row maps to a peer's item.
+    """
+    starts: list[str] = []
+    for position, row in enumerate(rows):
+        observed_at = row.get("observed_at")
+        effective_at = row.get("effective_at")
+        if not isinstance(observed_at, str) or (
+            effective_at is not None and not isinstance(effective_at, str)
+        ):
+            raise ValueError(
+                f"cannot derive validity intervals for ({source!r}, {model_id!r}):"
+                f" row {position} has an unorderable observed_at/effective_at: {row!r};"
+                " fix: every row carries a YYYY-MM-DD observed_at and an optional"
+                " YYYY-MM-DD effective_at"
+            )
+        if row.get("removed") is True:
+            starts.append(observed_at)
+        else:
+            starts.append(observed_at if effective_at is None else effective_at)
+    items: list[dict[str, object]] = []
+    for position, row in enumerate(rows):
+        valid_from = starts[position]
+        valid_to: str | None = None
+        for other_position, other in enumerate(rows):
+            if other_position == position:
+                continue
+            dominates = other["observed_at"] > row["observed_at"] or (
+                other["observed_at"] == row["observed_at"] and other_position > position
+            )
+            if dominates and (valid_to is None or starts[other_position] < valid_to):
+                valid_to = starts[other_position]
+        if valid_to is not None and valid_to <= valid_from:
+            valid_to = valid_from
+        item: dict[str, object] = {
+            "valid_from": valid_from,
+            "valid_to": valid_to,
+            "observed_at": row["observed_at"],
+        }
+        for field in _INTERVAL_ROW_FIELDS:
+            if field in row:
+                item[field] = row[field]
+        if row.get("removed") is True:
+            item["removed"] = True
+        items.append(item)
+    row_items = {id(row): item for row, item in zip(rows, items, strict=True)}
+    items.sort(key=lambda item: item["valid_from"])
+    return items, row_items
+
+
+def _interval_of(
+    row_items: dict[int, dict[str, object]], row: dict[str, object]
+) -> dict[str, object]:
+    """The chain item whose source row is `row`, matched by object identity.
+
+    A (observed_at, removed) filter plus a max would pair one row's rates
+    with a same-observed_at peer's window when the peers clamp to different
+    ends, so the match runs on the row object itself. the entry row is
+    always a member of the chain; a miss is a derivation bug and raises
+    rather than guessing.
+    """
+    try:
+        return row_items[id(row)]
+    except KeyError:
+        raise ValueError(f"no interval item matches the entry row: {row!r}") from None
 
 
 def current(rows: list[dict[str, object]]) -> Partition:
     """The published view's partition: per (source, model_id), the newest
-    priced row, the newest row overall (removals included), and first_seen.
+    priced row, the newest row overall (removals included), first_seen, and
+    the validity interval chain.
 
     Ties resolve to the later row in the input, so the view never depends on
     the caller's sort order. Every consumer of "the current price of a key"
     reads this one partition: `write_index` builds the nested index from it,
-    the flat export resolves names and rates from it, and no second
+    the flat export resolves names, rates and intervals from it, and no second
     implementation of the rule can drift from it.
     """
     first_seen: dict[tuple[str, str], str] = {}
     priced: dict[tuple[str, str], dict[str, object]] = {}
     newest: dict[tuple[str, str], dict[str, object]] = {}
+    key_rows: dict[tuple[str, str], list[dict[str, object]]] = {}
     for row in rows:
         key = (row["source"], row["model_id"])
         observed_at = row["observed_at"]
+        key_rows.setdefault(key, []).append(row)
         # rows are appended in observation order, but a backfill can land an
         # older timestamp later; keep the earliest seen rather than the first
         if key not in first_seen or observed_at < first_seen[key]:
@@ -279,28 +378,39 @@ def current(rows: list[dict[str, object]]) -> Partition:
                 priced[key] = row
             if key not in newest or observed_at >= newest[key]["observed_at"]:
                 newest[key] = row
+    derived = {key: _derive_intervals(group, key[0], key[1]) for key, group in key_rows.items()}
     return {
         "first_seen": first_seen,
         "priced": priced,
         "newest": newest,
+        "intervals": {key: chain for key, (chain, _) in derived.items()},
+        "row_items": {key: index for key, (_, index) in derived.items()},
     }
 
 
 def write_index(rows: list[dict[str, object]], path: Path, schema_version: int) -> None:
-    """Build the published index: the newest priced row per key plus first_seen."""
+    """Build the published index: the newest priced row per key plus first_seen
+    and the entry's own validity interval."""
     partition = current(rows)
     first_seen = partition["first_seen"]
     priced = partition["priced"]
     newest = partition["newest"]
+    row_items = partition["row_items"]
     sources: dict[str, dict[str, dict[str, object]]] = {}
     for (source, model_id), row in sorted(newest.items()):
         base = priced.get((source, model_id))
+        # the entry's own row: the newest priced row, or the removal itself
+        # when one sneaks in without a priced row before it
+        entry_row = base if base is not None else row
         if base is None:
             # removal rows only ever follow a priced row for the key; fall
             # back to the removal's own comparable fields if one sneaks in
             base = {k: v for k, v in row.items() if k != "removed"}
         entry = dict(base)
         entry["first_seen"] = first_seen[(source, model_id)]
+        item = _interval_of(row_items[(source, model_id)], entry_row)
+        entry["valid_from"] = item["valid_from"]
+        entry["valid_to"] = item["valid_to"]
         if row.get("removed") is True:
             entry["removed_at"] = row["observed_at"]
         sources.setdefault(source, {})[model_id] = entry

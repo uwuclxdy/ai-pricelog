@@ -13,6 +13,7 @@ from ai_pricelog.store import (
     build_removal_row,
     build_row,
     changed,
+    current,
     last,
     load,
     load_fx,
@@ -792,7 +793,12 @@ def test_write_index_first_seen_earliest_and_latest_fields_win(tmp_path):
         "rates",
         "provenance",
         "first_seen",
+        "valid_from",
+        "valid_to",
     ]
+    # the entry's own row is the newest priced row: open-ended at 08-23
+    assert m1["valid_from"] == "2026-08-23"
+    assert m1["valid_to"] is None
     assert sources["a"]["m2"]["first_seen"] == "2026-08-21"
     assert sources["z"]["m1"]["first_seen"] == "2026-08-20"
 
@@ -843,6 +849,9 @@ def test_write_index_removed_at_stamps_and_clears(tmp_path):
     assert entry["provenance"] == {"url": "u1"}
     assert entry["removed_at"] == "2026-08-22"
     assert "removed" not in entry
+    # the pair is the price row's own interval, closed by the removal's observed_at
+    assert entry["valid_from"] == "2026-08-20"
+    assert entry["valid_to"] == "2026-08-22"
     rows.append(
         {
             "schema": 4,
@@ -884,6 +893,309 @@ def test_write_index_tie_resolves_to_later_row_in_file(tmp_path):
     entry = json.loads(path.read_text(encoding="utf-8"))["sources"]["a"]["m"]
     assert entry["rates"]["input"] == 5.0
     assert entry["provenance"] == {"url": "second"}
+
+
+# validity intervals: the derivation behind the flat export's `intervals`
+# field and the index entry's valid_from/valid_to pair. each shape is a
+# wrong->right case from the task brief, asserted on the whole chain.
+
+
+def test_intervals_future_effective_at_chains_to_the_next_start():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "effective_at": "2026-08-23",
+            "rates": {"input": 2.0},
+        },
+        {"schema": 4, "source": "s", "model_id": "m", "observed_at": "2026-09-01", "removed": True},
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-23",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-23",
+            "valid_to": "2026-09-01",
+            "observed_at": "2026-08-20",
+            "rates": {"input": 2.0},
+        },
+        {
+            "valid_from": "2026-09-01",
+            "valid_to": None,
+            "observed_at": "2026-09-01",
+            "removed": True,
+        },
+    ]
+
+
+def test_intervals_backfill_divergence_clamps_the_dominated_row():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-25",
+            "effective_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "effective_at": "2026-08-22",
+            "rates": {"input": 2.0},
+        },
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": None,
+            "observed_at": "2026-08-25",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-22",
+            "valid_to": "2026-08-22",
+            "observed_at": "2026-08-20",
+            "rates": {"input": 2.0},
+        },
+    ]
+
+
+def test_intervals_same_start_tie_resolves_to_the_later_row():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-05",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-05",
+            "rates": {"input": 2.0},
+        },
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-05",
+            "valid_to": "2026-08-05",
+            "observed_at": "2026-08-05",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-05",
+            "valid_to": None,
+            "observed_at": "2026-08-05",
+            "rates": {"input": 2.0},
+        },
+    ]
+
+
+def test_intervals_removal_newest_closes_the_price_chain():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {"schema": 4, "source": "s", "model_id": "m", "observed_at": "2026-08-06", "removed": True},
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-06",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-06",
+            "valid_to": None,
+            "observed_at": "2026-08-06",
+            "removed": True,
+        },
+    ]
+
+
+def test_intervals_a_relisted_key_closes_the_removal_at_the_revival():
+    """A reappearance appends a fresh price row (plan #14), so a re-listed
+    key's removal is not the newest row: it closes at the revival row's start
+    and the chain partitions with exactly one open end.
+    """
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-26",
+            "rates": {"input": 1.0},
+        },
+        {"schema": 4, "source": "s", "model_id": "m", "observed_at": "2026-08-29", "removed": True},
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-09-08",
+            "rates": {"input": 0.5},
+        },
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-26",
+            "valid_to": "2026-08-29",
+            "observed_at": "2026-08-26",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-29",
+            "valid_to": "2026-09-08",
+            "observed_at": "2026-08-29",
+            "removed": True,
+        },
+        {
+            "valid_from": "2026-09-08",
+            "valid_to": None,
+            "observed_at": "2026-09-08",
+            "rates": {"input": 0.5},
+        },
+    ]
+
+
+def test_intervals_open_end_when_the_newest_row_is_a_price():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "rates": {"input": 2.0},
+        },
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-20",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "valid_from": "2026-08-20",
+            "valid_to": None,
+            "observed_at": "2026-08-20",
+            "rates": {"input": 2.0},
+        },
+    ]
+
+
+def test_index_pair_names_the_entry_rows_own_item_on_same_day_peers(tmp_path):
+    """Same-observed_at priced peers can clamp to different ends, so the
+    index entry's pair must come from the entry row's OWN chain item, never
+    from a peer chosen by a max over shared observed_at.
+    """
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-05-02",
+            "effective_at": "2026-07-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-05-02",
+            "effective_at": "2026-06-01",
+            "rates": {"input": 2.0},
+        },
+        {"schema": 4, "source": "s", "model_id": "m", "observed_at": "2026-05-03", "removed": True},
+    ]
+    # the entry row is the later same-day peer (input order tie-break)
+    write_index(rows, tmp_path / "index.json", 4)
+    entry = json.loads((tmp_path / "index.json").read_text())["sources"]["s"]["m"]
+    assert entry["rates"] == {"input": 2.0}
+    assert entry["valid_from"] == "2026-06-01"
+    assert entry["valid_to"] == "2026-06-01"
+
+
+def test_intervals_a_removal_only_key_emits_its_own_item(tmp_path):
+    """A removal row with no priced row before it still yields one chain
+    item, open-ended, and the index entry falls back to its own fields.
+    """
+    rows = [
+        {"schema": 4, "source": "s", "model_id": "m", "observed_at": "2026-08-01", "removed": True},
+    ]
+    assert current(rows)["intervals"][("s", "m")] == [
+        {"valid_from": "2026-08-01", "valid_to": None, "observed_at": "2026-08-01", "removed": True}
+    ]
+    # write_index's base-is-None fallback: the entry carries the removal's
+    # own fields, its pair, and removed_at
+    write_index(rows, tmp_path / "index.json", 4)
+    entry = json.loads((tmp_path / "index.json").read_text())["sources"]["s"]["m"]
+    assert entry["observed_at"] == "2026-08-01"
+    assert entry["first_seen"] == "2026-08-01"
+    assert entry["valid_from"] == "2026-08-01"
+    assert entry["valid_to"] is None
+    assert entry["removed_at"] == "2026-08-01"
+    assert list(entry) == [
+        "schema",
+        "source",
+        "model_id",
+        "observed_at",
+        "first_seen",
+        "valid_from",
+        "valid_to",
+        "removed_at",
+    ]
+
+
+def test_intervals_unorderable_row_names_the_key_and_row():
+    rows = [
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0},
+        },
+        {
+            "schema": 4,
+            "source": "s",
+            "model_id": "m",
+            "observed_at": "2026-08-20",
+            "effective_at": 20260823,
+            "rates": {"input": 2.0},
+        },
+    ]
+    with pytest.raises(ValueError, match="cannot derive validity intervals"):
+        current(rows)
 
 
 def test_resolve_rate_returns_none_for_usd():

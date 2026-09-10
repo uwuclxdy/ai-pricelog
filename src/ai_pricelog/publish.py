@@ -18,11 +18,12 @@ from ai_pricelog.store import _atomic_write
 
 _ORDER_KEYS = ("source", "model_id", "observed_at")
 
-# the flat export's own shape version, stamped inside the file: a future
-# shape change ships a -v2 file beside the current one instead of breaking
-# readers of the -v1 file. the `version` field beside it stays the row
-# schema version, same as index.json.
-FLAT_VERSION = 1
+# the flat export's own shape version, stamped inside the file: a shape
+# change ships a -v2 file beside the current one instead of breaking
+# readers of the -v1 file. v2 (2026-09-10) adds the entry's `intervals`
+# chain. the `version` field beside it stays the row schema version, same
+# as index.json.
+FLAT_VERSION = 2
 
 # the flat entry's own fields, in emit order, from the row the partition
 # picked: the row's pricing fields, then the view stamps. provenance and
@@ -120,12 +121,14 @@ def build_flat(
     One entry per (source, model_id), built from the same `store.current`
     partition index.json reads, so the two views cannot disagree on which
     row is current. The removal rule is index.json's own: last prices kept,
-    `removed_at` stamped.
+    `removed_at` stamped. Each entry carries the key's full `intervals`
+    chain, so pricing any past day is a containment test.
     """
     partition = store.current(rows)
     first_seen = partition["first_seen"]
     priced = partition["priced"]
     newest = partition["newest"]
+    intervals = partition["intervals"]
     mapping = models.load_models(root / models.MODELS_FILE, allow_missing=False)
     # one reverse index: (source, model_id) -> catalog entry, shared by the
     # root file and every twin, so each entry of the tree resolves through
@@ -158,6 +161,7 @@ def build_flat(
                 if field in base:
                     entry[field] = base[field]
             entry["first_seen"] = first_seen[key]
+            entry["intervals"] = intervals[key]
             if row.get("removed") is True:
                 entry["removed_at"] = row["observed_at"]
             built.append(entry)
