@@ -8,13 +8,37 @@ branch. The CI publish job runs both from the committed store.
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
+from collections.abc import Mapping
 from pathlib import Path
 
 from ai_pricelog import models, stats, store, validate
 from ai_pricelog.store import _atomic_write
 
 _ORDER_KEYS = ("source", "model_id", "observed_at")
+
+# the flat export's own shape version, stamped inside the file: a future
+# shape change ships a -v2 file beside the current one instead of breaking
+# readers of the -v1 file. the `version` field beside it stays the row
+# schema version, same as index.json.
+FLAT_VERSION = 1
+
+# the flat entry's own fields, in emit order, from the row the partition
+# picked: the row's pricing fields, then the view stamps. provenance and
+# unmapped stay out: the export is the price surface, not the observation
+# record; unmapped would let one moved source key reshape a versioned
+# consumer file, which is a flat_version bump, not a silent emit.
+_FLAT_ROW_FIELDS = (
+    "schema",
+    "effective_at",
+    "rates",
+    "overrides",
+    "limits",
+    "fees",
+    "currency",
+    "observed_at",
+)
 
 
 def _history_order(row: dict[str, object]) -> tuple[str, str, str]:
@@ -68,6 +92,113 @@ def _copy(src: Path, dst: Path) -> None:
     shutil.copyfile(src, dst)
 
 
+def _name(entry: Mapping[str, object] | None, row: dict[str, object], model_id: str) -> str:
+    """The display name: catalog name, then the source's own name for the
+    model, then the raw id. An entry with no `name` key and a row whose
+    provenance carries none still yields a non-empty string, never a missing
+    field.
+    """
+    catalog_name = entry.get("name") if entry is not None else None
+    if isinstance(catalog_name, str) and catalog_name:
+        return catalog_name
+    provenance = row.get("provenance")
+    if isinstance(provenance, dict):
+        source_name = provenance.get("name")
+        if isinstance(source_name, str) and source_name:
+            return source_name
+    return model_id
+
+
+def build_flat(
+    rows: list[dict[str, object]],
+    root: Path,
+    out: Path,
+    schema_version: int,
+) -> None:
+    """Write the flat export beside index.json plus one twin per source.
+
+    One entry per (source, model_id), built from the same `store.current`
+    partition index.json reads, so the two views cannot disagree on which
+    row is current. The removal rule is index.json's own: last prices kept,
+    `removed_at` stamped.
+    """
+    partition = store.current(rows)
+    first_seen = partition["first_seen"]
+    priced = partition["priced"]
+    newest = partition["newest"]
+    mapping = models.load_models(root / models.MODELS_FILE, allow_missing=False)
+    # one reverse index: (source, model_id) -> catalog entry, shared by the
+    # root file and every twin, so each entry of the tree resolves through
+    # one lookup
+    catalog_by_key: dict[tuple[str, str], dict[str, object]] = {}
+    for entry in mapping.values():
+        for source, model_ids in entry["sources"].items():
+            if isinstance(model_ids, str):
+                model_ids = [model_ids]
+            for model_id in model_ids:
+                if isinstance(model_id, str):
+                    catalog_by_key[(source, model_id)] = entry
+
+    def _entries(keys: list[tuple[str, str]]) -> list[dict[str, object]]:
+        built = []
+        for key in keys:
+            source, model_id = key
+            row = newest[key]
+            base = priced.get(key)
+            if base is None:
+                base = {k: v for k, v in row.items() if k != "removed"}
+            catalog_entry = catalog_by_key.get(key)
+            entry: dict[str, object] = {
+                "source": source,
+                "model_id": model_id,
+                "vendor": catalog_entry.get("vendor") if catalog_entry is not None else None,
+                "name": _name(catalog_entry, base, model_id),
+            }
+            for field in _FLAT_ROW_FIELDS:
+                if field in base:
+                    entry[field] = base[field]
+            entry["first_seen"] = first_seen[key]
+            if row.get("removed") is True:
+                entry["removed_at"] = row["observed_at"]
+            built.append(entry)
+        return built
+
+    all_keys = sorted(newest)
+    _atomic_write(
+        json.dumps(
+            {
+                "version": schema_version,
+                "flat_version": FLAT_VERSION,
+                "updated_at": max((newest[key]["observed_at"] for key in all_keys), default=""),
+                "entries": _entries(all_keys),
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        out / f"flat-v{FLAT_VERSION}.json",
+    )
+    for source in sorted({key[0] for key in all_keys}):
+        source_keys = [key for key in all_keys if key[0] == source]
+        # the twin path runs through the same shard guard the index twins do,
+        # so the two twin sets can never disagree on what a source names
+        twin = Path(store.shard_name(source)).with_suffix(".json")
+        _atomic_write(
+            json.dumps(
+                {
+                    "version": schema_version,
+                    "flat_version": FLAT_VERSION,
+                    "updated_at": max(
+                        (newest[key]["observed_at"] for key in source_keys), default=""
+                    ),
+                    "entries": _entries(source_keys),
+                },
+                ensure_ascii=False,
+            )
+            + "\n",
+            out / "flat" / twin,
+        )
+
+
 def build_dist(
     rows: list[dict[str, object]],
     root: Path,
@@ -94,6 +225,7 @@ def build_dist(
     if out.exists():
         shutil.rmtree(out)
     store.write_index(rows, out / "index.json", schema_version)
+    build_flat(rows, root, out, schema_version)
     for source, source_rows in grouped.items():
         shard = Path(store.shard_name(source))
         store.write_index(source_rows, out / "index" / shard.with_suffix(".json"), schema_version)

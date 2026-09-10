@@ -16,6 +16,7 @@ import re
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
+from typing import TypedDict
 
 from ai_pricelog.pricing import Pricing, to_mtok
 
@@ -238,8 +239,24 @@ def changed(row: dict[str, object], last_row: dict[str, object] | None) -> bool:
     return _comparable(row) != _comparable(last_row)
 
 
-def write_index(rows: list[dict[str, object]], path: Path, schema_version: int) -> None:
-    """Build the published index: the newest priced row per key plus first_seen."""
+class Partition(TypedDict):
+    """The published view's per-key partition, one consumer for every view."""
+
+    first_seen: dict[tuple[str, str], str]
+    priced: dict[tuple[str, str], dict[str, object]]
+    newest: dict[tuple[str, str], dict[str, object]]
+
+
+def current(rows: list[dict[str, object]]) -> Partition:
+    """The published view's partition: per (source, model_id), the newest
+    priced row, the newest row overall (removals included), and first_seen.
+
+    Ties resolve to the later row in the input, so the view never depends on
+    the caller's sort order. Every consumer of "the current price of a key"
+    reads this one partition: `write_index` builds the nested index from it,
+    the flat export resolves names and rates from it, and no second
+    implementation of the rule can drift from it.
+    """
     first_seen: dict[tuple[str, str], str] = {}
     priced: dict[tuple[str, str], dict[str, object]] = {}
     newest: dict[tuple[str, str], dict[str, object]] = {}
@@ -262,6 +279,19 @@ def write_index(rows: list[dict[str, object]], path: Path, schema_version: int) 
                 priced[key] = row
             if key not in newest or observed_at >= newest[key]["observed_at"]:
                 newest[key] = row
+    return {
+        "first_seen": first_seen,
+        "priced": priced,
+        "newest": newest,
+    }
+
+
+def write_index(rows: list[dict[str, object]], path: Path, schema_version: int) -> None:
+    """Build the published index: the newest priced row per key plus first_seen."""
+    partition = current(rows)
+    first_seen = partition["first_seen"]
+    priced = partition["priced"]
+    newest = partition["newest"]
     sources: dict[str, dict[str, dict[str, object]]] = {}
     for (source, model_id), row in sorted(newest.items()):
         base = priced.get((source, model_id))
