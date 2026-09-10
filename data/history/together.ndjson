@@ -68,6 +68,7 @@
 {"schema":4,"source":"together","model_id":"qwen3.6-plus","observed_at":"2026-08-26","rates":{"input":0.5,"output":3.0},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3.7-max","observed_at":"2026-05-22","rates":{"input":2.5,"output":7.5},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"qwen3.7-max","observed_at":"2026-08-26","rates":{"input":1.25,"output":3.75,"cache_read":0.13},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"qwen3.7-max","observed_at":"2026-09-10","rates":{"input":2.0,"output":6.0,"cache_read":0.25},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3.7-plus","observed_at":"2026-08-26","rates":{"input":0.32,"output":1.28},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3.8-2.4t-a95b","observed_at":"2026-08-12","rates":{"input":2.5,"output":6.25,"cache_read":0.5},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"qwen3.8-2.4t-a95b","observed_at":"2026-08-26","rates":{"input":2.5,"output":6.25,"cache_read":0.5},"provenance":{"url":"https://www.together.ai/pricing"}}
