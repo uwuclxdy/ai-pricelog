@@ -5113,6 +5113,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.0-flash-vl:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-flash-vl:free"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/kwaipilot/kat-coder-air-v2.5": {
       "curated": false,
       "sources": {
