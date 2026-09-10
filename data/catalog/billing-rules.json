@@ -114,6 +114,16 @@
         "https://docs.perplexity.ai/docs/resources/changelog.md",
         "https://docs.perplexity.ai/guides/pricing"
       ]
+    },
+    {
+      "id": "deepseek-v4-retirement-2026-09-10",
+      "provider": "deepseek",
+      "effective": "2026-09-10",
+      "timezone": "Asia/Shanghai",
+      "statement": "the DeepSeek-V4.1-Flash release updates retire the previous-generation models V4 Flash and V4 Flash Vision Exp (the model names deepseek-v4-flash and deepseek-v4-flash-vision-exp are temporarily routed to V4.1 Flash) and retire V4 Pro in an orderly manner: after 12:00 Beijing Time on 2026-09-14, and until the future release of V4.1 Pro, all requests to deepseek-v4-pro are routed to V4.1 Flash and billed at the V4.1 Flash price; API prices are reduced accordingly with the release",
+      "citation": [
+        "https://api-docs.deepseek.com/updates/"
+      ]
     }
   ]
 }
