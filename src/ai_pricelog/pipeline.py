@@ -514,7 +514,12 @@ def _openrouter_rows(
     or_report.detected = [model.id for model in models]
     rowable: set[str] = set()
     for model in models:
-        row = openrouter.build_row(model, today, keys.version)
+        try:
+            row = openrouter.build_row(model, today, keys.version)
+        except ValueError as exc:
+            log.warning("entry %s failed row build for openrouter: %s", model.id, exc)
+            or_report.errors.append(_describe(exc))
+            continue
         if row is None:
             # alias entries and dated-canonical snapshots are not priced rows
             or_report.skipped_no_pricing.append(model.id)

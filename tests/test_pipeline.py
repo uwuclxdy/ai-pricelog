@@ -639,6 +639,56 @@ def test_openrouter_negative_pricing_builds_row_without_prices(
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
+def test_openrouter_build_failure_skips_model_and_continues(
+    tmp_path, fake_modules, repo_root, or_models
+):
+    # an api shape drift that breaks build_row (overrides stops being a list)
+    # skips the model with a report line; the rest of the run is unaffected
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="bad/shape",
+            name="Bad Shape",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            pricing={"prompt": "1e-7", "completion": "1e-6", "overrides": "not-a-list"},
+        )
+    )
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="deepseek/deepseek-chat",
+            name="DeepSeek Chat",
+            input_mtok=0.27,
+            output_mtok=1.1,
+            cache_read_mtok=None,
+            pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
+        )
+    )
+    cfg = make_cfg("deepseek")
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+        VERSION,
+    )
+    seed_store(repo_root, [legacy])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    or_report = report.providers["openrouter"]
+    assert or_report.detected == ["bad/shape", "deepseek/deepseek-chat"]
+    assert or_report.candidates == ["deepseek/deepseek-chat"]
+    assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
+    assert len(or_report.errors) == 1
+    assert or_report.errors[0].startswith("ValueError: model 'bad/shape'")
+
+
 def test_detector_error_does_not_block_next_provider(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = RuntimeError("detector boom")
