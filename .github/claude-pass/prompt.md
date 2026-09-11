@@ -64,6 +64,8 @@ measured 2026-08-24 against the pinned pricing-page snapshots (tests/fixtures/<p
 
 measured 2026-08-26: the slash-less pricing url serves a ~46KB JS shell, but the trailing-slash form `https://api-docs.deepseek.com/quick_start/pricing/` serves the static docusaurus html (23KB) with the full MODEL table, USD prices, and the peak footnote. the config urls carry the trailing slash; the slash-less path must not come back (the js shell carries no table markers). the footnote gained a "Monday through Friday" clause, which the scraper parses into window_rates day-sets since 2026-08-30. no `.md` twin, llms.txt, or public docs source repo exists; the zh-cn twin is CNY-only.
 
+measured 2026-09-11: the model column ids carry " (n)" footnote markers ("deepseek-flash (1)"), stripped since `9bd6087` at one seam the detector and scraper share; the page's model set is `deepseek-flash` (V4.1 Flash) and `deepseek-v4-pro` — V4 Flash and V4 Flash Vision Exp are retired (`deepseek-v4-retirement-2026-09-10`: their names route to V4.1 Flash; v4-pro routes there after 2026-09-14 12:00 Beijing until V4.1 Pro releases).
+
 ### deepseek peak schedule
 
 the live pricing page carries v4 peak/off-peak subrows plus the footnote "Peak hours are 01:00 - 04:00 and 06:00 - 10:00 UTC, Monday through Friday (all other hours are off-peak)". the scraper stores the split schedule as `window_rates` entries (landed 2026-08-30, todo 20): the base mtok fields hold the off-peak rates, one entry per peak window carries the peak rates, `days` = the weekday names, `window` = the [start, end] HHMM UTC pair. rows stored before the move keep flat `peak_*` fields (no history rewrite); the migration fires one refresh row per priced model.
