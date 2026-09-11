@@ -42,6 +42,7 @@
 {"schema":4,"source":"together","model_id":"kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-07-09","rates":{"input":0.03,"output":0.12},"limits":{"context":32768},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-08-26","rates":{"input":0.03,"output":0.12},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-09-10","removed":true,"rates":{"input":0.03,"output":0.12}}
 {"schema":4,"source":"together","model_id":"llama-3-8b-instruct-lite","observed_at":"2026-08-29","rates":{"input":0.14,"output":0.14},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2025-03-16","rates":{"input":0.88,"output":0.88},"provenance":{"url":"https://arquivo.pt/wayback/20250316162923id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2025-09-17","rates":{"input":0.88,"output":0.88},"provenance":{"url":"https://arquivo.pt/wayback/20250917033000id_/https://www.together.ai/pricing"}}
