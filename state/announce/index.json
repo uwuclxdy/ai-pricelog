@@ -86,12 +86,12 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "c7dbd53d1cd62fdd8e61cd71863b9ba7c6c3e22c68ea5d19df3ac96963b513e1",
-      "fetched": "2026-09-09"
+      "sha256": "1acb4cfea2a81c4c3f8332fd73073a27e55fa888d4ee9862b700a8abc922afb1",
+      "fetched": "2026-09-10"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "72c5a36ea4ce225b0ecb5665f282d3bb8d59a7a6e34b0024dd0b91ed53349d7f",
+      "sha256": "7d1e94d81a2c1dda4c31dc575407f5b578658f9c7b06baa076129dfca4f670ed",
       "fetched": "2026-09-10"
     }
   },
@@ -157,8 +157,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "63b18fa7f4c4d3783266e785052a9d6dcd7c32c22b04ca90bf18bf48b6010b0c",
-      "fetched": "2026-09-09"
+      "sha256": "fe3381da7f8504b83a2208014512d69e623fea5ee8544a34af8fe40879c124e7",
+      "fetched": "2026-09-10"
     }
   }
 }
