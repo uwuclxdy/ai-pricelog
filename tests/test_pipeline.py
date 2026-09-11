@@ -659,6 +659,17 @@ def test_openrouter_build_failure_skips_model_and_continues(
     )
     or_models.append(
         openrouter.OpenrouterModel(
+            id="bad/length",
+            name="Bad Length",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            pricing={"prompt": "1e-7", "completion": "1e-6"},
+            context_length="large",
+        )
+    )
+    or_models.append(
+        openrouter.OpenrouterModel(
             id="deepseek/deepseek-chat",
             name="DeepSeek Chat",
             input_mtok=0.27,
@@ -682,11 +693,12 @@ def test_openrouter_build_failure_skips_model_and_continues(
     report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     or_report = report.providers["openrouter"]
-    assert or_report.detected == ["bad/shape", "deepseek/deepseek-chat"]
+    assert or_report.detected == ["bad/shape", "bad/length", "deepseek/deepseek-chat"]
     assert or_report.candidates == ["deepseek/deepseek-chat"]
     assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
-    assert len(or_report.errors) == 1
+    assert len(or_report.errors) == 2
     assert or_report.errors[0].startswith("ValueError: model 'bad/shape'")
+    assert or_report.errors[1].startswith("TypeError: ")
 
 
 def test_detector_error_does_not_block_next_provider(tmp_path, fake_modules, repo_root):
@@ -751,6 +763,30 @@ def test_validation_failure_line_is_health_parseable(tmp_path, fake_modules, rep
         pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
     issues = health.parse_log(_logged_lines(caplog))
     assert issues["deepseek"]["soft"] and issues["deepseek"]["hard"] == []
+
+
+def test_row_build_failure_line_is_health_parseable(
+    tmp_path, fake_modules, repo_root, caplog, or_models
+):
+    # a model whose row fails to build parses as a soft (provider-alive) issue
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="bad/shape",
+            name="Bad Shape",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            pricing={"prompt": "1e-7", "completion": "1e-6", "overrides": "not-a-list"},
+        )
+    )
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["openrouter"]["soft"] and issues["openrouter"]["hard"] == []
 
 
 def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):

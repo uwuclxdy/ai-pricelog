@@ -31,6 +31,7 @@ _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"refresh scrape failed for \S+ \((\S+)\)"), "hard", None),
     (re.compile(r"openrouter fetch failed"), "hard", "openrouter"),
     (re.compile(r"entry \S+ failed validation for (\S+):"), "soft", None),
+    (re.compile(r"entry \S+ failed row build for (\S+):"), "soft", None),
     (re.compile(r"refresh for \S+ skipped in (\S+):"), "soft", None),
     (re.compile(r"detect skip for (\S+):"), "soft", None),
 )

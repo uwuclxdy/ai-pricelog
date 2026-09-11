@@ -516,7 +516,7 @@ def _openrouter_rows(
     for model in models:
         try:
             row = openrouter.build_row(model, today, keys.version)
-        except ValueError as exc:
+        except (TypeError, ValueError, OverflowError) as exc:
             log.warning("entry %s failed row build for openrouter: %s", model.id, exc)
             or_report.errors.append(_describe(exc))
             continue
