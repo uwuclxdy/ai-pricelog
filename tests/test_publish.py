@@ -140,8 +140,27 @@ def _relpaths(out: Path) -> list[str]:
     return sorted(str(p.relative_to(out)) for p in out.rglob("*") if p.is_file())
 
 
+# the page's own assets, spelled out so a file the page links but the build
+# stops emitting fails here rather than in a browser
+SITE_ASSETS = [
+    "site/app.js",
+    "site/components.css",
+    "site/cursor-rules.js",
+    "site/cursor.css",
+    "site/cursor.js",
+    "site/fonts/jetbrainsmono-latin-ext.woff2",
+    "site/fonts/jetbrainsmono-latin.woff2",
+    "site/fonts/onest-cyrillic.woff2",
+    "site/fonts/onest-latin-ext.woff2",
+    "site/fonts/onest-latin.woff2",
+    "site/icons.svg",
+    "site/tokens.css",
+    "site/ui.js",
+]
+
 DIST_PATHS = sorted(
     [
+        "index.html",
         "index.json",
         "index/alpha.json",
         "index/beta.json",
@@ -153,6 +172,7 @@ DIST_PATHS = sorted(
         "history/beta.ndjson",
         *(f"catalog/{name}" for name in CATALOG_NAMES),
         "schema/row.v4.json",
+        *SITE_ASSETS,
     ]
 )
 

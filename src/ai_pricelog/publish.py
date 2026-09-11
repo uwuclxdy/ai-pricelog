@@ -13,7 +13,7 @@ import shutil
 from collections.abc import Mapping
 from pathlib import Path
 
-from ai_pricelog import models, stats, store, validate
+from ai_pricelog import models, site, stats, store, validate
 from ai_pricelog.store import _atomic_write
 
 _ORDER_KEYS = ("source", "model_id", "observed_at")
@@ -110,12 +110,22 @@ def _name(entry: Mapping[str, object] | None, row: dict[str, object], model_id: 
     return model_id
 
 
+def flat_text(payload: Mapping[str, object], *, compact: bool = False) -> str:
+    """The flat export's one serializer, so no second writer can drift from it.
+
+    `compact` is the page's data island: the same payload with no space after a
+    separator. Every form ends in a newline.
+    """
+    separators = (",", ":") if compact else None
+    return json.dumps(payload, ensure_ascii=False, separators=separators) + "\n"
+
+
 def build_flat(
     rows: list[dict[str, object]],
     root: Path,
     out: Path,
     schema_version: int,
-) -> None:
+) -> dict[str, object]:
     """Write the flat export beside index.json plus one twin per source.
 
     One entry per (source, model_id), built from the same `store.current`
@@ -123,6 +133,9 @@ def build_flat(
     row is current. The removal rule is index.json's own: last prices kept,
     `removed_at` stamped. Each entry carries the key's full `intervals`
     chain, so pricing any past day is a containment test.
+
+    Returns the root file's payload: `build_dist` hands the same object to the
+    page writer, so the page's island is the very data the file holds.
     """
     partition = store.current(rows)
     first_seen = partition["first_seen"]
@@ -167,40 +180,25 @@ def build_flat(
             built.append(entry)
         return built
 
+    def _payload(keys: list[tuple[str, str]]) -> dict[str, object]:
+        """One file's payload: the root carries every key, a twin only its own."""
+        return {
+            "version": schema_version,
+            "flat_version": FLAT_VERSION,
+            "updated_at": max((newest[key]["observed_at"] for key in keys), default=""),
+            "entries": _entries(keys),
+        }
+
     all_keys = sorted(newest)
-    _atomic_write(
-        json.dumps(
-            {
-                "version": schema_version,
-                "flat_version": FLAT_VERSION,
-                "updated_at": max((newest[key]["observed_at"] for key in all_keys), default=""),
-                "entries": _entries(all_keys),
-            },
-            ensure_ascii=False,
-        )
-        + "\n",
-        out / f"flat-v{FLAT_VERSION}.json",
-    )
+    root_payload = _payload(all_keys)
+    _atomic_write(flat_text(root_payload), out / f"flat-v{FLAT_VERSION}.json")
     for source in sorted({key[0] for key in all_keys}):
         source_keys = [key for key in all_keys if key[0] == source]
         # the twin path runs through the same shard guard the index twins do,
         # so the two twin sets can never disagree on what a source names
         twin = Path(store.shard_name(source)).with_suffix(".json")
-        _atomic_write(
-            json.dumps(
-                {
-                    "version": schema_version,
-                    "flat_version": FLAT_VERSION,
-                    "updated_at": max(
-                        (newest[key]["observed_at"] for key in source_keys), default=""
-                    ),
-                    "entries": _entries(source_keys),
-                },
-                ensure_ascii=False,
-            )
-            + "\n",
-            out / "flat" / twin,
-        )
+        _atomic_write(flat_text(_payload(source_keys)), out / "flat" / twin)
+    return root_payload
 
 
 def build_dist(
@@ -229,7 +227,7 @@ def build_dist(
     if out.exists():
         shutil.rmtree(out)
     store.write_index(rows, out / "index.json", schema_version)
-    build_flat(rows, root, out, schema_version)
+    flat_payload = build_flat(rows, root, out, schema_version)
     for source, source_rows in grouped.items():
         shard = Path(store.shard_name(source))
         store.write_index(source_rows, out / "index" / shard.with_suffix(".json"), schema_version)
@@ -239,6 +237,7 @@ def build_dist(
     for catalog_file in sorted((root / Path(models.MODELS_FILE).parent).glob("*.json")):
         _copy(catalog_file, out / "catalog" / catalog_file.name)
     _copy(root / validate.SCHEMA_PATH, out / "schema" / Path(validate.SCHEMA_PATH).name)
+    site.render_site(flat_payload, out)
 
 
 def refresh_committed(rows: list[dict[str, object]], root: Path) -> None:
