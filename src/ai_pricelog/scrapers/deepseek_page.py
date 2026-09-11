@@ -35,7 +35,7 @@ import re
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.detectors.deepseek_page import _model_table
+from ai_pricelog.detectors.deepseek_page import _model_table, header_ids
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, extract_tables, fetch_soup
 
@@ -68,7 +68,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = fetch_soup(cfg.scraper_url)
     tables = extract_tables(soup)
     table = _model_table(tables, cfg.scraper_url)
-    ids = [cell.strip() for cell in table[0][1:]]
+    ids = header_ids(table)
     if model_id not in ids:
         return None
     prices = _pricing_cells(table[1:], ids.index(model_id))

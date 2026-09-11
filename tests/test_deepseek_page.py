@@ -35,11 +35,10 @@ def patch_soup(monkeypatch, module, html: str) -> None:
 
 def test_detect_models(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: load_soup())
-    assert detector.detect(cfg()) == [
-        "deepseek-v4-flash",
-        "deepseek-v4-pro",
-        "deepseek-v4-flash-vision-exp",
-    ]
+    # the 2026-09-10 page: V4 Flash and V4 Flash Vision Exp retired (billing
+    # rule deepseek-v4-retirement-2026-09-10), V4.1 Flash served as
+    # "deepseek-flash", with " (n)" footnote markers on the header cells
+    assert detector.detect(cfg()) == ["deepseek-flash", "deepseek-v4-pro"]
 
 
 def test_detect_skips_non_id_header_cells(monkeypatch):
@@ -85,14 +84,14 @@ def test_scrape_flash_split_pricing(monkeypatch):
     # the off-peak subrow becomes the default price, the peak subrow the
     # constrained peak entries, and the schedule footnote the windows
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
-    pricing = scraper.scrape(cfg(), "deepseek-v4-flash")
+    pricing = scraper.scrape(cfg(), "deepseek-flash")
     assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
-    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
-    assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
-    assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
-    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
+    assert pricing.input_cost_per_token == pytest.approx(0.15 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.6 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.003 / 1e6)
+    assert pricing.peak_input_cost_per_token == pytest.approx(0.3 / 1e6)
+    assert pricing.peak_output_cost_per_token == pytest.approx(1.2 / 1e6)
+    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.006 / 1e6)
     assert pricing.peak_windows == WINDOWS
     assert pricing.peak_days == WEEKDAYS
     assert pricing.effective_at == "2026-08-23"
@@ -120,20 +119,11 @@ def test_scrape_pro_split_pricing(monkeypatch):
 
 
 def test_scrape_vision_exp_split_pricing(monkeypatch):
+    # the retired V4 Flash Vision Exp id is no longer on the page: the
+    # retirement rule routes its name to V4.1 Flash, and detection no
+    # longer lists it, so scraping it yields no pricing
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
-    pricing = scraper.scrape(cfg(), "deepseek-v4-flash-vision-exp")
-    assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.22 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(0.66 / 1e6)
-    assert pricing.cache_read_cost_per_token == pytest.approx(0.007 / 1e6)
-    assert pricing.peak_input_cost_per_token == pytest.approx(0.44 / 1e6)
-    assert pricing.peak_output_cost_per_token == pytest.approx(1.32 / 1e6)
-    assert pricing.peak_cache_read_cost_per_token == pytest.approx(0.014 / 1e6)
-    assert pricing.peak_windows == WINDOWS
-    assert pricing.peak_days == WEEKDAYS
-    assert pricing.effective_at == "2026-08-23"
-    assert pricing.max_tokens_out == 384 * 1024
-    assert pricing.max_tokens_in == 1024 * 1024
+    assert scraper.scrape(cfg(), "deepseek-v4-flash-vision-exp") is None
 
 
 def test_scrape_unknown_model_returns_none(monkeypatch):
