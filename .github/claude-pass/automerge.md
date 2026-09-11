@@ -54,7 +54,7 @@ after every PR is judged and every comment posted, your part is done: you never 
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
 - every line of the branch's copy must read as one json object per line, and each line the union appends must pass the row contract (`data/schema/row.v4.json`); a refused line stops the merge naming the branch and its line in the branch's own copy (`origin/<branch>:<path>`)
 - per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`
-- `state/announce/`: every branch's copy lands in merge order, so the final (newest) write is the freshest snapshot and a burst spanning runs resolves its own add/add conflicts. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
+- `state/announce/`: each channel lands from the branch that last CHANGED it against the burst base (its index sha differs; a failed fetch keeps the base sha, so a stale copy never wins) — never the newest branch wholesale; a channel the newest branch's index no longer lists is dropped. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
 github auto-marks each PR merged once its head lands in the default branch. the merge writes no derived file: the publish workflow owns the `dist` branch and the README stats outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
@@ -89,4 +89,4 @@ every needs-human PR gets a comment opening with the ping line, posted as cloudy
 <what to decide>
 ```
 
-the mention is what reaches the human; the rest is for the thread. end on the last substantive line. no sign-off.
+the mention is what reaches the human; the rest is for the thread. end on the disposition line `automerge: no` (the merge step reads it); no sign-off.
