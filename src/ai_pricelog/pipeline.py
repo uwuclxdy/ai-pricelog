@@ -505,14 +505,16 @@ def _openrouter_rows(
 ) -> None:
     """OpenRouter rows: the API is the source, store membership settles ids."""
     or_report = report.providers["openrouter"] = ProviderReport()
+    # every id the api lists, parse-skipped entries included: absence keys on
+    # listing, never on row success, so a malformed entry cannot fake a delisting
+    listed: set[str] = set()
     try:
-        models = openrouter.fetch_models()
+        models = openrouter.fetch_models(errors=or_report.errors, listed=listed)
     except Exception as exc:
         log.exception("openrouter fetch failed")
         or_report.errors.append(_describe(exc))
         return
     or_report.detected = [model.id for model in models]
-    rowable: set[str] = set()
     for model in models:
         try:
             row = openrouter.build_row(model, today, keys.version)
@@ -524,7 +526,6 @@ def _openrouter_rows(
             # alias entries and dated-canonical snapshots are not priced rows
             or_report.skipped_no_pricing.append(model.id)
             continue
-        rowable.add(row["model_id"])
         try:
             validate.validate_row(row, keys)
         except validate.ValidationError as exc:
@@ -553,7 +554,7 @@ def _openrouter_rows(
         "OpenRouter",
         openrouter.OPENROUTER_MODELS_URL,
         stored_ids,
-        rowable,
+        listed,
         rows,
         landed_rows,
         state,

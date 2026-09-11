@@ -5,9 +5,9 @@ them with the previous autopr run's log (fetched through the gh cli),
 writes a ::warning:: annotation for this run's issues, and opens one
 github issue per provider that failed hard in two consecutive runs (the
 @-mention is what reaches the owner). hard = the detector or a scrape
-raised, so the provider is blind or its rows are rejected; soft = detect
-skips and validation rejects (additive drift, the provider stays alive
-and the mapping-candidate flow covers the skips).
+raised, so the provider is blind or its rows are rejected; soft = detect,
+parse and row-build skips and validation rejects (additive drift, the
+provider stays alive).
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"openrouter fetch failed"), "hard", "openrouter"),
     (re.compile(r"entry \S+ failed validation for (\S+):"), "soft", None),
     (re.compile(r"entry \S+ failed row build for (\S+):"), "soft", None),
+    (re.compile(r"parse skip for (\S+):"), "soft", None),
     (re.compile(r"refresh for \S+ skipped in (\S+):"), "soft", None),
     (re.compile(r"detect skip for (\S+):"), "soft", None),
 )
@@ -59,7 +60,7 @@ def warning(now: dict[str, dict[str, list[str]]]) -> str | None:
     if hard:
         parts.append("hard failures: " + ", ".join(hard))
     if soft:
-        parts.append("detect skips: " + ", ".join(soft))
+        parts.append("skips: " + ", ".join(soft))
     return "::warning::" + "; ".join(parts) if parts else None
 
 

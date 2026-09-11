@@ -10,11 +10,14 @@ pricing keys stay verbatim under `unmapped`.
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from ai_pricelog.pricing import to_mtok
 from ai_pricelog.web import FetchError, fetch_text
+
+log = logging.getLogger(__name__)
 
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 
@@ -34,14 +37,26 @@ class OpenrouterModel:
     pricing: dict[str, object] = field(default_factory=dict, compare=False)
 
 
-def fetch_models(url: str | None = None) -> list[OpenrouterModel]:
+def fetch_models(
+    url: str | None = None,
+    *,
+    errors: list[str] | None = None,
+    listed: set[str] | None = None,
+) -> list[OpenrouterModel]:
+    """Fetch the models API.
+
+    `errors` collects one description per skipped entry; `listed` collects
+    every usable id the payload carries, skipped entries included, so a
+    caller can tell "the api lists this model" from "this model's row
+    built".
+    """
     url = url or OPENROUTER_MODELS_URL
     text = fetch_text(url)
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise FetchError(f"fetch for {url}: invalid json: {exc.msg}") from exc
-    return _parse_models(data, f"url '{url}'")
+    return _parse_models(data, f"url '{url}'", errors, listed)
 
 
 OBSERVED_KEYS = frozenset(
@@ -353,59 +368,88 @@ def _clock(model_id: str, key: str, value: object) -> int:
     return clock
 
 
-def _parse_models(data: object, source: str) -> list[OpenrouterModel]:
+def _parse_models(
+    data: object,
+    source: str,
+    errors: list[str] | None = None,
+    listed: set[str] | None = None,
+) -> list[OpenrouterModel]:
     if not isinstance(data, dict) or not isinstance(data.get("data"), list):
         raise ValueError(f"{source}: root must be an object with a 'data' list")
     entries = data["data"]
-    listed_ids = {entry["id"] for entry in entries if isinstance(entry, dict)}
+    listed_ids = {
+        entry["id"]
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    }
+    if listed is not None:
+        listed.update(listed_ids)
     models: list[OpenrouterModel] = []
-    for entry in entries:
+    for index, entry in enumerate(entries):
         if not isinstance(entry, dict):
-            raise ValueError(f"{source}: model entries must be objects")
+            _skip_entry(errors, f"data[{index}] is not an object")
+            continue
+        model_id = entry.get("id")
+        if not isinstance(model_id, str) or not model_id:
+            _skip_entry(errors, f"data[{index}] has no string 'id'")
+            continue
         if entry.get("alias_target"):
             continue
-        pricing = entry.get("pricing") or {}
+        pricing = entry.get("pricing")
+        if pricing is None:
+            pricing = {}
         if not isinstance(pricing, dict):
-            raise ValueError(f"{source}: pricing of {entry.get('id')!r} must be an object")
+            _skip_entry(errors, f"pricing of {model_id!r} must be an object")
+            continue
         canonical_slug = entry.get("canonical_slug")
-        models.append(
-            OpenrouterModel(
-                id=entry["id"],
-                name=_display_name(entry),
-                input_mtok=_price(pricing.get("prompt"), entry["id"]),
-                output_mtok=_price(pricing.get("completion"), entry["id"]),
-                cache_read_mtok=_price(pricing.get("input_cache_read"), entry["id"]),
-                canonical_slug=canonical_slug,
-                # a variant entry redirects to another listed id (":batch"
-                # spellings pointing at the plain model); the plain id keys
-                # the row, so the redirect is not a priced row of its own
-                variant_snapshot=bool(
-                    canonical_slug is not None
-                    and canonical_slug != entry["id"]
-                    and canonical_slug in listed_ids
-                ),
-                context_length=entry.get("context_length") or 0,
-                pricing=pricing,
+        try:
+            models.append(
+                OpenrouterModel(
+                    id=model_id,
+                    name=_display_name(entry),
+                    input_mtok=_price(pricing.get("prompt")),
+                    output_mtok=_price(pricing.get("completion")),
+                    cache_read_mtok=_price(pricing.get("input_cache_read")),
+                    canonical_slug=canonical_slug,
+                    # a variant entry redirects to another listed id (":batch"
+                    # spellings pointing at the plain model); the plain id keys
+                    # the row, so the redirect is not a priced row of its own
+                    variant_snapshot=bool(
+                        canonical_slug is not None
+                        and canonical_slug != model_id
+                        and canonical_slug in listed_ids
+                    ),
+                    context_length=entry.get("context_length") or 0,
+                    pricing=pricing,
+                )
             )
-        )
+        except (TypeError, ValueError, OverflowError) as exc:
+            _skip_entry(errors, f"{type(exc).__name__}: model {model_id!r}: {exc}")
     return models
+
+
+def _skip_entry(errors: list[str] | None, description: str) -> None:
+    # plan #22 class: per-entry shape drift costs one model with a report
+    # line, never the whole fetch
+    log.warning("parse skip for openrouter: %s", description)
+    if errors is not None:
+        errors.append(description)
 
 
 def _display_name(entry: dict) -> str:
     name = entry.get("name") or entry["id"]
+    if not isinstance(name, str):
+        raise ValueError(f"name must be a string, got {type(name).__name__}")
     # API names carry a vendor prefix ("SpaceXAI: Grok 4.6"); rows use the
     # bare model name
     return name.split(": ", 1)[1] if ": " in name else name
 
 
-def _price(value: object, model_id: str) -> float | None:
+def _price(value: object) -> float | None:
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ValueError(
-            f"model {model_id!r}: pricing values must be per-token strings, "
-            f"got {type(value).__name__}"
-        )
+        raise ValueError(f"pricing values must be per-token strings, got {type(value).__name__}")
     per_token = float(value)
     if per_token <= 0:
         # zero (free models) and negative ("no fixed price" router models)

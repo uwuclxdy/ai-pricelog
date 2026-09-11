@@ -13,6 +13,8 @@ from conftest import git, git_init_repo, register_fake_module
 
 TODAY = "2026-08-26"
 VERSION = 4
+# captured before the autouse or_models fixture patches the module attribute
+REAL_FETCH_MODELS = openrouter.fetch_models
 
 
 def pricing(input_cost: float = 2.7e-07, output_cost: float = 1.1e-06) -> Pricing:
@@ -125,7 +127,13 @@ def fake_modules(monkeypatch):
 @pytest.fixture(autouse=True)
 def or_models(monkeypatch):
     models: list[openrouter.OpenrouterModel] = []
-    monkeypatch.setattr(openrouter, "fetch_models", lambda: list(models))
+
+    def fake_fetch(*, errors=None, listed=None):
+        if listed is not None:
+            listed.update(model.id for model in models)
+        return list(models)
+
+    monkeypatch.setattr(openrouter, "fetch_models", fake_fetch)
     return models
 
 
@@ -787,6 +795,129 @@ def test_row_build_failure_line_is_health_parseable(
         pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
     issues = health.parse_log(_logged_lines(caplog))
     assert issues["openrouter"]["soft"] and issues["openrouter"]["hard"] == []
+
+
+def test_openrouter_parse_failure_skips_entry_and_continues(
+    tmp_path, monkeypatch, fake_modules, repo_root
+):
+    # a malformed api entry (non-object pricing) skips with a report line and
+    # the well-formed models' rows still land
+    monkeypatch.setattr(openrouter, "fetch_models", REAL_FETCH_MODELS)
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": "bad/pricing", "name": "B", "pricing": ["not-an-object"]},
+                {
+                    "id": "deepseek/deepseek-chat",
+                    "name": "DeepSeek Chat",
+                    "pricing": {"prompt": "2.7e-7", "completion": "1.1e-6"},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    legacy = store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+        VERSION,
+    )
+    seed_store(repo_root, [legacy])
+    cfg = make_cfg("deepseek")
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    or_report = report.providers["openrouter"]
+    assert or_report.detected == ["deepseek/deepseek-chat"]
+    assert or_report.candidates == ["deepseek/deepseek-chat"]
+    assert [model_id for model_id, _url in or_report.prs] == ["deepseek/deepseek-chat"]
+    assert or_report.errors == ["pricing of 'bad/pricing' must be an object"]
+    rows = branch_rows(repo_root, batch_branch("openrouter"), "openrouter")
+    assert [row["model_id"] for row in rows] == ["deepseek/deepseek-chat"]
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_parse_skip_line_is_health_parseable(
+    tmp_path, monkeypatch, fake_modules, repo_root, caplog
+):
+    # a malformed api entry parses as a soft (provider-alive) issue
+    monkeypatch.setattr(openrouter, "fetch_models", REAL_FETCH_MODELS)
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": "bad/pricing", "name": "B", "pricing": ["not-an-object"]},
+                {
+                    "id": "deepseek/deepseek-chat",
+                    "name": "DeepSeek Chat",
+                    "pricing": {"prompt": "2.7e-7", "completion": "1.1e-6"},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["openrouter"]["soft"] and issues["openrouter"]["hard"] == []
+
+
+def test_openrouter_malformed_stored_entry_does_not_fake_delisting(
+    tmp_path, monkeypatch, fake_modules, repo_root
+):
+    # the api still lists the model, so a malformed entry must not advance the
+    # absence clock: present keys on listing, never on row success
+    monkeypatch.setattr(openrouter, "fetch_models", REAL_FETCH_MODELS)
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": "deepseek/deepseek-chat", "name": "DeepSeek Chat", "pricing": ["bad"]},
+                {
+                    "id": "good/model",
+                    "name": "Good",
+                    "pricing": {"prompt": "1e-7", "completion": "1e-6"},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": None}
+    stored = store.build_row(
+        "openrouter",
+        "deepseek/deepseek-chat",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://openrouter.ai/api/v1/models",
+        VERSION,
+    )
+    seed_store(repo_root, [stored])
+    seed_absence(
+        repo_root,
+        {"openrouter": {"deepseek/deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    cfg = make_cfg("deepseek")
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    or_report = report.providers["openrouter"]
+    assert or_report.detected == ["good/model"]
+    assert or_report.errors == ["pricing of 'deepseek/deepseek-chat' must be an object"]
+    assert [model_id for model_id, _url in or_report.prs] == ["good/model"]
+    assert all("delisted" not in title for title, _body, _head in runner.created)
+    # the seeded counter clears: the file leaves the branch
+    assert branch_absence(repo_root, batch_branch("openrouter")) == {}
+    assert_default_branch_clean(repo_root, tip="land absence state")
 
 
 def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
@@ -1858,7 +1989,7 @@ def test_openrouter_validation_failure_still_counts_present(
     tmp_path, fake_modules, repo_root, or_models, monkeypatch
 ):
     # a row that builds but fails validation must not fake a delisting: the
-    # model counts present because build_row produced a rowable id
+    # model counts present because the api lists it (the stub fills `listed`)
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
@@ -1888,7 +2019,13 @@ def test_openrouter_validation_failure_still_counts_present(
         real_validate(row, keys)
 
     monkeypatch.setattr(pipeline.validate, "validate_row", failing_validate)
-    monkeypatch.setattr(pipeline.openrouter, "fetch_models", lambda: [model])
+
+    def fake_fetch(*, errors=None, listed=None):
+        if listed is not None:
+            listed.add(model.id)
+        return [model]
+
+    monkeypatch.setattr(pipeline.openrouter, "fetch_models", fake_fetch)
     runner = PipelineRunner()
 
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)

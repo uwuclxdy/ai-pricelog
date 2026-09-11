@@ -99,15 +99,103 @@ def test_fetch_models_rounds_to_six_decimals(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_fetch_models_root_shape_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(openrouter, "fetch_text", lambda url: "[1, 2]")
-    with pytest.raises(ValueError, match="data"):
+    with pytest.raises(ValueError, match="root must be an object"):
         fetch_models()
-    monkeypatch.setattr(
-        openrouter,
-        "fetch_text",
-        lambda url: '{"data": [{"id": "a/b", "name": "A", "pricing": {"prompt": 5}}]}',
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: '{"data": {"a": 1}}')
+    with pytest.raises(ValueError, match="root must be an object"):
+        fetch_models()
+
+
+def test_fetch_models_skips_malformed_entries(monkeypatch: pytest.MonkeyPatch) -> None:
+    # plan #22 class: one malformed entry costs itself, never the fetch; only
+    # the root shape stays fatal
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                "not-an-object",
+                {"name": "No Id", "pricing": {}},
+                {"id": "bad/pricing", "name": "B", "pricing": ["nope"]},
+                {"id": "bad/value", "name": "B", "pricing": {"prompt": 5}},
+                {"id": "bad/name", "name": ["x", ": "], "pricing": {}},
+                {"id": "bad/name2", "name": 5, "pricing": {}},
+                {"id": "bad/empty", "name": "B", "pricing": []},
+                {"id": "a/one", "name": "A", "pricing": {"prompt": "0.000001"}},
+                {"id": "b/two", "name": "B", "pricing": {}},
+            ]
+        }
     )
-    with pytest.raises(ValueError, match="per-token strings"):
-        fetch_models()
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    errors: list[str] = []
+    models = fetch_models(errors=errors)
+    assert [model.id for model in models] == ["a/one", "b/two"]
+    assert errors == [
+        "data[0] is not an object",
+        "data[1] has no string 'id'",
+        "pricing of 'bad/pricing' must be an object",
+        "ValueError: model 'bad/value': pricing values must be per-token strings, got int",
+        "ValueError: model 'bad/name': name must be a string, got list",
+        "ValueError: model 'bad/name2': name must be a string, got int",
+        "pricing of 'bad/empty' must be an object",
+    ]
+
+
+def test_fetch_models_listed_includes_skipped_and_alias_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": "a/one", "name": "A", "pricing": {"prompt": "1e-6"}},
+                {"id": "~alias/old", "name": "Old", "alias_target": "a/one", "pricing": {}},
+                {"id": "bad/pricing", "name": "B", "pricing": ["x"]},
+                {"name": "No Id", "pricing": {}},
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    listed: set[str] = set()
+    errors: list[str] = []
+    models = fetch_models(errors=errors, listed=listed)
+    assert [model.id for model in models] == ["a/one"]
+    # every usable payload id, skipped entries included; an entry with no id
+    # contributes nothing
+    assert listed == {"a/one", "~alias/old", "bad/pricing"}
+    assert errors == [
+        "pricing of 'bad/pricing' must be an object",
+        "data[3] has no string 'id'",
+    ]
+
+
+def test_fetch_models_variant_of_malformed_target_stays_variant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # listed_ids keeps skipped entries' ids, so a variant whose canonical
+    # target went malformed stays a variant instead of gaining its own row
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": "a/b", "name": "AB", "pricing": ["bad"]},
+                {
+                    "id": "a/b:batch",
+                    "name": "AB Batch",
+                    "canonical_slug": "a/b",
+                    "pricing": {"prompt": "1e-6"},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    errors: list[str] = []
+    models = fetch_models(errors=errors)
+    assert [model.id for model in models] == ["a/b:batch"]
+    assert models[0].variant_snapshot is True
+    assert errors == ["pricing of 'a/b' must be an object"]
 
 
 def test_openrouter_fixture_is_valid_json() -> None:

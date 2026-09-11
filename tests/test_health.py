@@ -27,11 +27,13 @@ def test_parse_log_soft_skips():
     lines = [
         "WARNING:ai_pricelog.detectors.databricks_page:detect skip for databricks:"
         " unmapped model name 'GLM-6' on https://x",
+        "WARNING:ai_pricelog.openrouter:parse skip for openrouter: data[0] is not an object",
         "WARNING:ai_pricelog.pipeline:entry x failed validation for zai: bad row",
         "WARNING:ai_pricelog.pipeline:refresh for k3 skipped in moonshot: bad row",
     ]
     issues = health.parse_log(lines)
     assert issues["databricks"]["soft"] and issues["databricks"]["hard"] == []
+    assert issues["openrouter"]["soft"] and issues["openrouter"]["hard"] == []
     assert issues["zai"]["soft"]
     assert issues["moonshot"]["soft"]
 
@@ -52,14 +54,12 @@ def test_warning_lists_classes():
         "databricks": {"hard": [], "soft": ["b"]},
         "zai": {"hard": ["c"], "soft": ["d"]},
     }
-    assert health.warning(now) == (
-        "::warning::hard failures: anthropic, zai; detect skips: databricks"
-    )
+    assert health.warning(now) == ("::warning::hard failures: anthropic, zai; skips: databricks")
 
 
 def test_warning_hard_only_without_soft():
     now = {"anthropic": {"hard": ["a"], "soft": []}}
-    assert "detect skips" not in health.warning(now)
+    assert "skips:" not in health.warning(now)
 
 
 def test_providers_to_ping_two_consecutive_hard():
