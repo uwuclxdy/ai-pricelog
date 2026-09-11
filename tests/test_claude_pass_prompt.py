@@ -5,6 +5,7 @@ a rename or a schema change would otherwise break silently."""
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,24 @@ def _section_body(text: str, title: str) -> str:
     next_heading = re.search(r"^#{2,3} ", rest, re.M)
     body = rest[: next_heading.start()] if next_heading else rest
     return body.strip()
+
+
+def _h2_body(text: str, title: str) -> str:
+    """The `## title` section whole, subsections included, to the next `## `."""
+    start = re.search(rf"^## {re.escape(title)}\s*$", text, re.M)
+    assert start is not None, f"section {title!r} not found"
+    rest = text[start.end() :]
+    nxt = re.search(r"^## ", rest, re.M)
+    return rest[: nxt.start()] if nxt else rest
+
+
+def _h3_body(text: str, title: str) -> str:
+    """The `### title` subsection, to the next heading of the same depth or up."""
+    start = re.search(rf"^### {re.escape(title)}\s*$", text, re.M)
+    assert start is not None, f"subsection {title!r} not found"
+    rest = text[start.end() :]
+    nxt = re.search(r"^#{2,3} ", rest, re.M)
+    return rest[: nxt.start()] if nxt else rest
 
 
 def test_row_schema_carries_the_current_vocabulary() -> None:
@@ -65,3 +84,23 @@ def test_needs_human_comment_pings_the_owner() -> None:
     assert ping in PROMPT.read_text()
     manual = (ROOT / ".github" / "claude-pass" / "automerge.md").read_text()
     assert ping in manual
+
+
+def test_every_watched_provider_has_page_facts_or_an_exempt_entry() -> None:
+    # the pass judges rows for every watched provider on a checkout with no
+    # docs/ tree: each needs page-facts context in this prompt or a named
+    # exempt entry, and a provider section that lands with neither reds here
+    providers = tomllib.loads((ROOT / "providers.toml").read_text(encoding="utf-8"))
+    quirks = _h2_body(PROMPT.read_text(encoding="utf-8"), "domain quirks")
+    announce_at = quirks.find("### announce channels")
+    assert announce_at != -1, "the announce inventory moved; repin the page-facts zone"
+    page_facts = quirks[:announce_at]
+    exempt = _h3_body(quirks, "no page quirk")
+    for key in providers:
+        covered = re.search(
+            rf"^(?:#{{3,4}} .*\b{re.escape(key)}\b|- {re.escape(key)}\b)", page_facts, re.M
+        )
+        exempted = re.search(rf"^- {re.escape(key)}\b", exempt, re.M)
+        assert covered or exempted, (
+            f"provider {key!r} has neither page facts nor an exempt entry in the pass prompt"
+        )
