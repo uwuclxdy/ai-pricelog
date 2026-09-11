@@ -1,4 +1,4 @@
-"""The 6-hourly run: append observed price and removal rows, open one draft PR per source.
+"""The hourly run: append observed price and removal rows, open one draft PR per source.
 
 Watches the provider pages through the detector/scraper pairs, plus the
 OpenRouter models API. A run groups its new rows into one draft pr per
