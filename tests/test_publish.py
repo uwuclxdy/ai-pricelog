@@ -611,7 +611,8 @@ def test_flat_export_over_the_real_tree(tmp_path):
                 == index["sources"][entry["source"]][entry["model_id"]]["rates"][axis]
             )
     assert flat["updated_at"] == max(str(r["observed_at"]) for r in rows)
-    # a null vendor only ever comes from a catalog seed pending curation
+    # a null vendor only ever comes from a catalog key pending curation: an
+    # uncurated seed, or a key the catalog has not mapped at all yet
     nulls = [e for e in flat["entries"] if e["vendor"] is None]
     catalog = models.load_models(ROOT / models.MODELS_FILE)
     by_key = {}
@@ -620,7 +621,9 @@ def test_flat_export_over_the_real_tree(tmp_path):
             for model_id in ids:
                 by_key[(source, model_id)] = entry
     for e in nulls:
-        assert by_key[(e["source"], e["model_id"])]["curated"] is False
+        catalog_entry = by_key.get((e["source"], e["model_id"]))
+        if catalog_entry is not None:
+            assert catalog_entry["curated"] is False
 
 
 @pytest.mark.skipif(not default_branch_test, reason=default_branch_test.skip_reason)
