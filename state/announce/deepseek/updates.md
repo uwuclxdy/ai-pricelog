@@ -6,8 +6,9 @@ GPQA Diamond: 90.9 HLE: 36.8 (39.1*) Codeforces (Rating): 3471 MathArena Apex: 6
 API changes DeepSeek V4.1 Flash is now available on the DeepSeek API with native multimodal support.
 Change the model name to deepseek-flash to call the latest V4.1 Flash model.
 The previous-generation models V4 Flash and V4 Flash Vision Exp have been retired; for compatibility, the model names deepseek-v4-flash and deepseek-v4-flash-vision-exp are temporarily routed to V4.1 Flash.
-Meanwhile, extensive testing shows that V4.1 Flash now outperforms DeepSeek V4 Pro across performance, cost, speed, and total time, so we plan to retire V4 Pro in an orderly manner.
-After 12:00 Beijing Time on September 14, 2026, and until the future release of V4.1 Pro, all requests to deepseek-v4-pro will be routed to V4.1 Flash and billed at the V4.1 Flash price.
+In response to user demand, we have decided to continue providing API services for DeepSeek V4 Pro after September 14, 2026, with the billing method remaining unchanged.
+We will provide further notice should there be any changes.
+Thank you for your understanding and support!
 API pricing adjustment With the release of DeepSeek-V4.1-Flash, API prices have been reduced accordingly.
 For details, please refer to Models & Pricing .
 For more details, please refer to this documentation .

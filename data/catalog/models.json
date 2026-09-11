@@ -1812,6 +1812,15 @@
       },
       "vendor": "deepseek"
     },
+    "fireworks/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "fireworks/glm-5.2-fast": {
       "curated": false,
       "sources": {
