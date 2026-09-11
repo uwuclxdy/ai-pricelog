@@ -157,8 +157,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "63b18fa7f4c4d3783266e785052a9d6dcd7c32c22b04ca90bf18bf48b6010b0c",
-      "fetched": "2026-09-09"
+      "sha256": "fe3381da7f8504b83a2208014512d69e623fea5ee8544a34af8fe40879c124e7",
+      "fetched": "2026-09-10"
     }
   }
 }
