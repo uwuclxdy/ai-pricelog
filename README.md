@@ -4,7 +4,7 @@
 
 **the biggest auto-updated genai pricing index: complete dated price history per model, peak/off-peak rates**
 
-detectors scrape provider pricing pages and the openrouter api daily. every observed change lands as a dated row, reviewed by a human before it merges
+detectors scrape provider pricing pages and the openrouter api hourly. every observed change lands as a dated row, reviewed by a human before it merges
 
 ![ci](https://shields.uwuclxdy.dev/github/actions/workflow/status/uwuclxdy/ai-pricelog/ci.yml?branch=mommy) ![license](https://shields.uwuclxdy.dev/github/license/uwuclxdy/ai-pricelog)
 
