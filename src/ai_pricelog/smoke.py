@@ -1,15 +1,16 @@
 """live smoke probe for the moonshot .md endpoints.
 
 kimi's pricing HTML is JS-rendered; the pipeline runs entirely on the static
-.md twins (models.md for detection, llms.txt + per-page <DocTable> blocks for
-scraping). the fixture tests pin saved copies and cannot catch the upstream
-pages changing shape or disappearing, so the cron workflow runs this probe
-against the live endpoints. exit 0 = every endpoint still serves what the
-pipeline expects.
+.md twins (models.md for detection, llms.txt resolving the merged pricing
+chat page and its <DocTable> block for scraping). the fixture tests pin saved
+copies and cannot catch the upstream pages changing shape or disappearing,
+so the cron workflow runs this probe against the live endpoints. exit 0 =
+every endpoint still serves what the pipeline expects.
 
-checks are small pure functions over fetched text so the offline tests cover
-them; main() owns the network, which flows through the moonshot modules'
-fetch_text (web.fetch_text, one retry layer) exactly like the pipeline does.
+checks are small functions over fetched text so the offline tests cover them
+with a monkeypatched fetch_text; live runs flow through the moonshot
+modules' fetch_text (web.fetch_text, one retry layer) exactly like the
+pipeline does.
 """
 
 from __future__ import annotations
@@ -49,17 +50,12 @@ def check_pricing(pricing: Pricing | None, model_id: str) -> Pricing:
     return pricing
 
 
-def check_pricing_pages(mapping: dict[str, str]) -> int:
-    """every indexed pricing page fetches and carries a DocTable; page count."""
-    if not mapping:
-        raise ValueError("llms.txt resolves to no pricing pages")
-    count = 0
-    for url in mapping.values():
-        doc = scraper._doc_table(scraper.fetch_text(url))
-        if doc is None:
-            raise ValueError(f"no DocTable block on pricing page {url}")
-        count += 1
-    return count
+def check_pricing_pages(index_url: str) -> str:
+    """the resolved chat page fetches and carries a DocTable; its url."""
+    page_url = scraper._load_index(index_url)
+    if scraper._doc_table(scraper.fetch_text(page_url)) is None:
+        raise ValueError(f"no DocTable block on pricing page {page_url}")
+    return page_url
 
 
 def main() -> int:
@@ -68,13 +64,12 @@ def main() -> int:
         ids = detector.detect(cfg)
         model_id = pick_model(ids)
         pricing = check_pricing(scraper.scrape(cfg, model_id), model_id)
-        mapping = scraper._load_index(cfg.scraper_url)
-        pages = check_pricing_pages(mapping)
+        page_url = check_pricing_pages(cfg.scraper_url)
     except (ConfigError, FetchError, ValueError) as exc:
         print(f"moonshot smoke failed: {exc}", file=sys.stderr)
         return 1
     print(
-        f"moonshot smoke ok: models.md + llms.txt + {pages} pricing pages; "
+        f"moonshot smoke ok: models.md + llms.txt + pricing page {page_url}; "
         f"{model_id} ${pricing.input_cost_per_token * 1e6:.2f}/"
         f"${pricing.output_cost_per_token * 1e6:.2f} per 1M tokens"
     )

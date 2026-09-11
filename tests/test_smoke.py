@@ -11,14 +11,11 @@ from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 INDEX_URL = "https://platform.kimi.ai/docs/llms.txt"
+CHAT_URL = "https://platform.kimi.ai/docs/pricing/chat.md"
 
 PAGES = {
     "llms": (INDEX_URL, "llms.txt"),
-    "chat-k3": ("https://platform.kimi.ai/docs/pricing/chat-k3.md", "chat-k3.md"),
-    "chat-k25": ("https://platform.kimi.ai/docs/pricing/chat-k25.md", "chat-k25.md"),
-    "chat-k26": ("https://platform.kimi.ai/docs/pricing/chat-k26.md", "chat-k26.md"),
-    "chat-k27-code": ("https://platform.kimi.ai/docs/pricing/chat-k27-code.md", "chat-k27-code.md"),
-    "chat-v1": ("https://platform.kimi.ai/docs/pricing/chat-v1.md", "chat-v1.md"),
+    "chat": (CHAT_URL, "chat.md"),
 }
 
 
@@ -77,39 +74,32 @@ def test_check_pricing_rejects_non_positive():
         smoke.check_pricing(bad, "kimi-k3")
 
 
-def test_check_pricing_pages_walks_index(monkeypatch):
-    monkeypatch.setattr(
-        scraper,
-        "fetch_text",
-        fixture_fetch("llms", "chat-k3", "chat-k25", "chat-k26", "chat-k27-code", "chat-v1"),
-    )
-    mapping = scraper._load_index(INDEX_URL)
-    assert smoke.check_pricing_pages(mapping) == len(mapping)
+def test_check_pricing_pages_fetches_resolved_page(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
+    assert smoke.check_pricing_pages(INDEX_URL) == CHAT_URL
 
 
 def test_check_pricing_pages_requires_doctable(monkeypatch):
-    base = fixture_fetch("llms", "chat-k3", "chat-k25", "chat-k26", "chat-k27-code", "chat-v1")
+    base = fixture_fetch("llms")
 
     def fake(url: str) -> str:
-        if url.endswith("chat-v1.md"):
+        if url == CHAT_URL:
             return "# no pricing table\n"
         return base(url)
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
-    mapping = scraper._load_index(INDEX_URL)
-    with pytest.raises(ValueError, match="chat-v1"):
-        smoke.check_pricing_pages(mapping)
+    with pytest.raises(ValueError, match="chat.md"):
+        smoke.check_pricing_pages(INDEX_URL)
 
 
 def test_check_pricing_pages_propagates_fetch_failure(monkeypatch):
-    def boom(url: str) -> str:
+    llms_text = (FIXTURES / "llms.txt").read_text()
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return llms_text
         raise FetchError(f"fetch failed for {url}")
 
-    monkeypatch.setattr(scraper, "fetch_text", boom)
-    with pytest.raises(FetchError, match="chat-k3"):
-        smoke.check_pricing_pages({"kimi-k3": "https://platform.kimi.ai/docs/pricing/chat-k3.md"})
-
-
-def test_check_pricing_pages_rejects_empty_mapping():
-    with pytest.raises(ValueError, match="llms.txt"):
-        smoke.check_pricing_pages({})
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(FetchError, match="pricing/chat"):
+        smoke.check_pricing_pages(INDEX_URL)

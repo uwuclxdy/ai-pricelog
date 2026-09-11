@@ -12,15 +12,13 @@ from ai_pricelog.web import FetchError
 
 MODELS_URL = "https://platform.kimi.ai/docs/models.md"
 INDEX_URL = "https://platform.kimi.ai/docs/llms.txt"
+CHAT_URL = "https://platform.kimi.ai/docs/pricing/chat.md"
 FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 
 PAGES = {
     "models": (MODELS_URL, "models.md"),
     "llms": (INDEX_URL, "llms.txt"),
-    "chat-k3": ("https://platform.kimi.ai/docs/pricing/chat-k3.md", "chat-k3.md"),
-    "chat-k26": ("https://platform.kimi.ai/docs/pricing/chat-k26.md", "chat-k26.md"),
-    "chat-k27-code": ("https://platform.kimi.ai/docs/pricing/chat-k27-code.md", "chat-k27-code.md"),
-    "chat-v1": ("https://platform.kimi.ai/docs/pricing/chat-v1.md", "chat-v1.md"),
+    "chat": (CHAT_URL, "chat.md"),
 }
 
 EXPECTED_IDS = [
@@ -28,13 +26,6 @@ EXPECTED_IDS = [
     "kimi-k2.7-code",
     "kimi-k2.7-code-highspeed",
     "kimi-k2.6",
-    "kimi-k2.5",
-    "moonshot-v1-8k",
-    "moonshot-v1-32k",
-    "moonshot-v1-128k",
-    "moonshot-v1-8k-vision-preview",
-    "moonshot-v1-32k-vision-preview",
-    "moonshot-v1-128k-vision-preview",
 ]
 
 
@@ -71,7 +62,8 @@ def test_detect_models(monkeypatch):
     monkeypatch.setattr(detector, "fetch_text", fixture_fetch("models"))
     ids = detector.detect(cfg())
     assert ids == EXPECTED_IDS
-    assert "kimi-k2-0905-preview" not in ids
+    assert "kimi-k2.5" not in ids  # retired 2026-08-31, deprecated table excluded
+    assert "moonshot-v1-8k" not in ids
 
 
 def test_detect_malformed_page_raises(monkeypatch):
@@ -92,7 +84,9 @@ def test_detect_header_wording_drift_still_matches(monkeypatch):
 
 
 def test_scrape_k3(monkeypatch):
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k3"))
+    # the live llms.txt also carries an /api/chat.md link; resolution must
+    # key on /pricing/ so it cannot match that one
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)  # cache miss, not hit
@@ -100,40 +94,86 @@ def test_scrape_k3(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(15.00 / 1e6)
     assert pricing.mode == "chat"
     assert pricing.max_tokens_in == 1_048_576
+    assert pricing.url == CHAT_URL
 
 
-def test_scrape_highspeed_via_family_prefix(monkeypatch):
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k27-code"))
-    pricing = scraper.scrape(cfg(), "kimi-k2.7-code-highspeed")
+def test_scrape_k26(monkeypatch):
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
+    pricing = scraper.scrape(cfg(), "kimi-k2.6")
     assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(1.90 / 1e6)
-    assert pricing.cache_read_cost_per_token == pytest.approx(0.38 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(8.00 / 1e6)
+    assert pricing.input_cost_per_token == pytest.approx(0.95 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.16 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
     assert pricing.max_tokens_in == 262_144
+    assert pricing.url == CHAT_URL
 
 
-def test_scrape_k27_code_cache_read(monkeypatch):
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k27-code"))
-    pricing = scraper.scrape(cfg(), "kimi-k2.7-code")
-    assert pricing is not None
-    assert pricing.cache_read_cost_per_token == pytest.approx(0.19 / 1e6)
+def test_scrape_k27_code_and_highspeed(monkeypatch):
+    # the two longer ids match their own rows, not each other's
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
+    code = scraper.scrape(cfg(), "kimi-k2.7-code")
+    assert code is not None
+    assert code.input_cost_per_token == pytest.approx(0.95 / 1e6)
+    assert code.cache_read_cost_per_token == pytest.approx(0.19 / 1e6)
+    assert code.output_cost_per_token == pytest.approx(4.00 / 1e6)
+    assert code.max_tokens_in == 262_144
+    assert code.url == CHAT_URL
+    highspeed = scraper.scrape(cfg(), "kimi-k2.7-code-highspeed")
+    assert highspeed is not None
+    assert highspeed.input_cost_per_token == pytest.approx(1.90 / 1e6)
+    assert highspeed.cache_read_cost_per_token == pytest.approx(0.38 / 1e6)
+    assert highspeed.output_cost_per_token == pytest.approx(8.00 / 1e6)
+    assert highspeed.max_tokens_in == 262_144
+    assert highspeed.url == CHAT_URL
 
 
-def test_scrape_v1_plain_input_column(monkeypatch):
-    # the v1 page has no cache-hit column, so cache-read stays unset
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-v1"))
-    pricing = scraper.scrape(cfg(), "moonshot-v1-8k")
-    assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.20 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(2.00 / 1e6)
-    assert pricing.max_tokens_in == 8192
-    assert pricing.cache_read_cost_per_token is None
-    # the provenance names the resolved per-model page, not the index
-    assert pricing.url == "https://platform.kimi.ai/docs/pricing/chat-v1.md"
+def test_scrape_absent_model_returns_none(monkeypatch):
+    # no row for the model on the merged page -> unpriced, not an exception
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
+    assert scraper.scrape(cfg(), "kimi-k9") is None
+
+
+def test_scrape_index_without_chat_link_raises(monkeypatch):
+    # batch/tools/limits are pricing pages but not model-inference ones
+    index_text = "\n".join(
+        [
+            "- [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): batch",
+            "- [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/tools.md): tools",
+            "- [Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): limits",
+        ]
+    )
+    monkeypatch.setattr(scraper, "fetch_text", lambda url: index_text)
+    with pytest.raises(FetchError, match=INDEX_URL):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_scrape_index_with_ambiguous_chat_links_raises(monkeypatch):
+    index_text = "\n".join(
+        [
+            "- [Pricing One](https://platform.kimi.ai/docs/pricing/chat.md): one",
+            "- [Pricing Two](https://platform.kimi.ai/docs/pricing/chat.md): two",
+        ]
+    )
+    monkeypatch.setattr(scraper, "fetch_text", lambda url: index_text)
+    with pytest.raises(FetchError, match=INDEX_URL):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_scrape_page_without_doctable_raises(monkeypatch):
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return "# no pricing table here\n"
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(FetchError, match="DocTable"):
+        scraper.scrape(cfg(), "kimi-k3")
 
 
 def test_scrape_index_fetched_once(monkeypatch):
-    base = fixture_fetch("llms", "chat-k3")
+    base = fixture_fetch("llms", "chat")
     calls = {"index": 0}
 
     def counting(url: str) -> str:
@@ -143,79 +183,9 @@ def test_scrape_index_fetched_once(monkeypatch):
 
     monkeypatch.setattr(scraper, "fetch_text", counting)
     assert scraper.scrape(cfg(), "kimi-k3") is not None
-    assert scraper.scrape(cfg(), "kimi-k3-thinking") is None  # k3 page, no such row
-    assert calls["index"] == 1
-
-
-def test_scrape_unindexed_model_returns_none(monkeypatch):
-    # fallback slug fetch 404s -> the model has no pricing page
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms"))
+    assert scraper.scrape(cfg(), "kimi-k2.6") is not None
     assert scraper.scrape(cfg(), "kimi-k9") is None
-
-
-def test_title_id_drops_trailing_model_and_scrapes_k26(monkeypatch):
-    # "Kimi K2.6 Model Pricing" -> kimi-k2.6 (trailing "Model" dropped), not
-    # kimi-k2.6-model; the exact mapping hit then scrapes the chat-k26 page
-    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat-k26"))
-    assert scraper._load_index(INDEX_URL)["kimi-k2.6"] == (
-        "https://platform.kimi.ai/docs/pricing/chat-k26.md"
-    )
-    pricing = scraper.scrape(cfg(), "kimi-k2.6")
-    assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.95 / 1e6)
-    assert pricing.cache_read_cost_per_token == pytest.approx(0.16 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
-    assert pricing.max_tokens_in == 262_144
-
-
-def test_scrape_fallback_slug_success(monkeypatch):
-    # the index lacks kimi-k2.6, the fallback chat-k26 fetch succeeds
-    index_text = (FIXTURES / "llms.txt").read_text()
-    index_text = "\n".join(line for line in index_text.splitlines() if "chat-k26" not in line)
-    k26 = (FIXTURES / "chat-k26.md").read_text()
-
-    def fake(url: str) -> str:
-        if url == INDEX_URL:
-            return index_text
-        if url == "https://platform.kimi.ai/docs/pricing/chat-k26.md":
-            return k26
-        raise AssertionError(f"unexpected fetch of {url}")
-
-    monkeypatch.setattr(scraper, "fetch_text", fake)
-    pricing = scraper.scrape(cfg(), "kimi-k2.6")
-    assert pricing is not None
-    assert pricing.input_cost_per_token == pytest.approx(0.95 / 1e6)
-    assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
-    assert pricing.max_tokens_in == 262_144
-
-
-def test_pricing_tolerates_non_string_context_cell():
-    # the context cell is str()-wrapped like its sibling cells
-    doc = (
-        ["Model", "Input Price (Cache Miss)", "Output Price", "Context Window"],
-        [["kimi-k2.6", "$0.95", "$4.00", 262_144]],
-    )
-    pricing = scraper._pricing(
-        doc, "kimi-k2.6", "https://platform.kimi.ai/docs/pricing/chat-k26.md"
-    )
-    assert pricing is not None
-    assert pricing.max_tokens_in == 262_144
-    assert pricing.cache_read_cost_per_token is None
-
-
-def test_scrape_page_without_doctable_raises(monkeypatch):
-    index_text = (FIXTURES / "llms.txt").read_text()
-
-    def fake(url: str) -> str:
-        if url == INDEX_URL:
-            return index_text
-        if url.startswith("https://platform.kimi.ai/docs/pricing/"):
-            return "# no pricing table here\n"
-        raise AssertionError(f"unexpected fetch of {url}")
-
-    monkeypatch.setattr(scraper, "fetch_text", fake)
-    with pytest.raises(FetchError, match="DocTable"):
-        scraper.scrape(cfg(), "kimi-k3")
+    assert calls["index"] == 1
 
 
 def test_scrape_index_failure_propagates(monkeypatch):
@@ -225,3 +195,30 @@ def test_scrape_index_failure_propagates(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_text", boom)
     with pytest.raises(FetchError, match=INDEX_URL):
         scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_pricing_plain_input_column_without_cache_split():
+    # a table without the cache columns still parses via the plain
+    # "Input Price" path (the retired v1 page shape)
+    doc = (
+        ["Model", "Input Price", "Output Price", "Context Window"],
+        [["moonshot-v1-8k", "$0.20", "$2.00", "8,192 tokens"]],
+    )
+    pricing = scraper._pricing(doc, "moonshot-v1-8k", CHAT_URL)
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.20 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(2.00 / 1e6)
+    assert pricing.max_tokens_in == 8192
+    assert pricing.cache_read_cost_per_token is None
+
+
+def test_pricing_tolerates_non_string_context_cell():
+    # the context cell is str()-wrapped like its sibling cells
+    doc = (
+        ["Model", "Input Price (Cache Miss)", "Output Price", "Context Window"],
+        [["kimi-k2.6", "$0.95", "$4.00", 262_144]],
+    )
+    pricing = scraper._pricing(doc, "kimi-k2.6", CHAT_URL)
+    assert pricing is not None
+    assert pricing.max_tokens_in == 262_144
+    assert pricing.cache_read_cost_per_token is None
