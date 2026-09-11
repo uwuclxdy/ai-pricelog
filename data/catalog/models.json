@@ -5131,6 +5131,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.0-flash-vl": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-flash-vl"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/inclusionai/ling-3.0-flash-vl:free": {
       "curated": false,
       "sources": {
