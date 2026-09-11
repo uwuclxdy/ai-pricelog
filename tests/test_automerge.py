@@ -104,6 +104,13 @@ def make_branch(
     git(repo, "fetch", "origin")
 
 
+def commit_announce(repo: Path, texts: dict[str, dict[str, str]], fetched: str) -> None:
+    """Save an announce snapshot on the current branch and commit it."""
+    announce.save_snapshot(announce_snapshot(texts, fetched), repo)
+    git(repo, "add", "-A", "--", "state/announce")
+    git(repo, "commit", "-m", "announce snapshot")
+
+
 def shard_lines(repo: Path, source: str = "deepseek") -> list[str]:
     path = repo / "data" / "history" / f"{source}.ndjson"
     return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
@@ -594,3 +601,400 @@ def test_cross_run_burst_merges(tmp_path):
         "pricelog/newest-00000003",
     ]
     assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_cross_run_burst_keeps_a_landed_channel_change(tmp_path):
+    # the 09-11 shape (PRs 180-184): the evening branch landed fresh channel
+    # prose; the next morning's run failed the same channel's fetch, so its
+    # branch carries the base's stale entry, and the newest branch's
+    # whole-tree write reverted the landed change. each channel must land
+    # from the last branch that CHANGED it against the burst base
+    repo, _bare = build_repo(tmp_path)
+    # two urls in non-alphabetical insertion order, so the byte-equality
+    # assert below can tell an insertion-order serialization from a sorted
+    # one; updates is the channel the evening run changed, alerts the one no
+    # branch touches
+    base_texts = {
+        "https://example.com/updates": "old prose",
+        "https://example.com/alerts": "steady prose",
+    }
+    commit_announce(repo, {"deepseek": base_texts}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/evening-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={"deepseek": base_texts | {"https://example.com/updates": "fresh prose"}},
+        announce_fetched="2026-09-10",
+    )
+    # the morning branch's fetch failed: its snapshot keeps the base's entries
+    # verbatim, stale prose and stale fetched date
+    make_branch(
+        repo,
+        "pricelog/morning-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": base_texts},
+        announce_fetched="2026-09-09",
+    )
+
+    automerge.merge_branches(
+        ["pricelog/evening-00000001", "pricelog/morning-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    entry = index["deepseek"]["https://example.com/updates"]
+    # the older branch's fresh prose and fetched date survive the newer
+    # branch's stale copy
+    assert entry["sha256"] == announce._sha256("fresh prose")
+    assert entry["fetched"] == "2026-09-10"
+    assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh prose"
+    # the channel no branch changed keeps the base's entry
+    steady = index["deepseek"]["https://example.com/alerts"]
+    assert steady["fetched"] == "2026-09-09"
+    assert announce.unwrap((repo / steady["file"]).read_text(encoding="utf-8")) == "steady prose"
+    # the merged announce tree is byte-identical to what save_snapshot writes
+    # for the resolved snapshot: the merge's index.json write must serialize
+    # exactly like the pipeline's own writer or the diff turns whole-file
+    expected_root = tmp_path / "expected"
+    expected_root.mkdir()
+    expected_snapshot = announce_snapshot(
+        {
+            "deepseek": {
+                "https://example.com/updates": "fresh prose",
+                "https://example.com/alerts": "steady prose",
+            }
+        },
+        "2026-09-10",
+    )
+    expected_snapshot["deepseek"]["https://example.com/alerts"]["fetched"] = "2026-09-09"
+    announce.save_snapshot(expected_snapshot, expected_root)
+    expected = {
+        path.relative_to(expected_root).as_posix(): path.read_bytes()
+        for path in (expected_root / "state" / "announce").rglob("*")
+        if path.is_file()
+    }
+    merged = {
+        path.relative_to(repo).as_posix(): path.read_bytes()
+        for path in (repo / "state" / "announce").rglob("*")
+        if path.is_file()
+    }
+    assert merged == expected
+    # the second merge's announce resolution is a no-op against the first's:
+    # the morning branch changed no channel, so the tree it leaves must be
+    # byte-identical to the one the evening merge wrote
+    first_commit = git(repo, "log", "--format=%P", "-1").split()[0]
+    second_tree = git(repo, "ls-tree", "-r", "HEAD", "state/announce/")
+    first_tree = git(repo, "ls-tree", "-r", first_commit, "state/announce/")
+    assert second_tree == first_tree
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_drops_a_url_the_newest_branch_lacks(tmp_path):
+    # the newest branch's index owns the url set: a url that left
+    # providers.toml no longer appears in its run's snapshot, so the merge
+    # deletes the file and the index entry however older branches carry it.
+    # "three" the base itself carried (git's merge deletes it); "two" only the
+    # older branch added, so git's merge keeps it as a HEAD-side addition and
+    # the resolution's own prune must delete it
+    repo, _bare = build_repo(tmp_path)
+    commit_announce(
+        repo,
+        {
+            "deepseek": {
+                "https://example.com/one": "one prose",
+                "https://example.com/three": "three prose",
+            }
+        },
+        "2026-09-09",
+    )
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={
+            "deepseek": {
+                "https://example.com/one": "one prose",
+                "https://example.com/three": "three prose",
+                "https://example.com/two": "two prose",
+            }
+        },
+        announce_fetched="2026-09-10",
+    )
+    make_branch(
+        repo,
+        "pricelog/newest-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": {"https://example.com/one": "one prose"}},
+        announce_fetched="2026-09-09",
+    )
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert set(index["deepseek"]) == {"https://example.com/one"}
+    assert not (repo / "state" / "announce" / "deepseek" / "two.md").exists()
+    assert not (repo / "state" / "announce" / "deepseek" / "three.md").exists()
+    # the surviving url is unchanged on every branch, so the base's entry wins
+    assert index["deepseek"]["https://example.com/one"]["fetched"] == "2026-09-09"
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_adds_a_url_and_keeps_an_unchanged_channel_from_the_base(tmp_path):
+    # a url the base never carried counts as changed by every branch that
+    # carries it, so the last one wins; a url no branch changed keeps the
+    # base's entry and file bytes
+    repo, _bare = build_repo(tmp_path)
+    commit_announce(repo, {"deepseek": {"https://example.com/base": "base prose"}}, "2026-09-08")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={
+            "deepseek": {
+                "https://example.com/base": "base prose",
+                "https://example.com/one": "one prose",
+            }
+        },
+        announce_fetched="2026-09-10",
+    )
+    make_branch(
+        repo,
+        "pricelog/newest-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={
+            "deepseek": {
+                "https://example.com/base": "base prose",
+                "https://example.com/one": "one prose",
+                "https://example.com/two": "two prose",
+            }
+        },
+        announce_fetched="2026-09-11",
+    )
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    urls = index["deepseek"]
+    # unchanged on every branch: the base's entry wins, fetched date included
+    base_entry = urls["https://example.com/base"]
+    assert base_entry["fetched"] == "2026-09-08"
+    assert announce.unwrap((repo / base_entry["file"]).read_text(encoding="utf-8")) == "base prose"
+    # added urls: the last branch that carries them wins
+    assert urls["https://example.com/one"]["fetched"] == "2026-09-11"
+    assert urls["https://example.com/two"]["fetched"] == "2026-09-11"
+    one_entry = urls["https://example.com/one"]
+    assert announce.unwrap((repo / one_entry["file"]).read_text(encoding="utf-8")) == "one prose"
+    two_entry = urls["https://example.com/two"]
+    assert announce.unwrap((repo / two_entry["file"]).read_text(encoding="utf-8")) == "two prose"
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_an_announce_index_whose_file_is_not_derived(tmp_path):
+    # the pass is authorized to hand-edit a branch's announce tree, so a file
+    # field pointing anywhere but the derived channel path must stop the merge
+    # by name rather than write outside the announce tree
+    repo, _bare = build_repo(tmp_path)
+    git(repo, "switch", "-c", "pricelog/hand-00000001")
+    index = {
+        "deepseek": {
+            "https://example.com/u": {
+                "file": "state/announce/deepseek/elsewhere.md",
+                "sha256": announce._sha256("prose"),
+                "fetched": "2026-09-10",
+            }
+        }
+    }
+    (repo / "state" / "announce" / "index.json").write_text(
+        json.dumps(index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "hand-edited index")
+    git(repo, "push", "origin", "pricelog/hand-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    with pytest.raises(automerge.AutoMergeError, match="does not match the derived path"):
+        automerge.merge_branches(
+            ["pricelog/hand-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+
+def test_merge_skips_the_announce_step_for_a_branch_with_no_index(tmp_path):
+    # a branch whose announce tree carries no index.json is not a config drop:
+    # it names no url set, so its merge leaves the announce tree exactly as
+    # the previous merge resolution wrote it (git's modify/delete on the index
+    # keeps HEAD's copy, and the skipped step rewrites nothing)
+    repo, _bare = build_repo(tmp_path)
+    commit_announce(repo, {"deepseek": {"https://example.com/u": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={"deepseek": {"https://example.com/u": "fresh prose"}},
+        announce_fetched="2026-09-10",
+    )
+    # the newest branch's announce tree lost its index.json alone: a {} index
+    # would read as a real config drop and delete the channel, an absent one
+    # must not
+    git(repo, "switch", "-c", "pricelog/newest-00000002")
+    (repo / "state" / "announce" / "index.json").unlink()
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "drop the index")
+    git(repo, "push", "origin", "pricelog/newest-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    entry = index["deepseek"]["https://example.com/u"]
+    assert entry["sha256"] == announce._sha256("fresh prose")
+    assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh prose"
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_renames_a_channel_that_leaves_a_slug_collision(tmp_path):
+    # channel_files disambiguates same-slug urls with a sha8 suffix, so a url
+    # set change renames the survivor: two urls share the "notes" slug while
+    # both are configured, and the survivor's path loses the suffix the moment
+    # the newest branch's index carries it alone. the winner's bytes come from
+    # the winner's OWN (still suffixed) path, but the file must land at the
+    # path the merged url set derives — the two differ exactly here
+    repo, _bare = build_repo(tmp_path)
+    url_a = "https://example.com/notes"
+    url_b = "https://example.com/notes?feed=rss"
+    colliding = announce.channel_files("deepseek", [url_a, url_b])
+    solo = announce.channel_files("deepseek", [url_a])
+    assert colliding[url_a] != solo[url_a]
+    commit_announce(repo, {"deepseek": {url_a: "old a prose", url_b: "old b prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={"deepseek": {url_a: "fresh a prose", url_b: "old b prose"}},
+        announce_fetched="2026-09-10",
+    )
+    # the newest branch dropped url_b from the config and failed url_a's
+    # fetch: its index carries url_a alone (deriving the un-suffixed path)
+    # with the base's stale sha
+    make_branch(
+        repo,
+        "pricelog/newest-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": {url_a: "old a prose"}},
+        announce_fetched="2026-09-09",
+    )
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    entry = index["deepseek"][url_a]
+    # the older branch's fresh prose wins, and the entry names the path the
+    # merged url set derives, not the winner's own suffixed path
+    assert entry["file"] == solo[url_a]
+    assert entry["sha256"] == announce._sha256("fresh a prose")
+    assert entry["fetched"] == "2026-09-10"
+    expected_root = tmp_path / "expected"
+    expected_root.mkdir()
+    announce.save_snapshot(
+        announce_snapshot({"deepseek": {url_a: "fresh a prose"}}, "2026-09-10"), expected_root
+    )
+    expected = {
+        path.relative_to(expected_root).as_posix(): path.read_bytes()
+        for path in (expected_root / "state" / "announce").rglob("*")
+        if path.is_file()
+    }
+    merged = {
+        path.relative_to(repo).as_posix(): path.read_bytes()
+        for path in (repo / "state" / "announce").rglob("*")
+        if path.is_file()
+    }
+    assert merged == expected
+    for file in colliding.values():
+        assert not (repo / file).exists()
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
+    # the rename-detection-masked shape: a newest branch whose index names a
+    # url its tree carries no .md for (a hand edit; _announce_index checks the
+    # file field's derived path, never the blob's existence). git's merge
+    # cannot fill the newest path then, so the resolution's own write is the
+    # only thing that can land the winner's bytes at it
+    repo, _bare = build_repo(tmp_path)
+    url_a = "https://example.com/notes"
+    url_b = "https://example.com/notes?feed=rss"
+    solo = announce.channel_files("deepseek", [url_a])
+    commit_announce(repo, {"deepseek": {url_a: "old a prose", url_b: "old b prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={"deepseek": {url_a: "fresh a prose", url_b: "old b prose"}},
+        announce_fetched="2026-09-10",
+    )
+    # the newest branch names url_a alone (deriving the un-suffixed path) but
+    # a hand edit dropped its .md: its index names a file its own tree lacks
+    make_branch(
+        repo,
+        "pricelog/newest-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": {url_a: "old a prose"}},
+        announce_fetched="2026-09-09",
+    )
+    git(repo, "switch", "pricelog/newest-00000002")
+    git(repo, "rm", "-q", "--", "state/announce/deepseek/notes.md")
+    git(repo, "commit", "-m", "hand edit: drop the channel file, keep the index")
+    git(repo, "push", "origin", "pricelog/newest-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    entry = index["deepseek"][url_a]
+    assert entry["file"] == solo[url_a]
+    # the winner's bytes land at the newest index's path even though no
+    # rename pair can form for it
+    assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh a prose"
+    assert entry["sha256"] == announce._sha256("fresh a prose")
+    assert git(repo, "status", "--porcelain") == ""

@@ -1,10 +1,11 @@
 """Union-merge pipeline PR branches onto the default branch.
 
-the claude pass invokes this after its review: `ai-pricelog-automerge
-<branch>...`, branches in merge order, oldest PR first. one merge commit
-per branch; the two-parent commit makes the branch head an ancestor of the
-default branch, which github reads as a merged PR. the pass passes only
-branches it verified, and this module re-checks each branch mechanically:
+the ci `merge verified PRs` step invokes this after the claude pass posts
+its dispositions: `ai-pricelog-automerge <branch>...`, branches in merge
+order, oldest PR first. one merge commit per branch; the two-parent commit
+makes the branch head an ancestor of the default branch, which github reads
+as a merged PR. the step passes only branches the pass marked
+`automerge: yes`, and this module re-checks each branch mechanically:
 
 - the branch is a `pricelog/` automation branch, never the seed branch
 - the branch changes only pipeline files (the per-source history shards,
@@ -24,12 +25,13 @@ branches it verified, and this module re-checks each branch mechanically:
   beside its siblings in the review diff
 - the README stats and the dist branch belong to publish.yml, which fires on
   a push to the default branch; the merge regenerates no derived file at all
-- the announce tree takes every branch's copy in merge order, so the
-  last (newest) write is the freshest snapshot and a burst spanning
-  several runs (whose branches carry different fetched dates) resolves
-  its own add/add conflicts on the state files. a source's absence file
-  lands on that source's branch and the merge takes each file from the
-  newest branch that carries it
+- the announce tree resolves per channel against the burst base: each url
+  lands from the last branch that changed it, so a branch whose run failed a
+  channel's fetch (and carries the base's stale entry) never reverts the
+  fresh prose an earlier branch of the burst landed; the newest branch's
+  index owns the url set, so a url that left the config is deleted. a
+  source's absence file lands on that source's branch and the merge takes
+  each file from the newest branch that carries it
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -45,7 +47,7 @@ from pathlib import Path
 
 from ai_pricelog import models, pr, store, validate
 from ai_pricelog.absence import ABSENCE_DIR
-from ai_pricelog.announce import ANNOUNCE_DIR, BILLING_RULES_FILE
+from ai_pricelog.announce import ANNOUNCE_DIR, ANNOUNCE_INDEX, BILLING_RULES_FILE, channel_files
 
 SHARD_DIR = store.SHARD_DIR
 
@@ -156,19 +158,107 @@ def _branch_tree_paths(
     ]
 
 
-def _replace_tree(runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: str) -> None:
-    """Set the worktree's copy of a state directory to the branch's copy.
+def _announce_index(
+    runner: pr.PrRunner, repo_root: Path, rev: str, label: str
+) -> dict[str, dict[str, dict[str, str]]] | None:
+    """The parsed announce index at a revision; None when the revision carries none.
 
-    The branch's tree is the complete snapshot; files it no longer carries are
-    pruned, so a removed channel or cleared source stops appearing here.
+    The pass is authorized to hand-edit a branch's announce tree, so an index
+    that does not read as source -> url -> entry stops the merge by name
+    rather than by traceback, and every entry's file must match the path the
+    index's own urls derive (the rule ``announce.load_snapshot`` enforces), so
+    a hand-edited file field cannot point the merge's write outside the
+    announce tree.
     """
-    named: set[str] = set()
-    for path in _branch_tree_paths(runner, repo_root, branch, tree_dir):
-        (repo_root / path).write_text(
-            _branch_text(runner, repo_root, branch, path), encoding="utf-8"
-        )
-        named.add(path)
-    tree = repo_root / tree_dir
+    try:
+        text = runner.run(["git", "show", f"{rev}:{ANNOUNCE_INDEX}"], cwd=repo_root)
+    except pr.PrError:
+        return None
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AutoMergeError(f"{label}: {ANNOUNCE_INDEX} is not valid json: {exc.msg}") from exc
+    if not isinstance(data, dict):
+        raise AutoMergeError(f"{label}: {ANNOUNCE_INDEX} must be an object")
+    for source, urls in data.items():
+        if not isinstance(urls, dict):
+            raise AutoMergeError(
+                f"{label}: {ANNOUNCE_INDEX} source {source!r} must map to an object"
+            )
+        derived = channel_files(source, urls.keys())
+        for url, entry in urls.items():
+            if not isinstance(entry, dict) or not all(
+                isinstance(entry.get(key), str) for key in ("file", "sha256", "fetched")
+            ):
+                raise AutoMergeError(
+                    f"{label}: {ANNOUNCE_INDEX} entry {source!r}/{url!r} must carry"
+                    " 'file', 'sha256' and 'fetched' as strings"
+                )
+            if entry["file"] != derived[url]:
+                raise AutoMergeError(
+                    f"{label}: {ANNOUNCE_INDEX} entry {source!r}/{url!r} file"
+                    f" {entry['file']!r} does not match the derived path {derived[url]!r}"
+                )
+    return data
+
+
+def _merge_announce(
+    runner: pr.PrRunner,
+    repo_root: Path,
+    branch: str,
+    base_sha: str,
+    base_index: dict[str, dict[str, dict[str, str]]],
+    burst: list[tuple[str, dict[str, dict[str, dict[str, str]]]]],
+) -> None:
+    """Lay the burst's announce tree over the worktree, resolved per channel.
+
+    The url set comes from the newest branch's index, the newest config the
+    burst observed: a url it no longer carries is deleted. Each url lands from
+    the last branch of the burst whose index carries a sha256 differing from
+    the base's — a branch whose run failed that channel's fetch keeps the
+    base's stale entry and must not revert the fresh prose an earlier branch
+    landed (observed 2026-09-11 on PRs 180-184) — and from the base itself
+    when no branch changed it. Shas compare from the index entries, never the
+    file bytes: the wrap shape may differ while the prose is identical. A url
+    absent from the base counts as differing, so a branch always wins one the
+    newest index carries; the base wins only urls it already holds unchanged.
+
+    Each channel file lands at the newest index's path, the one the merged
+    url set derives (slug collisions rename with the set), with the winner's
+    bytes; the resolved index.json serializes exactly as
+    ``announce.save_snapshot`` writes it or the merge diff turns whole-file;
+    files the resolution no longer names are pruned.
+    """
+    resolved: dict[str, dict[str, dict[str, str]]] = {}
+    named = {ANNOUNCE_INDEX}
+    for source, urls in burst[-1][1].items():
+        for url, newest_entry in urls.items():
+            base_entry = base_index.get(source, {}).get(url)
+            winner_rev, winner_entry = base_sha, base_entry
+            for rev, index in burst:
+                candidate = index.get(source, {}).get(url)
+                if candidate is None or candidate["sha256"] == (base_entry or {}).get("sha256"):
+                    continue
+                winner_rev, winner_entry = rev, candidate
+            file = winner_entry["file"]
+            try:
+                text = runner.run(["git", "show", f"{winner_rev}:{file}"], cwd=repo_root)
+            except pr.PrError as exc:
+                raise AutoMergeError(
+                    f"branch {branch}: announce channel {source!r}/{url!r} file {file!r}"
+                    f" is missing from {winner_rev}"
+                ) from exc
+            (repo_root / newest_entry["file"]).write_text(text, encoding="utf-8")
+            named.add(newest_entry["file"])
+            resolved.setdefault(source, {})[url] = {
+                "file": newest_entry["file"],
+                "sha256": winner_entry["sha256"],
+                "fetched": winner_entry["fetched"],
+            }
+    (repo_root / ANNOUNCE_INDEX).write_text(
+        json.dumps(resolved, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    tree = repo_root / ANNOUNCE_DIR
     for path in tree.rglob("*"):
         if path.is_file() and path.relative_to(repo_root).as_posix() not in named:
             path.unlink()
@@ -382,9 +472,10 @@ def merge_branches(
 ) -> tuple[str, list[MergeResult]]:
     """Union-merge each branch onto HEAD, then push and delete the refs.
 
-    `branches` is the merge order: oldest PR first, newest last (its
-    announce/absence snapshots are the freshest of the run). a failure
-    anywhere leaves the refs in place and raises; nothing is pushed.
+    `branches` is the merge order: oldest PR first, newest last (each announce
+    channel lands from the last branch that changed it, each absence file from
+    the newest branch that carries it). a failure anywhere leaves the refs in
+    place and raises; nothing is pushed.
     """
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
@@ -393,6 +484,13 @@ def merge_branches(
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
     keys = validate.load_schema_keys(repo_root)
+
+    # the burst base, captured once before the first merge commit advances
+    # HEAD: every per-channel announce resolution compares against the tree
+    # the burst started from
+    base_sha = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
+    base_index = _announce_index(runner, repo_root, base_sha, f"base {base_sha[:7]}") or {}
+    burst: list[tuple[str, dict[str, dict[str, dict[str, str]]]]] = []
 
     results: list[MergeResult] = []
     for branch in branches:
@@ -434,9 +532,9 @@ def merge_branches(
 
         # cross-run bursts carry different announce snapshots and absence
         # counters per branch (the 2026-09-07 shape): git then reports
-        # add/add conflicts on the state files, so every state tree is
-        # resolved by writing the branch's copy over the worktree before
-        # the by-path stage, each branch in merge order
+        # add/add conflicts on the state files, so both state trees are
+        # resolved by writing the merged content over the worktree before
+        # the by-path stage
         changed = set(_branch_diff_paths(runner, repo_root, branch))
         models_changed = models.MODELS_FILE in changed
         if models_changed:
@@ -448,14 +546,17 @@ def merge_branches(
                 encoding="utf-8",
             )
 
-        # the announce tree: each branch's snapshot in merge order. the
-        # last (newest) branch's copy is the freshest fetched date, and
-        # writing each branch's tree resolves the add/add conflicts its
-        # snapshot diverged from its siblings' on; a burst of one run carries
-        # one shared snapshot, so this is one write for the single-run shape
-        _replace_tree(runner, repo_root, branch, ANNOUNCE_DIR)
+        # the announce tree resolves per channel against the burst base: a
+        # branch whose run failed a channel's fetch carries the base's stale
+        # entry for it, and the newest branch's whole-tree write would revert
+        # the fresh prose an earlier branch of the burst landed. a branch
+        # carrying no index.json at all skips the announce step: its tree
+        # cannot name a url set
+        branch_index = _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
+        if branch_index is not None:
+            burst.append((f"origin/{branch}", branch_index))
+            _merge_announce(runner, repo_root, branch, base_sha, base_index, burst)
         _merge_absence(runner, repo_root, branch)
-        # the announce tree
         add_paths = [
             SHARD_DIR,
             BILLING_RULES_FILE,
