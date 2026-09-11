@@ -100,7 +100,7 @@ uv sync --frozen
 uv run ai-pricelog
 ```
 
-`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the scheduled GitHub Actions run carries it as a secret. schedule: every 2h (plus a weekly moonshot smoke), or `workflow_dispatch`.
+`GH_TOKEN` (a PAT with repo scope) is what opens the draft PRs. the scheduled GitHub Actions run carries it as a secret. schedule: hourly (plus a weekly moonshot smoke), or `workflow_dispatch`.
 
 ## Configuration
 
@@ -120,7 +120,7 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 
 **where do i find the current price of a model?**
 
-`https://raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/index.json` under `sources`, keyed by provider and model id. one provider alone: `.../dist/index/<source>.json`. a flat, consumer-friendly twin: `.../dist/flat-v2.json`, one entry per model with display name and vendor resolved through the catalog, plus its `intervals` chain so pricing any past day is a containment test (`.../dist/flat/<source>.json` per provider). or read it as a page: `https://uwuclxdy.github.io/ai-pricelog/`, the same data as a sortable, searchable table with a comparison and a token-count calculator.
+`https://uwuclxdy.github.io/ai-pricelog/index.json` under `sources`, keyed by provider and model id (GitHub Pages over the `dist` branch: `application/json`, `cache-control: max-age=600`, cross-origin). one provider alone: `.../ai-pricelog/index/<source>.json`. a flat, consumer-friendly twin: `.../ai-pricelog/flat-v2.json`, one entry per model with display name and vendor resolved through the catalog, plus its `intervals` chain so pricing any past day is a containment test (`.../ai-pricelog/flat/<source>.json` per provider). or read it as a page: the same host's root, the same data as a sortable, searchable table with a comparison and a token-count calculator. the raw `dist`-branch urls (`raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/...`) serve identical bytes but no content type, no cache headers and no stable host.
 
 **how do i see every price a model ever had?**
 
