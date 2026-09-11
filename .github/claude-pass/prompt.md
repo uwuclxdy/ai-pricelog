@@ -1,6 +1,6 @@
-# claude pass: review and merge this watchdog run's draft PRs
+# claude pass: review this watchdog run's draft PRs and post merge dispositions
 
-you review the draft PRs this run opened, on this repo, then merge the ones you verified. the run log below lists them as `opened pr for <source>: <url>`. each pr carries one source's new rows from this run, price rows and `removed: true` rows mixed in one pr. work the list top to bottom.
+you review the draft PRs this run opened, on this repo, then post a merge disposition on each; the workflow's `merge verified PRs` step merges the ones you marked eligible. the run log below lists them as `opened pr for <source>: <url>`. each pr carries one source's new rows from this run, price rows and `removed: true` rows mixed in one pr. work the list top to bottom.
 
 ## your job
 
@@ -10,7 +10,7 @@ you review the draft PRs this run opened, on this repo, then merge the ones you 
 a branch carries its source's shard: the landed rows for that source, rows from still-open PR branches, and its own. only the rows the PR body's table names are this PR's own new rows. judge those against their source pages, and never treat carried rows or the state files (`state/absence/<source>.json`, `state/announce/`) as scope noise: the `state/announce/<source>/<slug>.md` diff settles the run's channel changes.
 3. for the announce diff: the log lists channel changes as `announce change: <provider> <url> <old sha8> -> <new sha8>`. for each changed channel, diff `origin/mommy...<branch>` on `state/announce/<source>/<slug>.md` (index.json maps the url to its file) and answer the rubric question.
 4. post findings as PR comments: one comment per PR, findings plus your verdict. comment only on PRs this run opened.
-5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. pushes happen only through the merge job below.
+5. edit the branch only for a row error you re-verified against the source page (wrong rate, wrong field, missing peak rates that the page carries). commit the fix on that PR branch. default-branch pushes happen only through the workflow's `merge verified PRs` step.
 
 ## merge job
 
@@ -19,8 +19,8 @@ after every PR the run opened is judged, read `.github/claude-pass/automerge.md`
 - classify each PR: merge-eligible (verified, flip-flop, confirmed deprecation/retirement) or needs human (seed PRs, code PRs, promo/tier/free-tier rule changes, bot-blocked pages, anything unverified)
 - post the `needs human` comment on every excluded PR
 - a confirmed deprecation/retirement: write the `data/catalog/billing-rules.json` entry on that PR branch, bump the `len(rules) == N` pin in `tests/test_billing_rules.py` in the same commit, then treat the PR as merge-eligible
-- merge the eligible set with `uv run ai-pricelog-automerge <branch>...`, oldest PR first, newest last. the script refuses the seed branch, code PRs, anything outside the pipeline file set, and any appended row that does not read as one json object per line or pass the row contract, so pass it only what you judged
-- if the script fails: do not retry it; report the error in your final message, leave every PR open, delete nothing
+- end EVERY PR comment with exactly one machine line, the last line of the body: `automerge: yes` for the merge-eligible classes, `automerge: no` for everything else
+- you NEVER run `ai-pricelog-automerge` and never merge anything yourself. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after this pass, which reads your marker lines and merges the eligible branches in PR-number order. a pass killed after posting its verdicts still gets its verified PRs merged; a PR with no comment or no marker line is never merged
 
 ## row schema
 
@@ -107,7 +107,7 @@ for each changed announce channel, answer: does this change billing semantics (r
 
 ## output contract
 
-- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`). a merged PR's comment states the merge; a `needs human` comment follows the shape in `automerge.md` and opens with the ping line `@uwuclxdy need help wit this`.
-- no PR comments when you find nothing: say so in your final message only.
-- never comment on PRs the run did not open. the only pushes to the default branch and the only branch-ref deletions are the ones `ai-pricelog-automerge` performs; never do either by hand.
-- your final message summarizes per PR: findings, the verdict, and what the merge did (merged / needs human / failed with the script's error); the PR comments are the durable record.
+- comment on each PR this run opened: findings plus a verdict line (`verified`, `findings`, or `needs human`), ending with the disposition line `automerge: yes` or `automerge: no` as the last line of the body. a `needs human` comment follows the shape in `automerge.md` and opens with the ping line `@uwuclxdy need help wit this`.
+- a clean verified PR still gets its comment: the disposition line is the merge trigger, and a PR with no comment is never merged. when the run opened no PRs at all, say so in your final message only.
+- never comment on PRs the run did not open. the only pushes to the default branch and the only branch-ref deletions are the ones the `merge verified PRs` step performs through `ai-pricelog-automerge`; never do either by hand.
+- your final message summarizes per PR: findings, the verdict, and the disposition posted (`automerge: yes` / `automerge: no`); the PR comments are the durable record.

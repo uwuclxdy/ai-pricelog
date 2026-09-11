@@ -42,11 +42,20 @@ def test_row_schema_carries_the_current_vocabulary() -> None:
 
 
 def test_prompt_names_the_automerge_surface() -> None:
-    # the merge job runs the automerge script under the manual's rules; a
-    # rename of either breaks the pass cold
+    # the merge job names the automerge script and its manual; a rename of
+    # either breaks the pass cold
     text = PROMPT.read_text()
     assert "ai-pricelog-automerge" in text
     assert ".github/claude-pass/automerge.md" in text
+
+
+def test_prompt_carries_the_disposition_markers() -> None:
+    # the merge-verified step reads these exact machine lines off the pass's
+    # PR comments; a reworded marker silently strands every verified PR
+    text = PROMPT.read_text()
+    assert "automerge: yes" in text
+    assert "automerge: no" in text
+    assert "merge verified PRs" in text
 
 
 def test_needs_human_comment_pings_the_owner() -> None:

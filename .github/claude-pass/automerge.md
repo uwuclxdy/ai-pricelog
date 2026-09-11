@@ -1,15 +1,17 @@
-# automerge: the pass-side merge of verified pipeline PRs
+# automerge: the dispositions that drive the merge of verified pipeline PRs
 
-the claude pass merges the draft PRs it verified itself. read this file before classifying anything. `.github/claude-pass/prompt.md` owns the review job; this file owns the merge job.
+the claude pass judges the draft PRs and posts a merge disposition on each; it never merges. read this file before classifying anything. `.github/claude-pass/prompt.md` owns the review job; this file owns the disposition rules.
 
 ## disposition table
 
 | verdict | action |
 |---|---|
-| verified | union-merge via `ai-pricelog-automerge` |
-| flip-flop | land (merge); the next run appends the correction |
-| deprecation/retirement confirmed | write the billing rule + bump its test pin, then merge |
-| everything else | `needs human` comment, no merge |
+| verified | post the marker `automerge: yes` |
+| flip-flop | post `automerge: yes`; the next run appends the correction |
+| deprecation/retirement confirmed | write the billing rule + bump its test pin, then post `automerge: yes` |
+| everything else | `needs human` comment, post `automerge: no` |
+
+every PR comment the pass posts ends with exactly one machine line — `automerge: yes` or `automerge: no` — as the last line of the body. a PR with no comment or no marker line is never merged: the merge step's conservative default.
 
 ## what counts as verified
 
@@ -42,17 +44,11 @@ a confirmed deprecation or retirement of priced models (the channel prose names 
 
 - append ONE entry at the END of the `rules` array in `data/catalog/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
 - in the SAME commit bump the count pin: `tests/test_billing_rules.py` `test_committed_billing_rules_pass_schema` asserts `len(rules) == N`. the rules and the pin land atomically, or the next CI run reds
-- edit the file on the PR branch, name the rule in your comment, then merge the branch
+- edit the file on the PR branch, name the rule in your comment, then mark the PR `automerge: yes`
 
 ## the merge
 
-after every PR is judged: comment on the needs-human PRs, then run
-
-```
-uv run ai-pricelog-automerge <branch>...
-```
-
-with the merge-eligible branches in order, oldest PR first, newest last. the script:
+after every PR is judged and every comment posted, your part is done: you never run the merge. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after the pass — even a pass killed at its step timeout — which reads the run log for this run's PRs, reads each open PR's comments for the pass's marker, and hands the eligible branches to `ai-pricelog-automerge` in PR-number order, oldest PR first, newest last. the script:
 
 - refuses a checkout that is not the default branch (or at its remote tip): every pricelog branch is a base descendant, so a merge started elsewhere would push as a fast-forward and ride that branch's own unverified commits into the default branch's history
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
@@ -63,13 +59,13 @@ with the merge-eligible branches in order, oldest PR first, newest last. the scr
 
 github auto-marks each PR merged once its head lands in the default branch. the merge writes no derived file: the publish workflow owns the `dist` branch and the README stats outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
 
-when the script fails: do not retry it. report the error in your final message, leave every PR open, delete nothing. the next run re-derives the rows.
+when the script fails: the merge step reds the run, every PR stays open, and nothing is retried. the next run re-derives the rows.
 
 ## hard bans
 
-- never push the default branch except through `ai-pricelog-automerge`
-- never delete branch refs except through the script
-- never merge a seed PR, a code PR, or a PR with unverified rows
+- never push the default branch except through `ai-pricelog-automerge` or the workflow's `merge verified PRs` step
+- never delete branch refs by hand
+- never mark a seed PR, a code PR, or a PR with unverified rows `automerge: yes`
 - never comment on PRs the run did not open
 - never edit rows on a branch except a row error you re-verified against the page (prompt.md step 5)
 
