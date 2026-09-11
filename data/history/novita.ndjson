@@ -29,6 +29,7 @@
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-pro-0813","observed_at":"2026-08-17","rates":{"input":1.32,"output":3.96},"provenance":{"url":"https://blogs.novita.ai/deepseek-v4-pro-0813-on-novita-ai-ga-release-dspark-and-pricing/"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-pro-0813","observed_at":"2026-08-26","rates":{"input":1.32,"output":3.96,"cache_read":0.132},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-pro-0813","observed_at":"2026-09-09","rates":{"input":1.32,"output":3.96,"cache_read":0.044},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4.1-flash","observed_at":"2026-09-10","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"google/gemma-3-27b-it","observed_at":"2026-08-26","rates":{"input":0.119,"output":0.2},"limits":{"context":98304},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-08-26","rates":{"input":0.13,"output":0.4},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.4},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
