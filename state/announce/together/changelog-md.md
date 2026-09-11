@@ -1,12 +1,5 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 10, 2026" tags={["New releases"]}> ## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
-Alongside standard nodes, you can set a preemptible GPU target, and Together provisions toward it as spare capacity becomes available, at a flat discounted rate relative to on-demand.
-**What's new:** * **Preemptible GPU targets:** Set `num_preemptible_gpus` at cluster create or update from the console, CLI, or API.
-Together automatically provisions replacements toward the target after nodes are reclaimed.
-* **Five-minute drain window:** Reclaimed nodes are cordoned and emit a `TogetherPreemptionNotified` Kubernetes event, and pods receive SIGTERM with up to 300 seconds of grace to checkpoint and exit.
-* **Sub-hourly billing:** Usage is metered every one to two minutes, so you pay only for the time a node is live.
-See [Preemptible compute](/docs/preemptible-compute) for the preemption contract, scheduling guidance, and checkpoint examples.
-</Update> <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
+# Changelog <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
 See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
 ## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
 Recommended replacement: `Qwen/Qwen3.5-9B`.

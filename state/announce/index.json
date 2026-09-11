@@ -2,13 +2,13 @@
   "deepseek": {
     "https://api-docs.deepseek.com/updates/": {
       "file": "state/announce/deepseek/updates.md",
-      "sha256": "74e58f33dc89998ec7aabaa65f3d4a34c40c984b0be351fb17844ef78670eed7",
-      "fetched": "2026-09-10"
+      "sha256": "50aa132e67e61d789160659b84c651b3048b8aba46c3f40eabaf689cf89036f7",
+      "fetched": "2026-09-03"
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
-      "sha256": "aab931c7368ca4d51aaf64ee8c65fd7f6abf0ed9aa6a31df28a94d989ee2e1c6",
-      "fetched": "2026-09-10"
+      "sha256": "5c7803fd7c398648607e9c208f615bc184a504e0d30407535825908636456246",
+      "fetched": "2026-09-03"
     }
   },
   "zai": {
@@ -72,8 +72,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "cd596fc5c059f86aabc4aa32743c0b64adf5d8c07dbeb0dc749bf2c23e9290ef",
-      "fetched": "2026-09-10"
+      "sha256": "1bff80ccd5c5cbf6a1dfccb2b0c274d0ff25d12073529af5080cdc05f4499875",
+      "fetched": "2026-09-09"
     }
   },
   "perplexity": {
@@ -86,13 +86,13 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "1acb4cfea2a81c4c3f8332fd73073a27e55fa888d4ee9862b700a8abc922afb1",
-      "fetched": "2026-09-10"
+      "sha256": "c7dbd53d1cd62fdd8e61cd71863b9ba7c6c3e22c68ea5d19df3ac96963b513e1",
+      "fetched": "2026-09-09"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "7d1e94d81a2c1dda4c31dc575407f5b578658f9c7b06baa076129dfca4f670ed",
-      "fetched": "2026-09-10"
+      "sha256": "c955aec9138c43833777ee8f9251b995e05a9c0d36d14050de91a25631161b09",
+      "fetched": "2026-09-09"
     }
   },
   "novita": {
@@ -150,15 +150,15 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "44dd0096d09e712ec366ba96bdd1b4346a48d5e11d55c06b35218a161b0d59f2",
-      "fetched": "2026-09-10"
+      "sha256": "7414ec1b28238c01fed4780a0ccc17f59d8f2dfd470bf8361157c40cacfc017a",
+      "fetched": "2026-09-09"
     }
   },
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "fe3381da7f8504b83a2208014512d69e623fea5ee8544a34af8fe40879c124e7",
-      "fetched": "2026-09-10"
+      "sha256": "63b18fa7f4c4d3783266e785052a9d6dcd7c32c22b04ca90bf18bf48b6010b0c",
+      "fetched": "2026-09-09"
     }
   }
 }
