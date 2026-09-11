@@ -27,7 +27,7 @@ one repo holds the observations and one generated view of them:
 | file | contents |
 |---|---|
 | `data/history/<source>.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever, one file per source |
-| `dist` branch | the served views, rebuilt per publish: `index.json` (current price of every model), `flat-v1.json` (one flat entry per model with name and vendor), `history.ndjson`, per-source index/flat/history copies, the catalog |
+| `dist` branch | the served views, rebuilt per publish: `index.json` (current price of every model), `flat-v2.json` (one flat entry per model with name, vendor and its `intervals` validity chain), `history.ndjson`, per-source index/flat/history copies, the catalog, and `index.html` — a static pricing page: sortable table, search, cheapest-first comparison, token calculator, no build step |
 | `data/schema/row.v4.json` | the json-schema a row is checked against, and the contract a consumer can read |
 
 a row:
@@ -120,7 +120,7 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 
 **where do i find the current price of a model?**
 
-`https://raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/index.json` under `sources`, keyed by provider and model id. one provider alone: `.../dist/index/<source>.json`. a flat, consumer-friendly twin: `.../dist/flat-v1.json`, one entry per model with display name and vendor resolved through the catalog (`.../dist/flat/<source>.json` per provider).
+`https://raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/index.json` under `sources`, keyed by provider and model id. one provider alone: `.../dist/index/<source>.json`. a flat, consumer-friendly twin: `.../dist/flat-v2.json`, one entry per model with display name and vendor resolved through the catalog, plus its `intervals` chain so pricing any past day is a containment test (`.../dist/flat/<source>.json` per provider). or read it as a page: `https://uwuclxdy.github.io/ai-pricelog/`, the same data as a sortable, searchable table with a comparison and a token-count calculator.
 
 **how do i see every price a model ever had?**
 
