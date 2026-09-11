@@ -2,8 +2,8 @@
   "deepseek": {
     "https://api-docs.deepseek.com/updates/": {
       "file": "state/announce/deepseek/updates.md",
-      "sha256": "74e58f33dc89998ec7aabaa65f3d4a34c40c984b0be351fb17844ef78670eed7",
-      "fetched": "2026-09-10"
+      "sha256": "2e8c1183787184297d0a6b303d12619bef0ba1a35d2f273d8042da5a10637fac",
+      "fetched": "2026-09-11"
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
@@ -86,13 +86,13 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "1acb4cfea2a81c4c3f8332fd73073a27e55fa888d4ee9862b700a8abc922afb1",
-      "fetched": "2026-09-10"
+      "sha256": "678bb40e8f3b902743d63000f53ffced075057b67bbc0ef728d5506f676df4b9",
+      "fetched": "2026-09-11"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "7d1e94d81a2c1dda4c31dc575407f5b578658f9c7b06baa076129dfca4f670ed",
-      "fetched": "2026-09-10"
+      "sha256": "3cd8bde2e05b4a19a15ce1aa0baa21a18678a84911f8e30b3ff011abfc49695f",
+      "fetched": "2026-09-11"
     }
   },
   "novita": {
@@ -124,8 +124,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "64935e9cad6adcf2e873e8b43432bb1c9503e394f0a104f386099beefc96af30",
-      "fetched": "2026-09-09"
+      "sha256": "237dd3ea7da661c21746876062bfbf7ff659304d87080c9546926d956798ad3d",
+      "fetched": "2026-09-11"
     }
   },
   "cloudflare": {
@@ -157,8 +157,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "fe3381da7f8504b83a2208014512d69e623fea5ee8544a34af8fe40879c124e7",
-      "fetched": "2026-09-10"
+      "sha256": "872fcc876811996765792f7318b4b1ef25d8c42ad8b920747918a4aeddcd52d5",
+      "fetched": "2026-09-11"
     }
   }
 }
