@@ -6526,11 +6526,29 @@
       },
       "vendor": "relace"
     },
+    "openrouter/sakana/fugu-max": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sakana/fugu-max"
+        ]
+      },
+      "vendor": "sakana"
+    },
     "openrouter/sakana/fugu-ultra": {
       "curated": false,
       "sources": {
         "openrouter": [
           "sakana/fugu-ultra"
+        ]
+      },
+      "vendor": "sakana"
+    },
+    "openrouter/sakana/fugu-ultra-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sakana/fugu-ultra-v2"
         ]
       },
       "vendor": "sakana"

@@ -57,9 +57,6 @@ Supports text-based formats such as pdf, doc, and txt.
 - [Retrieve Batch](https://platform.kimi.ai/docs/api/batch-retrieve.md): Get the details and progress of a specific batch job.
 - [Cancel Batch](https://platform.kimi.ai/docs/api/batch-cancel.md): Cancel an in-progress batch job.
 - [Model Inference Pricing Explanation](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
-- [Flagship Model Kimi K3 Pricing](https://platform.kimi.ai/docs/pricing/chat-k3.md): Review Kimi K3 flagship model pricing for input, output, and cache-hit tokens, along with billing notes.
-- [Coding Model Kimi K2.7 Code Pricing](https://platform.kimi.ai/docs/pricing/chat-k27-code.md): Review Kimi K2.7 Code and high-speed model pricing for input, output, and cache-hit tokens, along with billing notes.
-- [Kimi K2.6 Model Pricing](https://platform.kimi.ai/docs/pricing/chat-k26.md): Review Kimi K2.6 pricing for input, output, and cache-hit tokens, along with billing notes.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/tools.md): Review pricing, billing units, and usage notes for the Kimi web-search tool.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
@@ -71,6 +68,7 @@ Supports text-based formats such as pdf, doc, and txt.
 - [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Compare with Other Kimi Products](https://platform.kimi.ai/docs/guide/product-plans.md): The Kimi API Open Platform uses pay-as-you-go billing with no subscription plan.
 It is different from products such as Kimi Membership and Kimi Code — please distinguish between them.
+- [What is Zero Data Retention (ZDR)?](https://platform.kimi.ai/docs/guide/zero-data-retention.md): Learn about Zero Data Retention (ZDR), the data protection mode available to enterprise customers on the Kimi Open Platform.
 - [Ask questions about PDF content](https://platform.kimi.ai/docs/guide/ask-questions-about-pdf-content.md): Ask questions about PDF content with the Kimi API, with real run outputs.
 - [AI-Readable Docs](https://platform.kimi.ai/docs/guide/ai-readable-docs.md): Provide the Kimi API Platform documentation to AI coding assistants, enterprise bots, or RAG systems through llms.txt, llms-full.txt, the OpenAPI schema, and per-page Markdown.
 - [Best Practices for Prompts](https://platform.kimi.ai/docs/guide/prompt-best-practice.md): Write more reliable and controllable Kimi system and user prompts with clear instructions, examples, roles, and output constraints.
