@@ -1042,10 +1042,9 @@ def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
-def test_announce_index_refuses_shapes_that_do_not_read(tmp_path):
-    # the pass may hand-edit the announce tree, so an index that does not read
-    # as source -> url -> entry stops the merge by name, never by traceback
-    cases = [
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
         ("not json{", "is not valid json"),
         ('["a list"]', "must be an object"),
         ('{"deepseek": []}', "source 'deepseek' must map to an object"),
@@ -1054,12 +1053,15 @@ def test_announce_index_refuses_shapes_that_do_not_read(tmp_path):
             '{"deepseek": {"u": {"file": 1, "sha256": "a", "fetched": "b"}}}',
             "must carry 'file', 'sha256' and 'fetched' as strings",
         ),
-    ]
-    for text, message in cases:
-        runner = FakeRunner()
-        runner.on(f"HEAD:{announce.ANNOUNCE_INDEX}", text)
-        with pytest.raises(automerge.AutoMergeError, match=re.escape(message)):
-            automerge._announce_index(runner, tmp_path, "HEAD", "base abc1234")
+    ],
+)
+def test_announce_index_refuses_shapes_that_do_not_read(tmp_path, text, message):
+    # the pass may hand-edit the announce tree, so an index that does not read
+    # as source -> url -> entry stops the merge by name, never by traceback
+    runner = FakeRunner()
+    runner.on(f"HEAD:{announce.ANNOUNCE_INDEX}", text)
+    with pytest.raises(automerge.AutoMergeError, match=re.escape(message)):
+        automerge._announce_index(runner, tmp_path, "HEAD", "base abc1234")
 
 
 def test_announce_index_parses_a_valid_snapshot(tmp_path):
