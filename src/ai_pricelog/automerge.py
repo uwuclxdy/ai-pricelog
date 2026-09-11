@@ -104,15 +104,18 @@ def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
 
 
 def _validate_appended(
-    head_lines: list[str], branch_text: str, branch: str, path: str, keys: validate.SchemaKeys
+    appended: list[str], branch_text: str, *, branch: str, path: str, keys: validate.SchemaKeys
 ) -> None:
-    """Every branch line HEAD does not hold must pass validate_row before it lands.
+    """Every line the partition appends must pass validate_row before it lands.
 
-    store.parse reads the branch's own copy, so a json error names the branch
-    line the fix instruction points at. a line HEAD holds stays exempt: it
-    already sits in the append-only store. the pass is authorized to hand-edit
-    a branch row, so the exact-line union is the one path a contract-breaking
-    shape can take into the store.
+    The partition arrives from _appended_lines, the one implementation the
+    union and this validation both read, so a dedupe change there cannot leave
+    the validated set diverging from the appended set. store.parse reads the
+    branch's own copy, so a json error names the branch line the fix
+    instruction points at. a line HEAD holds stays exempt: it already sits in
+    the append-only store. the pass is authorized to hand-edit a branch row,
+    so the exact-line partition is the one path a contract-breaking shape can
+    take into the store.
     """
     branch_lines = branch_text.splitlines()
     label = f"origin/{branch}:{path}"
@@ -122,11 +125,17 @@ def _validate_appended(
         raise AutoMergeError(
             f"branch {branch}: {exc}. do not retry: report the error and leave every PR open"
         ) from exc
-    seen = set(head_lines)
-    for number, (line, row) in enumerate(zip(branch_lines, rows, strict=True), start=1):
-        if line in seen:
+    if len(rows) != len(branch_lines):
+        # store.parse's one-row-per-line contract is what pairs lines to rows
+        raise AutoMergeError(
+            f"branch {branch}: {label}: {len(branch_lines)} line(s) parsed as"
+            f" {len(rows)} row(s); fix: the offending line on the branch, one json"
+            " object per line"
+        )
+    new = set(appended)
+    for number, (line, row) in enumerate(zip(branch_lines, rows, strict=False), start=1):
+        if line not in new:
             continue
-        seen.add(line)
         try:
             validate.validate_row(row, keys)
         except ValueError as exc:
@@ -345,15 +354,15 @@ def _union_models(head_text: str, branch_text: str) -> str:
     )
 
 
-def _line_union(head: list[str], branch: list[str]) -> list[str]:
-    """head's lines, then the branch lines not already present, in branch order."""
+def _appended_lines(head: list[str], branch: list[str]) -> list[str]:
+    """The branch lines HEAD does not hold, in branch order, first occurrence only."""
     seen = set(head)
-    union = list(head)
+    appended: list[str] = []
     for line in branch:
         if line not in seen:
             seen.add(line)
-            union.append(line)
-    return union
+            appended.append(line)
+    return appended
 
 
 def _is_pipeline_path(path: str) -> bool:
@@ -523,10 +532,10 @@ def merge_branches(
         for shard_path in _branch_shard_paths(runner, repo_root, branch):
             head_lines = _head_text(runner, repo_root, shard_path).splitlines()
             branch_text = _branch_text(runner, repo_root, branch, shard_path)
-            union = _line_union(head_lines, branch_text.splitlines())
-            appended += len(union) - len(head_lines)
-            _validate_appended(head_lines, branch_text, branch, shard_path, keys)
-            union = _sorted_lines(union, branch, shard_path)
+            new_lines = _appended_lines(head_lines, branch_text.splitlines())
+            appended += len(new_lines)
+            _validate_appended(new_lines, branch_text, branch=branch, path=shard_path, keys=keys)
+            union = _sorted_lines([*head_lines, *new_lines], branch, shard_path)
             union_text = "\n".join(union) + ("\n" if union else "")
             (repo_root / shard_path).write_text(union_text, encoding="utf-8")
 

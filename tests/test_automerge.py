@@ -116,10 +116,10 @@ def shard_lines(repo: Path, source: str = "deepseek") -> list[str]:
     return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
 
 
-def test_line_union_appends_only_new_exact_lines():
+def test_appended_lines_hold_only_new_exact_lines():
     head = ["a", "b"]
     branch = ["b", "a", "c", "c"]
-    assert automerge._line_union(head, branch) == ["a", "b", "c"]
+    assert automerge._appended_lines(head, branch) == ["c"]
 
 
 def test_merge_lands_union(tmp_path):
@@ -312,6 +312,47 @@ def test_merge_leaves_rows_head_already_holds_unvalidated(tmp_path):
     assert len(rows) == 2
     assert rows[0]["surprise"] == "legacy"
     assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_validation_follows_the_partition_not_its_own(tmp_path, monkeypatch):
+    # the partition (which lines are new) has one implementation; when its
+    # dedupe changes, the validation verdict must move with it. the drift
+    # stand-in dedupes on rstripped lines, so the branch's re-serialized copy
+    # of a head line (trailing space) reads as already-held: the merge follows
+    # the partition instead of refusing on a second, byte-exact derivation
+    repo, _bare = build_repo(tmp_path)
+    shard = repo / "data" / "history" / "deepseek.ndjson"
+    legacy = json.loads(shard.read_text(encoding="utf-8").splitlines()[0])
+    legacy["surprise"] = "legacy"
+    line = json.dumps(legacy, separators=(",", ":"))
+    shard.write_text(line + "\n", encoding="utf-8")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "legacy line")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/drift-44444444")
+    shard.write_text(line + " \n", encoding="utf-8")
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "re-serialize the legacy line with a trailing space")
+    git(repo, "push", "origin", "pricelog/drift-44444444")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    def rstrip_dedupe(head_lines: list[str], branch_lines: list[str]) -> list[str]:
+        seen = {head.rstrip() for head in head_lines}
+        appended = []
+        for branch_line in branch_lines:
+            if branch_line.rstrip() not in seen:
+                seen.add(branch_line.rstrip())
+                appended.append(branch_line)
+        return appended
+
+    monkeypatch.setattr(automerge, "_appended_lines", rstrip_dedupe)
+    sha, results = automerge.merge_branches(
+        ["pricelog/drift-44444444"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [result.appended for result in results] == [0]
+    assert shard_lines(repo) == [line]
 
 
 def test_merge_refused_row_names_the_branch_line(tmp_path):
