@@ -1682,6 +1682,15 @@
       },
       "vendor": "deepseek"
     },
+    "deepseek/deepseek-flash": {
+      "curated": false,
+      "sources": {
+        "deepseek": [
+          "deepseek-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "digitalocean/claude-fable-5.1": {
       "curated": false,
       "sources": {
