@@ -72,7 +72,7 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "f6211dfd9b48c03f6bf692241f38d1ce79e5f1fea896e185a4835d9e5c97d746",
+      "sha256": "cd596fc5c059f86aabc4aa32743c0b64adf5d8c07dbeb0dc749bf2c23e9290ef",
       "fetched": "2026-09-10"
     }
   },
@@ -91,8 +91,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "c955aec9138c43833777ee8f9251b995e05a9c0d36d14050de91a25631161b09",
-      "fetched": "2026-09-09"
+      "sha256": "72c5a36ea4ce225b0ecb5665f282d3bb8d59a7a6e34b0024dd0b91ed53349d7f",
+      "fetched": "2026-09-10"
     }
   },
   "novita": {

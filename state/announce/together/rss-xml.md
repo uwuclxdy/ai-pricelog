@@ -1,4 +1,5 @@
-Together.ai https://www.together.ai The latest from Together 60 Webflow The Open Source AI Stack https://www.together.ai/blog/the-open-source-ai-stack https://www.together.ai/blog/the-open-source-ai-stack GLM-5.3 vs.
+Together.ai https://www.together.ai The latest from Together 60 Webflow The Open Source AI Stack https://www.together.ai/blog/the-open-source-ai-stack https://www.together.ai/blog/the-open-source-ai-stack A deep dive into the open model AI stack — model, inference, gateways and routers, harness, and tools — and how keeping each layer independent lets you swap in a new open model in minutes instead of rebuilding your workflow.
+GLM-5.3 vs.
 GLM-5.3 Flash on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/glm-5-3-vs-glm-5-3-flash-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/glm-5-3-vs-glm-5-3-flash-on-deepswe-cost-coding-and-routing We ran 900 DeepSWE rollouts on GLM-5.3 and GLM-5.3 Flash.
 Flash gives up 5.6 points of pass@1 at 17x lower cost, and only 2.6 points at pass@4.
 GLM-5.3 vs.
