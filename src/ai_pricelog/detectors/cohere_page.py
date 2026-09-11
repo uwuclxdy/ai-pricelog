@@ -35,10 +35,10 @@ of scope.
 
 ids come back in page order: model cards, model vault rows, then faq
 prose. a card without a modelName, a card whose pricings carry no input
-rate, and a vault row outside the four-cell shape are additive drift:
-detection skips them with a warning (plan #22), and the vault header pins
-after folding case, whitespace, and &/and. a page with none of the shapes
-is a parse failure (FetchError).
+rate, and a vault row outside the four-cell shape or carrying non-dollar
+rates are additive drift: detection skips them with a warning (plan #22),
+and the vault header pins after folding case, whitespace, and &/and. a
+page with none of the shapes is a parse failure (FetchError).
 """
 
 from __future__ import annotations
@@ -178,7 +178,9 @@ def _model_vault_rows(soup, url: str, key: str) -> list[_Model]:
             if len(cells) != 4:
                 raise FetchError(f"malformed model vault row on {url}: {cells!r}")
             if _dollars(cells[2]) is None or _dollars(cells[3]) is None:
-                break  # past the rate rows: later 4-column grids are other sections
+                raise FetchError(
+                    f"model vault row on {url} carries non-dollar rate cells: {cells!r}"
+                )
         except FetchError as exc:
             log.warning("detect skip for %s: %s", key, exc)
             continue

@@ -359,6 +359,36 @@ def test_detect_malformed_table_row_skips(monkeypatch, caplog):
     assert "malformed model vault row" in caplog.text
 
 
+def test_detect_vault_row_with_non_dollar_rates_skips(monkeypatch, caplog):
+    # a 4-cell vault row whose rate cells are not dollar-shaped is additive
+    # drift, not the table's end: skip it with a warning, later rows still seed
+    serve_html(
+        monkeypatch,
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p>Model</p></div>"
+        "<div><p>Performance Tier</p></div>"
+        "<div><p>Hourly rate per instance</p></div>"
+        "<div><p>Monthly rate per instance</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Embed 4</strong></p></div>"
+        "<div><p>Small</p></div>"
+        "<div><p>Custom</p></div>"
+        "<div><p>Contact sales</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Rerank 4 Pro</strong></p></div>"
+        "<div><p>Large</p></div>"
+        "<div><p>$10.00</p></div>"
+        "<div><p>$6,500</p></div>"
+        "</div>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["rerank-4-pro-large"]
+    assert "detect skip for cohere" in caplog.text
+    assert "non-dollar rate cells" in caplog.text
+
+
 def test_detect_folded_vault_header_matches(monkeypatch):
     # header wording drift (case) still matches after folding
     serve_html(
