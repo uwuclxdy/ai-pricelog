@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
 
 from ai_pricelog import absence, announce, automerge, models, pr, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
-from conftest import git, git_init_repo
+from conftest import FakeRunner, git, git_init_repo
 
 SCHEMA_VERSION = validate.load_schema_keys(Path(__file__).resolve().parents[1]).version
 
@@ -1039,3 +1040,71 @@ def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
     assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh a prose"
     assert entry["sha256"] == announce._sha256("fresh a prose")
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_announce_index_refuses_shapes_that_do_not_read(tmp_path):
+    # the pass may hand-edit the announce tree, so an index that does not read
+    # as source -> url -> entry stops the merge by name, never by traceback
+    cases = [
+        ("not json{", "is not valid json"),
+        ('["a list"]', "must be an object"),
+        ('{"deepseek": []}', "source 'deepseek' must map to an object"),
+        ('{"deepseek": {"u": "x"}}', "must carry 'file', 'sha256' and 'fetched' as strings"),
+        (
+            '{"deepseek": {"u": {"file": 1, "sha256": "a", "fetched": "b"}}}',
+            "must carry 'file', 'sha256' and 'fetched' as strings",
+        ),
+    ]
+    for text, message in cases:
+        runner = FakeRunner()
+        runner.on(f"HEAD:{announce.ANNOUNCE_INDEX}", text)
+        with pytest.raises(automerge.AutoMergeError, match=re.escape(message)):
+            automerge._announce_index(runner, tmp_path, "HEAD", "base abc1234")
+
+
+def test_announce_index_parses_a_valid_snapshot(tmp_path):
+    url = "https://example.com/notes"
+    entry = {
+        "file": announce.channel_files("deepseek", [url])[url],
+        "sha256": "0" * 64,
+        "fetched": "2026-09-11",
+    }
+    runner = FakeRunner()
+    runner.on(f"HEAD:{announce.ANNOUNCE_INDEX}", json.dumps({"deepseek": {url: entry}}))
+    assert automerge._announce_index(runner, tmp_path, "HEAD", "base abc1234") == {
+        "deepseek": {url: entry}
+    }
+
+
+def test_merge_refuses_when_the_winner_tree_lacks_the_channel_file(tmp_path):
+    # the resolution names the last branch whose index sha differs from the
+    # base; when that winner's own tree carries no file at the index's path
+    # (a hand edit), the merge refuses by name and nothing lands
+    repo, _bare = build_repo(tmp_path)
+    url_a = "https://example.com/notes"
+    commit_announce(repo, {"deepseek": {url_a: "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/winner-55555555",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": {url_a: "fresh prose"}},
+        announce_fetched="2026-09-11",
+    )
+    git(repo, "switch", "pricelog/winner-55555555")
+    git(repo, "rm", "-q", "--", "state/announce/deepseek/notes.md")
+    git(repo, "commit", "-m", "hand edit: drop the channel file, keep the index")
+    git(repo, "push", "origin", "pricelog/winner-55555555")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "main").strip()
+
+    with pytest.raises(
+        automerge.AutoMergeError,
+        match="is missing from origin/pricelog/winner-55555555",
+    ):
+        automerge.merge_branches(
+            ["pricelog/winner-55555555"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert git(repo, "rev-parse", "main").strip() == before
