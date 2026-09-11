@@ -1,10 +1,12 @@
 # the one scheduled workflow: every 2h the watchdog runs (watch provider pages
 # and the openrouter api, append observed rows, open draft PRs), followed by a
-# claude code review pass when the run changed something; weekly (monday 05:17
-# utc) a live smoke probe checks the moonshot .md endpoints. push/PR gates stay
-# in ci.yml + publish.yml. GH_TOKEN = the cloudybot PAT with repo scope (repo
-# secret); falls back to GITHUB_TOKEN. the claude pass reads ANTHROPIC_API_KEY and optional
-# ANTHROPIC_BASE_URL / ANTHROPIC_MODEL overrides from repo secrets.
+# claude code review pass when the run changed something, then a deterministic
+# merge step that merges the PRs the pass marked `automerge: yes`; weekly
+# (monday 05:17 utc) a live smoke probe checks the moonshot .md endpoints.
+# push/PR gates stay in ci.yml + publish.yml. GH_TOKEN = the cloudybot PAT
+# with repo scope (repo secret); falls back to GITHUB_TOKEN. the claude pass
+# reads ANTHROPIC_API_KEY and optional ANTHROPIC_BASE_URL / ANTHROPIC_MODEL
+# overrides from repo secrets.
 
 name: autopr
 
@@ -69,7 +71,7 @@ jobs:
           # claude -p under a step timeout leaves pass.log complete (tee
           # flushes per line), so the tripwire runs even on a killed pass
           set +e
-          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "Bash(uv run *)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
           pass_rc=$?
           set -e
           # grep, never rg: the github runner image ships no rg (observed
@@ -93,6 +95,20 @@ jobs:
           # GH_TOKEN holds the cloudybot PAT: every automation action (open
           # pr, comment, merge commit) acts as the bot, so a @-mention in a
           # needs-human comment notifies the owner (a self-mention never does)
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: merge verified PRs
+        # NOT continue-on-error: a deterministic merge failure must red the
+        # run; the PRs stay open and a human looks. a silent green merge
+        # failure is the bug class this step exists to close. if: always()
+        # because the pass step is continue-on-error: the dispositions are
+        # already posted when the pass dies, and the merge must still run
+        if: always()
+        timeout-minutes: 10
+        run: |
+          [ -f .run-changed ] || { echo "run changed nothing; no merge"; exit 0; }
+          uv run ai-pricelog-merge-verified /tmp/run.log
+        env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: provider health check

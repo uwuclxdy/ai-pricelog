@@ -13,6 +13,7 @@ dependencies = [
 ai-pricelog = "ai_pricelog.pipeline:main"
 ai-pricelog-smoke = "ai_pricelog.smoke:main"
 ai-pricelog-automerge = "ai_pricelog.automerge:main"
+ai-pricelog-merge-verified = "ai_pricelog.merge_verified:main"
 ai-pricelog-health = "ai_pricelog.health:main"
 ai-pricelog-publish = "ai_pricelog.publish:main"
 
