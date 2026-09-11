@@ -1,4 +1,4 @@
-# the one scheduled workflow: every 2h the watchdog runs (watch provider pages
+# the one scheduled workflow: hourly the watchdog runs (watch provider pages
 # and the openrouter api, append observed rows, open draft PRs), followed by a
 # claude code review pass when the run changed something, then a deterministic
 # merge step that merges the PRs the pass marked `automerge: yes`; weekly
@@ -12,7 +12,7 @@ name: autopr
 
 on:
   schedule:
-    - cron: "0 */2 * * *" # every 2h
+    - cron: "0 * * * *" # hourly
     - cron: "17 5 * * 1" # weekly monday 05:17 utc
   workflow_dispatch:
 
