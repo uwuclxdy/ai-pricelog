@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 12
+    assert len(rules) == 13
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -105,6 +105,14 @@ def test_committed_billing_rules_pass_schema():
     assert deepseek_v4["effective"] == "2026-09-10"
     assert "deepseek-v4-pro" in deepseek_v4["statement"]
     assert "https://api-docs.deepseek.com/updates/" in deepseek_v4["citation"]
+    deepseek_cont = rules[12]
+    assert deepseek_cont["id"] == "deepseek-v4-pro-continuation-2026-09-12"
+    assert deepseek_cont["provider"] == "deepseek"
+    assert deepseek_cont["effective"] == "2026-09-12"
+    assert deepseek_cont["timezone"] == "Asia/Shanghai"
+    assert "billing method remaining unchanged" in deepseek_cont["statement"]
+    assert "deepseek-v4-retirement-2026-09-10" in deepseek_cont["statement"]
+    assert "https://api-docs.deepseek.com/updates/" in deepseek_cont["citation"]
 
 
 @pytest.mark.parametrize(
