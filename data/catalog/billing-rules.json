@@ -124,6 +124,16 @@
       "citation": [
         "https://api-docs.deepseek.com/updates/"
       ]
+    },
+    {
+      "id": "deepseek-v4-pro-continuation-2026-09-12",
+      "provider": "deepseek",
+      "effective": "2026-09-12",
+      "timezone": "Asia/Shanghai",
+      "statement": "the 2026-09-10 entry was amended to rescind the V4 Pro retirement: in response to user demand, deepseek continues providing API services for deepseek-v4-pro after 2026-09-14, with the billing method remaining unchanged, superseding the v4-pro routing clause of deepseek-v4-retirement-2026-09-10 (after 12:00 Beijing Time on 2026-09-14, requests to deepseek-v4-pro would have been routed to V4.1 Flash and billed at the V4.1 Flash price); the V4 Flash / V4 Flash Vision Exp retirement and temporary routing to V4.1 Flash stand unchanged; further notice promised should anything change",
+      "citation": [
+        "https://api-docs.deepseek.com/updates/"
+      ]
     }
   ]
 }
