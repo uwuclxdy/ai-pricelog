@@ -3,12 +3,14 @@
 {"schema":4,"source":"fireworks","model_id":"deepseek-v4-pro","observed_at":"2026-08-29","rates":{"input":1.74,"output":3.48,"cache_read":0.145},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","removed":true,"rates":{"input":1.74,"output":3.48,"cache_read":0.145}}
 {"schema":4,"source":"fireworks","model_id":"deepseek-v4-pro-0813","observed_at":"2026-08-29","rates":{"input":1.32,"output":3.96,"cache_read":0.044},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
+{"schema":4,"source":"fireworks","model_id":"deepseek-v4.1-flash","observed_at":"2026-09-11","rates":{"input":0.22,"output":0.66,"cache_read":0.007},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.2","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.2-fast","observed_at":"2026-08-29","rates":{"input":2.1,"output":6.6,"cache_read":0.21},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.2-fast-us","observed_at":"2026-08-29","rates":{"input":2.1,"output":6.6,"cache_read":0.21},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-fast","observed_at":"2026-08-29","rates":{"input":2.1,"output":6.6,"cache_read":0.39},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-fast","observed_at":"2026-08-30","removed":true,"rates":{"input":2.1,"output":6.6,"cache_read":0.39}}
+{"schema":4,"source":"fireworks","model_id":"glm-5.3-fast","observed_at":"2026-09-12","rates":{"input":2.1,"output":6.6,"cache_read":0.39},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-flash","observed_at":"2026-08-31","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k2.6","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k2.6-fast","observed_at":"2026-08-29","rates":{"input":2.0,"output":8.0,"cache_read":0.3},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}

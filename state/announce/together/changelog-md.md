@@ -1,5 +1,11 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 10, 2026" tags={["New releases"]}> ## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
+# Changelog <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
+The same goes for a missing API key or command argument.
+* `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
+* `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.
+* The `--scale-to-zero-window` flag has been removed from `tg beta endpoints deploy` and `tg beta endpoints update`.
+See the [CLI reference](/reference/cli/getting-started).
+## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
 Alongside standard nodes, you can set a preemptible GPU target, and Together provisions toward it as spare capacity becomes available, at a flat discounted rate relative to on-demand.
 **What's new:** * **Preemptible GPU targets:** Set `num_preemptible_gpus` at cluster create or update from the console, CLI, or API.
 Together automatically provisions replacements toward the target after nodes are reclaimed.
@@ -39,19 +45,19 @@ Use `deepseek-ai/DeepSeek-V4-Pro-0813` instead.
 * `moonshotai/Kimi-K2.7-Code`.
 `deepseek-ai/DeepSeek-V4-Pro` and `moonshotai/Kimi-K2.7-Code` remain available through on-demand [dedicated endpoints](/docs/dedicated-endpoints).
 See [Deprecations](/docs/deprecations) for migration options.
-</Update> <Update label="August 26, 2026" tags={["New releases"]}> ## Batch jobs in the CLI The Together CLI now includes a `tg batches` command group for [batch inference](/docs/inference/batch/overview): * `tg batches submit` uploads a local JSONL file (or takes an existing file ID) and creates a job against `chat.completions`, `audio.transcriptions`, or `audio.translations`.
+</Update> <Update label="August 26, 2026" tags={["New releases", "New models"]}> ## Batch jobs in the CLI The Together CLI now includes a `tg batches` command group for [batch inference](/docs/inference/batch/overview): * `tg batches submit` uploads a local JSONL file (or takes an existing file ID) and creates a job against `chat.completions`, `audio.transcriptions`, or `audio.translations`.
 * `tg batches list`, `retrieve`, and `cancel` manage the job lifecycle, with `ls` and `get` as aliases.
 * `tg batches download` streams results to stdout, or writes the output and error files to disk with `--output`.
 See the [batches CLI reference](/reference/cli/batches).
-</Update> <Update label="August 26, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.3-Flash`: 1,000,000 context length, FP8 quantization, function calling and structured outputs.
+## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.3-Flash`: 1,000,000 context length, FP8 quantization, function calling and structured outputs.
 Pricing: \$0.15 input / \$0.50 output / \$0.03 cached input (per 1M tokens).
-</Update> <Update label="August 25, 2026" tags={["Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `google/gemma-3n-E4B-it`.
+</Update> <Update label="August 25, 2026" tags={["New models", "Improvements", "Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `google/gemma-3n-E4B-it`.
 * `meta-llama/Llama-Guard-4-12B`.
 These models are not supported by on-demand dedicated endpoints.
 See [Deprecations](/docs/deprecations) for migration options.
-</Update> <Update label="August 25, 2026" tags={["New models"]}> ## New models available for fine-tuning You can now fine-tune the following models: * `Qwen/Qwen3.8-27B`.
+## New models available for fine-tuning You can now fine-tune the following models: * `Qwen/Qwen3.8-27B`.
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
-</Update> <Update label="August 25, 2026" tags={["Improvements"]}> ## Longer context for GLM-5.2 `zai-org/GLM-5.2` on [serverless](/docs/serverless/models) now accepts a 1,000,000-token context length, up from 512,000.
+## Longer context for GLM-5.2 `zai-org/GLM-5.2` on [serverless](/docs/serverless/models) now accepts a 1,000,000-token context length, up from 512,000.
 Pricing is unchanged.
 See the [GLM-5.2 quickstart](/docs/glm-5.2-quickstart).
 </Update> <Update label="August 24, 2026" tags={["Improvements"]}> ## Fine-tuning quality improvements Training quality has improved for fine-tuning on the following models: * `Qwen/Qwen3.5-0.8B`.
@@ -82,13 +88,13 @@ Destructive repairs can stay gated on approval while transient ones clear on the
 * **Job interruption controls:** **Wait for idle**, **Grace period**, **Maximum wait**, and **Do not interrupt running jobs** let the wait policy protect in-flight training and inference work in place of a review step.
 * **Audit trail:** Automatically approved repairs record **Auto-Approved** in the repair's **Reviewed by** field, alongside the alert evidence that triggered them.
 See [Confirmation policy](/docs/node-repair#confirmation-policy) for details.
-</Update> <Update label="August 19, 2026" tags={["New releases"]}> ## ACH bank transfers generally available ACH bank transfers are now available to all customers, not just those with an enterprise contract.
+</Update> <Update label="August 19, 2026" tags={["New releases", "Deprecations"]}> ## ACH bank transfers generally available ACH bank transfers are now available to all customers, not just those with an enterprise contract.
 Link a U.S.
 bank account with instant verification from your [billing settings](https://api.together.ai/settings/organization/~current/billing), set it as your default payment method, and purchase credits directly from your bank account.
 Credits are deposited after the ACH payment clears (usually 1–3 business days).
 Auto-recharge still requires a card as the default payment method.
 See [Payment methods & invoices](/docs/billing-payment-methods#ach-bank-transfers).
-</Update> <Update label="August 19, 2026" tags={["Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `black-forest-labs/FLUX.1-schnell`.
+## Model deprecations The following models have been deprecated and are no longer available on serverless: * `black-forest-labs/FLUX.1-schnell`.
 * `Qwen/Qwen2.5-7B`.
 * `moonshotai/Kimi-K2.6`.
 See [Deprecations](/docs/deprecations) for migration options.
@@ -131,11 +137,11 @@ Pricing: \$0.35 input / \$1.50 output / \$0.04 cached input (per 1M tokens).
 * `ByteDance/Seedance-2.5`: Pricing: \$0.115/sec at 480p.
 ## New models available for fine-tuning You can now fine-tune the following models: * `deepseek-ai/DeepSeek-V4-Flash-0731`.
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
-</Update> <Update label="August 10, 2026" tags={["New releases"]}> ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](/docs/dedicated-endpoints/manage#placement-profiles) deployments now accepts an optional `compliancePolicy` object.
+</Update> <Update label="August 10, 2026" tags={["New releases", "Improvements"]}> ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](/docs/dedicated-endpoints/manage#placement-profiles) deployments now accepts an optional `compliancePolicy` object.
 Set `hipaa: true` so replicas only schedule on HIPAA-attested clusters.
 The policy is always enforced strictly, regardless of `constraint`, and the deployment stays unscheduled while no qualifying cluster is available.
 See [Compliance policy](/docs/dedicated-endpoints/manage#compliance-policy).
-</Update> <Update label="August 10, 2026" tags={["Improvements"]}> ## Tokenized dataset download in the fine-tuning console Open a job on the [fine-tuning jobs dashboard](https://api.together.ai/fine-tuning).
+## Tokenized dataset download in the fine-tuning console Open a job on the [fine-tuning jobs dashboard](https://api.together.ai/fine-tuning).
 When the job has a tokenized dataset archive, the job details show a **Tokenized dataset** row with **Download**.
 Selecting **Download** opens a presigned archive URL in a new tab.
 The same archive is available from the API and CLI.
@@ -171,13 +177,13 @@ After a role or permissions change (new RBAC bindings or an IdP group change), c
 On Together-managed OIDC clusters, the step also now suggests `kubectl get pods` instead of `kubectl get nodes`.
 Members on those clusters typically have namespace-scoped RBAC, so listing nodes returns `403 Forbidden` even when authentication works.
 See [Set up OIDC authentication](/docs/cluster-oidc#token-lifetime-and-refresh).
-</Update> <Update label="July 29, 2026" tags={["Improvements"]}> ## Models page visibility filter The [Models](https://api.together.ai/models) page now lists Internal-visibility models from every project in your organization under **My models**, not only from the selected project.
+</Update> <Update label="July 29, 2026" tags={["Improvements", "Deprecations"]}> ## Models page visibility filter The [Models](https://api.together.ai/models) page now lists Internal-visibility models from every project in your organization under **My models**, not only from the selected project.
 A **Visibility** filter lets you show **Internal** models, **Private** models, or both.
 See [Upload a fine-tuned model](/docs/dedicated-endpoints/custom-models#create-the-model).
 ## Project scoping in the console Fine-tuning, Files, and Evaluations are now available in the Projects UI.
 Create and manage fine-tuning jobs, uploaded files, and evaluations within a project from the console, not just with project-scoped API keys.
 See [Projects](/docs/projects).
-</Update> <Update label="July 29, 2026" tags={["Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available for [fine-tuning](/docs/fine-tuning/supported-models): * `nvidia/NVIDIA-Nemotron-Nano-9B-v2`.
+## Model deprecations The following models have been deprecated and are no longer available for [fine-tuning](/docs/fine-tuning/supported-models): * `nvidia/NVIDIA-Nemotron-Nano-9B-v2`.
 * `Qwen/Qwen3-Next-80B-A3B-Instruct`.
 * `Qwen/Qwen3-Next-80B-A3B-Thinking`.
 * `Qwen/Qwen3-0.6B`.
@@ -304,14 +310,14 @@ Only endpoints with at least one live deployment are listed.
 See [Supported models](/docs/evaluations-supported-models#dedicated-models).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `MiniMaxAI/MiniMax-M2.7`.
 See [Deprecations](/docs/deprecations) for migration options.
-</Update> <Update label="July 27, 2026" tags={["Improvements"]}> ## GPU quota rejections return HTTP 429 Creating or updating a [dedicated endpoint](/docs/dedicated-endpoints/manage) deployment that would exceed your project or organization GPU quota now returns HTTP `429` with a message that names the GPU type and the would-be usage against the limit.
+</Update> <Update label="July 27, 2026" tags={["New models", "Improvements"]}> ## GPU quota rejections return HTTP 429 Creating or updating a [dedicated endpoint](/docs/dedicated-endpoints/manage) deployment that would exceed your project or organization GPU quota now returns HTTP `429` with a message that names the GPU type and the would-be usage against the limit.
 Platform-wide capacity checks return the same status and ask you to retry later.
 See [Error codes](/docs/error-codes) and [Troubleshooting](/docs/dedicated-endpoints/manage#troubleshooting).
-</Update> <Update label="July 27, 2026" tags={["Improvements"]}> ## CLI get by endpoint or deployment name `tg beta endpoints get` now accepts endpoint and deployment names in addition to IDs (`ep_...`, `dep_...`).
+## CLI get by endpoint or deployment name `tg beta endpoints get` now accepts endpoint and deployment names in addition to IDs (`ep_...`, `dep_...`).
 You can also pass the name or ID directly as `tg beta endpoints <name_or_id>`.
 If a bare deployment name matches more than one deployment, the CLI asks for a deployment ID or a fully qualified name.
 See [Get](/reference/cli/endpoints-beta#get).
-</Update> <Update label="July 27, 2026" tags={["New models", "Improvements"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `moonshotai/Kimi-K3`: 1,000,000 context length.
+## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `moonshotai/Kimi-K3`: 1,000,000 context length.
 Pricing: \$3.00 input / \$15.00 output / \$0.30 cached input (per 1M tokens).
 Supports function calling, structured outputs, and vision inputs.
 See [Kimi K3 quickstart](/docs/kimi-k3-quickstart) for details.
@@ -351,7 +357,7 @@ See [Monitor endpoints and deployments](/docs/dedicated-endpoints/monitoring).
 </Update> <Update label="July 22, 2026" tags={["Improvements"]}> ## Cluster remediation mode override `tg beta clusters remediations approve` now accepts a `--mode` flag to override the recommended repair action when you approve a node remediation.
 Choose reboot, quick reprovision, migrate to new host, or remove without changing the recommendation in the console first.
 See [Node repair](/docs/node-repair#override-the-recommended-action) and the [clusters CLI reference](/reference/cli/clusters).
-</Update> <Update label="July 21, 2026" tags={["Improvements"]}> ## GPU cluster add-on CLI flags `tg beta clusters create` and `tg beta clusters update` now expose flags for Headlamp and Slurm Web cluster add-ons.
+</Update> <Update label="July 21, 2026" tags={["New releases", "Improvements"]}> ## GPU cluster add-on CLI flags `tg beta clusters create` and `tg beta clusters update` now expose flags for Headlamp and Slurm Web cluster add-ons.
 * **Create:** Pass `--headlamp-addon` or `--slurm-web-addon` to enable an add-on at cluster creation.
 * **Update:** Pass `--headlamp` / `--no-headlamp` or `--slurm-web` / `--no-slurm-web` to toggle add-ons on an existing cluster.
 See the [clusters CLI reference](/reference/cli/clusters).
@@ -364,7 +370,7 @@ See [Secrets](/docs/deployments-jig#secrets).
 ## New models available for fine-tuning You can now fine-tune the following models: * `zai-org/GLM-5.1`.
 * `zai-org/GLM-5`.
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
-</Update> <Update label="July 21, 2026" tags={["New releases"]}> ## Pairwise InfiniBand write bandwidth health check You can now run a Pairwise InfiniBand Write Bandwidth active health check on GPU clusters.
+## Pairwise InfiniBand write bandwidth health check You can now run a Pairwise InfiniBand Write Bandwidth active health check on GPU clusters.
 It measures `ib_write_bw` throughput between exactly two nodes across InfiniBand rails, with configurable RDMA memory and traffic direction.
 See [Health checks](/docs/health-checks) for the available tests, thresholds, and results.
 </Update> <Update label="July 20, 2026" tags={["New releases", "New models", "Improvements"]}> ## Fine-tuning metrics dashboard Fine-tuning jobs now have a **Metrics** tab in the [web dashboard](https://api.together.ai/fine-tuning) that charts training progress.
@@ -436,11 +442,11 @@ Available as an on-demand dedicated endpoint.
 * `zai-org/GLM-5.1`.
 Available as an on-demand dedicated endpoint.
 See [Deprecations](/docs/deprecations) for migration options.
-</Update> <Update label="July 9, 2026" tags={["New releases"]}> ## TorchTitan training health check You can now run a TorchTitan training health check on your GPU clusters.
+</Update> <Update label="July 9, 2026" tags={["New releases", "New models", "Deprecations"]}> ## TorchTitan training health check You can now run a TorchTitan training health check on your GPU clusters.
 It runs a short training benchmark on one or more nodes and measures steady-state model FLOPs utilization (MFU) to validate end-to-end training throughput.
 This feature is in preview and runs on demand on NVIDIA B200 (Blackwell) nodes.
 See [Health checks](/docs/health-checks) for the available tests, thresholds, and results.
-</Update> <Update label="July 9, 2026" tags={["New releases", "New models", "Deprecations"]}> ## Storage performance health check You can now run a storage performance health check on your GPU clusters.
+## Storage performance health check You can now run a storage performance health check on your GPU clusters.
 It uses `fio` to validate data integrity and measure sequential read and write bandwidth on the cluster's storage volumes, and it also runs automatically during cluster acceptance testing.
 See [Health checks](/docs/health-checks) for the available tests, thresholds, and results.
 ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `LiquidAI/LFM2.5-8B-A1B`: 32,768 context length.
@@ -522,10 +528,10 @@ See [Early stopping](/docs/fine-tuning/early-stopping) for details.
 For larger files, host the audio at a public HTTPS URL and pass that URL as the `file` field, which supports up to 1 GB.
 When sending a binary upload, place the `model` form field before the `file` field in the multipart body.
 See [Transcribe audio](/docs/inference/transcription/overview#limits) for details.
-</Update> <Update label="June 22, 2026" tags={["New releases"]}> ## Attach LoRA adapters to a dedicated endpoint You can now attach multiple LoRA adapters to a single LoRA-enabled dedicated endpoint so they share the same hardware, instead of deploying one endpoint per adapter.
+</Update> <Update label="June 22, 2026" tags={["New releases", "Deprecations"]}> ## Attach LoRA adapters to a dedicated endpoint You can now attach multiple LoRA adapters to a single LoRA-enabled dedicated endpoint so they share the same hardware, instead of deploying one endpoint per adapter.
 Manage bindings from the [Python SDK](/python-library), the TypeScript SDK, the CLI, or the API: * `together endpoints adapters add <endpoint_id> <endpoint_name>:<adapter_model_name>` * `together endpoints adapters list <endpoint_id>` * `together endpoints adapters remove <endpoint_id> <endpoint_name>:<adapter_model_name>` This feature is in preview.
 See [Attach a LoRA adapter to an endpoint](/docs/dedicated-endpoints/v1/lora-adapter).
-</Update> <Update label="June 22, 2026" tags={["Deprecations"]}> ## Model deprecations The following model has been deprecated and is no longer available on serverless: * `zai-org/GLM-5`.
+## Model deprecations The following model has been deprecated and is no longer available on serverless: * `zai-org/GLM-5`.
 Recommended replacement: `zai-org/GLM-5.2`.
 See [Deprecations](/docs/deprecations) for migration options.
 </Update> <Update label="June 17, 2026" tags={["New models", "Improvements"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.2`: 262K context length, FP4 quantization.
@@ -600,13 +606,13 @@ See [Deprecations](/docs/deprecations) for migration options.
 * `rime-labs/rime-mist-v3-omni`.
 ## Seedance 2.0 quickstart A quickstart is now available for [Seedance 2.0](/docs/seedance2.5-quickstart), ByteDance's unified multimodal audio-video generation model.
 The guide covers text-to-video, image-to-video, video extension, and instruction-based editing.
-</Update> <Update label="May 22, 2026" tags={["New releases"]}> ## GPU clusters: external OIDC authentication and RBAC GPU clusters now support external OpenID Connect (OIDC) authentication, allowing each team member to access the cluster's Kubernetes API using their organization's identity provider: Google, Okta, Auth0, Microsoft Entra ID, and others.
+</Update> <Update label="May 22, 2026" tags={["New releases", "New models"]}> ## GPU clusters: external OIDC authentication and RBAC GPU clusters now support external OpenID Connect (OIDC) authentication, allowing each team member to access the cluster's Kubernetes API using their organization's identity provider: Google, Okta, Auth0, Microsoft Entra ID, and others.
 With OIDC enabled, access is managed through standard Kubernetes RBAC: admins bind permissions to individual user identities, and each user authenticates via their browser using SSO.
 This replaces shared kubeconfig credentials with per-user tokens, per-user audit trails, and clean revocation.
 Currently this feature is only supported for Kubernetes clusters.
 OIDC must be configured at cluster creation time.
 See [Set up OIDC authentication](/docs/cluster-oidc) for the full setup guide.
-</Update> <Update label="May 22, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.7-Max`.
+## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.7-Max`.
 Pricing: \$2.50 input / \$7.50 output (per 1M tokens).
 </Update> <Update label="May 21, 2026" tags={["Deprecations"]}> ## Model deprecations The following model has been deprecated and is no longer available on serverless: * `moonshotai/Kimi-K2.5`.
 See [Deprecations](/docs/deprecations) for migration options.
