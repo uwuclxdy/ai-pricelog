@@ -48,11 +48,11 @@ Announcing the Cohere Transcribe model We’re pleased to announce the release o
 Cohere Transcribe specializes in audio-in, text-out, automatic speech recognition (ASR).
 Technical details Model name : cohere-transcribe-03-2026 Input : Audio waveform Output : Text Languages covered : English, German, French, Italian, Spanish, Portuguese, Greek, Dutch, Polish, Vietnamese, Chinese, Arabic, Japanese, Korean.
 License : Apache 2.0 API endpoint : Audio Transcriptions API Getting started The model is available immediately through Cohere’s Audio Transcriptions API endpoint .
-You can start transcribing audio using the following example query: PYTHON 1 import cohere 2 3 co = cohere .
-ClientV2 () 4 5 response = co .
+You can start transcribing audio using the following example query: PYTHON import cohere co = cohere .
+ClientV2 () response = co .
 audio .
 transcriptions .
-create ( 6 model = " cohere-transcribe-03-2026 " , 7 language = " en " , 8 file = open ( " ./sample.wav " , " rb " ), 9 ) 10 11 print ( response ) Availability You can access Cohere Transcribe via our API for free, low-setup experimentation subject to rate limits.
+create ( model = " cohere-transcribe-03-2026 " , language = " en " , file = open ( " ./sample.wav " , " rb " ), ) print ( response ) Availability You can access Cohere Transcribe via our API for free, low-setup experimentation subject to rate limits.
 See the Different Types of API Keys and Rate Limits page for usage details and integration guidance.
 For production deployment without rate limits, provision a dedicated Model Vault .
 This enables low-latency, private cloud inference without having to manage infrastructure.
@@ -60,25 +60,25 @@ Pricing is calculated per hour-instance, with discounted plans for longer-term c
 Contact our team to discuss your requirements.
 Cohere's Rerank v4.0 Model is Here!
 We’re pleased to announce the release of Rerank 4.0 our newest and most performant foundational model for ranking.
-Technical Details Two model variants available: rerank-v4.0-pro : Optimized for state-of-the-art quality and complex use-cases rerank-v4.0-fast : Optimized for low latency and high throughput use-cases Multilingual support : Re-rank both English and non-English documents Semi-structured data support : Re-rank JSON documents Extended context length : 32k token context window Example Query PYTHON 1 import cohere 2 3 co = cohere .
-ClientV2 () 4 5 query = " What is the capital of the United States?
-" 6 docs = [ 7 " Carson City is the capital city of the American state of Nevada.
+Technical Details Two model variants available: rerank-v4.0-pro : Optimized for state-of-the-art quality and complex use-cases rerank-v4.0-fast : Optimized for low latency and high throughput use-cases Multilingual support : Re-rank both English and non-English documents Semi-structured data support : Re-rank JSON documents Extended context length : 32k token context window Example Query PYTHON import cohere co = cohere .
+ClientV2 () query = " What is the capital of the United States?
+" docs = [ " Carson City is the capital city of the American state of Nevada.
 At the 2010 United States Census, Carson City had a population of 55,274.
-" , 8 " The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that are a political division controlled by the United States.
+" , " The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that are a political division controlled by the United States.
 Its capital is Saipan.
-" , 9 " Charlotte Amalie is the capital and largest city of the United States Virgin Islands.
+" , " Charlotte Amalie is the capital and largest city of the United States Virgin Islands.
 It has about 20,000 people.
 The city is on the island of Saint Thomas.
-" , 10 " Washington, D.C.
+" , " Washington, D.C.
 (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States.
 It is a federal district.
 The President of the USA and many major national government offices are in the territory.
 This makes it the political center of the United States of America.
-" , 11 " Capital punishment has existed in the United States since before the United States was a country.
+" , " Capital punishment has existed in the United States since before the United States was a country.
 As of 2017, capital punishment is legal in 30 of the 50 states.
 The federal government (including the United States military) also uses capital punishment.
-" , 12 ] 13 14 results = co .
-rerank ( 15 model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 16 ) Announcing Major Command Deprecations As part of our ongoing commitment to delivering advanced AI solutions, we are deprecating the following models, features, and API endpoints: Deprecated Models: command-r-03-2024 (and the alias command-r ) command-r-plus-04-2024 (and the alias command-r-plus ) command-light command summarize (Refer to the migration guide for alternatives).
+" , ] results = co .
+rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) Announcing Major Command Deprecations As part of our ongoing commitment to delivering advanced AI solutions, we are deprecating the following models, features, and API endpoints: Deprecated Models: command-r-03-2024 (and the alias command-r ) command-r-plus-04-2024 (and the alias command-r-plus ) command-light command summarize (Refer to the migration guide for alternatives).
 For command model replacements, we recommend you use command-r-08-2024 , command-r-plus-08-2024 , or command-a-03-2025 (which is the strongest-performing model across domains) instead.
 Retired Fine-Tuning Capabilities: All fine-tuning options via dashboard and API for models including command-light , command , command-r , classify , and rerank are being retired.
 Previously fine-tuned models will no longer be accessible.
@@ -86,8 +86,8 @@ Deprecated Features and API Endpoints: /v1/connectors (Managed connectors for RA
 It achieves state-of-the-art performance at producing accurate, fluent translations across 23 languages.
 Key Features 23 supported languages : English, French, Spanish, Italian, German, Portuguese, Japanese, Korean, Chinese, Arabic, Russian, Polish, Turkish, Vietnamese, Dutch, Czech, Indonesian, Ukrainian, Romanian, Greek, Hindi, Hebrew, and Persian 111 billion parameters for superior translation quality 16K token context length (8K input + 8K output) for handling longer texts Optimized for deployment on 1-2 GPUs (A100s/H100s) Secure deployment options for sensitive data translation Getting Started The model is available immediately through Cohere’s Chat API endpoint.
 You can start translating text with simple prompts or integrate it programmatically into your applications.
-1 from cohere import ClientV2 2 3 co = ClientV2 ( api_key = " <YOUR API KEY> " ) 4 5 response = co .
-chat ( 6 model = " command-a-translate-08-2025 " , 7 messages = [ 8 { 9 " role " : " user " , 10 " content " : " Translate this text to Spanish: Hello, how are you?
-" , 11 } 12 ], 13 ) Availability Command A Translate ( command-a-translate-08-2025 ) is now available for all Cohere users through our standard API endpoints.
+from cohere import ClientV2 co = ClientV2 ( api_key = " <YOUR API KEY> " ) response = co .
+chat ( model = " command-a-translate-08-2025 " , messages = [ { " role " : " user " , " content " : " Translate this text to Spanish: Hello, how are you?
+" , } ], ) Availability Command A Translate ( command-a-translate-08-2025 ) is now available for all Cohere users through our standard API endpoints.
 For enterprise customers, private deployment options are available to ensure maximum security and control over your translation workflows.
 For more detailed information about Command A Translate, including technical specifications and implementation examples, visit our model documentation .
