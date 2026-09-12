@@ -5140,6 +5140,24 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inference-net/schematron-v2-small": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inference-net/schematron-v2-small"
+        ]
+      },
+      "vendor": "inference-net"
+    },
+    "openrouter/inference-net/schematron-v2-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inference-net/schematron-v2-turbo"
+        ]
+      },
+      "vendor": "inference-net"
+    },
     "openrouter/kwaipilot/kat-coder-air-v2.5": {
       "curated": false,
       "sources": {
