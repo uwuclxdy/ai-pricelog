@@ -1682,11 +1682,21 @@
       },
       "vendor": "deepseek"
     },
-    "deepseek/deepseek-flash": {
-      "curated": false,
+    "deepseek-v4.1-flash": {
+      "curated": true,
+      "name": "DeepSeek V4.1 Flash",
       "sources": {
         "deepseek": [
           "deepseek-flash"
+        ],
+        "fireworks": [
+          "deepseek-v4.1-flash"
+        ],
+        "novita": [
+          "deepseek/deepseek-v4.1-flash"
+        ],
+        "openrouter": [
+          "deepseek/deepseek-v4.1-flash"
         ]
       },
       "vendor": "deepseek"
@@ -1817,15 +1827,6 @@
       "sources": {
         "fireworks": [
           "deepseek-v4-flash-vision-exp"
-        ]
-      },
-      "vendor": "deepseek"
-    },
-    "fireworks/deepseek-v4.1-flash": {
-      "curated": false,
-      "sources": {
-        "fireworks": [
-          "deepseek-v4.1-flash"
         ]
       },
       "vendor": "deepseek"
@@ -4153,15 +4154,6 @@
       },
       "vendor": "deepseek"
     },
-    "novita/deepseek/deepseek-v4.1-flash": {
-      "curated": false,
-      "sources": {
-        "novita": [
-          "deepseek/deepseek-v4.1-flash"
-        ]
-      },
-      "vendor": "deepseek"
-    },
     "novita/inclusionai/ling-3.0-flash-fast": {
       "curated": false,
       "sources": {
@@ -4870,15 +4862,6 @@
       },
       "vendor": "deepseek"
     },
-    "openrouter/deepseek/deepseek-v4.1-flash": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "deepseek/deepseek-v4.1-flash"
-        ]
-      },
-      "vendor": "deepseek"
-    },
     "openrouter/dots-studio/dots-3-note-preview:free": {
       "curated": false,
       "sources": {
@@ -5150,7 +5133,8 @@
       "vendor": "inclusionai"
     },
     "openrouter/inclusionai/ling-3.0-flash-vl": {
-      "curated": false,
+      "curated": true,
+      "name": "Ling 3.0 Flash VL",
       "sources": {
         "openrouter": [
           "inclusionai/ling-3.0-flash-vl"
@@ -5168,7 +5152,8 @@
       "vendor": "inclusionai"
     },
     "openrouter/inference-net/schematron-v2-small": {
-      "curated": false,
+      "curated": true,
+      "name": "Schematron V2 Small",
       "sources": {
         "openrouter": [
           "inference-net/schematron-v2-small"
@@ -5177,7 +5162,8 @@
       "vendor": "inference-net"
     },
     "openrouter/inference-net/schematron-v2-turbo": {
-      "curated": false,
+      "curated": true,
+      "name": "Schematron V2 Turbo",
       "sources": {
         "openrouter": [
           "inference-net/schematron-v2-turbo"
