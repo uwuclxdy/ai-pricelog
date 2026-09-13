@@ -10,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPT = ROOT / ".github" / "claude-pass" / "prompt.md"
+HUMAN_PROMPT = ROOT / ".github" / "claude-pass" / "human-pr-prompt.md"
+REVIEW_WF = ROOT / ".github" / "workflows" / "review.yml"
 
 
 def _section_body(text: str, title: str) -> str:
@@ -104,3 +106,37 @@ def test_every_watched_provider_has_page_facts_or_an_exempt_entry() -> None:
         assert covered or exempted, (
             f"provider {key!r} has neither page facts nor an exempt entry in the pass prompt"
         )
+
+
+def test_human_pr_prompt_carries_the_review_contract() -> None:
+    # review.yml runs this prompt on human PRs, read-only, on a checkout with
+    # no docs/ tree; the one-comment contract, the read-only rule and the
+    # machine marker are the row's contract, and the disclosure string is the
+    # pipeline skip marker — a reword on either side breaks the skip
+    text = HUMAN_PROMPT.read_text()
+    assert "exactly one comment" in text
+    assert "edit that comment in place" in text
+    assert "never Edit" in text
+    assert "pr-review:" in text
+    assert "pr-review: <head sha reviewed>" in text
+    assert "opened automatically by the [GitHub Action]" in text
+
+
+def test_review_workflow_names_the_prompt_and_stays_read_only() -> None:
+    # review.yml is the human-prompt's only consumer, and its allowedTools
+    # list is the read-only contract's enforcement: an Edit that creeps in
+    # turns the row's read-only review into a branch-editing one
+    text = REVIEW_WF.read_text()
+    assert "human-pr-prompt.md" in text
+    assert "opened automatically by the [GitHub Action]" in text
+    tools = re.search(r"--allowedTools(.+)", text)
+    assert tools is not None, "review.yml lost its --allowedTools line"
+    assert '"Edit"' not in tools.group(1)
+    assert '"Read" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch"' in tools.group(1)
+    # the always-run verify step is the hung-pass net: a pass killed by its
+    # timeout posts no warning of its own, so the step checks the one durable
+    # signal — the comment's pr-review machine line for this head — and warns
+    # (never fails) when it never landed
+    assert "name: verify the review comment landed" in text
+    assert "if: ${{ always() && !cancelled() }}" in text
+    assert "pr-review: $head" in text

@@ -1,0 +1,135 @@
+# the human-PR review: every pull_request the pipeline did not open gets a
+# read-only claude code pass over its three-dot diff, posting exactly one
+# comment (findings plus a pr-review machine line; no automerge disposition,
+# no merge step reads this workflow). pipeline PRs keep the autopr pass; fork
+# PRs get no repo secrets and skip with an annotation. the always-run verify
+# step is the hung-pass net: it checks the comment's machine marker and the
+# pass log, and warns (never fails) when the review never landed. the
+# guard's skip marker lives in /tmp, so the checkout the diff reads stays
+# untouched.
+
+name: review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# one run per PR, newest push wins: a synchronize cancels the in-flight run
+# and re-reviews the new head
+concurrency:
+  group: review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: skip pipeline and keyless PRs
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "::warning::claude review skipped: fork PRs get no repo secrets (no ANTHROPIC_API_KEY)."
+            touch /tmp/skip-review
+            exit 0
+          fi
+          head="$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)"
+          case "$head" in
+            pricelog/*)
+              echo "pipeline PR; the autopr pass owns it"
+              touch /tmp/skip-review
+              exit 0
+              ;;
+          esac
+          body="$(gh pr view "$PR_NUMBER" --json body --jq .body)"
+          if grep -qF "opened automatically by the [GitHub Action]" <<<"$body"; then
+            echo "pipeline PR; the autopr pass owns it"
+            touch /tmp/skip-review
+            exit 0
+          fi
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: claude review pass
+        continue-on-error: true
+        # the pass itself gets 40 min: the whole job is capped at 50, so a
+        # pass that finished its work but hung dies inside the job cap
+        # instead of eating the full 50 (same split as autopr.yml)
+        timeout-minutes: 40
+        run: |
+          # pipefail so pass_rc below is claude's status, never tee's
+          set -o pipefail
+          [ ! -f /tmp/skip-review ] || { echo "review skipped by the guard"; exit 0; }
+          git fetch origin mommy
+          {
+            cat .github/claude-pass/human-pr-prompt.md
+            echo
+            echo "## this PR's diff"
+            git diff origin/mommy...HEAD
+          } > /tmp/prompt.md
+          npm install -g @anthropic-ai/claude-code@2 >/dev/null
+          export ANTHROPIC_API_KEY
+          [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
+          [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
+          # stream-json emits one event per line (tee flushes per line), so
+          # a killed pass still trails how far it got in the visible log
+          set +e
+          claude -p --output-format stream-json --verbose --allowedTools "Read" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          pass_rc=$?
+          echo "$pass_rc" > /tmp/pass-rc
+          set -e
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          # GH_TOKEN holds the cloudybot PAT, so the review comment posts as
+          # the bot and a @-mention would ping the owner (the prompt bans it)
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: verify the review comment landed
+        # always-run, except a cancelled superseded run stays silent: a pass
+        # killed by its own timeout posts no warning of its own, so the step
+        # checks the one durable signal — the comment's pr-review machine
+        # line for this head — and the pass log. every verdict is a
+        # ::warning::, never a failure; the tripwires moved here from the
+        # pass step (autopr.yml's mirror is relaxed by the owner) because a
+        # step-level timeout kills them with the pass
+        if: ${{ always() && !cancelled() }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          [ ! -f /tmp/skip-review ] || { echo "review skipped by the guard"; exit 0; }
+          if [ -f /tmp/pass-rc ]; then
+            pass_rc="$(cat /tmp/pass-rc)"
+            if [ "$pass_rc" -ne 0 ]; then
+              echo "::warning::the claude review exited $pass_rc; read the pass log in this run."
+            fi
+          fi
+          # grep, never rg: the runner image ships no rg
+          if [ -f /tmp/pass.log ] && grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
+            echo "::warning::the claude review failed to authenticate; read the pass log in this run. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
+          fi
+          head="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)" || {
+            echo "::warning::could not verify the review comment landed: gh pr view failed; read the run log."
+            exit 0
+          }
+          comments="$(gh pr view "$PR_NUMBER" --json comments --jq '[.comments[].body] | join("\n")')" || {
+            echo "::warning::could not verify the review comment landed: gh pr view failed; read the run log."
+            exit 0
+          }
+          if ! grep -qF "pr-review: $head" <<<"$comments"; then
+            echo "::warning::no review comment carrying this head's pr-review marker ($head) landed; this PR went unreviewed. read the pass log in this run."
+          fi
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
