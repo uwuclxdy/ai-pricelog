@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 import urllib.parse
 
 import httpx
@@ -23,7 +24,13 @@ def fetch_text(url: str, headers: dict[str, str] | None = None) -> str:
             follow_redirects=True,
             headers=headers,
         ) as client:
-            response = client.get(url)
+            # the transport retries connect errors only; a transient
+            # 5xx/429 completes the round trip and would fail unretried
+            for attempt in range(4):
+                response = client.get(url)
+                if response.status_code < 500 and response.status_code != 429:
+                    break
+                time.sleep(0.5 * attempt)
             response.raise_for_status()
             return response.text
     except httpx.HTTPError as exc:
