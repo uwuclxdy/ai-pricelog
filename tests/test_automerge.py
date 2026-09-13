@@ -645,6 +645,40 @@ def test_cross_run_burst_merges(tmp_path):
     assert git(repo, "rev-parse", "HEAD").strip() == sha
 
 
+def test_burst_keeps_a_landed_absence_bump_a_later_stale_tree_carries(tmp_path):
+    # the 2026-09-13 shape (PRs 196/197): main already holds an absence file,
+    # an older branch bumps its counter, and a newer branch cut from the same
+    # main inherits the pre-bump copy without touching it. the newer branch's
+    # tree copy is stale, not a carrier: the landed bump must survive
+    repo, _bare = build_repo(tmp_path)
+    absence.save_absence({"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-10"}}}, repo)
+    git(repo, "add", "--", "state/absence")
+    git(repo, "commit", "-m", "absence counter 1")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-10"}}},
+    )
+    make_branch(
+        repo,
+        "pricelog/newer-00000002",
+        [make_row("zai", "glm-5.3", "2026-09-12", 0.2)],
+    )
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newer-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-10"}}
+
+
 def test_cross_run_burst_keeps_a_landed_channel_change(tmp_path):
     # the 09-11 shape (PRs 180-184): the evening branch landed fresh channel
     # prose; the next morning's run failed the same channel's fetch, so its

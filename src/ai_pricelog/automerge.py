@@ -277,19 +277,30 @@ def _merge_announce(
 
 
 def _merge_absence(runner: pr.PrRunner, repo_root: Path, branch: str) -> None:
-    """Lay the branch's absence files over the worktree, newest carrier wins.
+    """Lay the branch's CHANGED absence files over the worktree, newest wins.
 
     Each source's ``state/absence/<source>.json`` lands on that source's own
-    branch, so files this branch does not carry stay as an earlier branch (or
-    HEAD) left them. Git reports add/add conflicts on the files its run did
-    carry (cross-run counters diverge), and this write resolves them with the
-    branch's copy: merge order is oldest first, so the newest carrier's file
-    is the last write. A file whose entries cleared is not carried by the
-    branch at all (save_absence deletes it), and HEAD's stale copy keeps
-    tracking until the next run rewrites it — the same skip-and-retry the
-    pipeline itself uses for state.
+    branch, so files this branch did not change stay as an earlier branch (or
+    HEAD) left them. Tree membership alone is not carrying: a branch cut
+    before an earlier burst merge inherits HEAD's pre-merge copy of every
+    file, and writing those back reverts the landed counters (observed
+    2026-09-13: PR 196's digitalocean bump reverted by five later siblings).
+    Git reports add/add conflicts on the files its run did change (cross-run
+    counters diverge), and this write resolves them with the branch's copy:
+    merge order is oldest first, so the newest changer's file is the last
+    write. A file whose entries cleared is deleted by save_absence and is
+    absent from the branch tree, so it is not written here either; HEAD's
+    stale copy keeps tracking until the next run rewrites it — the same
+    skip-and-retry the pipeline itself uses for state.
     """
+    changed = {
+        path
+        for path in _branch_diff_paths(runner, repo_root, branch)
+        if path.startswith(ABSENCE_DIR + "/")
+    }
     for path in _branch_tree_paths(runner, repo_root, branch, ABSENCE_DIR):
+        if path not in changed:
+            continue
         (repo_root / path).write_text(
             _branch_text(runner, repo_root, branch, path), encoding="utf-8"
         )
