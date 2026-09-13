@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
+# Changelog <Update label="September 11, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling and structured outputs.
+Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
+</Update> <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
 The same goes for a missing API key or command argument.
 * `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
 * `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.

@@ -1,8 +1,16 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation API & SDK Reference CLI Reference Demos Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page 2026-09-09 2026-09-09 2026-09-08 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy page ​ 2026-09-09 Training ​ Training cost estimator The new training cost estimator helps you estimate what a training
-job will cost before you run it.
+⌘ K Changelog On this page 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy page ​ 2026-09-12 Inference ​ Upcoming Serverless deprecation: older DeepSeek, GLM, Muse, and Kimi models
+Several older Serverless models will be decommissioned on September 25, 2026 to better serve newer, higher-performance replacements.
+This applies only to serverless endpoints , including Fast and US-only Serverless endpoints for models that have those variants.
+Dedicated deployments are unaffected.
+​ Action required If you use any of the models below on serverless, migrate to a recommended replacement before September 25, 2026 .
+After that date, they will no longer be available via serverless endpoints.
+​ Recommended migrations DeepSeek V4 Flash (0731) — migrate to DeepSeek V4.1 Flash DeepSeek V4 Pro (0813) — migrate to DeepSeek V4.1 Flash DeepSeek V4 Flash Vision Exp — migrate to DeepSeek V4.1 Flash GLM 5.2 — migrate to GLM 5.3 Muse Glimmer 30B — migrate to NVIDIA Nemotron 3.5 Lightning 30B A3B Kimi K2.6 — migrate to GLM 5.3 or Kimi K3 Kimi K2.7 Code — migrate to GLM 5.3 or Kimi K3 On official benchmarks, DeepSeek V4.1 Flash outperforms DeepSeek V4 Pro (0813).
+DeepSeek V4.1 Flash is also multimodal, with the same vision capability as DeepSeek V4 Flash Vision Exp.
+If you want to switch to a dedicated deployment, see the Serverless model list and the on-demand deployment quickstart .
+​ 2026-09-09 Training ​ Training cost estimator The new training cost estimator helps you estimate what a training job will cost before you run it.
 Managed and Serverless estimates use published per-token rates.
 Dedicated estimates use allocated GPU-hour rates.
 Planning estimates are not quotes.

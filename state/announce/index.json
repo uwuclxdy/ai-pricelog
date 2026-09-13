@@ -86,8 +86,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "678bb40e8f3b902743d63000f53ffced075057b67bbc0ef728d5506f676df4b9",
-      "fetched": "2026-09-12"
+      "sha256": "99e55a9e9b22da5f3fd92ec7fe9bf52bab67b107ec916c7535cda29ede9d56f0",
+      "fetched": "2026-09-13"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -98,15 +98,15 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "413175fe7d5ee31d3af272e3d291c5c6cf10d779cac8ed4080c4f381e8ee140b",
-      "fetched": "2026-09-09"
+      "sha256": "31f0dc674e633996cb903403a1cac5580d8aa8d2a1b083301ff7f904eb9efd0f",
+      "fetched": "2026-09-13"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "129f6cac95f2b4fb837f4d8fa0676e1ace0a0a50a85d2e15d2bcc3a778293084",
-      "fetched": "2026-09-10"
+      "sha256": "b9ea77131e03bb1289b0db09e712748380898169e499a810444f18389a32c8dd",
+      "fetched": "2026-09-13"
     }
   },
   "cohere": {
