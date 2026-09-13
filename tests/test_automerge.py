@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,12 @@ def make_row(source: str, model_id: str, observed_at: str, input_mtok: float) ->
     }
 
 
+def make_removal_row(source: str, model_id: str, observed_at: str) -> dict:
+    row = make_row(source, model_id, observed_at, 0.1)
+    row["removed"] = True
+    return row
+
+
 def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     """A clone with a bare origin: main carries one row and the pipeline files."""
     repo = tmp_path / "repo"
@@ -43,7 +50,19 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     (repo / "data" / "catalog").mkdir(parents=True)
     (repo / BILLING_RULES_FILE).write_text(json.dumps({"rules": []}) + "\n")
     (repo / "data" / "catalog" / "models.json").write_text(
-        json.dumps({"version": 4, "models": {}}) + "\n"
+        json.dumps(
+            {
+                "version": 4,
+                "models": {
+                    "deepseek/deepseek-v4-pro": {
+                        "vendor": "deepseek",
+                        "curated": False,
+                        "sources": {"deepseek": ["deepseek-v4-pro"]},
+                    }
+                },
+            }
+        )
+        + "\n"
     )
     (repo / "tests").mkdir()
     (repo / "tests" / "test_billing_rules.py").write_text("# pin placeholder\n")
@@ -79,9 +98,15 @@ def make_branch(
     absence_data: dict | None = None,
     extra_file: str | None = None,
     catalog_models: dict | None = None,
+    auto_seed: bool = True,
     announce_fetched: str = "2026-08-31",
 ) -> None:
-    """Open a pricelog branch off main: append rows, snapshots, push, return to main."""
+    """Open a pricelog branch off main: append rows, snapshots, push, return to main.
+
+    Like the pipeline, the branch carries a seeded catalog entry for every row
+    key HEAD's catalog does not claim, unless `auto_seed` is False (the tests
+    for the merge's claim check build their own seedless branches).
+    """
     git(repo, "switch", "-c", name)
     shard_dir = repo / "data" / "history"
     by_source: dict[str, list[dict]] = {}
@@ -93,8 +118,16 @@ def make_branch(
         announce.save_snapshot(announce_snapshot(announce_texts, announce_fetched), repo)
     if absence_data is not None:
         absence.save_absence(absence_data, repo)
+    catalog = models.load_models(repo / models.MODELS_FILE)
     if catalog_models is not None:
-        models.save_models(catalog_models, repo / models.MODELS_FILE)
+        catalog = {**catalog, **catalog_models}
+    if auto_seed and rows:
+        catalog = {
+            **catalog,
+            **models.seed_entries({(row["source"], row["model_id"]) for row in rows}, catalog, {}),
+        }
+    if catalog_models is not None or (auto_seed and rows):
+        models.save_models(catalog, repo / models.MODELS_FILE)
     if extra_file is not None:
         (repo / extra_file).parent.mkdir(parents=True, exist_ok=True)
         (repo / extra_file).write_text("# changed\n")
@@ -911,6 +944,202 @@ def test_merge_refuses_an_announce_index_whose_file_is_not_derived(tmp_path):
         automerge.merge_branches(
             ["pricelog/hand-00000001"], repo, pr.PrRunner(), "main", push=False
         )
+
+
+def test_churn_gate_refuses_a_branch_creating_too_many_models(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    rows = [make_row("zai", f"glm-{i}", "2026-09-01", 0.1 + i * 0.01) for i in range(51)]
+    make_branch(repo, "pricelog/too-many-00000001", rows)
+    before = git(repo, "rev-parse", "main").strip()
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/too-many-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    message = str(excinfo.value)
+    assert "unsafe" in message
+    assert "creates 51" in message
+    assert "bound 50" in message
+    assert git(repo, "rev-parse", "main").strip() == before
+
+
+def test_churn_gate_merges_at_the_bound(tmp_path):
+    # the bound itself is legal: only a branch beyond it is unsafe
+    repo, _bare = build_repo(tmp_path)
+    rows = [make_row("zai", f"glm-{i}", "2026-09-01", 0.1 + i * 0.01) for i in range(50)]
+    make_branch(repo, "pricelog/at-bound-00000001", rows)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/at-bound-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [50]
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_churn_gate_refuses_too_many_removals(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    rows = [make_removal_row("zai", f"glm-{i}", "2026-09-01") for i in range(51)]
+    make_branch(repo, "pricelog/too-many-gone-00000001", rows)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/too-many-gone-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    message = str(excinfo.value)
+    assert "unsafe" in message
+    assert "removes 51" in message
+    assert "bound 50" in message
+
+
+def test_churn_gate_refuses_too_many_appended_rows(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    start = date(2026, 9, 1)
+    rows = [
+        make_row("deepseek", "deepseek-v4-pro", (start + timedelta(days=i)).isoformat(), 0.44)
+        for i in range(501)
+    ]
+    make_branch(repo, "pricelog/too-many-rows-00000001", rows)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/too-many-rows-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    message = str(excinfo.value)
+    assert "unsafe" in message
+    assert "appends 501" in message
+    assert "bound 500" in message
+
+
+def test_churn_gate_counts_updates_as_appended_not_created(tmp_path):
+    # 60 price updates of one stored model: under every bound, and the
+    # created count must not read an update as a new model or it would trip
+    # the created bound with nothing new on the branch
+    repo, _bare = build_repo(tmp_path)
+    start = date(2026, 9, 1)
+    rows = [
+        make_row("deepseek", "deepseek-v4-pro", (start + timedelta(days=i)).isoformat(), 0.44)
+        for i in range(60)
+    ]
+    make_branch(repo, "pricelog/updates-00000001", rows)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/updates-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [60]
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_churn_gate_human_waiver_lands_an_over_bound_branch(tmp_path, capsys):
+    repo, _bare = build_repo(tmp_path)
+    rows = [make_row("zai", f"glm-{i}", "2026-09-01", 0.1 + i * 0.01) for i in range(51)]
+    make_branch(repo, "pricelog/human-00000001", rows)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/human-00000001"], repo, pr.PrRunner(), "main", push=False, human=True
+    )
+
+    assert [r.appended for r in results] == [51]
+    assert "waived churn bounds" in capsys.readouterr().out
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_human_waiver_never_waives_the_claim_check(tmp_path):
+    # --human waives the churn bounds only: an over-bound seedless branch
+    # still refuses on the claim check, or the coverage-invariant breach the
+    # check closes would reopen through the human path
+    repo, _bare = build_repo(tmp_path)
+    rows = [make_row("zai", f"glm-{i}", "2026-09-01", 0.1 + i * 0.01) for i in range(51)]
+    make_branch(repo, "pricelog/human-gap-00000001", rows, auto_seed=False)
+    before = git(repo, "rev-parse", "main").strip()
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/human-gap-00000001"], repo, pr.PrRunner(), "main", push=False, human=True
+        )
+
+    assert "no catalog claim" in str(excinfo.value)
+    assert git(repo, "rev-parse", "main").strip() == before
+
+
+def test_carried_row_without_a_catalog_claim_refuses_the_merge(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/carried-00000001",
+        [make_row("zai", "glm-5", "2026-09-01", 0.1)],
+        auto_seed=False,
+    )
+    before = git(repo, "rev-parse", "main").strip()
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/carried-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    message = str(excinfo.value)
+    assert "pricelog/carried-00000001" in message
+    assert "zai" in message
+    assert "glm-5" in message
+    assert git(repo, "rev-parse", "main").strip() == before
+
+
+def test_carried_row_lands_when_the_seed_rides_a_sibling_branch(tmp_path):
+    # the row's own PR is needs-human, the carrier's PR is verified: the seed
+    # rides the row's own branch, so the burst lands row and seed together
+    repo, _bare = build_repo(tmp_path)
+    row = make_row("zai", "glm-5", "2026-09-01", 0.1)
+    make_branch(repo, "pricelog/carried-00000001", [row], auto_seed=False)
+    make_branch(
+        repo,
+        "pricelog/seeder-00000002",
+        [],
+        catalog_models={
+            "zai/glm-5": {"vendor": None, "curated": False, "sources": {"zai": ["glm-5"]}}
+        },
+    )
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/carried-00000001", "pricelog/seeder-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == ["pricelog/carried-00000001", "pricelog/seeder-00000002"]
+    assert json.loads(shard_lines(repo, "zai")[0]) == row
+    catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
+    claims = {
+        (source, model_id)
+        for entry in catalog["models"].values()
+        for source, ids in entry["sources"].items()
+        for model_id in ids
+    }
+    assert ("zai", "glm-5") in claims
+    assert git(repo, "status", "--porcelain") == ""
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
+
+
+def test_removal_row_needs_no_catalog_claim(tmp_path):
+    # a removal row's claim predates it (the first price row landed its seed);
+    # refusing it would block a delisting on a coverage gap this merge did not
+    # create
+    repo, _bare = build_repo(tmp_path)
+    row = make_removal_row("zai", "gone-model", "2026-09-01")
+    make_branch(repo, "pricelog/removal-00000001", [row], auto_seed=False)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/removal-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.appended for r in results] == [1]
+    assert json.loads(shard_lines(repo, "zai")[0]) == row
+    assert git(repo, "rev-parse", "HEAD").strip() == sha
 
 
 def test_merge_skips_the_announce_step_for_a_branch_with_no_index(tmp_path):

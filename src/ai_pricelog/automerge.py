@@ -15,6 +15,14 @@ as a merged PR. the step passes only branches the pass marked
   path a shape the contract forbids can take into the store, and a refused
   line stops the merge by name. HEAD's own lines are exempt, they already
   sit in the append-only store
+- each branch pre-flights two bounds before anything lands: the churn gate
+  (at most 50 models created, 50 removed, 500 rows appended vs the burst
+  base) returns an `unsafe` refusal naming the counts, and every appended
+  price row must carry a catalog claim (its `(source, model_id)` claimed by
+  HEAD's models.json or by any branch of the burst), so a row whose seed
+  rides a needs-human sibling cannot land unclaimed. `--human` (never passed
+  by CI) waives the churn bounds and logs the waived counts; the claim check
+  has no waiver, and a removal row is exempt because its claim predates it
 - the pipeline files are committed and nothing else is staged: every stage
   names its paths, so unrelated dirt in the checkout cannot ride the merge
 - each shard the branch touched lands as an exact-line union: every HEAD
@@ -61,6 +69,14 @@ PIPELINE_STATE_DIRS = (ANNOUNCE_DIR, ABSENCE_DIR)
 
 SEED_BRANCH = "pricelog/seed"
 
+# the churn pre-gate bounds, per branch vs the burst base: how many models a
+# branch may create (new store keys) or delist (removal rows), and how many
+# rows it may append in total. `--human` waives them; the claim check never
+# does
+MAX_CREATED_MODELS = 50
+MAX_REMOVED_MODELS = 50
+MAX_APPENDED_ROWS = 500
+
 
 class AutoMergeError(Exception):
     """the merge stopped; the message names the branch and the fix."""
@@ -103,21 +119,16 @@ def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
     return [lines[index] for index in order]
 
 
-def _validate_appended(
-    appended: list[str], branch_text: str, *, branch: str, path: str, keys: validate.SchemaKeys
-) -> None:
-    """Every line the partition appends must pass validate_row before it lands.
+def _aligned_branch_rows(
+    branch_text: str, *, branch: str, path: str
+) -> list[tuple[str, dict[str, object]]]:
+    """The branch's copy as (line, row) pairs, one per line, refusing a misparse.
 
-    The partition arrives from _appended_lines, the one implementation the
-    union and this validation both read, so a dedupe change there cannot leave
-    the validated set diverging from the appended set. store.parse reads the
-    branch's own copy, so a json error names the branch line the fix
-    instruction points at. a line HEAD holds stays exempt: it already sits in
-    the append-only store. the pass is authorized to hand-edit a branch row,
-    so the exact-line partition is the one path a contract-breaking shape can
-    take into the store.
+    store.parse reads one json object per line, so the pairing is positional;
+    the pre-flight checks and the append validation walk the same pairs, so a
+    line none of them can read stops the merge by name wherever it is first
+    read, with the same message.
     """
-    branch_lines = branch_text.splitlines()
     label = f"origin/{branch}:{path}"
     try:
         rows = store.parse(branch_text, label)
@@ -125,22 +136,40 @@ def _validate_appended(
         raise AutoMergeError(
             f"branch {branch}: {exc}. do not retry: report the error and leave every PR open"
         ) from exc
-    if len(rows) != len(branch_lines):
-        # store.parse's one-row-per-line contract is what pairs lines to rows
+    if len(rows) != len(branch_text.splitlines()):
         raise AutoMergeError(
-            f"branch {branch}: {label}: {len(branch_lines)} line(s) parsed as"
+            f"branch {branch}: {label}: {len(branch_text.splitlines())} line(s) parsed as"
             f" {len(rows)} row(s); fix: the offending line on the branch, one json"
             " object per line"
         )
+    return list(zip(branch_text.splitlines(), rows, strict=False))
+
+
+def _validate_appended(
+    appended: list[str], branch_text: str, *, branch: str, path: str, keys: validate.SchemaKeys
+) -> None:
+    """Every line the partition appends must pass validate_row before it lands.
+
+    The partition arrives from _appended_lines, the one implementation the
+    union and this validation both read, so a dedupe change there cannot leave
+    the validated set diverging from the appended set. _aligned_branch_rows
+    reads the branch's own copy, so a json error names the branch line the fix
+    instruction points at. a line HEAD holds stays exempt: it already sits in
+    the append-only store. the pass is authorized to hand-edit a branch row,
+    so the exact-line partition is the one path a contract-breaking shape can
+    take into the store.
+    """
     new = set(appended)
-    for number, (line, row) in enumerate(zip(branch_lines, rows, strict=False), start=1):
+    for number, (line, row) in enumerate(
+        _aligned_branch_rows(branch_text, branch=branch, path=path), start=1
+    ):
         if line not in new:
             continue
         try:
             validate.validate_row(row, keys)
         except ValueError as exc:
             raise AutoMergeError(
-                f"branch {branch}: {label} line {number} fails the row contract:"
+                f"branch {branch}: origin/{branch}:{path} line {number} fails the row contract:"
                 f" {exc}. do not retry: report the error and leave every PR open"
             ) from exc
 
@@ -327,6 +356,164 @@ def _branch_shard_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> li
     )
 
 
+def _head_store_keys(runner: pr.PrRunner, repo_root: Path) -> set[tuple[str, str]]:
+    """Every (source, model_id) the shards at HEAD hold.
+
+    a row HEAD already stores under a key is a price update or a removal, not
+    a new model: the churn pre-gate counts it as appended only. a HEAD line
+    that does not parse names the shard rather than tracebacking: the store is
+    append-only, so a misparse there predates this merge.
+    """
+    keys: set[tuple[str, str]] = set()
+    for path in runner.run(
+        ["git", "ls-tree", "-r", "--name-only", "HEAD", SHARD_DIR + "/"], cwd=repo_root
+    ).splitlines():
+        if not path:
+            continue
+        text = _head_text(runner, repo_root, path)
+        try:
+            rows = store.parse(text, f"HEAD:{path}")
+        except ValueError as exc:
+            raise AutoMergeError(
+                f"HEAD: {exc}. do not retry: report the error and leave every PR open"
+            ) from exc
+        for row in rows:
+            source = row.get("source")
+            model_id = row.get("model_id")
+            if isinstance(source, str) and isinstance(model_id, str):
+                keys.add((source, model_id))
+    return keys
+
+
+def _catalog_claims(text: str, label: str) -> set[tuple[str, str]]:
+    """Every (source, model_id) pair one models.json revision claims.
+
+    the claims are what the coverage invariant pins, extracted leniently: the
+    file's own loader validates the full shape at production reads, and a
+    revision that is not json refuses by label rather than tracebacking.
+    """
+    if not text:
+        return set()
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AutoMergeError(f"{label}: {models.MODELS_FILE} is not valid json: {exc.msg}") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("models"), dict):
+        raise AutoMergeError(f"{label}: {models.MODELS_FILE} must carry a 'models' object")
+    claims: set[tuple[str, str]] = set()
+    for entry in data["models"].values():
+        sources = entry.get("sources") if isinstance(entry, dict) else None
+        if not isinstance(sources, dict):
+            continue
+        for source, ids in sources.items():
+            if isinstance(ids, str):
+                ids = [ids]
+            if not isinstance(ids, list):
+                continue
+            for model_id in ids:
+                if isinstance(source, str) and isinstance(model_id, str):
+                    claims.add((source, model_id))
+    return claims
+
+
+def _branch_churn(
+    runner: pr.PrRunner, repo_root: Path, branch: str, head_keys: set[tuple[str, str]]
+) -> tuple[int, int, int]:
+    """(appended rows, created models, removed models) the branch adds over HEAD.
+
+    appended counts the exact-line partition the union would land; created
+    counts appended price rows whose key HEAD never held; removed counts
+    appended removal rows. a row without a source/model_id pair is the append
+    validation's problem, never counted as created.
+    """
+    appended = created = removed = 0
+    for path in _branch_shard_paths(runner, repo_root, branch):
+        branch_text = _branch_text(runner, repo_root, branch, path)
+        new = set(
+            _appended_lines(
+                _head_text(runner, repo_root, path).splitlines(), branch_text.splitlines()
+            )
+        )
+        appended += len(new)
+        for line, row in _aligned_branch_rows(branch_text, branch=branch, path=path):
+            if line not in new:
+                continue
+            if row.get("removed") is True:
+                removed += 1
+                continue
+            source = row.get("source")
+            model_id = row.get("model_id")
+            if (
+                isinstance(source, str)
+                and isinstance(model_id, str)
+                and (source, model_id) not in head_keys
+            ):
+                created += 1
+    return appended, created, removed
+
+
+def _check_churn(churn: dict[str, tuple[int, int, int]]) -> None:
+    """Refuse the run when any branch exceeds a churn bound, naming the counts.
+
+    the refusal is the machine-readable verdict the merge step reds on: the
+    PRs stay open and a human reviews. the counts are per branch vs the burst
+    base, the diff the pass reviewed.
+    """
+    for branch, (appended, created, removed) in churn.items():
+        if (
+            created > MAX_CREATED_MODELS
+            or removed > MAX_REMOVED_MODELS
+            or appended > MAX_APPENDED_ROWS
+        ):
+            raise AutoMergeError(
+                f"branch {branch}: unsafe: creates {created} model(s) (bound"
+                f" {MAX_CREATED_MODELS}), removes {removed} (bound {MAX_REMOVED_MODELS}),"
+                f" appends {appended} row(s) (bound {MAX_APPENDED_ROWS}); fix: review"
+                " the branch by hand and merge with --human, or close the PR"
+            )
+
+
+def _check_carried_claims(
+    runner: pr.PrRunner, repo_root: Path, branches: list[str], head_claims: set[tuple[str, str]]
+) -> None:
+    """Every appended price row needs a catalog claim, HEAD or a burst branch.
+
+    the pipeline seeds each new key on the branch whose PR carries the row, so
+    a claim on any branch of the burst lands with the row (all merge commits
+    land before the push, the default branch never sees the transient); a
+    claim only a needs-human sibling carries refuses the merge by name. a
+    removal row is exempt: its claim landed with its first price row, and
+    refusing it would block a delisting on a coverage gap this merge did not
+    create.
+    """
+    claims = set(head_claims)
+    for branch in branches:
+        claims |= _catalog_claims(
+            _branch_text(runner, repo_root, branch, models.MODELS_FILE), f"branch {branch}"
+        )
+    for branch in branches:
+        for path in _branch_shard_paths(runner, repo_root, branch):
+            branch_text = _branch_text(runner, repo_root, branch, path)
+            new = set(
+                _appended_lines(
+                    _head_text(runner, repo_root, path).splitlines(), branch_text.splitlines()
+                )
+            )
+            for line, row in _aligned_branch_rows(branch_text, branch=branch, path=path):
+                if line not in new or row.get("removed") is True:
+                    continue
+                source = row.get("source")
+                model_id = row.get("model_id")
+                if not (isinstance(source, str) and isinstance(model_id, str)):
+                    continue  # the append validation names the missing field
+                if (source, model_id) not in claims:
+                    raise AutoMergeError(
+                        f"branch {branch}: appended row {(source, model_id)!r} has no catalog"
+                        " claim on HEAD or any branch of the burst; fix: merge the branch"
+                        " carrying its seed together with it, or close the PR"
+                    )
+
+
 def _union_models(head_text: str, branch_text: str) -> str:
     """HEAD's model catalog plus the branch's additions.
 
@@ -489,13 +676,16 @@ def merge_branches(
     runner: pr.PrRunner,
     base: str,
     push: bool = True,
+    human: bool = False,
 ) -> tuple[str, list[MergeResult]]:
     """Union-merge each branch onto HEAD, then push and delete the refs.
 
     `branches` is the merge order: oldest PR first, newest last (each announce
     channel lands from the last branch that changed it, each absence file from
-    the newest branch that carries it). a failure anywhere leaves the refs in
-    place and raises; nothing is pushed.
+    the newest branch that carries it). every branch pre-flights the churn
+    bounds (waived with a logged count under `human`) and the catalog-claim
+    check (never waived) before the first merge commit. a failure anywhere
+    leaves the refs in place and raises; nothing is pushed.
     """
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
@@ -504,6 +694,28 @@ def merge_branches(
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
     keys = validate.load_schema_keys(repo_root)
+    head_keys = _head_store_keys(runner, repo_root)
+    churn = {branch: _branch_churn(runner, repo_root, branch, head_keys) for branch in branches}
+    if human:
+        for branch, (appended, created, removed) in churn.items():
+            if (
+                created > MAX_CREATED_MODELS
+                or removed > MAX_REMOVED_MODELS
+                or appended > MAX_APPENDED_ROWS
+            ):
+                print(
+                    f"waived churn bounds for {branch}: creates {created} model(s) (bound"
+                    f" {MAX_CREATED_MODELS}), removes {removed} (bound {MAX_REMOVED_MODELS}),"
+                    f" appends {appended} row(s) (bound {MAX_APPENDED_ROWS})"
+                )
+    else:
+        _check_churn(churn)
+    _check_carried_claims(
+        runner,
+        repo_root,
+        branches,
+        _catalog_claims(_head_text(runner, repo_root, models.MODELS_FILE), "HEAD"),
+    )
 
     # the burst base, captured once before the first merge commit advances
     # HEAD: every per-channel announce resolution compares against the tree
@@ -655,12 +867,19 @@ def main() -> int:
         action="store_true",
         help="land the merge commits locally; skip the push and the ref deletions",
     )
+    parser.add_argument(
+        "--human",
+        action="store_true",
+        help="merge under human review: waive the churn bounds and log the waived counts",
+    )
     args = parser.parse_args()
     repo_root = Path.cwd()
     runner = pr.PrRunner()
     try:
         base = args.base or pr.default_branch(runner, repo_root)
-        sha, results = merge_branches(args.branches, repo_root, runner, base, push=not args.no_push)
+        sha, results = merge_branches(
+            args.branches, repo_root, runner, base, push=not args.no_push, human=args.human
+        )
     except (AutoMergeError, pr.PrError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
