@@ -112,8 +112,8 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "d9506e8c0bce052c01140496c034d3c7a728e990bc9bffb73f0c1fd25ae43834",
-      "fetched": "2026-09-12"
+      "sha256": "ad290ccdbc2c9a7cec65a1e876d594b1eab87817ebe73541943a2e851f3390b9",
+      "fetched": "2026-09-10"
     }
   },
   "google": {
