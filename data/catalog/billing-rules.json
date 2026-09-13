@@ -134,6 +134,16 @@
       "citation": [
         "https://api-docs.deepseek.com/updates/"
       ]
+    },
+    {
+      "id": "fireworks-serverless-deprecation-2026-09-25",
+      "provider": "fireworks",
+      "effective": "2026-09-25",
+      "timezone": "UTC",
+      "statement": "the changelog decommissions seven older Serverless models on 2026-09-25, with migrations: DeepSeek V4 Flash (0731), DeepSeek V4 Pro (0813) and DeepSeek V4 Flash Vision Exp to DeepSeek V4.1 Flash, GLM 5.2 to GLM 5.3, Muse Glimmer 30B to NVIDIA Nemotron 3.5 Lightning 30B A3B, Kimi K2.6 and Kimi K2.7 Code to GLM 5.3 or Kimi K3. it applies only to serverless endpoints, including the Fast and US-only Serverless variants; dedicated deployments are unaffected. the page names no timezone; UTC is the recorded frame. the stored rows get removal rows through the absence machinery",
+      "citation": [
+        "https://docs.fireworks.ai/updates/changelog"
+      ]
     }
   ]
 }
