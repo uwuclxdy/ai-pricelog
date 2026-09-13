@@ -31,7 +31,7 @@ env:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v6
         with:
@@ -51,11 +51,11 @@ jobs:
 
       - name: claude review pass
         continue-on-error: true
-        # the pass itself gets 30 min: the whole job is capped at 60, and a
+        # the pass itself gets 50 min: the whole job is capped at 80, and a
         # pass that finished its work but hung (observed 2026-09-09: merged
         # everything by min 45, then sat idle until the job cap cancelled it)
         # must die early enough that the tripwire below still runs
-        timeout-minutes: 30
+        timeout-minutes: 50
         run: |
           [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
           npm install -g @anthropic-ai/claude-code@2 >/dev/null
@@ -68,10 +68,12 @@ jobs:
           export ANTHROPIC_API_KEY
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
           [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
-          # claude -p under a step timeout leaves pass.log complete (tee
-          # flushes per line), so the tripwire runs even on a killed pass
+          # stream-json emits one event per line (tee flushes per line), so
+          # a killed pass still trails how far it got and the tripwire runs
+          # on the events it emitted; plain -p buffers everything until the
+          # end and a killed pass left zero output
           set +e
-          claude -p --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          claude -p --output-format stream-json --verbose --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
           pass_rc=$?
           set -e
           # grep, never rg: the github runner image ships no rg (observed
