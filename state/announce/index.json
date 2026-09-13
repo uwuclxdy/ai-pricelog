@@ -79,8 +79,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "06995aeae5c310581aab3c96b65e9e729f286fdd16d93f20b55bb432aeaf0823",
-      "fetched": "2026-09-09"
+      "sha256": "c6c988a50541509cfbc15d161515df3094c874904f6d2f1b835df9a3c53e7490",
+      "fetched": "2026-09-13"
     }
   },
   "together": {
@@ -112,8 +112,8 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "ad290ccdbc2c9a7cec65a1e876d594b1eab87817ebe73541943a2e851f3390b9",
-      "fetched": "2026-09-10"
+      "sha256": "d9506e8c0bce052c01140496c034d3c7a728e990bc9bffb73f0c1fd25ae43834",
+      "fetched": "2026-09-13"
     }
   },
   "google": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "a20ece9de37124cc911f87e5fdbbaaa30941cbca892d428789e5ad8bd567cc91",
-      "fetched": "2026-09-10"
+      "sha256": "8cce1071a1efda9307ec34e8773e98fa9ef3280a784f94309db1ff9e3808120b",
+      "fetched": "2026-09-13"
     }
   },
   "scaleway": {
