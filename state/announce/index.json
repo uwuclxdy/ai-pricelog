@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "8cce1071a1efda9307ec34e8773e98fa9ef3280a784f94309db1ff9e3808120b",
-      "fetched": "2026-09-13"
+      "sha256": "f9f02c2ae722f01860b8c5723ff05580b0b6055ef29ec3ebcb955145535776dd",
+      "fetched": "2026-09-14"
     }
   },
   "scaleway": {
