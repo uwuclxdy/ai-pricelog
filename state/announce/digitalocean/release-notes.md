@@ -197,8 +197,6 @@ For more information, see Use Server-Side Tools .
 Updated CentOS Stream 9 and CentOS Stream 10 ( centos-stream-9-x64 , centos-stream-10-x64 ) Droplet base images require a minimum Droplet size of s-1vcpu-1gb .
 You cannot create Droplets with these images on the s-1vcpu-512mb-10gb plan because the image exceeds the available disk size for that plan.
 For more information, see Linux Images for Droplets .
-16 June Released v1.162.0 of doctl , the official DigitalOcean CLI.
-This release adds support for the PostgreSQL and MySQL Advanced Edition engines, advanced_pg and advanced_mysql , in the databases commands.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
