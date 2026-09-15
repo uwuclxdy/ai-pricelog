@@ -427,9 +427,9 @@
     "grok-code-fast-1": [
       {
         "canonical": "grok-build-0.1",
-        "citation": "https://docs.x.ai/docs/models",
+        "citation": "https://docs.x.ai/developers/migration/may-15-retirement.md",
         "from": null,
-        "to": null
+        "to": "2026-05-15"
       }
     ],
     "grok-code-fast-1-0825": [

@@ -18,6 +18,51 @@
       },
       "vendor": "ai21"
     },
+    "anthropic/claude-3-5-haiku-20241022": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-3-5-haiku-20241022"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-3-5-sonnet-20240620": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-3-5-sonnet-20240620"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-3-5-sonnet-20241022": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-3-5-sonnet-20241022"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-3-7-sonnet-20250219": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-3-7-sonnet-20250219"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-3-opus-20240229": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-3-opus-20240229"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "anthropic/claude-fable-5-1": {
       "curated": false,
       "sources": {
@@ -2550,6 +2595,42 @@
       },
       "vendor": "zai"
     },
+    "google/gemini-1.5-flash": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-1.5-flash"
+        ]
+      },
+      "vendor": "google"
+    },
+    "google/gemini-1.5-flash-8b": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-1.5-flash-8b"
+        ]
+      },
+      "vendor": "google"
+    },
+    "google/gemini-2.0-flash": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-2.0-flash"
+        ]
+      },
+      "vendor": "google"
+    },
+    "google/gemini-2.0-flash-lite": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-2.0-flash-lite"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-2.5-computer-use-preview-10-2025": {
       "curated": false,
       "sources": {
@@ -3961,6 +4042,15 @@
       "sources": {
         "mistral": [
           "mistral-small-4-0-26-03"
+        ]
+      },
+      "vendor": "mistral"
+    },
+    "mistral/open-mixtral-8x7b": {
+      "curated": false,
+      "sources": {
+        "mistral": [
+          "open-mixtral-8x7b"
         ]
       },
       "vendor": "mistral"
@@ -7989,6 +8079,51 @@
         ]
       },
       "vendor": "microsoft"
+    },
+    "xai/grok-3": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-3"
+        ]
+      },
+      "vendor": "xai"
+    },
+    "xai/grok-3-mini": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-3-mini"
+        ]
+      },
+      "vendor": "xai"
+    },
+    "xai/grok-4-0709": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-4-0709"
+        ]
+      },
+      "vendor": "xai"
+    },
+    "xai/grok-4-fast-non-reasoning": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-4-fast-non-reasoning"
+        ]
+      },
+      "vendor": "xai"
+    },
+    "xai/grok-4-fast-reasoning": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-4-fast-reasoning"
+        ]
+      },
+      "vendor": "xai"
     },
     "zai/glm-4-32b-0414-128k": {
       "curated": false,

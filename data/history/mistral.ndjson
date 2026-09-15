@@ -35,6 +35,8 @@
 {"schema":4,"source":"mistral","model_id":"mistral-medium-3-5-26-04","observed_at":"2026-08-29","rates":{"input":1.5,"output":7.5,"cache_read":0.15},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"mistral-small-4-0-26-03","observed_at":"2026-03-16","rates":{"input":0.15,"output":0.6},"provenance":{"url":"https://mistral.ai/news/mistral-small-4"}}
 {"schema":4,"source":"mistral","model_id":"mistral-small-4-0-26-03","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
+{"schema":4,"source":"mistral","model_id":"open-mixtral-8x7b","observed_at":"2024-06-06","rates":{"input":0.7,"output":0.7},"provenance":{"url":"https://web.archive.org/web/20240606015230id_/https://mistral.ai/technology/"}}
+{"schema":4,"source":"mistral","model_id":"open-mixtral-8x7b","observed_at":"2025-03-30","removed":true,"rates":{"input":0.7,"output":0.7},"provenance":{"url":"https://docs.mistral.ai/getting-started/models/"}}
 {"schema":4,"source":"mistral","model_id":"pixtral-12b-2409","observed_at":"2024-09-17","rates":{"input":0.15,"output":0.15},"provenance":{"url":"https://mistral.ai/news/september-24-release"}}
 {"schema":4,"source":"mistral","model_id":"pixtral-12b-2409","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"mistral","model_id":"pixtral-large-24-11","observed_at":"2024-12-04","rates":{"input":2.0,"output":6.0},"provenance":{"url":"https://www.deeplearning.ai/the-batch/mistral-unveils-pixtral-large-a-rival-to-top-vision-language-models/"}}
