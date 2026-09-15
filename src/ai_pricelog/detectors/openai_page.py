@@ -108,11 +108,12 @@ def _row_id(row, url: str) -> str:
 
 
 _IMAGE_SWITCHER_ID = "multimodal-image-pricing"
+_BATCH_PANE = "batch"
 
 
-def _image_standard_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
-    """the image-generation standard pane's group dicts, or None when the
-    section or its standard pane is missing.
+def _image_pane_groups(soup: BeautifulSoup, url: str, pane_value: str) -> list[dict] | None:
+    """one image-generation pane's group dicts, or None when the section or
+    the pane is missing.
 
     the pane's DOM containment picks the island: the video and specialized
     sections carry GroupedPricingTable islands of their own, and the batch
@@ -121,7 +122,7 @@ def _image_standard_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
     root = soup.find(attrs={"data-content-switcher-id": _IMAGE_SWITCHER_ID})
     if root is None:
         return None
-    pane = root.find(attrs={"data-content-switcher-pane": "true", "data-value": "standard"})
+    pane = root.find(attrs={"data-content-switcher-pane": "true", "data-value": pane_value})
     if pane is None:
         return None
     islands = pane.find_all("astro-island", attrs={"component-export": "GroupedPricingTable"})
@@ -132,6 +133,18 @@ def _image_standard_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
     if not isinstance(groups, list) or not groups:
         raise FetchError(f"image pricing island without groups on {url}")
     return groups
+
+
+def _image_standard_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
+    """the image-generation standard pane's group dicts, or None when the
+    section or its standard pane is missing."""
+    return _image_pane_groups(soup, url, "standard")
+
+
+def _image_batch_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
+    """the image-generation batch pane's group dicts, or None when the
+    section or its batch pane is missing."""
+    return _image_pane_groups(soup, url, _BATCH_PANE)
 
 
 def _group_id(group, url: str) -> str:

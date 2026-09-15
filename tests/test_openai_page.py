@@ -276,6 +276,19 @@ def empty_groups_props() -> str:
     ).replace('"', "&quot;")
 
 
+def both_panes_soup(standard_groups: list, batch_groups: list) -> BeautifulSoup:
+    """the chat standard island plus the image switcher with both panes held."""
+    chat = island_soup("standard", [["gpt-5.6-sol", 4, 0.4, 5, 20]])
+    panes = {
+        "standard": image_island(image_props(standard_groups)),
+        "batch": image_island(image_props(batch_groups)),
+    }
+    image = grouped_soup(panes)
+    chat_island = chat.find("astro-island")
+    image.append(chat_island)
+    return image
+
+
 STANDARD_IMAGE = [
     group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"]),
     group("gpt-image-1.5", [8, 2, 32], [5, 1.25, 10]),
@@ -283,6 +296,19 @@ STANDARD_IMAGE = [
     group("gpt-image-1", [10, 2.5, 40], [5, 1.25, "-"]),
     group("chatgpt-image-latest", [8, 2, 32], [5, 1.25, 10]),
 ]
+
+# each gpt-image row's batch override, per pane cell: input/cache_read/output
+# from the Text row (the Image row's output filling output when Text carries
+# none), image/image_output from the Image row. the cells are the fixture's
+# own bytes (the page rounds, so gpt-image-1.5's cached batch rate is 0.63,
+# not the 0.625 halving the standard 1.25 would give)
+BATCH_OVERRIDES = {
+    "gpt-image-2": (2.5, 0.625, 15, 4, 15),
+    "gpt-image-1.5": (2.5, 0.63, 5, 4, 16),
+    "gpt-image-1-mini": (1, 0.1, 4, 1.25, 4),
+    "gpt-image-1": (2.5, 0.63, 20, 5, 20),
+    "chatgpt-image-latest": (2.5, 0.63, 5, 4, 16),
+}
 
 
 def test_scrape_image_models(monkeypatch):
@@ -396,6 +422,197 @@ def test_scrape_batch_pane_only_returns_none(monkeypatch):
         ),
     )
     assert scraper.scrape(cfg(), "gpt-image-2") is None
+
+
+def test_scrape_image_models_carry_batch_overrides(monkeypatch):
+    # the batch pane repeats the five ids at batch rates: each row carries one
+    # mode override keyed on the pane's own name, its rates read from the
+    # pane's cells (never derived by halving — the page rounds)
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    for model_id, (inp, cached, out, image, image_out) in BATCH_OVERRIDES.items():
+        pricing = scraper.scrape(cfg(), model_id)
+        assert pricing is not None, model_id
+        assert pricing.window_rates == (
+            {
+                "mode": "batch",
+                "input_mtok": inp,
+                "cache_read_mtok": cached,
+                "output_mtok": out,
+                "image_mtok": image,
+                "image_output_mtok": image_out,
+            },
+        ), model_id
+
+
+def test_batch_override_builds_into_the_row(monkeypatch):
+    # build_row turns the entry into an override whose when.mode is the pane's
+    # own name and whose rates are the pane's cells; the base rates stand
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "gpt-image-2")
+    row = build_row("openai", "gpt-image-2", pricing, "2026-09-15", PAGE_URL, SCHEMA_KEYS.version)
+    validate_row(row, SCHEMA_KEYS)
+    assert row["rates"] == {
+        "input": 5.0,
+        "cache_read": 1.25,
+        "output": 30.0,
+        "image": 8.0,
+        "image_output": 30.0,
+    }
+    assert row["overrides"] == [
+        {
+            "when": {"mode": "batch"},
+            "rates": {
+                "input": 2.5,
+                "cache_read": 0.625,
+                "output": 15.0,
+                "image": 4.0,
+                "image_output": 15.0,
+            },
+        }
+    ]
+
+
+def test_scrape_batch_pane_absent_warns_and_keeps_standard(monkeypatch, caplog):
+    # the batch pane missing from the switcher, or present with no island, is
+    # additive drift: a warning, and the standard rates stand with no
+    # override (a present island whose groups list is empty still raises,
+    # structural absence, plan #22)
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_tables_soup([group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"])]),
+    )
+    with caplog.at_level(logging.WARNING):
+        pricing = scraper.scrape(cfg(), "gpt-image-2")
+    assert pricing is not None
+    assert pricing.image_cost_per_token == pytest.approx(8 / 1e6)
+    assert pricing.window_rates == ()
+    assert "no image-generation batch pane" in caplog.text
+
+
+def test_scrape_batch_pane_without_model_has_no_override(monkeypatch, caplog):
+    # a model the batch pane does not cover has no batch rate: no entry and
+    # no warning (the pane covering a subset is normal page evolution)
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_panes_soup(
+            [group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"])],
+            [group("gpt-image-1.5", [4, 1, 16], [2.5, 0.63, 5])],
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        pricing = scraper.scrape(cfg(), "gpt-image-2")
+    assert pricing is not None
+    assert pricing.window_rates == ()
+    assert "batch pane" not in caplog.text
+
+
+def test_scrape_batch_group_unreadable_rate_raises(monkeypatch):
+    # the matched batch group's cells are strict, like every matched row's
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_panes_soup(
+            [group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"])],
+            [group("gpt-image-2", ["lots", 1, 15], [2.5, 0.625, "-"])],
+        ),
+    )
+    with pytest.raises(FetchError, match="unreadable rate 'lots'"):
+        scraper.scrape(cfg(), "gpt-image-2")
+
+
+def test_batch_entry_cannot_derive_rates_from_standard(monkeypatch):
+    # the batch rates come from the pane's own cells: a pane whose cells
+    # differ from any function of the standard rates (gpt-image-1.5's cached
+    # batch rate is 0.63, the page's rounding of 0.625) pins the read
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "gpt-image-1.5")
+    assert pricing is not None
+    assert pricing.window_rates == (
+        {
+            "mode": "batch",
+            "input_mtok": 2.5,
+            "cache_read_mtok": 0.63,
+            "output_mtok": 5,
+            "image_mtok": 4,
+            "image_output_mtok": 16,
+        },
+    )
+
+
+def test_scrape_batch_group_missing_text_row_warns_no_override(monkeypatch, caplog):
+    # a batch group that cannot price the axes the standard one does is drift:
+    # no override (a partial one would silently inherit standard rates on the
+    # unread axes), the base rates stand, the warning names the missing label
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_panes_soup(
+            [group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"])],
+            [
+                [
+                    0,
+                    {
+                        "model": [0, "gpt-image-2"],
+                        "rows": [1, [[1, [[0, "Image"], [0, 4], [0, 1], [0, 15]]]]],
+                    },
+                ]
+            ],
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        pricing = scraper.scrape(cfg(), "gpt-image-2")
+    assert pricing is not None
+    assert pricing.image_cost_per_token == pytest.approx(8 / 1e6)
+    assert pricing.window_rates == ()
+    assert "no 'Text' row" in caplog.text
+
+
+def test_scrape_batch_group_missing_cache_read_warns_no_override(monkeypatch, caplog):
+    # the batch entry must price every axis the standard group prices: a
+    # batch Text row with a "-" cached cell against a standard pane that
+    # prices cache_read drops the entry, because an absent axis inherits the
+    # base rate and batch cached reads would silently price at standard.
+    # the complement rides the same page: a standard group that prices no
+    # cache_read holds the base row to no cache axis, so the batch entry
+    # ships the pane's own cached rate as an axis the base lacks
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_panes_soup(
+            [
+                group("gpt-image-2", [8, 2, 30], [5, 1.25, "-"]),
+                group("gpt-image-1.5", [8, 2, 32], [5, "-", "-"]),
+            ],
+            [
+                group("gpt-image-2", [4, 1, 15], [2.5, "-", 15]),
+                group("gpt-image-1.5", [4, 1, 16], [2.5, 0.63, 15]),
+            ],
+        ),
+    )
+    with caplog.at_level(logging.WARNING):
+        dropped = scraper.scrape(cfg(), "gpt-image-2")
+    assert dropped is not None
+    assert dropped.image_cost_per_token == pytest.approx(8 / 1e6)
+    assert dropped.window_rates == ()
+    assert "prices no cache_read" in caplog.text
+    assert dropped.cache_read_cost_per_token == pytest.approx(1.25 / 1e6)
+    shipped = scraper.scrape(cfg(), "gpt-image-1.5")
+    assert shipped is not None
+    # the base row carries no cache_read axis (the standard cached cell is
+    # "-"), yet the batch entry prices one: the pane's own 0.63
+    assert shipped.cache_read_cost_per_token is None
+    assert shipped.window_rates == (
+        {
+            "mode": "batch",
+            "input_mtok": 2.5,
+            "output_mtok": 15,
+            "image_mtok": 4,
+            "image_output_mtok": 16,
+            "cache_read_mtok": 0.63,
+        },
+    )
 
 
 def test_detect_no_image_section_keeps_chat_ids(monkeypatch, caplog):

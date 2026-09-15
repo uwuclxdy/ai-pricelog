@@ -231,6 +231,37 @@ FAST = {
     ],
 }
 
+# the openai image batch override: the batch pane repeats the gpt-image ids at
+# discounted rates, so a batch-mode session prices the pane's own cells
+BATCH = {
+    "source": "openai",
+    "model_id": "gpt-image-2",
+    "vendor": "openai",
+    "name": "gpt-image-2",
+    "observed_at": "2026-09-15",
+    "rates": {"input": 5.0, "cache_read": 1.25, "output": 30.0},
+    "intervals": [
+        {
+            "valid_from": "2026-09-15",
+            "valid_to": None,
+            "observed_at": "2026-09-15",
+            "rates": {"input": 5.0, "cache_read": 1.25, "output": 30.0},
+            "overrides": [
+                {
+                    "when": {"mode": "batch"},
+                    "rates": {
+                        "input": 2.5,
+                        "cache_read": 0.625,
+                        "output": 15.0,
+                        "image": 4.0,
+                        "image_output": 15.0,
+                    },
+                }
+            ],
+        }
+    ],
+}
+
 # 2026-09-07 02:00 UTC is a monday, 120 minutes in, inside the 100..400 window
 SESSION = {"input": 1000000, "cached": 200000, "output": 50000}
 
@@ -412,11 +443,12 @@ def test_every_element_the_page_script_looks_up_exists(tmp_path):
 
 
 def test_the_session_card_offers_the_request_modes(tmp_path):
-    """The calculator's mode select: standard first and selected, fast the one
-    premium mode the index carries.
+    """The calculator's mode select: standard first and selected, then every
+    request mode the index carries — fast (the anthropic premium) and batch
+    (the openai image discount).
 
     The option set is pinned whole — one equality over the (value, label)
-    pairs, never a substring walk that a third option would slip past.
+    pairs, never a substring walk that a fourth option would slip past.
     """
     out = _built(tmp_path)
     soup = _soup((out / "index.html").read_text(encoding="utf-8"))
@@ -429,7 +461,11 @@ def test_the_session_card_offers_the_request_modes(tmp_path):
         (option.get("value", ""), option.get_text(strip=True), option.has_attr("selected"))
         for option in select.select("option")
     ]
-    assert options == [("", "standard", True), ("fast", "fast", False)]
+    assert options == [
+        ("", "standard", True),
+        ("fast", "fast", False),
+        ("batch", "batch", False),
+    ]
 
 
 def _node_cases() -> dict[str, dict[str, object]]:
@@ -566,6 +602,35 @@ def _node_cases() -> dict[str, dict[str, object]]:
             # no mode: the mode override does not match, the base prices it
             "expected": 1.0 * 5.0 + 0.2 * 5.0 + 0.05 * 25.0,
         },
+        "an_openai_batch_session_prices_the_pane_cells": {
+            "entry": BATCH,
+            "day": "2026-09-15",
+            "tokens": SESSION,
+            "now": "2026-09-07T02:00:00Z",
+            "mode": "batch",
+            # the batch override replaces input, cache_read and output; the
+            # image axes the session never uses ride the entry unpriced by
+            # the walk
+            "expected": 1.0 * 2.5 + 0.2 * 0.625 + 0.05 * 15.0,
+        },
+        "an_openai_standard_session_keeps_the_base_rates": {
+            "entry": BATCH,
+            "day": "2026-09-15",
+            "tokens": SESSION,
+            "now": "2026-09-07T02:00:00Z",
+            "expected": 1.0 * 5.0 + 0.2 * 1.25 + 0.05 * 30.0,
+        },
+        "a_batch_selection_on_a_model_without_a_batch_override_prices_the_base": {
+            "entry": FAST,
+            "day": "2026-09-07",
+            "tokens": SESSION,
+            "now": "2026-09-07T02:00:00Z",
+            "mode": "batch",
+            # the model carries a fast override but no batch one: no entry
+            # matches a batch session, so the base rates price it — the same
+            # walk that leaves a non-anthropic model's fast selection at base
+            "expected": 1.0 * 5.0 + 0.2 * 5.0 + 0.05 * 25.0,
+        },
     }
 
 
@@ -653,6 +718,14 @@ def test_a_fragment_restores_the_whole_state(tmp_path):
         "rate": "0.5",
         "mode": "fast",
     }
+
+
+def test_a_batch_mode_fragment_restores(tmp_path):
+    """The openai batch mode is selectable state exactly like fast: the
+    fragment carries it, the restore accepts it, the encoder round-trips it."""
+    result = _node(tmp_path, {"cases": {}, "fragment": "#mode=batch"})
+    assert result["state"]["mode"] == "batch"
+    assert result["encoded"] == "calc=1000000|0|0&mode=batch"
 
 
 def test_a_desc_fragment_restore_clicks_the_sort_button_twice(tmp_path):

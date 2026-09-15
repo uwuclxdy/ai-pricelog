@@ -256,6 +256,7 @@ def _session_card() -> str:
             '<select class="input" id="calc-mode">\n',
             '<option value="" selected>standard</option>\n',
             '<option value="fast">fast</option>\n',
+            '<option value="batch">batch</option>\n',
             "</select>\n",
             "</div>\n",
             '<div class="field">\n',
