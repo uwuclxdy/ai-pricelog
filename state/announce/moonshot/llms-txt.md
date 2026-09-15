@@ -36,6 +36,7 @@ Install OpenClaw and configure your Kimi API key.
 - [Setting Up and Verifying Your Organization](https://platform.kimi.ai/docs/guide/org-best-practice.md): Create and verify a Kimi Open Platform organization, configure an IP allowlist, and manage members, projects, and API keys.
 - [API Overview](https://platform.kimi.ai/docs/api/overview.md): Review Kimi API base URLs, authentication, request conventions, compatibility, and links to the main API endpoints.
 - [Model Parameter Reference](https://platform.kimi.ai/docs/api/models-overview.md): Compare default values, supported ranges, and constraints for Chat Completions API parameters across Kimi model families.
+- [Common Error Codes](https://platform.kimi.ai/docs/api/errors.md): Look up Kimi API HTTP status codes, error types, common causes, and recommended troubleshooting steps.
 - [Chat Completions API](https://platform.kimi.ai/docs/api/chat.md): Create a chat completion: send messages to Kimi models and get replies, with streaming, tool calling, and vision input.
 - [Responses API](https://platform.kimi.ai/docs/api/responses.md): Creates a model response.
 Provide text or image inputs to generate text or JSON outputs.
@@ -45,7 +46,6 @@ Have the model call the function tools you define, or use server-side web search
 - [Estimate Tokens](https://platform.kimi.ai/docs/api/estimate.md): Estimate the token count of your input before sending a request.
 - [Check Balance](https://platform.kimi.ai/docs/api/balance.md): Check the available balance of the current account.
 - [Verify Request Signature](https://platform.kimi.ai/docs/api/signatures-verify.md): Verify a request signature to prove that a request was handled by the Kimi API for the specified model, rather than routed elsewhere.
-- [Files](https://platform.kimi.ai/docs/api/files.md): Explore Kimi API file management for uploading, listing, retrieving, reading, and deleting files used for content extraction or visual understanding.
 - [Upload File](https://platform.kimi.ai/docs/api/files-upload.md): Upload a file for text content extraction, image understanding, or video understanding.
 Supports text-based formats such as pdf, doc, and txt.
 - [List Files](https://platform.kimi.ai/docs/api/files-list.md): List the files uploaded to the current account.
@@ -60,12 +60,15 @@ Supports text-based formats such as pdf, doc, and txt.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/tools.md): Review pricing, billing units, and usage notes for the Kimi web-search tool.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
+- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
+- [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
+- [Kimi K2.7 Code](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md): Explore Kimi K2.7 Code and its high-speed variant for coding, multimodal input, thinking, tool calling, and 256K-token contexts.
+- [Kimi K2.6](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md): Explore Kimi K2.6 text, image, and video understanding, thinking mode, tool calling, and its 256K-token context window.
+- [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Account and Billing](https://platform.kimi.ai/docs/guide/account-and-payments.md): Find answers about Kimi Open Platform recharge, balances, credits, invoices, billing, and organization verification.
-- [Common Error Codes](https://platform.kimi.ai/docs/api/errors.md): Look up Kimi API HTTP status codes, error types, common causes, and recommended troubleshooting steps.
 - [Main Concepts](https://platform.kimi.ai/docs/introduction.md): Learn the core Kimi API concepts behind models, prompts, tokens, context windows, streaming, tool calling, and multimodal input.
 - [Troubleshooting](https://platform.kimi.ai/docs/guide/troubleshooting.md): Troubleshoot common Kimi API issues involving accounts, billing, authentication, model parameters, output length, rate limits, and connectivity.
 - [How to Fix Repeated Tool Calls](https://platform.kimi.ai/docs/guide/tool-call-repeat.md): Check the tool_calls message layout, detect repeated tool calls on the client side, and use system prompt reminders to stop the model from repeating the same tool call.
-- [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Compare with Other Kimi Products](https://platform.kimi.ai/docs/guide/product-plans.md): The Kimi API Open Platform uses pay-as-you-go billing with no subscription plan.
 It is different from products such as Kimi Membership and Kimi Code — please distinguish between them.
 - [What is Zero Data Retention (ZDR)?](https://platform.kimi.ai/docs/guide/zero-data-retention.md): Learn about Zero Data Retention (ZDR), the data protection mode available to enterprise customers on the Kimi Open Platform.
@@ -79,4 +82,4 @@ It is different from products such as Kimi Membership and Kimi Code — please d
 - [Terms of Service for Kimi OpenPlatform](https://platform.kimi.ai/docs/agreement/modeluse.md): Review the rules for accounts, API usage, billing, data, compliance, and the rights and obligations of Kimi Open Platform users.
 - [Kimi OpenPlatform Privacy Policy](https://platform.kimi.ai/docs/agreement/userprivacy.md): Learn how Kimi Open Platform collects, uses, stores, shares, and protects personal information and how users can exercise their data rights.
 - [Platform Changelog](https://platform.kimi.ai/docs/platform-changelog.md): Review historical Kimi Open Platform feature releases, model launches, product improvements, and issue fixes.
-## OpenAPI Specs - [openapi](/docs/openapi.json)
+## OpenAPI Specs - [openapi](/docs/openapi.json) ## Optional - [Playground](https://platform.kimi.ai/playground)
