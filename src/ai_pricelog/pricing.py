@@ -47,6 +47,10 @@ class Pricing:
     # the IANA zone of the schedule, stamped on rows carrying window_rates
     # (deepseek: Asia/Shanghai, the beijing-derived weekday rule)
     timezone: str | None = None
+    # image-generation token rates (gpt-image models price a second modality);
+    # appended at the end so positional constructions keep their meaning
+    image_cost_per_token: float | None = None
+    image_output_cost_per_token: float | None = None
 
 
 def to_mtok(per_token: float) -> float:

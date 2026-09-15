@@ -466,6 +466,10 @@ def build_row(
         rates["cache_write"] = to_mtok(pricing.cache_write_cost_per_token * factor)
     if pricing.cache_write_1h_cost_per_token is not None:
         rates["cache_write_1h"] = to_mtok(pricing.cache_write_1h_cost_per_token * factor)
+    if pricing.image_cost_per_token is not None:
+        rates["image"] = to_mtok(pricing.image_cost_per_token * factor)
+    if pricing.image_output_cost_per_token is not None:
+        rates["image_output"] = to_mtok(pricing.image_output_cost_per_token * factor)
 
     limits: dict[str, object] = {}
     if pricing.max_tokens_in > 0:

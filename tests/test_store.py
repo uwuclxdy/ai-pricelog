@@ -1259,3 +1259,29 @@ def test_load_fx_rejects_bad_date_key(tmp_path):
     path.write_text('{"EUR": {"2026-8-28": 1.1643}}\n', encoding="utf-8")
     with pytest.raises(FxError, match="2026-8-28"):
         load_fx(path)
+
+
+def test_build_row_includes_image_axes():
+    pricing = Pricing(
+        input_cost_per_token=5e-6,
+        output_cost_per_token=10e-6,
+        mode="chat",
+        cache_read_cost_per_token=1.25e-6,
+        image_cost_per_token=8e-6,
+        image_output_cost_per_token=32e-6,
+    )
+    row = build_row("openai", "gpt-image-1.5", pricing, "t", "u", VERSION)
+    assert row["rates"] == {
+        "input": 5.0,
+        "output": 10.0,
+        "cache_read": 1.25,
+        "image": 8.0,
+        "image_output": 32.0,
+    }
+
+
+def test_build_row_omits_unset_image_axes():
+    pricing = Pricing(input_cost_per_token=1e-6, output_cost_per_token=2e-6, mode="chat")
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert "image" not in row["rates"]
+    assert "image_output" not in row["rates"]
