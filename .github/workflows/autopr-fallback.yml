@@ -1,0 +1,35 @@
+# the github-cron fallback for the autopr workflow. the box-side timer is the
+# primary hourly trigger (github's schedule delivery is delayed under load and
+# marks that cannot be delivered inside their interval are dropped), so these
+# six marks an hour exist for when the box is down. each fire reads the autopr
+# workflow's runs — never this workflow's own — and dispatches autopr only
+# when no run started in the last 55 minutes and none is active, so its own
+# skipped fires can never read as a pipeline run and suppress a real one.
+# GITHUB_TOKEN can create workflow_dispatch events, which is why this needs no
+# PAT. (2026-09-15, todo 44.)
+
+name: autopr-fallback
+
+on:
+  schedule:
+    - cron: "3,13,23,33,43,53 * * * *" # six fallback marks an hour
+  workflow_dispatch: # hand-firing a mark for tests
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch-if-stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: dispatch autopr when no run started recently
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run list --workflow autopr --limit 1 --json databaseId,status,startedAt > /tmp/runs.json
+          verdict=$(bash .github/autopr-fallback.sh < /tmp/runs.json)
+          echo "fallback verdict: $verdict"
+          if [ "$verdict" = dispatch ]; then gh workflow run autopr -f scheduled=true; fi

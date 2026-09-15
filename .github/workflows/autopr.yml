@@ -7,14 +7,26 @@
 # with repo scope (repo secret); falls back to GITHUB_TOKEN. the claude pass
 # reads ANTHROPIC_API_KEY and optional ANTHROPIC_BASE_URL / ANTHROPIC_MODEL
 # overrides from repo secrets.
+#
+# trigger model: this workflow is dispatch-only. the PRIMARY hourly trigger is
+# `gh workflow run autopr -f scheduled=true` fired by a systemd timer on the
+# automation box, plus a monday 05:17 dispatch for the smoke probe — both
+# because github's schedule delivery is delayed under load and marks that
+# cannot be delivered inside their interval are dropped (measured ~28%
+# delivery for hourly marks vs ~100% for daily marks on this repo, same
+# account). autopr-fallback.yml carries the six-marks-an-hour github cron and
+# dispatches here only when no run started in the last hour, so the pipeline
+# keeps ticking when the box is down.
 
 name: autopr
 
 on:
-  schedule:
-    - cron: "23 * * * *" # hourly (off minute 0, github's high-load minute)
-    - cron: "17 5 * * 1" # weekly monday 05:17 utc
   workflow_dispatch:
+    inputs:
+      scheduled:
+        description: set by the box dispatcher and the cron fallback; manual dispatches leave it unset
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -122,7 +134,10 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event.schedule == '17 5 * * 1' || github.event_name == 'workflow_dispatch'
+    # the box dispatches the weekly probe without the input (a manual-shaped
+    # dispatch, same as a human's); the hourly timer and the cron fallback set
+    # scheduled=true, and an hourly moonshot probe is not wanted
+    if: github.event_name == 'workflow_dispatch' && inputs.scheduled != 'true'
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
