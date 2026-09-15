@@ -1,10 +1,15 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://platform.kimi.ai/docs/llms.txt > Use this file to discover all available pages before exploring further.
 # Platform Changelog > Review historical Kimi Open Platform feature releases, model launches, product improvements, and issue fixes.
 This page is updated periodically with Kimi Open Platform product updates and related documentation changes.
+## September 14, 2026 * Billing method change: starting at 00:00 today, account usage is deducted at a uniform ratio of 50% cash and 50% vouchers.
+When either balance is depleted, all subsequent usage is deducted from the remaining balance type.
+Users with signed contracts follow their contract terms and continue to prioritize voucher usage — they are not affected.
 ## August 31, 2026 * The `kimi-k2.5` and all `moonshot-v1` series models (including `-vision-preview` and `moonshot-v1-auto`) were retired across all platforms at 16:00 today.
 Calls to these models now return a 404 "model not found" error.
 Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart).
 * Files API updates: newly generated file IDs now carry the `file_` prefix; improved parsing of complex content such as tables and formulas; images are no longer OCR'd for text extraction (for image understanding, upload images with `purpose=image`; see [Use Vision Models](/docs/guide/use-kimi-vision-model)); files uploaded with the same name as an existing file are automatically renamed by the server.
+## May 25, 2026 * The `kimi-k2` series (including `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`, `kimi-k2-thinking`, and `kimi-k2-thinking-turbo`) was retired today and is no longer maintained or supported.
+Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart).
 ## April 7, 2025 * Reduced model product pricing.
 * Added support for inviting and managing organization members.
 * Fixed an issue where the cursor could not move in the name field when creating a project.
