@@ -1,0 +1,866 @@
+{
+  "formatVersion": "v1.0",
+  "disclaimer": "This pricing list is for informational purposes only. All prices are subject to the additional terms included in the pricing pages on http://aws.amazon.com. All Free Tier prices are also subject to the terms included at https://aws.amazon.com/free/",
+  "offerCode": "AmazonBedrock",
+  "version": "20260911124408",
+  "publicationDate": "2026-09-11T12:44:08Z",
+  "products": {
+    "QRGWJ3P8FT28EYX2": {
+      "sku": "QRGWJ3P8FT28EYX2",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "CBZ6A6U7XK8WJ3KA": {
+      "sku": "CBZ6A6U7XK8WJ3KA",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "FYTFBAWEJFBAVTWK": {
+      "sku": "FYTFBAWEJFBAVTWK",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-cache-read-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "NF8UDYEDB4HXGNAZ": {
+      "sku": "NF8UDYEDB4HXGNAZ",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-cache-write-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "XAR69MSGZSU6FEM9": {
+      "sku": "XAR69MSGZSU6FEM9",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaMicro-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova Micro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "YUSGHKDUPQRC75RK": {
+      "sku": "YUSGHKDUPQRC75RK",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaMicro-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "Nova Micro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "ZQ5FR9UVF8V64SX8": {
+      "sku": "ZQ5FR9UVF8V64SX8",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaMicro-cache-read-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "Nova Micro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "7JUJCEZMJF9JADGK": {
+      "sku": "7JUJCEZMJF9JADGK",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaMicro-cache-write-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "Nova Micro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "8X836UXRHN5Q5T2H": {
+      "sku": "8X836UXRHN5Q5T2H",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPro-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova Pro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "ARFVY95XGU794VBG": {
+      "sku": "ARFVY95XGU794VBG",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPro-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "Nova Pro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "4GSM2HNMJEMXJEDM": {
+      "sku": "4GSM2HNMJEMXJEDM",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPro-cache-read-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "Nova Pro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "XQ27CMF66QP5ZU2W": {
+      "sku": "XQ27CMF66QP5ZU2W",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPro-cache-write-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache write input tokens",
+        "model": "Nova Pro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "AMYWX642VPHEKDZE": {
+      "sku": "AMYWX642VPHEKDZE",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPremier-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova Premier",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "6QAAYR5SSN69NABR": {
+      "sku": "6QAAYR5SSN69NABR",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPremier-output-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Output tokens",
+        "model": "Nova Premier",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "93V2PABDV3FAKNQP": {
+      "sku": "93V2PABDV3FAKNQP",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPremier-cache-read-input-token-count",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Prompt cache read input tokens",
+        "model": "Nova Premier",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "PUZN23F2U55E57VV": {
+      "sku": "PUZN23F2U55E57VV",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaPro-input-tokens-flex",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens flex",
+        "model": "Nova Pro",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "FHPM2WQ68N32TY6D": {
+      "sku": "FHPM2WQ68N32TY6D",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-input-tokens-batch",
+        "operation": "",
+        "feature": "Batch Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "2W4JGY5BWVAPKQ6J": {
+      "sku": "2W4JGY5BWVAPKQ6J",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-input-tokens-custom-model",
+        "operation": "",
+        "feature": "Model Customization",
+        "inferenceType": "Input tokens",
+        "model": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "DU74ARUX9SF92JGY": {
+      "sku": "DU74ARUX9SF92JGY",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaLite-ProvisionedThroughput-1month-ModelUnits",
+        "operation": "",
+        "feature": "Provisioned Throughput Inference - 1 month",
+        "model": "Nova Lite",
+        "modelUnit": "Nova Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "FY8T82UUN7VZR55K": {
+      "sku": "FY8T82UUN7VZR55K",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-Nova2.0Lite-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Nova 2.0 Lite",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "YWYKJ9HG9DZPEYTW": {
+      "sku": "YWYKJ9HG9DZPEYTW",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-NovaCanvas-T2I-1024-Standard",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "T2I 1024 Standard",
+        "model": "Nova Canvas",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    },
+    "9XHSKPBV6R8E4FUY": {
+      "sku": "9XHSKPBV6R8E4FUY",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-TitanTextG1-Lite-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock",
+        "titanModel": "Titan Text G1 Lite"
+      }
+    },
+    "R84Y2FSFN39FCD4S": {
+      "sku": "R84Y2FSFN39FCD4S",
+      "productFamily": "Amazon Bedrock",
+      "attributes": {
+        "servicecode": "AmazonBedrock",
+        "location": "US East (N. Virginia)",
+        "locationType": "AWS Region",
+        "usagetype": "USE1-Ministral-3-8b-Instruct-input-tokens",
+        "operation": "",
+        "feature": "On-demand Inference",
+        "inferenceType": "Input tokens",
+        "model": "Ministral 8B 3.0",
+        "provider": "Mistral",
+        "regionCode": "us-east-1",
+        "servicename": "Amazon Bedrock"
+      }
+    }
+  },
+  "terms": {
+    "OnDemand": {
+      "QRGWJ3P8FT28EYX2": {
+        "QRGWJ3P8FT28EYX2.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "QRGWJ3P8FT28EYX2",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "QRGWJ3P8FT28EYX2.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "QRGWJ3P8FT28EYX2.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00006 per 1K tokens for Nova Lite-input-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000600000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "CBZ6A6U7XK8WJ3KA": {
+        "CBZ6A6U7XK8WJ3KA.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "CBZ6A6U7XK8WJ3KA",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "CBZ6A6U7XK8WJ3KA.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "CBZ6A6U7XK8WJ3KA.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00024 per 1K tokens for Nova Lite-output-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0002400000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "FYTFBAWEJFBAVTWK": {
+        "FYTFBAWEJFBAVTWK.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "FYTFBAWEJFBAVTWK",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "FYTFBAWEJFBAVTWK.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "FYTFBAWEJFBAVTWK.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.000015 per 1K cache read input tokens of Nova Lite in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000150000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "NF8UDYEDB4HXGNAZ": {
+        "NF8UDYEDB4HXGNAZ.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "NF8UDYEDB4HXGNAZ",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "NF8UDYEDB4HXGNAZ.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "NF8UDYEDB4HXGNAZ.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00 per 1K tokens for USE1-NovaLite-cache-write-input-token-count in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "XAR69MSGZSU6FEM9": {
+        "XAR69MSGZSU6FEM9.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "XAR69MSGZSU6FEM9",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "XAR69MSGZSU6FEM9.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "XAR69MSGZSU6FEM9.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.000035 per 1K tokens for Nova Micro-input-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000350000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "YUSGHKDUPQRC75RK": {
+        "YUSGHKDUPQRC75RK.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "YUSGHKDUPQRC75RK",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "YUSGHKDUPQRC75RK.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "YUSGHKDUPQRC75RK.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.00014 per 1K tokens for Nova Micro-output-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0001400000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "ZQ5FR9UVF8V64SX8": {
+        "ZQ5FR9UVF8V64SX8.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "ZQ5FR9UVF8V64SX8",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "ZQ5FR9UVF8V64SX8.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "ZQ5FR9UVF8V64SX8.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00000875 per 1K cache read input tokens of Nova Micro in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000087500"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "7JUJCEZMJF9JADGK": {
+        "7JUJCEZMJF9JADGK.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "7JUJCEZMJF9JADGK",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "7JUJCEZMJF9JADGK.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "7JUJCEZMJF9JADGK.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00 per 1K tokens for USE1-NovaMicro-cache-write-input-token-count in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "8X836UXRHN5Q5T2H": {
+        "8X836UXRHN5Q5T2H.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "8X836UXRHN5Q5T2H",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "8X836UXRHN5Q5T2H.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "8X836UXRHN5Q5T2H.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.0008 per 1K tokens for Nova Pro-input-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0008000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "ARFVY95XGU794VBG": {
+        "ARFVY95XGU794VBG.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "ARFVY95XGU794VBG",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "ARFVY95XGU794VBG.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "ARFVY95XGU794VBG.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$ 0.0032 per 1K tokens for Nova Pro-output-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0032000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "4GSM2HNMJEMXJEDM": {
+        "4GSM2HNMJEMXJEDM.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "4GSM2HNMJEMXJEDM",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "4GSM2HNMJEMXJEDM.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "4GSM2HNMJEMXJEDM.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0002 per 1K cache read input tokens of Nova Pro in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0002000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "XQ27CMF66QP5ZU2W": {
+        "XQ27CMF66QP5ZU2W.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "XQ27CMF66QP5ZU2W",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "XQ27CMF66QP5ZU2W.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "XQ27CMF66QP5ZU2W.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00 per 1K tokens for USE1-NovaPro-cache-write-input-token-count in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "AMYWX642VPHEKDZE": {
+        "AMYWX642VPHEKDZE.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "AMYWX642VPHEKDZE",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "AMYWX642VPHEKDZE.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "AMYWX642VPHEKDZE.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0025 per 1K tokens for USE1-NovaPremier-input-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0025000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "6QAAYR5SSN69NABR": {
+        "6QAAYR5SSN69NABR.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "6QAAYR5SSN69NABR",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "6QAAYR5SSN69NABR.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "6QAAYR5SSN69NABR.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0125 per 1K tokens for USE1-NovaPremier-output-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0125000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "93V2PABDV3FAKNQP": {
+        "93V2PABDV3FAKNQP.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "93V2PABDV3FAKNQP",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "93V2PABDV3FAKNQP.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "93V2PABDV3FAKNQP.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.000625 per 1K tokens for USE1-NovaPremier-cache-read-input-token-count in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0006250000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "PUZN23F2U55E57VV": {
+        "PUZN23F2U55E57VV.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "PUZN23F2U55E57VV",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "PUZN23F2U55E57VV.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "PUZN23F2U55E57VV.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0004 per 1K tokens for USE1-NovaPro-input-tokens-flex in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0004000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "FHPM2WQ68N32TY6D": {
+        "FHPM2WQ68N32TY6D.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "FHPM2WQ68N32TY6D",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "FHPM2WQ68N32TY6D.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "FHPM2WQ68N32TY6D.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00003 per 1K tokens for Nova Lite-input-tokens in us-east-1 (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000300000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "2W4JGY5BWVAPKQ6J": {
+        "2W4JGY5BWVAPKQ6J.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "2W4JGY5BWVAPKQ6J",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "2W4JGY5BWVAPKQ6J.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "2W4JGY5BWVAPKQ6J.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00006 per 1K tokens for USE1-NovaLite-input-tokens-custom-model in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0000600000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "DU74ARUX9SF92JGY": {
+        "DU74ARUX9SF92JGY.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "DU74ARUX9SF92JGY",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "DU74ARUX9SF92JGY.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "DU74ARUX9SF92JGY.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$55.00 per hour for USE1-NovaLite-ProvisionedThroughput-1month-ModelUnits in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "hour",
+              "pricePerUnit": {
+                "USD": "55.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "FY8T82UUN7VZR55K": {
+        "FY8T82UUN7VZR55K.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "FY8T82UUN7VZR55K",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "FY8T82UUN7VZR55K.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "FY8T82UUN7VZR55K.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00033 per 1K tokens for USE1-Nova2.0Lite-input-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0003300000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "YWYKJ9HG9DZPEYTW": {
+        "YWYKJ9HG9DZPEYTW.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "YWYKJ9HG9DZPEYTW",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "YWYKJ9HG9DZPEYTW.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "YWYKJ9HG9DZPEYTW.JRTCKXETXF.6YS6EN2CT7",
+              "description": "0.04 USD of Nova Canvas in us-east-1",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "image",
+              "pricePerUnit": {
+                "USD": "0.0400000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "9XHSKPBV6R8E4FUY": {
+        "9XHSKPBV6R8E4FUY.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "9XHSKPBV6R8E4FUY",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "9XHSKPBV6R8E4FUY.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "9XHSKPBV6R8E4FUY.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00015 per 1K tokens for TitanTextG1-Lite-input-tokens in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0001500000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "R84Y2FSFN39FCD4S": {
+        "R84Y2FSFN39FCD4S.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "R84Y2FSFN39FCD4S",
+          "effectiveDate": "2026-08-01T00:00:00Z",
+          "priceDimensions": {
+            "R84Y2FSFN39FCD4S.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "R84Y2FSFN39FCD4S.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00015 per 1K input tokens for Ministral 8B 3.0 in US East (N. Virginia)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "1K tokens",
+              "pricePerUnit": {
+                "USD": "0.0001500000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  },
+  "attributesList": {}
+}

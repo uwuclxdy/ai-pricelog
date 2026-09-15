@@ -363,3 +363,29 @@ announce_urls = [
   "https://docs.databricks.com/aws/en/release-notes/",
 ]
 currency_rate = 0.07
+
+# ungated 2026-09-14 (gated-reprobes/2026-09-14-amazon.md): the bedrock
+# marketing page is a js shell ({priceOf!} template cells), so the pair reads
+# the first-party aws bulk price-list api instead - static, keyless, per-model
+# on-demand terms with input/output/cache-read split and an effectiveDate per
+# term. the detector url is the region index; the module resolves the
+# us-east-1 currentVersionUrl to the per-region versioned file (~1.4MB) and
+# never fetches the 16MB global index. the api keys models by display name,
+# so the scraper joins the four carded nova names to the canonical
+# amazon.nova-* ids from the aws docs model cards. cache write is dropped:
+# the api reads $0.0000 per 1K on the standard cache-write rows (lite, micro,
+# pro; premier carries none) and the model cards corroborate no write price.
+# first_party like dashscope/watsonx (plan #29's mixed providers): amazon
+# makes the nova line it is watched for, the per-row resold comparison reads
+# the catalog vendor for the third-party models bedrock also serves, and a
+# vendorless section would read every nova row resold. no announce surface
+# wired: the aws pricing rss and what's-new feeds cover the whole aws
+# catalog, not bedrock rates; re-probe before adding one.
+[amazon]
+provider = "Amazon Bedrock"
+vendor = "amazon"
+kind = "first_party"
+detector = "amazon_page"
+detector_url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/region_index.json"
+scraper = "amazon_page"
+scraper_url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrock/current/region_index.json"

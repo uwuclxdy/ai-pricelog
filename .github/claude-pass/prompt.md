@@ -102,6 +102,10 @@ billing rule effective 2026-08-23 00:00 beijing time (billing-rules.json `deepse
 
 - the omni pricing tables split the input span into text/audio/image sub-columns and the output span into three modes (text-only, multimodal, text+audio); the header carries the colspans and a sub-header row names the sub-columns. the base rates are the first sub-columns: text input and text-only output (qwen2.5-omni-7b 0.10/0.40, qwen-omni-turbo 0.07/0.27, per 1M). a table whose output span splits with an unsplit input (the Non-Thinking/Thinking tables) reads the same first-output position either way. OBSERVED 2026-08-30 (live model-pricing page).
 
+### amazon bedrock wiring (added 2026-09-15)
+
+- amazon (wired 2026-09-15, probe 2026-09-14): the bedrock marketing page is a js shell (`{priceOf!}` template cells) — never the scrape target. rows come from the aws bulk price-list api: the toml url is the region index, the module resolves the us-east-1 `currentVersionUrl` to the versioned per-region file, and `provenance.url` names that versioned file. the api keys models by display name (`Nova Lite`); ids join through a static map to the docs model-card spellings (`amazon.nova-lite-v1:0`). rates quote USD per 1K tokens, x1000 to the per-1M axes; `effective_at` = the latest axis effectiveDate. cache-write rows read `$0.0000` (lite, micro, pro; premier carries none) and the model cards corroborate no write price, so a nova row carrying `cache_write` is a misread. tier variants (priority/flex), batch, customization and provisioned-throughput rows never join; a nova-family chat name with no card skips with a warning; third-party bedrock models are out of scope for this source.
+
 ### announce channels
 
 billing-rule announcement surfaces per provider, watched every run via `providers.toml` `announce_urls`. OBSERVED 2026-08-26 against the live pages.

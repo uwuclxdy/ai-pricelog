@@ -5,6 +5,11 @@
       "name": "AI21",
       "vendor": "ai21"
     },
+    "amazon": {
+      "kind": "first_party",
+      "name": "Amazon Bedrock",
+      "vendor": "amazon"
+    },
     "anthropic": {
       "kind": "first_party",
       "name": "Anthropic",
