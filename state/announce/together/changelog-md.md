@@ -1,19 +1,21 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 11, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling and structured outputs.
+# Changelog <Update label="September 11, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
-</Update> <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
-The same goes for a missing API key or command argument.
-* `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
-* `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.
-* The `--scale-to-zero-window` flag has been removed from `tg beta endpoints deploy` and `tg beta endpoints update`.
-See the [CLI reference](/reference/cli/getting-started).
-## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
+</Update> <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
 Alongside standard nodes, you can set a preemptible GPU target, and Together provisions toward it as spare capacity becomes available, at a flat discounted rate relative to on-demand.
 **What's new:** * **Preemptible GPU targets:** Set `num_preemptible_gpus` at cluster create or update from the console, CLI, or API.
 Together automatically provisions replacements toward the target after nodes are reclaimed.
 * **Five-minute drain window:** Reclaimed nodes are cordoned and emit a `TogetherPreemptionNotified` Kubernetes event, and pods receive SIGTERM with up to 300 seconds of grace to checkpoint and exit.
 * **Sub-hourly billing:** Usage is metered every one to two minutes, so you pay only for the time a node is live.
 See [Preemptible compute](/docs/preemptible-compute) for the preemption contract, scheduling guidance, and checkpoint examples.
+## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
+The same goes for a missing API key or command argument.
+* `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
+* `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.
+* The `--scale-to-zero-window` flag has been removed from `tg beta endpoints deploy` and `tg beta endpoints update`.
+See the [CLI reference](/reference/cli/getting-started).
+</Update> <Update label="September 8, 2026" tags={["New models"]}> ## New models available for fine-tuning You can now fine-tune the following models: * `zai-org/GLM-5.3`.
+See [Supported models](/docs/fine-tuning/supported-models) for the full list.
 </Update> <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
 See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
 ## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
