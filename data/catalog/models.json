@@ -2721,6 +2721,24 @@
       },
       "vendor": "google"
     },
+    "google/gemini-3.8-live": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-3.8-live"
+        ]
+      },
+      "vendor": "google"
+    },
+    "google/gemini-3.8-live-extended-thinking": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-3.8-live-extended-thinking"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-embedding-001": {
       "curated": false,
       "sources": {
