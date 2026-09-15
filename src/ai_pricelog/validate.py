@@ -208,6 +208,12 @@ def _check_override(entry: Any, keys: SchemaKeys) -> None:
                 f"row field 'overrides' entry 'when' has bad min_tokens {min_tokens!r};"
                 " fix: a positive integer"
             )
+        mode = when.get("mode")
+        if mode is not None and (not isinstance(mode, str) or not mode):
+            raise ValidationError(
+                f"row field 'overrides' entry 'when' has bad mode {mode!r};"
+                " fix: a non-empty string naming the request mode"
+            )
         timezone = when.get("timezone")
         if timezone is not None:
             if not isinstance(timezone, str):
@@ -229,11 +235,12 @@ def _check_override(entry: Any, keys: SchemaKeys) -> None:
                 )
     if has_rates:
         if not isinstance(when, dict) or not any(
-            key in when for key in ("days", "window", "min_tokens")
+            key in when for key in ("days", "window", "min_tokens", "mode")
         ):
             raise ValidationError(
                 "row field 'overrides' entry with 'rates' needs a 'when' holding"
-                " 'days', 'window', or 'min_tokens'; fix: make the override conditional"
+                " 'days', 'window', 'min_tokens', or 'mode'; fix: make the override"
+                " conditional"
             )
         rates = entry["rates"]
         if not isinstance(rates, dict) or not rates:

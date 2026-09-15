@@ -509,6 +509,8 @@ def build_row(
             when["days"] = entry["days"]
         if "window" in entry:
             when["window"] = entry["window"]
+        if "mode" in entry:
+            when["mode"] = entry["mode"]
         if when and pricing.timezone is not None:
             when["timezone"] = pricing.timezone
         # the scraper hands these already per-million, so they take the fx

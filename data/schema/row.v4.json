@@ -151,6 +151,11 @@
           "type": "integer",
           "exclusiveMinimum": 0,
           "description": "A volume threshold: the override applies from this prompt size up."
+        },
+        "mode": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The request mode the override prices, e.g. anthropic fast mode (speed:\"fast\")."
         }
       },
       "allOf": [
@@ -188,7 +193,8 @@
                 "anyOf": [
                   {"required": ["days"]},
                   {"required": ["window"]},
-                  {"required": ["min_tokens"]}
+                  {"required": ["min_tokens"]},
+                  {"required": ["mode"]}
                 ]
               }
             }

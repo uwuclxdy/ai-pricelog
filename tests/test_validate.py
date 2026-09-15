@@ -171,6 +171,51 @@ def test_quota_multiplier_only_without_when_accepted():
     check(row(overrides=[{"quota_multiplier": 0.4}]))
 
 
+def test_mode_only_when_with_rates_accepted():
+    # a request-mode override is conditional on its own key: anthropic fast
+    # mode prices a speed:"fast" request, no schedule needed
+    check(row(overrides=[{"when": {"mode": "fast"}, "rates": {"input": 10.0, "output": 50.0}}]))
+
+
+def test_mode_is_an_open_string_no_value_enum():
+    # the schema carries no mode enum: the page names the mode, so an
+    # unmapped value stays legal rather than rejected
+    check(row(overrides=[{"when": {"mode": "turbo"}, "rates": {"input": 1.0}}]))
+
+
+def test_mode_empty_string_rejected():
+    # minLength 1 in the schema: an empty mode is no condition
+    with pytest.raises(ValidationError, match="mode"):
+        check(row(overrides=[{"when": {"mode": ""}, "rates": {"input": 1.0}}]))
+
+
+def test_mode_non_string_rejected():
+    with pytest.raises(ValidationError, match="mode"):
+        check(row(overrides=[{"when": {"mode": 5}, "rates": {"input": 1.0}}]))
+
+
+def test_mode_beside_a_schedule_accepted():
+    check(
+        row(
+            overrides=[
+                {
+                    "when": {"days": ["monday"], "window": [100, 400], "mode": "fast"},
+                    "rates": {"input": 1.0},
+                }
+            ]
+        )
+    )
+
+
+def test_mode_with_timezone_alone_still_rejected():
+    # the timezone rule is unchanged: a zone names the schedule days/window
+    # describe, and a mode override carrying one describes nothing
+    with pytest.raises(ValidationError, match="timezone"):
+        check(
+            row(overrides=[{"when": {"timezone": "UTC", "mode": "fast"}, "rates": {"input": 1.0}}])
+        )
+
+
 def test_override_with_neither_rates_nor_multiplier_rejected():
     with pytest.raises(ValidationError, match="quota_multiplier"):
         check(row(overrides=[{"when": {"days": ["monday"]}}]))

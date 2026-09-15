@@ -252,6 +252,13 @@ def _session_card() -> str:
             '<input class="input" id="calc-day" type="date">\n',
             "</div>\n",
             '<div class="field">\n',
+            '<label class="field-label" for="calc-mode">request mode</label>\n',
+            '<select class="input" id="calc-mode">\n',
+            '<option value="" selected>standard</option>\n',
+            '<option value="fast">fast</option>\n',
+            "</select>\n",
+            "</div>\n",
+            '<div class="field">\n',
             '<label class="field-label" for="calc-rate">your rate, $ per mtok</label>\n',
             '<input class="input" id="calc-rate" type="number" inputmode="decimal"'
             ' min="0" step="0.01" placeholder="optional">\n',

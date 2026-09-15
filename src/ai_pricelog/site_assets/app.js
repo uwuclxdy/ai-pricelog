@@ -19,6 +19,9 @@ const AXES = [
 const SORT_KEYS = ["name", "vendor", "input", "cache_read", "output"];
 const DEFAULT_TOKENS = { input: 1000000, cached: 0, output: 0 };
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+/* the request modes the calculator offers; "" is the standard request. the
+   row schema keeps `mode` an open string, but the page never invents modes */
+const MODES = ["fast"];
 
 function axisRate(rates, axis) {
   const value = rates === undefined || rates === null ? undefined : rates[axis];
@@ -69,7 +72,9 @@ export function pickInterval(entry, day) {
 /* A `when` matches on the entry's own scheduling convention: the export writes
    every window as UTC clock minutes and every day-set as UTC calendar days, so
    `timezone` never enters the test. `min_tokens` gates the whole prompt, the
-   openrouter `min_prompt_tokens` it is mapped from. */
+   openrouter `min_prompt_tokens` it is mapped from. `mode` names the request
+   mode the override prices (anthropic fast mode); the calculator's empty
+   string is the standard, mode-less request. */
 export function whenMatches(when, ctx) {
   if (when === undefined || when === null || typeof when !== "object") return true;
   if (Array.isArray(when.days) && when.days.length > 0 && !when.days.includes(ctx.weekday)) {
@@ -88,6 +93,7 @@ export function whenMatches(when, ctx) {
   if (typeof floor === "number" && Number.isFinite(floor) && ctx.inputTokens < floor) {
     return false;
   }
+  if (when.mode !== undefined && when.mode !== ctx.mode) return false;
   return true;
 }
 
@@ -114,15 +120,17 @@ export function effectiveRates(item, ctx) {
  * entry has no rate for while the session uses it.
  *
  * `now` supplies the time of day, since a `when` window is a clock range and
- * only the date is a field of its own.
+ * only the date is a field of its own. `mode` is the request mode the session
+ * runs under; the empty string is the standard, mode-less request.
  */
-export function priceSession(entry, day, tokens, now = new Date()) {
+export function priceSession(entry, day, tokens, now = new Date(), mode = "") {
   const item = pickInterval(entry, day);
   if (item === null || item.removed === true) return null;
   const rates = effectiveRates(item, {
     weekday: weekdayOf(day),
     minutes: now.getUTCHours() * 60 + now.getUTCMinutes(),
     inputTokens: tokens.input + tokens.cached,
+    mode,
   });
   let total = 0;
   for (const [field, axis] of AXES) {
@@ -174,6 +182,7 @@ export function defaultState() {
     calc: { ...DEFAULT_TOKENS },
     day: "",
     rate: "",
+    mode: "",
   };
 }
 
@@ -233,6 +242,8 @@ export function decodeState(hash) {
   if (DAY_PATTERN.test(day)) state.day = day;
   const rate = text("rate");
   if (rate !== "" && Number(rate) > 0 && Number.isFinite(Number(rate))) state.rate = rate;
+  const mode = text("mode");
+  if (MODES.includes(mode)) state.mode = mode;
   return state;
 }
 
@@ -248,6 +259,7 @@ export function encodeState(state) {
   parts.push(`calc=${input}|${cached}|${output}`);
   if (state.day) parts.push(`day=${encodeURIComponent(state.day)}`);
   if (state.rate) parts.push(`rate=${encodeURIComponent(state.rate)}`);
+  if (state.mode) parts.push(`mode=${encodeURIComponent(state.mode)}`);
   return parts.join("&");
 }
 
@@ -357,6 +369,7 @@ function init() {
   };
   const dayBox = document.getElementById("calc-day");
   const rateBox = document.getElementById("calc-rate");
+  const modeBox = document.getElementById("calc-mode");
   const sessionWrap = document.getElementById("session-wrap");
   const sessionBody = document.getElementById("session-body");
   const sessionEmpty = document.getElementById("session-empty");
@@ -450,7 +463,7 @@ function init() {
     for (const key of state.sel) {
       const entry = lookup.get(key);
       if (entry === undefined) continue;
-      rows.push({ entry, total: priceSession(entry, day, state.calc) });
+      rows.push({ entry, total: priceSession(entry, day, state.calc, new Date(), state.mode) });
     }
     rows.sort((a, b) => {
       if (a.total === null || b.total === null) {
@@ -494,6 +507,7 @@ function init() {
     if (qBox) qBox.value = state.q;
     if (dayBox) dayBox.value = state.day;
     if (rateBox) rateBox.value = state.rate;
+    if (modeBox) modeBox.value = state.mode;
     for (const [field, box] of Object.entries(tokenBoxes)) {
       if (box) box.value = String(state.calc[field]);
     }
@@ -521,6 +535,12 @@ function init() {
 
   rateBox?.addEventListener("input", () => {
     state.rate = Number(rateBox.value) > 0 && Number.isFinite(Number(rateBox.value)) ? rateBox.value : "";
+    renderSession();
+    push();
+  });
+
+  modeBox?.addEventListener("change", () => {
+    state.mode = MODES.includes(modeBox.value) ? modeBox.value : "";
     renderSession();
     push();
   });

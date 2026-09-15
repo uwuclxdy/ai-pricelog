@@ -38,12 +38,14 @@ const app = await import(process.argv[2]);
 const probe = JSON.parse(readFileSync(process.argv[3], 'utf8'));
 const out = { cases: {} };
 for (const [name, spec] of Object.entries(probe.cases)) {
-  out.cases[name] = app.priceSession(spec.entry, spec.day, spec.tokens, new Date(spec.now));
+  out.cases[name] = app.priceSession(
+    spec.entry, spec.day, spec.tokens, new Date(spec.now), spec.mode ?? "");
 }
 out.state = app.decodeState(probe.fragment);
 out.encoded = app.encodeState(out.state);
 out.rate = probe.cases.peak ? app.priceAtRate(2.5, probe.cases.peak.tokens) : null;
 out.rates = (probe.rates ?? []).map(v => app.formatRate(v));
+out.matches = (probe.matches ?? []).map(m => app.whenMatches(m.when, m.ctx));
 if (probe.reveal) {
   const run = marked => {
     const listeners = [];
@@ -205,6 +207,26 @@ QUOTA = {
                 },
                 {"when": {"days": ["monday"], "window": [100, 200]}, "quota_multiplier": 0.4},
             ],
+        }
+    ],
+}
+
+# a request-mode override: anthropic fast mode prices a speed:"fast" request
+# at premium rates while the standard request keeps the base rates
+FAST = {
+    "source": "fixture",
+    "model_id": "m5",
+    "vendor": "fixture",
+    "name": "Fixture Five",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 5.0, "output": 25.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": None,
+            "observed_at": "2026-08-01",
+            "rates": {"input": 5.0, "output": 25.0},
+            "overrides": [{"when": {"mode": "fast"}, "rates": {"input": 10.0, "output": 50.0}}],
         }
     ],
 }
@@ -389,6 +411,27 @@ def test_every_element_the_page_script_looks_up_exists(tmp_path):
         assert f'id="{element_id}"' in html, f"the page never renders #{element_id}"
 
 
+def test_the_session_card_offers_the_request_modes(tmp_path):
+    """The calculator's mode select: standard first and selected, fast the one
+    premium mode the index carries.
+
+    The option set is pinned whole — one equality over the (value, label)
+    pairs, never a substring walk that a third option would slip past.
+    """
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    select = soup.select_one("#calc-mode")
+    assert select is not None
+    assert select.name == "select"
+    label = soup.select_one('label[for="calc-mode"]')
+    assert label is not None and label.get_text(strip=True) == "request mode"
+    options = [
+        (option.get("value", ""), option.get_text(strip=True), option.has_attr("selected"))
+        for option in select.select("option")
+    ]
+    assert options == [("", "standard", True), ("fast", "fast", False)]
+
+
 def _node_cases() -> dict[str, dict[str, object]]:
     """The fixture sessions, each with the total python arithmetic gives it.
 
@@ -504,12 +547,31 @@ def _node_cases() -> dict[str, dict[str, object]]:
             "now": "2026-09-07T04:00:00Z",
             "expected": 1.0 * 9.0 + 0.2 * 0.5 + 0.05 * 36.0,
         },
+        "a_fast_mode_session_prices_the_premium_rates": {
+            "entry": FAST,
+            "day": "2026-09-07",
+            "tokens": SESSION,
+            "now": "2026-09-07T02:00:00Z",
+            "mode": "fast",
+            # the override replaces input and output; the fixture carries no
+            # cache_read axis at all, so the cached count prices at the
+            # EFFECTIVE input rate — the override's 10.0, not the base 5.0
+            "expected": 1.0 * 10.0 + 0.2 * 10.0 + 0.05 * 50.0,
+        },
+        "a_standard_session_keeps_the_base_rates": {
+            "entry": FAST,
+            "day": "2026-09-07",
+            "tokens": SESSION,
+            "now": "2026-09-07T02:00:00Z",
+            # no mode: the mode override does not match, the base prices it
+            "expected": 1.0 * 5.0 + 0.2 * 5.0 + 0.05 * 25.0,
+        },
     }
 
 
 FRAGMENT = (
     "#q=fixture%20one&sort=input&dir=desc&sel=fixture%2Fm1,fixture%2Fm2"
-    "&calc=1000|200|30&day=2026-09-07&rate=0.5"
+    "&calc=1000|200|30&day=2026-09-07&rate=0.5&mode=fast"
 )
 
 
@@ -535,6 +597,7 @@ def test_the_page_pricing_function_agrees_with_the_totals_above(tmp_path):
             "day": spec["day"],
             "tokens": spec["tokens"],
             "now": spec["now"],
+            "mode": spec.get("mode", ""),
         }
         for name, spec in _node_cases().items()
     }
@@ -549,6 +612,35 @@ def test_the_page_pricing_function_agrees_with_the_totals_above(tmp_path):
     assert result["rate"] == pytest.approx((1000000 + 200000 + 50000) / 1e6 * 2.5)
 
 
+# the mode key's own outcomes, each pinned against a ctx pair: a match, the
+# standard session's empty string, a different mode, an empty when.mode (a
+# truthiness check would let it through; the comparison must not), and a when
+# with no mode key at all (which a mode-ful session still prices under)
+_MATCH_CASES = [
+    ({"mode": "fast"}, {"mode": "fast"}, True),
+    ({"mode": "fast"}, {"mode": ""}, False),
+    ({"mode": "fast"}, {"mode": "turbo"}, False),
+    ({"mode": ""}, {"mode": "fast"}, False),
+    ({"days": ["monday"]}, {"mode": "fast", "weekday": "monday"}, True),
+    (None, {"mode": "fast"}, True),
+]
+
+
+def test_when_matches_on_the_mode_key(tmp_path):
+    """The mode comparison as its own unit: the price walk above only reaches
+    it through a whole session, so a false on the wrong pair would read as a
+    rate mismatch rather than a condition mismatch."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "matches": [{"when": when, "ctx": ctx} for when, ctx, _ in _MATCH_CASES],
+        },
+    )
+    assert result["matches"] == [expected for _, _, expected in _MATCH_CASES]
+
+
 def test_a_fragment_restores_the_whole_state(tmp_path):
     result = _node(tmp_path, {"cases": {}, "fragment": FRAGMENT})
     assert result["state"] == {
@@ -559,6 +651,7 @@ def test_a_fragment_restores_the_whole_state(tmp_path):
         "calc": {"input": 1000, "cached": 200, "output": 30},
         "day": "2026-09-07",
         "rate": "0.5",
+        "mode": "fast",
     }
 
 
@@ -607,6 +700,7 @@ def test_a_fragment_that_names_nothing_keeps_the_defaults(tmp_path):
         "calc": {"input": 1000000, "cached": 0, "output": 0},
         "day": "",
         "rate": "",
+        "mode": "",
     }
     assert result["encoded"] == "calc=1000000|0|0"
 
@@ -616,7 +710,9 @@ def test_a_malformed_fragment_falls_back_rather_than_raising(tmp_path):
         tmp_path,
         {
             "cases": {},
-            "fragment": "#sort=nowhere&dir=sideways&calc=1|2&day=yesterday&rate=-4&sel=%zz",
+            "fragment": (
+                "#sort=nowhere&dir=sideways&calc=1|2&day=yesterday&rate=-4&mode=turbo&sel=%zz"
+            ),
         },
     )
     assert result["state"]["sort"] == ""
@@ -624,6 +720,8 @@ def test_a_malformed_fragment_falls_back_rather_than_raising(tmp_path):
     assert result["state"]["calc"] == {"input": 1000000, "cached": 0, "output": 0}
     assert result["state"]["day"] == ""
     assert result["state"]["rate"] == ""
+    # an unoffered mode is malformed input: the standard request takes over
+    assert result["state"]["mode"] == ""
     assert result["state"]["sel"] == ["%zz"]
 
 

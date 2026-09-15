@@ -315,6 +315,9 @@ def _when(entry: dict[str, object]) -> str:
     min_tokens = when.get("min_tokens")
     if isinstance(min_tokens, int):
         parts.append(f"min {min_tokens} tokens")
+    mode = when.get("mode")
+    if isinstance(mode, str):
+        parts.append(f"{mode} mode")
     timezone = when.get("timezone")
     if isinstance(timezone, str):
         parts.append(timezone)

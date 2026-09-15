@@ -218,6 +218,21 @@ def test_spec_body_overrides_table_renders_quota_multipliers():
     assert "| — | — | — | — | 3 |" in body
 
 
+def test_spec_body_overrides_table_renders_mode_condition():
+    row = {
+        "schema": 4,
+        "source": "anthropic",
+        "model_id": "claude-opus-5",
+        "observed_at": "2026-09-14",
+        "rates": {"input": 5.0, "output": 25.0},
+        "overrides": [
+            {"when": {"mode": "fast"}, "rates": {"input": 10.0, "output": 50.0}},
+        ],
+    }
+    body = spec(source="anthropic", provider="Anthropic", rows=(row,)).body
+    assert "| `claude-opus-5` | fast mode | 10 | — | — | 50 | — |" in body
+
+
 def test_spec_body_overrides_table_renders_timezone_and_threshold():
     row = {
         "schema": 4,
