@@ -21,6 +21,7 @@
 {"schema":4,"source":"fireworks","model_id":"kimi-k3","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k3-fast","observed_at":"2026-08-29","rates":{"input":4.5,"output":22.5,"cache_read":0.45},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k3-us","observed_at":"2026-08-29","rates":{"input":3.3,"output":16.5,"cache_read":0.33},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
+{"schema":4,"source":"fireworks","model_id":"kimi-k3-us","observed_at":"2026-09-16","rates":{"input":4.5,"output":22.5,"cache_read":0.45},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"minimax-m2.7","observed_at":"2026-08-29","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"minimax-m2.7","observed_at":"2026-08-30","removed":true,"rates":{"input":0.3,"output":1.2,"cache_read":0.06}}
 {"schema":4,"source":"fireworks","model_id":"minimax-m3","observed_at":"2026-08-29","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
@@ -31,4 +32,5 @@
 {"schema":4,"source":"fireworks","model_id":"openai-gpt-oss-20b","observed_at":"2026-08-29","rates":{"input":0.07,"output":0.3,"cache_read":0.035},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"openai-gpt-oss-20b","observed_at":"2026-08-30","removed":true,"rates":{"input":0.07,"output":0.3,"cache_read":0.035}}
 {"schema":4,"source":"fireworks","model_id":"qwen-3.7-plus","observed_at":"2026-08-29","rates":{"input":0.4,"output":1.6,"cache_read":0.08},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
+{"schema":4,"source":"fireworks","model_id":"qwen-3.7-plus","observed_at":"2026-09-13","removed":true,"rates":{"input":0.4,"output":1.6,"cache_read":0.08}}
 {"schema":4,"source":"fireworks","model_id":"qwen-3.8-max","observed_at":"2026-08-29","rates":{"input":2.0,"output":6.0,"cache_read":0.25},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
