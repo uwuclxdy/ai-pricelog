@@ -1,19 +1,28 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 11, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling and structured outputs.
-Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
-</Update> <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
-The same goes for a missing API key or command argument.
-* `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
-* `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.
-* The `--scale-to-zero-window` flag has been removed from `tg beta endpoints deploy` and `tg beta endpoints update`.
+# Changelog <Update label="September 15, 2026" tags={["New releases"]}> ## Rollouts for dedicated model inference [Rollouts](/docs/dedicated-endpoints/rollouts) shift live traffic from one deployment to another under the same endpoint, without changing the endpoint URL.
+Pick a canary, blue-green, or rolling strategy to determine how traffic moves, and optionally gate a canary rollout on [live metrics](/docs/dedicated-endpoints/rollout-metric-gates) so it pauses automatically if the new deployment regresses.
+Start a rollout with the `tg beta endpoints rollout` CLI command or from the endpoint's **Rollouts** tab in the console, then pause, resume, promote, or cancel it at any point while it runs.
+## Together CLI v2.34.0 Version 2.34.0 of the Together CLI and Python SDK carries the rollouts release above (the SDK surface is `client.beta.endpoints.rollouts`) and also adds: * **[HIPAA placement](/docs/dedicated-endpoints/manage#compliance-policy):** `tg beta endpoints deploy` accepts `--placement.hipaa` to restrict a deployment to HIPAA-attested clusters.
+The Python SDK takes the same policy as `compliance_policy` on inline placement.
+* `tg files check` now rejects Parquet files larger than the maximum supported file size instead of passing them through format validation.
 See the [CLI reference](/reference/cli/getting-started).
-## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
+</Update> <Update label="September 11, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
+Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
+</Update> <Update label="September 10, 2026" tags={["New releases", "Improvements"]}> ## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
 Alongside standard nodes, you can set a preemptible GPU target, and Together provisions toward it as spare capacity becomes available, at a flat discounted rate relative to on-demand.
 **What's new:** * **Preemptible GPU targets:** Set `num_preemptible_gpus` at cluster create or update from the console, CLI, or API.
 Together automatically provisions replacements toward the target after nodes are reclaimed.
 * **Five-minute drain window:** Reclaimed nodes are cordoned and emit a `TogetherPreemptionNotified` Kubernetes event, and pods receive SIGTERM with up to 300 seconds of grace to checkpoint and exit.
 * **Sub-hourly billing:** Usage is metered every one to two minutes, so you pay only for the time a node is live.
 See [Preemptible compute](/docs/preemptible-compute) for the preemption contract, scheduling guidance, and checkpoint examples.
+## Together CLI v2.33.2 Version 2.33.2 of the Together CLI improves error reporting and upload feedback: * Endpoint, fine-tuning, and model commands now print the API's error message when a request fails, rather than a generic failure notice.
+The same goes for a missing API key or command argument.
+* `tg evals create` and `tg batches submit` now show a progress bar while uploading files, matching `tg files upload`.
+* `tg fine-tuning list-events` no longer fails on jobs with more than 20 events.
+* The `--scale-to-zero-window` flag has been removed from `tg beta endpoints deploy` and `tg beta endpoints update`.
+See the [CLI reference](/reference/cli/getting-started).
+</Update> <Update label="September 8, 2026" tags={["New models"]}> ## New models available for fine-tuning You can now fine-tune the following models: * `zai-org/GLM-5.3`.
+See [Supported models](/docs/fine-tuning/supported-models) for the full list.
 </Update> <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
 See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
 ## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
@@ -27,6 +36,9 @@ All except `intfloat/multilingual-e5-large-instruct` remain available through on
 See [Deprecations](/docs/deprecations) for migration options.
 </Update> <Update label="August 31, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `Qwen/Qwen3.8-Flash`: 1,000,000 context length.
 Pricing: \$0.15 input / \$0.47 output (per 1M tokens).
+</Update> <Update label="August 29, 2026" tags={["Improvements"]}> ## `active_sessions` autoscaling metric for TTS Dedicated endpoint autoscaling now accepts `active_sessions`, which targets concurrent open client WebSocket sessions per replica on a TTS deployment (`AVERAGE_VALUE` only).
+The default `inflight_requests` metric also covers TTS handlers, so HTTP TTS traffic can keep scaling without a policy change.
+See [Configure autoscaling](/docs/dedicated-endpoints/scaling#scaling-metrics).
 </Update> <Update label="August 28, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
 Pricing: \$1.40 input / \$4.40 output / \$0.26 cached input (per 1M tokens).
 </Update> <Update label="August 27, 2026" tags={["New releases", "Improvements", "Deprecations"]}> ## Billing usage API (beta) `GET /billing/usage` returns organization-wide usage and cost line items, filterable by month.
@@ -81,7 +93,7 @@ To pick it up on a model you've already tuned, start a new job with the same dat
 A job you run after this release will not reproduce the loss curve of an earlier run on the same data and settings.
 </Update> <Update label="August 21, 2026" tags={["Deprecations"]}> ## Model deprecations The following model has been deprecated and is no longer available on serverless: * `deepcogito/cogito-v2-1-671b`.
 See [Deprecations](/docs/deprecations) for migration options.
-</Update> <Update label="August 20, 2026" tags={["New releases"]}> ## Fully automatic confirmation policy for node auto repair [Auto node repair](/docs/node-repair#auto-node-repair) can now close the loop end to end.
+</Update> <Update label="August 20, 2026" tags={["New releases", "Improvements"]}> ## Fully automatic confirmation policy for node auto repair [Auto node repair](/docs/node-repair#auto-node-repair) can now close the loop end to end.
 Under the new **Fully automatic** confirmation policy, health checks detect the fault, the system generates a repair recommendation, and auto repair executes it without waiting for approval.
 Clusters continue to use **Approve before repair** by default.
 **What's new:** * **Confirmation policy toggle:** Choose between **Approve before repair** and **Fully automatic** under **Auto-remediation policy** on the **Repairs** tab.
@@ -90,6 +102,12 @@ Destructive repairs can stay gated on approval while transient ones clear on the
 * **Job interruption controls:** **Wait for idle**, **Grace period**, **Maximum wait**, and **Do not interrupt running jobs** let the wait policy protect in-flight training and inference work in place of a review step.
 * **Audit trail:** Automatically approved repairs record **Auto-Approved** in the repair's **Reviewed by** field, alongside the alert evidence that triggered them.
 See [Confirmation policy](/docs/node-repair#confirmation-policy) for details.
+## Dedicated endpoint create form uses deployment profiles The console create-endpoint and new-deployment forms always show **Deployment profiles** choice cards.
+Separate **Quantization**, **Hardware**, LoRA, and speculative-decoding controls are removed.
+Each card pins hardware, quantization, and decoding options from the profile's certified config.
+Project and organization models list every certified config with known hardware.
+Supported catalog models still require a profile-certified or org-runtime-certified config.
+See [Manage endpoints and deployments](/docs/dedicated-endpoints/manage#create-an-endpoint) and the [quickstart](/docs/dedicated-endpoints/quickstart).
 </Update> <Update label="August 19, 2026" tags={["New releases", "Deprecations"]}> ## ACH bank transfers generally available ACH bank transfers are now available to all customers, not just those with an enterprise contract.
 Link a U.S.
 bank account with instant verification from your [billing settings](https://api.together.ai/settings/organization/~current/billing), set it as your default payment method, and purchase credits directly from your bank account.
@@ -100,6 +118,10 @@ See [Payment methods & invoices](/docs/billing-payment-methods#ach-bank-transfer
 * `Qwen/Qwen2.5-7B`.
 * `moonshotai/Kimi-K2.6`.
 See [Deprecations](/docs/deprecations) for migration options.
+</Update> <Update label="August 18, 2026" tags={["Improvements"]}> ## Unknown fields rejected on dedicated endpoints API The [dedicated model inference](/docs/dedicated-endpoints/overview) management API now rejects unknown JSON request-body fields and unknown query parameters with HTTP `400`.
+The response names the field (for example `unknown field "inactive_timeout"`) instead of silently ignoring it.
+Remove retired or misspelled keys from clients that still send them.
+See [Troubleshooting](/docs/dedicated-endpoints/manage#troubleshooting) and [Error codes](/docs/error-codes).
 </Update> <Update label="August 17, 2026" tags={["New releases", "New models", "Improvements"]}> ## Project visibility Projects now support three visibility levels.
 An **open** project lets any organization member discover and join it.
 A **closed** project is discoverable, but joining requires an admin to grant access.
