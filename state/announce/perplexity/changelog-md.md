@@ -32,8 +32,6 @@ See the [Agent API Models reference](/docs/agent-api/models).
 See pricing in the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **NVIDIA Nemotron 3 Ultra** The Agent API and Router API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
-</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **NVIDIA Nemotron 3.5 Lightning** The Agent API and Router API now support `perplexity/nemotron-3.5-lightning-30b-a3b`, a fast, efficient open-weight reasoning model, at \$0.0115 per million input tokens, \$0.00115 per million cached-input tokens, and \$0.17 per million output tokens.
-See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **DeepSeek V4 Flash 0731** The Agent API and Router API now support `perplexity/deepseek-v4-flash-0731`, a fast, efficient open reasoning model with a 1M-token context window.
 See pricing in the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="July 2026" tags={["Agent API", "Models", "Pricing"]}> **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
