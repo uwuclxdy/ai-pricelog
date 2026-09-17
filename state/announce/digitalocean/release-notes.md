@@ -5,7 +5,13 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
+To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
+14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
+10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
+See How to Create Regional Load Balancers and How to Manage Regional Load Balancers .
+Global load balancers do not support firewall rules, and DigitalOcean Kubernetes (DOKS)-managed load balancers continue to use Kubernetes service configuration.
+9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
 You can run worker nodes on interruptible Spot GPU capacity for AMD Instinct MI350X and MI355X and NVIDIA B300 GPUs, at a lower, variable rate than on-demand GPU nodes.
 Spot GPU node pools work with the cluster autoscaler, and you can pair them with an on-demand GPU node pool as a configurable fallback.
 For supported GPU shapes, regions, pricing, and behavior, see Spot GPU node pools .
@@ -184,21 +190,6 @@ You can enable it using doctl , the DigitalOcean API , or Terraform .
 The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.1 For more information, see the Available Models page .
 A Fedora 44 ( fedora-44-x64 ) Droplet base image is now available in the Control Panel and through the API.
 22 June The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.2 For more information, see the Available Models page .
-18 June To comply with Peru’s tax regulation for digital services , DigitalOcean charges Value Added Tax (VAT) for customers with a tax location in Peru, beginning on 1 June 2026.
-These charges appear on invoices issued on and after 1 July 2026.
-Learn more about taxes in Peru .
-17 June The following Xiaomi model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : MiMo-V2.5-Pro For more information, see the Available Models page .
-DigitalOcean Inference supports server-side tools on serverless inference, dedicated inference, and inference routers.
-You can add the following tools: Web search, web fetch, knowledge base retrieval, and remote MCP server tools to your requests in the Chat Completions and Responses APIs.
-Provider-native tools such as bash, text editor, computer use, and web fetch for Anthropic models with the Messages API .
-Function calling and tool search for OpenAI models on the Responses API, and Anthropic models on the Messages API.
-Web search and web fetch are in public preview .
-For more information, see Use Server-Side Tools .
-Updated CentOS Stream 9 and CentOS Stream 10 ( centos-stream-9-x64 , centos-stream-10-x64 ) Droplet base images require a minimum Droplet size of s-1vcpu-1gb .
-You cannot create Droplets with these images on the s-1vcpu-512mb-10gb plan because the image exceeds the available disk size for that plan.
-For more information, see Linux Images for Droplets .
-16 June Released v1.162.0 of doctl , the official DigitalOcean CLI.
-This release adds support for the PostgreSQL and MySQL Advanced Edition engines, advanced_pg and advanced_mysql , in the databases commands.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
