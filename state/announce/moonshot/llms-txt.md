@@ -62,7 +62,7 @@ Supports text-based formats such as pdf, doc, and txt.
 - [Cancel Batch](https://platform.kimi.ai/docs/api/batch-cancel.md): Cancel an in-progress batch job.
 - [Model Inference Pricing Explanation](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
-- [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/tools.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
+- [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/websearch.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
 - [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
