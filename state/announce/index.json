@@ -79,15 +79,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "06995aeae5c310581aab3c96b65e9e729f286fdd16d93f20b55bb432aeaf0823",
-      "fetched": "2026-09-09"
+      "sha256": "ea813fb776aba5f1732a0917194d6c781dc08c66319a430400142e4267b17963",
+      "fetched": "2026-09-15"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
       "sha256": "67874ed8cfc9795ecb340a28c3406ecbb636ea93fbc8b03d07bca24d20ad4b0a",
-      "fetched": "2026-09-14"
+      "fetched": "2026-09-15"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "f9f02c2ae722f01860b8c5723ff05580b0b6055ef29ec3ebcb955145535776dd",
-      "fetched": "2026-09-14"
+      "sha256": "c1484fb323859492da8316676f5ff23351290fc7589f4c5cc3ccf9448265c661",
+      "fetched": "2026-09-15"
     }
   },
   "scaleway": {
@@ -151,7 +151,7 @@
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
       "sha256": "7655acfcc17896af0f2ef26bfb8a96916951154a96a1d894aa38cd90378c7813",
-      "fetched": "2026-09-14"
+      "fetched": "2026-09-15"
     }
   },
   "databricks": {

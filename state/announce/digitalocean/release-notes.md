@@ -5,7 +5,8 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
+9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
 You can run worker nodes on interruptible Spot GPU capacity for AMD Instinct MI350X and MI355X and NVIDIA B300 GPUs, at a lower, variable rate than on-demand GPU nodes.
 Spot GPU node pools work with the cluster autoscaler, and you can pair them with an on-demand GPU node pool as a configurable fallback.
 For supported GPU shapes, regions, pricing, and behavior, see Spot GPU node pools .
