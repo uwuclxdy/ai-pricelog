@@ -95,6 +95,55 @@ if (probe.restoreSort) {
   app.restoreSort(probe.restoreSort.state, wrap);
   out.restoreSort = { clicks: clicks.length, dir: probe.restoreSort.state.dir };
 }
+if (probe.modeChanges) {
+  // the browser's own init run against a stub dom: the only path that fires
+  // the mode select's change listener. every element is one shared shape,
+  // because init only sets properties and registers listeners on them
+  const element = () => ({
+    textContent: "", className: "", hidden: false, value: "", type: "",
+    dataset: {}, checked: false,
+    append() {}, replaceChildren() {}, setAttribute() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    addEventListener(name, fn) { (this._listeners || (this._listeners = {}))[name] = fn; },
+  });
+  const wrap = element();
+  wrap.dataset.uiTable = "1";
+  const elements = new Map([["models", wrap], ["models-body", element()]]);
+  const island = element();
+  island.textContent = JSON.stringify({ entries: [] });
+  elements.set("flat-data", island);
+  for (const id of [
+    "q", "calc-input", "calc-cached", "calc-output", "calc-day", "calc-rate",
+    "calc-mode", "session-wrap", "session-body", "session-empty",
+    "session-note", "rate-line", "model-count",
+  ]) elements.set(id, element());
+  const hashes = [];
+  globalThis.document = {
+    documentElement: { dataset: {} },
+    getElementById: (id) => elements.get(id) ?? null,
+    createElement: () => element(),
+    createTextNode: () => element(),
+    createDocumentFragment: () => element(),
+  };
+  globalThis.window = {
+    location: { hash: "" },
+    history: { replaceState(_state, _title, url) { hashes.push(String(url)); } },
+  };
+  app.init();
+  const modeBox = elements.get("calc-mode");
+  out.modeChanges = {};
+  for (const value of probe.modeChanges) {
+    modeBox.value = value;
+    modeBox._listeners.change();
+    // a fire that changes state pushes, so the last fragment always names the
+    // post-fire state; an empty list means the state never left its default
+    out.modeChanges[value] = app.decodeState(hashes[hashes.length - 1]).mode;
+  }
+  delete globalThis.document;
+  delete globalThis.window;
+}
+out.modes = app.MODES;
 console.log(JSON.stringify(out));
 """
 
@@ -466,6 +515,35 @@ def test_the_session_card_offers_the_request_modes(tmp_path):
         ("fast", "fast", False),
         ("batch", "batch", False),
     ]
+
+
+def test_the_mode_gate_accepts_every_option_the_select_offers(tmp_path):
+    """The change handler and the fragment restore both reset a mode the
+    script's gate does not carry, so a mode dropped from `MODES` silently
+    unselects it for every interactive user while every gate stays green.
+
+    Driven over the served page's own option list through the real init run:
+    each offered option fires the select's change event and must come back as
+    the session's mode; the empty standard option and an unknown value must
+    reset it.
+    """
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    options = [option.get("value", "") for option in soup.select_one("#calc-mode").select("option")]
+    result = _node(
+        tmp_path,
+        {"cases": {}, "fragment": "#mode=no-such-mode", "modeChanges": options + ["no-such-mode"]},
+    )
+    # the script's gate list and the select's options are two lists that must
+    # stay one set: whole equality over the non-empty values, so a mode added
+    # to or dropped from either side reds
+    assert sorted(value for value in options if value) == sorted(result["modes"])
+    for value in options:
+        assert result["modeChanges"][value] == value, f"mode {value!r} reset by the gate"
+    assert result["modeChanges"]["no-such-mode"] == ""
+    # the fragment restore applies the same gate: a crafted fragment naming a
+    # mode neither list carries must land on standard, not on a ghost mode
+    assert result["state"]["mode"] == ""
 
 
 def _node_cases() -> dict[str, dict[str, object]]:

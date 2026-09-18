@@ -21,7 +21,7 @@ const DEFAULT_TOKENS = { input: 1000000, cached: 0, output: 0 };
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 /* the request modes the calculator offers; "" is the standard request. the
    row schema keeps `mode` an open string, but the page never invents modes */
-const MODES = ["fast", "batch"];
+export const MODES = ["fast", "batch"];
 
 function axisRate(rates, axis) {
   const value = rates === undefined || rates === null ? undefined : rates[axis];
@@ -345,7 +345,7 @@ export function reportReady(doc, wrap) {
   return true;
 }
 
-function init() {
+export function init() {
   const wrap = document.getElementById("models");
   const body = document.getElementById("models-body");
   const island = document.getElementById("flat-data");
