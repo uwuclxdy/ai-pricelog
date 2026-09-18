@@ -8188,6 +8188,15 @@
       },
       "vendor": "zai"
     },
+    "zai/glm-5.3-flashx": {
+      "curated": false,
+      "sources": {
+        "zai": [
+          "glm-5.3-flashx"
+        ]
+      },
+      "vendor": "zai"
+    },
     "zai/glm-ocr": {
       "curated": false,
       "sources": {

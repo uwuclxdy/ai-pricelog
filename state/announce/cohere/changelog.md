@@ -6,11 +6,9 @@ Small Translate , an open-weights mixture-of-experts model purpose-built for mac
 North Small Translate is designed to give researchers, developers, and enterprises flexible ways to evaluate and deploy machine translation while retaining control over their data and infrastructure.
 Key features Purpose-built translation : Optimized for machine translation across more than 50 languages and locale variants.
 Efficient MoE architecture : 218 billion total parameters with 25 billion active parameters.
-Flexible deployment : Available through the free-tier Chat V2 API, as FP8 open weights for non-commercial use, and through Model Vault with a commercial license.
-Private deployment : Suggested deployment hardware is two H100 GPUs or one B200 GPU.
-Technical details Model name : north-small-translate-1-0 Context length : 16K License : Creative Commons Attribution-NonCommercial 4.0 Open-weights format : FP8 Availability North Small Translate is available on the free tier through the Chat V2 API .
-The FP8 weights are available on Hugging Face for non-commercial use under the CC BY-NC 4.0 license.
-For production use, enterprises can purchase a commercial license and deploy North Small Translate through Model Vault .
+Flexible deployment : Available through the free-tier Chat V2 API and as open weights in W4A16, FP8, and BF16 for non-commercial use.
+Private deployment : Suggested deployment hardware by quantization format: W4A16 : Two H100s or one B200 FP8 : Four H100s or two B200s BF16 : Eight H100s or four B200s Technical details Model name : north-small-translate-1-0 Context length : 16K License : Creative Commons Attribution-NonCommercial 4.0 Open-weights formats : W4A16, FP8, and BF16 Availability North Small Translate is available on the free tier through the Chat V2 API .
+Open weights are available in W4A16, FP8, and BF16 on Hugging Face for non-commercial use under the CC BY-NC 4.0 license.
 For supported languages, use cases, and an API example, see the model documentation .
 Meet Cohere Parse Today we are releasing Cohere Parse .
 Parse (model ID: parse-v5.0 ) turns complex documents into clean, structured Markdown ready for downstream AI workflows.
