@@ -131,6 +131,7 @@
 {"schema":4,"source":"novita","model_id":"tencent/hy3","observed_at":"2026-07-06","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"url":"https://blogs.novita.ai/tencent-hy3-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"tencent/hy3","observed_at":"2026-07-21","rates":{"input":0.14,"output":0.58,"cache_read":0.035},"provenance":{"url":"https://usagepricing.com/blueprint/activity/novita-ai-2026-07-21-packaging"}}
 {"schema":4,"source":"novita","model_id":"tencent/hy3","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.58,"cache_read":0.035},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"tencent/hy4-preview","observed_at":"2026-09-17","rates":{"input":0.834,"output":2.501,"cache_read":0.042},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5","observed_at":"2026-08-26","rates":{"input":0.168,"output":0.336,"cache_read":0.0034},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5","observed_at":"2026-09-02","removed":true,"rates":{"input":0.168,"output":0.336,"cache_read":0.0034},"limits":{"context":1048576}}
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5-pro","observed_at":"2026-06-08","rates":{"input":0.522,"output":1.044,"cache_read":0.0043},"provenance":{"url":"https://blogs.novita.ai/xiaomi-mimo-v2-5-pro-api/"}}

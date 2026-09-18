@@ -4406,6 +4406,15 @@
       },
       "vendor": "sao10k"
     },
+    "novita/tencent/hy4-preview": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "tencent/hy4-preview"
+        ]
+      },
+      "vendor": "tencent"
+    },
     "novita/zai-org/autoglm-phone-9b-multilingual": {
       "curated": false,
       "sources": {
