@@ -8299,6 +8299,15 @@
       },
       "vendor": null
     },
+    "scaleway/qwen3.8-27b": {
+      "curated": false,
+      "sources": {
+        "scaleway": [
+          "qwen3.8-27b"
+        ]
+      },
+      "vendor": null
+    },
     "sonar": {
       "curated": true,
       "name": "Sonar",
