@@ -118,12 +118,15 @@ jobs:
         # run; the PRs stay open and a human looks. a silent green merge
         # failure is the bug class this step exists to close. if: always()
         # because the pass step is continue-on-error: the dispositions are
-        # already posted when the pass dies, and the merge must still run
+        # already posted when the pass dies, and the merge must still run.
+        # the script reads every open pricelog PR's marker, so a yes-marked
+        # PR a failed merge step stranded merges on a later data-changing
+        # run's merge step
         if: always()
         timeout-minutes: 10
         run: |
           [ -f .run-changed ] || { echo "run changed nothing; no merge"; exit 0; }
-          uv run ai-pricelog-merge-verified /tmp/run.log
+          uv run ai-pricelog-merge-verified
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
