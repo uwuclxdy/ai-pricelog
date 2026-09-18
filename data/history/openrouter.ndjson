@@ -398,6 +398,7 @@
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-08-26","rates":{"input":0.06,"output":0.06},"limits":{"context":8192},"provenance":{"name":"MythoMax 13B"}}
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-09-01","rates":{"input":0.35,"output":0.6},"limits":{"context":8192},"provenance":{"name":"MythoMax 13B"}}
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-09-02","rates":{"input":0.06,"output":0.06},"limits":{"context":8192},"provenance":{"name":"MythoMax 13B"}}
+{"schema":4,"source":"openrouter","model_id":"gryphe/mythomax-l2-13b","observed_at":"2026-09-16","rates":{"input":0.08,"output":0.11},"limits":{"context":8192},"provenance":{"name":"MythoMax 13B"}}
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomist-7b","observed_at":"2024-08-27","rates":{"input":0.375,"output":0.375},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomist-7b","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"ibm-granite/granite-4.0-h-micro","observed_at":"2025-12-28","rates":{"input":0.017,"output":0.11},"limits":{"context":131000},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826/https://openrouter.ai/api/v1/models"}}
