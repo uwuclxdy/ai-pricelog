@@ -6746,6 +6746,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3.8-27b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.8-27b:free"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/qwen/qwen3.8-max-0902": {
       "curated": false,
       "sources": {
