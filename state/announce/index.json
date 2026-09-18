@@ -60,8 +60,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "d1032971b5afb55b4134f581f2851addcb16d97253907a1dfb5806f2d2f1204c",
-      "fetched": "2026-09-09"
+      "sha256": "e29559e07347cfeefe7b89aae0be8033c8600ec71d2cbf3b11ebd54866c3a131",
+      "fetched": "2026-09-15"
     }
   },
   "mistral": {
@@ -119,13 +119,13 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "2dec4d0ff74999e692c806c6b5ba4fed78e489acdd0f13cf1084d07c48add03a",
+      "sha256": "1001b0a89e246af6cae813d2868f883fddbaa1b65d24d6292fdb131cff244f9c",
       "fetched": "2026-09-15"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "237dd3ea7da661c21746876062bfbf7ff659304d87080c9546926d956798ad3d",
-      "fetched": "2026-09-12"
+      "sha256": "ed2939444c9820134a6854966dde9fac7471ccbef768bfc602c9ccc5cfa2e4ea",
+      "fetched": "2026-09-15"
     }
   },
   "cloudflare": {
