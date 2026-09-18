@@ -1,5 +1,17 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 15, 2026" tags={["New releases"]}> ## Rollouts for dedicated model inference [Rollouts](/docs/dedicated-endpoints/rollouts) shift live traffic from one deployment to another under the same endpoint, without changing the endpoint URL.
+# Changelog <Update label="September 15, 2026" tags={["Deprecations"]}> ## Serverless model deprecations The following models are no longer available on [serverless](/docs/serverless/models): * `openai/gpt-oss-20b`.
+Recommended replacement: `Qwen/Qwen3.5-9B`.
+Supported by on-demand dedicated endpoints.
+* `google/gemma-4-31B-it`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+Supported by on-demand dedicated endpoints.
+* `thinkingmachines/Inkling-Small`.
+Recommended replacement: `zai-org/GLM-5.3-Flash`.
+Supported by on-demand dedicated endpoints.
+* `intfloat/multilingual-e5-large-instruct`.
+Not available as an on-demand dedicated endpoint.
+See [Deprecations](/docs/deprecations) for migration guidance.
+</Update> <Update label="September 15, 2026" tags={["New releases"]}> ## Rollouts for dedicated model inference [Rollouts](/docs/dedicated-endpoints/rollouts) shift live traffic from one deployment to another under the same endpoint, without changing the endpoint URL.
 Pick a canary, blue-green, or rolling strategy to determine how traffic moves, and optionally gate a canary rollout on [live metrics](/docs/dedicated-endpoints/rollout-metric-gates) so it pauses automatically if the new deployment regresses.
 Start a rollout with the `tg beta endpoints rollout` CLI command or from the endpoint's **Rollouts** tab in the console, then pause, resume, promote, or cancel it at any point while it runs.
 ## Together CLI v2.34.0 Version 2.34.0 of the Together CLI and Python SDK carries the rollouts release above (the SDK surface is `client.beta.endpoints.rollouts`) and also adds: * **[HIPAA placement](/docs/dedicated-endpoints/manage#compliance-policy):** `tg beta endpoints deploy` accepts `--placement.hipaa` to restrict a deployment to HIPAA-attested clusters.

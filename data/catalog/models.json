@@ -4136,6 +4136,15 @@
       },
       "vendor": "zai"
     },
+    "mistral/zai-glm-5-3": {
+      "curated": false,
+      "sources": {
+        "mistral": [
+          "zai-glm-5-3"
+        ]
+      },
+      "vendor": "zai"
+    },
     "moonshot/kimi-k2.7-code-highspeed": {
       "curated": false,
       "sources": {

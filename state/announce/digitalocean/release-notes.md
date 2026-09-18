@@ -188,9 +188,6 @@ You can enable it using doctl , the DigitalOcean API , or Terraform .
 The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.1 For more information, see the Available Models page .
 A Fedora 44 ( fedora-44-x64 ) Droplet base image is now available in the Control Panel and through the API.
 22 June The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.2 For more information, see the Available Models page .
-18 June To comply with Peru’s tax regulation for digital services , DigitalOcean charges Value Added Tax (VAT) for customers with a tax location in Peru, beginning on 1 June 2026.
-These charges appear on invoices issued on and after 1 July 2026.
-Learn more about taxes in Peru .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

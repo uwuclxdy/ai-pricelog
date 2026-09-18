@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "2f88ec3cb0ddc495d6fe55512a460fa8693ad19f69ad00bc791f1b0a586de2c2",
+      "sha256": "6639d8c1f29cbc013bed9751cabc0662d8fa1b66d8e5d0285a1e472a9bdc788b",
       "fetched": "2026-09-16"
     },
     "https://www.together.ai/blog/rss.xml": {
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "344d836aa18d91b05a4303e9e7faa4448963e83320acc62d0512bf48b5ff5a02",
+      "sha256": "487c21ef8b28b7acda762cbd4e664bdcbf2ad3583059452b307c866b1ae6c356",
       "fetched": "2026-09-16"
     }
   },
@@ -150,7 +150,7 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "a4512b1d032bcacf96da8068a8fa1506d7955d6117693ea520aeb7a7255b3d8b",
+      "sha256": "baa4df80553e649bf0dfb789a5892347a935771e6e7e0e8a3331c4b50a4d22f9",
       "fetched": "2026-09-16"
     }
   },
