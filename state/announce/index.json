@@ -7,8 +7,8 @@
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
-      "sha256": "aab931c7368ca4d51aaf64ee8c65fd7f6abf0ed9aa6a31df28a94d989ee2e1c6",
-      "fetched": "2026-09-10"
+      "sha256": "4ea64fa1d55593c0f9fe0c7248199927189d2906e692fd89514573e4ffda0764",
+      "fetched": "2026-09-17"
     }
   },
   "zai": {
