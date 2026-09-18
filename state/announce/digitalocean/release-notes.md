@@ -188,16 +188,6 @@ A Fedora 44 ( fedora-44-x64 ) Droplet base image is now available in the Control
 18 June To comply with Peru’s tax regulation for digital services , DigitalOcean charges Value Added Tax (VAT) for customers with a tax location in Peru, beginning on 1 June 2026.
 These charges appear on invoices issued on and after 1 July 2026.
 Learn more about taxes in Peru .
-17 June The following Xiaomi model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : MiMo-V2.5-Pro For more information, see the Available Models page .
-DigitalOcean Inference supports server-side tools on serverless inference, dedicated inference, and inference routers.
-You can add the following tools: Web search, web fetch, knowledge base retrieval, and remote MCP server tools to your requests in the Chat Completions and Responses APIs.
-Provider-native tools such as bash, text editor, computer use, and web fetch for Anthropic models with the Messages API .
-Function calling and tool search for OpenAI models on the Responses API, and Anthropic models on the Messages API.
-Web search and web fetch are in public preview .
-For more information, see Use Server-Side Tools .
-Updated CentOS Stream 9 and CentOS Stream 10 ( centos-stream-9-x64 , centos-stream-10-x64 ) Droplet base images require a minimum Droplet size of s-1vcpu-1gb .
-You cannot create Droplets with these images on the s-1vcpu-512mb-10gb plan because the image exceeds the available disk size for that plan.
-For more information, see Linux Images for Droplets .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

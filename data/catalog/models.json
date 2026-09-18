@@ -162,6 +162,15 @@
       },
       "vendor": "deepseek"
     },
+    "baseten/deepseek-v41-flash": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "deepseek-v41-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "baseten/glm-4-7": {
       "curated": false,
       "sources": {
