@@ -66,7 +66,7 @@ when the script fails: the merge step reds the run, every PR stays open, and not
 ## hard bans
 
 - never push the default branch except through `ai-pricelog-automerge` or the workflow's `merge verified PRs` step
-- never delete branch refs by hand
+- never delete a branch ref by hand while its PR is open; a ref whose PR is closed may be deleted
 - never mark a seed PR, a code PR, or a PR with unverified rows `automerge: yes`
 - never comment on PRs the run did not open
 - never edit rows on a branch except a row error you re-verified against the page (prompt.md step 5)
