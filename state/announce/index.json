@@ -37,12 +37,12 @@
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
       "sha256": "8261cc17ab28e3fb08a12d6145b21b0542cee618d4193ce2459ae09fa450def0",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "c6fca96636d25a517e1f897c45b67437ab5daa9a53bfd062378b63e873385583",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     }
   },
   "minimax": {
@@ -61,7 +61,7 @@
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
       "sha256": "e29559e07347cfeefe7b89aae0be8033c8600ec71d2cbf3b11ebd54866c3a131",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     }
   },
   "mistral": {
@@ -80,14 +80,14 @@
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "ea813fb776aba5f1732a0917194d6c781dc08c66319a430400142e4267b17963",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "67874ed8cfc9795ecb340a28c3406ecbb636ea93fbc8b03d07bca24d20ad4b0a",
-      "fetched": "2026-09-15"
+      "sha256": "2f88ec3cb0ddc495d6fe55512a460fa8693ad19f69ad00bc791f1b0a586de2c2",
+      "fetched": "2026-09-16"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -120,12 +120,12 @@
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
       "sha256": "1001b0a89e246af6cae813d2868f883fddbaa1b65d24d6292fdb131cff244f9c",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
       "sha256": "ed2939444c9820134a6854966dde9fac7471ccbef768bfc602c9ccc5cfa2e4ea",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     }
   },
   "cloudflare": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "363b288a4b2e868a71c3736ce1156650197794c6cdc5d4bb188193c3b08b9cac",
-      "fetched": "2026-09-15"
+      "sha256": "344d836aa18d91b05a4303e9e7faa4448963e83320acc62d0512bf48b5ff5a02",
+      "fetched": "2026-09-16"
     }
   },
   "scaleway": {
@@ -151,7 +151,7 @@
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
       "sha256": "7655acfcc17896af0f2ef26bfb8a96916951154a96a1d894aa38cd90378c7813",
-      "fetched": "2026-09-15"
+      "fetched": "2026-09-16"
     }
   },
   "databricks": {
