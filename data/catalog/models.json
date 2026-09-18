@@ -1800,6 +1800,15 @@
       },
       "vendor": "anthropic"
     },
+    "digitalocean/claude-opus-4.8-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-opus-4.8-fast-mode"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "digitalocean/claude-opus-5-fast-mode": {
       "curated": false,
       "sources": {
@@ -1808,6 +1817,15 @@
         ]
       },
       "vendor": "anthropic"
+    },
+    "digitalocean/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
     },
     "digitalocean/gemma-4": {
       "curated": false,
@@ -1818,11 +1836,254 @@
       },
       "vendor": "google"
     },
+    "digitalocean/gpt-4.1-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-4.1-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-4o-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-4o-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-4o-mini-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-4o-mini-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5-mini-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5-mini-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5-mini-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5-mini-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5-nano-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5-nano-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.2-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.2-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.2-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.2-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.3-codex-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.3-codex-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-mini-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-mini-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-mini-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-mini-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-nano-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-nano-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.4-pro-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.4-pro-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.5-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.5-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.5-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.5-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-luna-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-luna-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-luna-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-luna-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-sol-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-sol-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-sol-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-sol-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-terra-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-terra-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-5.6-terra-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-5.6-terra-flex-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
     "digitalocean/gpt-6-astra": {
       "curated": false,
       "sources": {
         "digitalocean": [
           "gpt-6-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6-astra-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6-astra-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6-astra-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6-astra-flex-mode"
         ]
       },
       "vendor": "openai"
@@ -1880,6 +2141,24 @@
         ]
       },
       "vendor": "nvidia"
+    },
+    "digitalocean/o3-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "o3-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/o3-flex-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "o3-flex-mode"
+        ]
+      },
+      "vendor": "openai"
     },
     "digitalocean/qwen-3.5-397b-a17b": {
       "curated": false,
