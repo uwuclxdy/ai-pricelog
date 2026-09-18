@@ -32,8 +32,6 @@ See the [Agent API Models reference](/docs/agent-api/models).
 See pricing in the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **NVIDIA Nemotron 3 Ultra** The Agent API and Router API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
-</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **DeepSeek V4 Flash 0731** The Agent API and Router API now support `perplexity/deepseek-v4-flash-0731`, a fast, efficient open reasoning model with a 1M-token context window.
-See pricing in the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="July 2026" tags={["Agent API", "Models", "Pricing"]}> **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
 GPT-5.6 Terra now costs \$2 per million input tokens and \$12 per million output tokens.
 GPT-5.6 Sol now supports Fast mode at 2× standard token pricing; send `service_tier: "priority"` to use it.
@@ -67,7 +65,6 @@ See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="June 2026" tags={["Agent API", "Models"]}> **Agent API: New Models** The Agent API expanded model coverage this month, all with direct first-party token pricing.
 See the full list in the [Agent API Models reference](/docs/agent-api/models).
 * **Claude Sonnet 5** — `anthropic/claude-sonnet-5`, Anthropic's latest Sonnet model.
-* **GLM 5.2** — `perplexity/glm-5.2`, Z.AI's flagship reasoning model.
 * **Kimi K2.7 Code** — `perplexity/kimi-k2.7-code`, Moonshot AI's coding and agentic model.
 * **Nemotron 3 Super** — `nvidia/nemotron-3-super-120b-a12b`, NVIDIA's open-weight reasoning model.
 </Update> <Update label="May 2026" tags={["Agent API", "Models"]}> **Agent API: New Models** The Agent API added support for several new third-party models this month, all with direct first-party token pricing.
