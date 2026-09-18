@@ -60,7 +60,7 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "e29559e07347cfeefe7b89aae0be8033c8600ec71d2cbf3b11ebd54866c3a131",
+      "sha256": "b8f2b4086f4eb373f630fd6f3f9d4a28e073e671fd00b7493231452e7e93483f",
       "fetched": "2026-09-18"
     }
   },
