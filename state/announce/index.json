@@ -29,8 +29,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "e3b6ed5b98047d03a501de70b85dd12657c1af905865fb5d8289764298397cf8",
-      "fetched": "2026-09-03"
+      "sha256": "ca3993d6ec5aa854503d4d96ee33239568045fa3719f4eaba8da5ac3da98b2bf",
+      "fetched": "2026-09-18"
     }
   },
   "moonshot": {
