@@ -4934,6 +4934,15 @@
       },
       "vendor": "deepseek"
     },
+    "openrouter/deepseek/deepseek-v4-flash-0731:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepseek/deepseek-v4-flash-0731:free"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "openrouter/deepseek/deepseek-v4-flash-vision-exp:batch": {
       "curated": false,
       "sources": {
