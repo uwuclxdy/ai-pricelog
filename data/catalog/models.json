@@ -4448,6 +4448,15 @@
       },
       "vendor": "openai"
     },
+    "openai/chatgpt-image-latest": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "chatgpt-image-latest"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openai/davinci-002": {
       "curated": false,
       "sources": {
@@ -4498,6 +4507,60 @@
       "sources": {
         "openai": [
           "gpt-6-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-1": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-1"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-1-mini": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-1-mini"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-1.5": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-1.5"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-2": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-2"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-2.5-flare": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-2.5-flare"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-2.5-sunburst"
         ]
       },
       "vendor": "openai"

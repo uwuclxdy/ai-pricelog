@@ -41,7 +41,7 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "ff4d07a6c6db1136488b38828a4a75910784763a7a7d5da3134fbe20a247742d",
+      "sha256": "357b63590e16969d8f3c0de948438db812e355f3994da57b1a72c475b8562451",
       "fetched": "2026-09-15"
     }
   },
@@ -119,8 +119,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "4e53a5b3a2e0f70d59b61aae4b4937aba4789d7f075908e8859ed233d10d2d2c",
-      "fetched": "2026-09-07"
+      "sha256": "2dec4d0ff74999e692c806c6b5ba4fed78e489acdd0f13cf1084d07c48add03a",
+      "fetched": "2026-09-15"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
