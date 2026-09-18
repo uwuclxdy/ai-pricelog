@@ -6881,6 +6881,15 @@
       },
       "vendor": "thinkingmachines"
     },
+    "openrouter/unbiased/pareto": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "unbiased/pareto"
+        ]
+      },
+      "vendor": "unbiased"
+    },
     "openrouter/undi95/remm-slerp-l2-13b": {
       "curated": false,
       "sources": {
