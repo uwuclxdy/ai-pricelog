@@ -6872,6 +6872,15 @@
       },
       "vendor": "stealth"
     },
+    "openrouter/stealth/union-alpha": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "stealth/union-alpha"
+        ]
+      },
+      "vendor": "stealth"
+    },
     "openrouter/stepfun/step-3.5-flash": {
       "curated": false,
       "sources": {

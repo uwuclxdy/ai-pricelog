@@ -1154,6 +1154,7 @@
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-20","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"url":"https://tech.yahoo.com/ai/articles/mystery-ai-model-ox-alpha-121212892.html"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"name":"Ox Alpha"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-29","removed":true}
+{"schema":4,"source":"openrouter","model_id":"stealth/union-alpha","observed_at":"2026-09-16","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Union Alpha"}}
 {"schema":4,"source":"openrouter","model_id":"stepfun/step-3.5-flash","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.3},"limits":{"context":262144},"provenance":{"name":"Step 3.5 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"stepfun/step-3.7-flash","observed_at":"2026-08-26","rates":{"input":0.2,"output":1.15,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Step 3.7 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"tencent/hunyuan-a13b-instruct","observed_at":"2025-09-22","rates":{"input":0.03,"output":0.03},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
