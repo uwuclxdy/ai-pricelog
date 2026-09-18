@@ -48,7 +48,7 @@ a confirmed deprecation or retirement of priced models (the channel prose names 
 
 ## the merge
 
-after every PR is judged and every comment posted, your part is done: you never run the merge. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after the pass — even a pass killed at its step timeout — which reads the run log for this run's PRs, reads each open PR's comments for the pass's marker, and hands the eligible branches to `ai-pricelog-automerge` in PR-number order, oldest PR first, newest last. the script:
+after every PR is judged and every comment posted, your part is done: you never run the merge. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after the pass — even a pass killed at its step timeout — which reads every open `pricelog/` PR's comments for the pass's marker and hands the eligible branches to `ai-pricelog-automerge` in PR-number order, oldest PR first, newest last; a yes-marked PR a failed merge step stranded stays eligible and merges on a later data-changing run's merge step. the script:
 
 - refuses a checkout that is not the default branch (or at its remote tip): every pricelog branch is a base descendant, so a merge started elsewhere would push as a fast-forward and ride that branch's own unverified commits into the default branch's history
 - refuses non-`pricelog/` branches, the seed branch, and any branch touching files outside the pipeline set
@@ -61,7 +61,7 @@ after every PR is judged and every comment posted, your part is done: you never 
 
 github auto-marks each PR merged once its head lands in the default branch. the merge writes no derived file: the publish workflow owns the `dist` branch and the README stats outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
 
-when the script fails: the merge step reds the run, every PR stays open, and nothing is retried. the next run re-derives the rows.
+when the script fails: the merge step reds the run, every PR stays open, and this run retries nothing — a yes-marked PR stays eligible, and the next data-changing run's merge step picks it up. the next run re-derives the rows.
 
 ## hard bans
 
