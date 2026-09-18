@@ -90,3 +90,112 @@ def test_main_prints_warning_without_gh_env(monkeypatch, tmp_path, capsys):
 
 def test_main_usage_error():
     assert health.main([]) == 2
+
+
+def test_close_recovered_closes_only_passed_providers(monkeypatch):
+    calls: list[list[str]] = []
+    rows = (
+        '[{"number": 1, "title": "provider broken: ai21"},'
+        ' {"number": 2, "title": "provider broken: digitalocean"},'
+        ' {"number": 3, "title": "review pass dead"}]'
+    )
+    monkeypatch.setattr(health, "_gh", lambda args: calls.append(args) or rows)
+    now = {"digitalocean": {"hard": ["a"], "soft": []}}
+    assert health.close_recovered(now) == ["provider broken: ai21"]
+    assert calls == [
+        ["issue", "list", "--state", "open", "--json", "number,title"],
+        [
+            "issue",
+            "close",
+            "1",
+            "--comment",
+            "recovered: `ai21` detects and scrapes clean again",
+        ],
+    ]
+
+
+def test_close_recovered_skips_broken_issue_list_failure(monkeypatch):
+    monkeypatch.setattr(health, "_gh", lambda args: "not json")
+    assert health.close_recovered({}) == []
+
+
+def test_sync_pass_dead_issue_opens_once(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        health,
+        "_gh",
+        lambda args: (
+            calls.append(args)
+            or (
+                '[{"number": 7, "title": "review pass dead"}]'
+                if args[0] == "issue" and args[1] == "list"
+                else ""
+            )
+        ),
+    )
+    run_url = "https://github.com/uwuclxdy/ai-pricelog/actions/runs/42"
+    assert health.sync_pass_dead_issue("dead", run_url) is None
+    assert [c for c in calls if c[:2] != ["issue", "list"]] == []
+    # now with no open issue: it creates one
+    calls.clear()
+    monkeypatch.setattr(health, "_gh", lambda args: calls.append(args) or "[]")
+    assert health.sync_pass_dead_issue("dead", run_url) == "opened"
+    created = next(c for c in calls if c[1] == "create")
+    assert created[3] == "review pass dead"
+    assert "ANTHROPIC_BASE_URL" in created[5] and run_url in created[5]
+
+
+def test_sync_pass_dead_issue_closes_on_alive(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        health,
+        "_gh",
+        lambda args: (
+            calls.append(args)
+            or ('[{"number": 7, "title": "review pass dead"}]' if args[1] == "list" else "")
+        ),
+    )
+    assert health.sync_pass_dead_issue("alive", "https://x/actions/runs/42") == "closed"
+    assert calls[-1] == [
+        "issue",
+        "close",
+        "7",
+        "--comment",
+        "the pass completed clean on a data-changing run; closing",
+    ]
+
+
+def test_sync_pass_dead_issue_none_untouched(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(health, "_gh", lambda args: calls.append(args) or "[]")
+    assert health.sync_pass_dead_issue(None, "https://x/actions/runs/42") is None
+    assert calls == []
+
+
+def test_main_pass_dead_flag_opens_ping_issue(monkeypatch, tmp_path):
+    # drives main() end to end: the --pass-dead flag must reach the issue
+    # sync as "dead" (the one-line wiring a direct sync call cannot pin)
+    calls: list[list[str]] = []
+    log_path = tmp_path / "run.log"
+    log_path.write_text("", encoding="utf-8")
+
+    def gh(args: list[str]) -> str:
+        calls.append(args)
+        return '{"workflow_runs": []}' if args[0] == "api" else "[]"
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
+    assert health.main([str(log_path), "--pass-dead"]) == 0
+    created = [c for c in calls if c[:2] == ["issue", "create"]]
+    assert len(created) == 1
+    assert created[0][3] == "review pass dead"
+
+
+def test_sync_pass_dead_issue_list_failure_never_creates(monkeypatch):
+    # a broken listing must read as "cannot dedupe", never as "no issue
+    # open": creating on a broken list would duplicate the ping every run
+    calls: list[list[str]] = []
+    monkeypatch.setattr(health, "_gh", lambda args: calls.append(args) or "not json")
+    assert health.sync_pass_dead_issue("dead", "https://x/actions/runs/42") is None
+    assert [c for c in calls if c[:2] == ["issue", "create"]] == []

@@ -87,6 +87,7 @@ jobs:
           set +e
           claude -p --output-format stream-json --verbose --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
           pass_rc=$?
+          echo "$pass_rc" > /tmp/pass.rc
           set -e
           # grep, never rg: the github runner image ships no rg (observed
           # 2026-09-09: the check died "command not found" inside the if,
@@ -95,10 +96,11 @@ jobs:
           # every healthy run too (a base-url model outside the client
           # catalog), so it is NOT a failure signature on its own
           if grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
-            echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
+            echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_BASE_URL / ANTHROPIC_MODEL."
           fi
           # a cancelled or crashed pass is also silent shipping: the step
-          # is continue-on-error, so the job reads green either way
+          # is continue-on-error, so the job reads green either way — the
+          # fail-on-a-dead-review-pass step below reds it
           if [ "$pass_rc" -ne 0 ]; then
             echo "::warning::the claude pass exited $pass_rc; rows shipped unverified. read the pass log in this run."
           fi
@@ -125,9 +127,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: fail on a dead review pass
+        # a pass that dies on a data-changing run ships rows unverified and
+        # leaves the merge without dispositions: red, never a green with
+        # warnings (the class this step exists to close; measured
+        # 2026-09-18: 5 days of green runs piled up 33 unreviewed PRs). the
+        # merge step above already ran, so redding here can never orphan a
+        # merge. a killed pass never writes /tmp/pass.rc, which reads as
+        # dead here and in the health step.
+        if: always()
+        run: |
+          [ -f .run-changed ] || exit 0
+          if [ ! -f /tmp/pass.rc ] || [ "$(cat /tmp/pass.rc)" != "0" ]; then
+            echo "::error::the claude pass died on a run that changed data; rows shipped unverified. read the pass log in this run."
+            exit 1
+          fi
+
       - name: provider health check
         if: always()
-        run: uv run ai-pricelog-health /tmp/run.log
+        run: |
+          args=(/tmp/run.log)
+          if [ -f .run-changed ]; then
+            if [ ! -f /tmp/pass.rc ] || [ "$(cat /tmp/pass.rc)" != "0" ]; then
+              args+=(--pass-dead)
+            else
+              args+=(--pass-alive)
+            fi
+          fi
+          uv run ai-pricelog-health "${args[@]}"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 

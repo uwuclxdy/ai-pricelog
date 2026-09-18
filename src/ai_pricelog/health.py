@@ -7,7 +7,10 @@ github issue per provider that failed hard in two consecutive runs (the
 @-mention is what reaches the owner). hard = the detector or a scrape
 raised, so the provider is blind or its rows are rejected; soft = detect,
 parse and row-build skips and validation rejects (additive drift, the
-provider stays alive).
+provider stays alive). a provider that passed this run closes its own
+`provider broken: <key>` issue (recovery). the pass state flags sync the
+`review pass dead` ping issue: opened when the pass died on a
+data-changing run, closed on the next clean data-changing pass.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 ISSUE_PREFIX = "provider broken: "
+PASS_DEAD_TITLE = "review pass dead"
 
 # (pattern, class, fixed provider key or None when the pattern carries the key)
 _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
@@ -123,11 +127,110 @@ def open_issues(
     return created
 
 
+def _open_issue_rows() -> list[tuple[int, str]] | None:
+    """(number, title) of the open issues, or None when the gh call fails.
+
+    None is distinct from []: a failed listing must never read as "no issue
+    open", or the dedupe would create duplicates on every dead run.
+    """
+    raw = _gh(["issue", "list", "--state", "open", "--json", "number,title"])
+    try:
+        rows = json.loads(raw)
+        return [(int(row["number"]), str(row["title"])) for row in rows]
+    except (json.JSONDecodeError, KeyError, ValueError):
+        return None
+
+
+def close_recovered(now: dict[str, dict[str, list[str]]]) -> list[str]:
+    """close open provider-broken issues whose provider passed this run.
+
+    an issue closes only when this run saw no hard failure for its key; a
+    provider that flaps re-opens on the next two-consecutive streak.
+    """
+    rows = _open_issue_rows()
+    if rows is None:
+        return []
+    closed: list[str] = []
+    for number, title in rows:
+        if not title.startswith(ISSUE_PREFIX):
+            continue
+        key = title[len(ISSUE_PREFIX) :]
+        if now.get(key, {}).get("hard"):
+            continue
+        _gh(
+            [
+                "issue",
+                "close",
+                str(number),
+                "--comment",
+                f"recovered: `{key}` detects and scrapes clean again",
+            ]
+        )
+        closed.append(title)
+    return closed
+
+
+def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
+    """open or close the pass-death ping issue; None when nothing changed.
+
+    pass_state: "alive" (the pass finished clean on a data-changing run),
+    "dead" (it exited nonzero or never ran to completion), or None (the
+    run changed nothing, so the pass never ran and the issue is left alone).
+    """
+    if pass_state is None:
+        return None
+    rows = _open_issue_rows()
+    if rows is None:
+        return None
+    numbers = [number for number, title in rows if title == PASS_DEAD_TITLE]
+    if pass_state == "dead" and not numbers:
+        _gh(
+            [
+                "issue",
+                "create",
+                "--title",
+                PASS_DEAD_TITLE,
+                "--body",
+                f"@uwuclxdy the claude review pass died on [this run]({run_url}): "
+                "the run's new rows got no review and no merge, and the PR "
+                "queue piles up until the pass is fixed.\n\n"
+                "rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_BASE_URL / "
+                "ANTHROPIC_MODEL.",
+            ]
+        )
+        return "opened"
+    if pass_state == "alive" and numbers:
+        for number in numbers:
+            _gh(
+                [
+                    "issue",
+                    "close",
+                    str(number),
+                    "--comment",
+                    "the pass completed clean on a data-changing run; closing",
+                ]
+            )
+        return "closed"
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        print(f"usage: {Path(sys.argv[0]).name} <run-log>", file=sys.stderr)
+    if not 1 <= len(args) <= 2:
+        print(
+            f"usage: {Path(sys.argv[0]).name} <run-log> [--pass-alive|--pass-dead]",
+            file=sys.stderr,
+        )
         return 2
+    pass_state: str | None = None
+    if len(args) == 2:
+        if args[1] not in ("--pass-alive", "--pass-dead"):
+            print(
+                f"usage: {Path(sys.argv[0]).name} <run-log> [--pass-alive|--pass-dead]",
+                file=sys.stderr,
+            )
+            return 2
+        pass_state = args[1].removeprefix("--pass-")
     now = parse_log(Path(args[0]).read_text(encoding="utf-8").splitlines())
     annotation = warning(now)
     if annotation is not None:
@@ -135,6 +238,12 @@ def main(argv: list[str] | None = None) -> int:
     repo = os.environ.get("GITHUB_REPOSITORY")
     run_id = os.environ.get("GITHUB_RUN_ID")
     if repo and run_id:
+        run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+        pass_action = sync_pass_dead_issue(pass_state, run_url)
+        if pass_action is not None:
+            print(f"::warning::{pass_action} issue {PASS_DEAD_TITLE}")
+        for title in close_recovered(now):
+            print(f"::warning::closed issue {title}")
         previous = previous_run(repo, run_id)
         if previous is not None:
             prev_id, prev_lines = previous
@@ -142,7 +251,7 @@ def main(argv: list[str] | None = None) -> int:
                 repo,
                 now,
                 parse_log(prev_lines),
-                f"https://github.com/{repo}/actions/runs/{run_id}",
+                run_url,
                 f"https://github.com/{repo}/actions/runs/{prev_id}",
             )
             for title in created:
