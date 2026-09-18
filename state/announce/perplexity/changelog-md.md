@@ -1,13 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.perplexity.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog > Updates to the Perplexity API platform.
-<Tip> Looking ahead?
+# Changelog <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Agent API", "Connectors"]}> **Custom connectors: Bring your own MCP server** Register a remote MCP server once on your [Project connectors page](https://console.perplexity.ai/project/connectors).
-Perplexity stores the server's credential, so your application does not need to store or send it with each request.
-Use the generated connector ID with `type: "connector"` in Agent API requests.
-Custom connectors are available to all Projects and support API-key or no authentication, with Streamable HTTP or SSE transport.
-See [Add a custom connector](/docs/agent-api/tools/connectors#add-a-custom-connector).
-</Update> <Update label="September 2026" tags={["MCP", "Security"]}> **Sign in with Perplexity for the remote MCP server** The [remote Perplexity MCP Server](/docs/getting-started/integrations/mcp-server) now supports OAuth.
+</Tip> <Update label="September 2026" tags={["MCP", "Security"]}> **Sign in with Perplexity for the remote MCP server** The [remote Perplexity MCP Server](/docs/getting-started/integrations/mcp-server) now supports OAuth.
 Add `https://api.perplexity.ai/mcp` to any MCP client that supports OAuth, such as claude.ai, Claude Code, Cursor, or VS Code, and sign in with your Perplexity account instead of pasting an API key.
 You choose which API organization to bill during sign-in.
 API keys continue to work for clients without OAuth support.

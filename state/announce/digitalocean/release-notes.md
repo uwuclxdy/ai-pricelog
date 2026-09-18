@@ -199,6 +199,8 @@ You cannot create Droplets with these images on the s-1vcpu-512mb-10gb plan beca
 For more information, see Linux Images for Droplets .
 16 June Released v1.162.0 of doctl , the official DigitalOcean CLI.
 This release adds support for the PostgreSQL and MySQL Advanced Edition engines, advanced_pg and advanced_mysql , in the databases commands.
+15 June The following Anthropic models are deprecated from DigitalOcean Inference as of 15 June 2026: Claude Opus 4 Claude Sonnet 4 Migrate to Claude Opus 4.8 ( anthropic-claude-opus-4.8 ) and Claude Sonnet 4.6 ( anthropic-claude-4.6-sonnet ), respectively, to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

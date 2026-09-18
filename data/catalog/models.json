@@ -7905,6 +7905,15 @@
       },
       "vendor": null
     },
+    "together/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "together/gemma-3n-e4b-instruct": {
       "curated": false,
       "sources": {

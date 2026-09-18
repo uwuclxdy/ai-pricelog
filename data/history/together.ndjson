@@ -7,6 +7,7 @@
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro-0813","observed_at":"2026-08-17","rates":{"input":1.32,"output":3.96,"cache_read":0.13},"limits":{"context":1048576},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro-0813","observed_at":"2026-08-26","rates":{"input":1.32,"output":3.96,"cache_read":0.13},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"deepseek-v4.1-flash","observed_at":"2026-09-13","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"gemma-3n-e4b-instruct","observed_at":"2025-09-17","rates":{"input":0.02,"output":0.04},"provenance":{"url":"https://arquivo.pt/wayback/20250917033000id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"gemma-3n-e4b-instruct","observed_at":"2025-12-27","rates":{"input":0.02,"output":0.04},"provenance":{"url":"https://arquivo.pt/wayback/20251227224619id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"gemma-3n-e4b-instruct","observed_at":"2026-04-15","rates":{"input":0.06,"output":0.12},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
