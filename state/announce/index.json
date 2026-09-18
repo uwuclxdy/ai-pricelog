@@ -91,8 +91,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "3cd8bde2e05b4a19a15ce1aa0baa21a18678a84911f8e30b3ff011abfc49695f",
-      "fetched": "2026-09-12"
+      "sha256": "68ff9d1aeb09c88ab0de37203c179abfc0deecc4f95036732412aefb41afa868",
+      "fetched": "2026-09-16"
     }
   },
   "novita": {
@@ -112,8 +112,8 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "d9506e8c0bce052c01140496c034d3c7a728e990bc9bffb73f0c1fd25ae43834",
-      "fetched": "2026-09-13"
+      "sha256": "970b65cdff1abcb54c56f1ed89e2d0de7fed46f06bd6819306040329e6e2cba4",
+      "fetched": "2026-09-16"
     }
   },
   "google": {
