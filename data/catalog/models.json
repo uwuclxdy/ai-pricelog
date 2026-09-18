@@ -18,6 +18,42 @@
       },
       "vendor": "ai21"
     },
+    "amazon/amazon.nova-lite-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-lite-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "amazon/amazon.nova-micro-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-micro-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "amazon/amazon.nova-premier-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-premier-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "amazon/amazon.nova-pro-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-pro-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
     "anthropic/claude-3-5-haiku-20241022": {
       "curated": false,
       "sources": {
