@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 14
+    assert len(rules) == 15
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
