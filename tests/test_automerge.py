@@ -216,6 +216,33 @@ def test_merge_lands_union(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_sanitizes_a_literal_newline_escape_subject(tmp_path):
+    # the pass's hand-edit commits can carry their message as one line with
+    # literal \n\n escapes (a double-escaped -m); the merge commit must keep
+    # the true subject line, never forward the escapes to git
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    git(repo, "switch", "pricelog/alpha-00000000")
+    git(
+        repo,
+        "commit",
+        "--amend",
+        "-m",
+        "fix: correct transient rates\\n\\nCo-Authored-By: Claude Code <noreply@anthropic.com>",
+    )
+    git(repo, "push", "--force-with-lease", "origin", "pricelog/alpha-00000000")
+    git(repo, "switch", "main")
+    assert "\\n" in git(repo, "log", "-1", "--format=%s", "pricelog/alpha-00000000")
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    assert git(repo, "log", "-1", "--format=%s").strip() == "fix: correct transient rates"
+
+
 def test_merge_re_sorts_the_shard_it_unions(tmp_path):
     # the union appends the branch's lines at the end. without a re-sort the
     # merged shard on the default branch loses the (model_id, observed_at)

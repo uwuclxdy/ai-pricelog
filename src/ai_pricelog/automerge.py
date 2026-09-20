@@ -802,11 +802,17 @@ def merge_branches(
         # the staged tree must carry no conflict markers (a file both sides
         # changed that this merge does not own would stage them)
         runner.run(["git", "diff", "--cached", "--check"], cwd=repo_root)
-        # the merge commit keeps the branch's own subject: the repo convention
-        # for burst merges is one commit per branch, subject as the branch's
-        subject = runner.run(
-            ["git", "log", "--format=%s", "-1", f"origin/{branch}"], cwd=repo_root
-        ).strip()
+        # the pass's hand-edit commits can carry their whole message as one
+        # line with literal \n\n escapes (a double-escaped -m); forwarded
+        # verbatim, the merge commit aborts as empty (measured 2026-09-20,
+        # PR 261). keep the true subject only.
+        subject = (
+            runner.run(["git", "log", "--format=%s", "-1", f"origin/{branch}"], cwd=repo_root)
+            .split("\\n", 1)[0]
+            .strip()
+        )
+        if not subject:
+            subject = f"chore(data): merge {branch}"
         runner.run(
             ["git", "commit", "-m", subject or f"merge: {branch}"],
             cwd=repo_root,
