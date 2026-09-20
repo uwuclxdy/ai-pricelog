@@ -86,17 +86,19 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
 
 def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
     """parse every <DocTable> block's columns/rows props; [] when the page
-    carries none."""
+    carries none. each block's prop scan is bounded at the next <DocTable>,
+    so a block missing a prop raises instead of borrowing a later block's."""
     docs: list[tuple[list[str], list[list[str]]]] = []
     start = 0
     while True:
         position = text.find("<DocTable", start)
         if position == -1:
             break
+        next_position = text.find("<DocTable", position + 1)
+        block = text[position : next_position if next_position != -1 else len(text)]
         start = position + 1
-        tail = text[position:]
-        columns_text = _jsx_prop(tail, "columns")
-        rows_text = _jsx_prop(tail, "rows")
+        columns_text = _jsx_prop(block, "columns")
+        rows_text = _jsx_prop(block, "rows")
         if columns_text is None or rows_text is None:
             raise FetchError("DocTable block is missing columns or rows props")
         try:

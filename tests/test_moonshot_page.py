@@ -194,10 +194,13 @@ def test_scrape_page_without_model_table_raises(monkeypatch):
 
 
 def test_scrape_skips_non_pricing_table(monkeypatch):
-    # a non-pricing DocTable beside the pricing one is skipped, not a failure;
-    # it sits LAST so the pre-fix last-block-only read cannot pass this
-    page_text = (FIXTURES / "chat.md").read_text() + (
+    # non-pricing DocTables on both sides of the pricing one are skipped, not
+    # a failure; the leading one executes _pricing's no-Model-column branch,
+    # the trailing one makes the pre-fix last-block-only read fail
+    page_text = (
         '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
+        + (FIXTURES / "chat.md").read_text()
+        + '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
     )
 
     def fake(url: str) -> str:
@@ -211,6 +214,27 @@ def test_scrape_skips_non_pricing_table(monkeypatch):
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_malformed_block_does_not_borrow_later_props(monkeypatch):
+    # a block missing its rows prop must raise, not adopt the next block's
+    # rows and silently return swapped rates
+    page_text = (
+        "<DocTable\n"
+        '  columns={[{ title: "Model" }, { title: "Input Price" }, { title: "Output Price" }]}\n'
+        "/>\n" + (FIXTURES / "chat.md").read_text()
+    )
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return page_text
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(FetchError, match="missing columns or rows props"):
+        scraper.scrape(cfg(), "kimi-k3")
 
 
 def test_scrape_index_fetched_once(monkeypatch):
