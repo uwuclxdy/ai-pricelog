@@ -69,6 +69,8 @@ jobs:
         # must die early enough that the tripwire below still runs
         timeout-minutes: 50
         run: |
+          # pipefail so pass_rc below is claude's status, never tee's
+          set -o pipefail
           [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
           npm install -g @anthropic-ai/claude-code@2 >/dev/null
           {
@@ -85,7 +87,12 @@ jobs:
           # on the events it emitted; plain -p buffers everything until the
           # end and a killed pass left zero output
           set +e
-          claude -p --output-format stream-json --verbose --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
+          # the runner's step kill lands on the entry process alone
+          # (actions/runner ProcessInvoker.cs, NixKillProcessTree), so a hung
+          # CLI whose subprocesses survive it outlives the step cap; the inner
+          # timeout signals the whole group (TERM, KILL after 15 s) and, orphaned
+          # by the runner's ladder, still fires past it
+          timeout -k 15 50m claude -p --output-format stream-json --verbose --allowedTools "Read" "Edit" "Bash(gh:*)" "Bash(git:*)" "WebFetch" "WebSearch" < /tmp/prompt.md 2>&1 | tee /tmp/pass.log
           pass_rc=$?
           echo "$pass_rc" > /tmp/pass.rc
           set -e
