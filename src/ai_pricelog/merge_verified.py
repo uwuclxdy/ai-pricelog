@@ -55,6 +55,31 @@ def _pricelog_head(head_ref: str) -> bool:
     return head_ref.startswith("pricelog/") and head_ref != automerge.SEED_BRANCH
 
 
+def _present_refs(
+    runner: pr.PrRunner, repo_root: Path, heads: list[str]
+) -> tuple[list[str], list[str]]:
+    """Split head refs into those whose branch still resolves on the remote.
+
+    A sibling run can merge a PR and delete its branch while github has not
+    closed the PR yet, so the open list names a ref with nothing behind it.
+    its rows are already landed (or its branch is gone for good), so it must
+    skip the merge rather than red the whole run (observed 2026-09-20: the
+    19:00 run red'd on an 18:55 PR mid-close, stranding the newer PR).
+
+    The remote is queried, never the checkout's stale tracking refs: the
+    workflow fetched at checkout time, minutes before this runs, so a ref
+    pushed or deleted by a sibling since then is invisible to `rev-parse`.
+    A remote or auth error raises and reds the run rather than reading as
+    "nothing to merge".
+    """
+    present: list[str] = []
+    gone: list[str] = []
+    for head in heads:
+        out = runner.run(["git", "ls-remote", "origin", head], cwd=repo_root).strip()
+        (present if out else gone).append(head)
+    return present, gone
+
+
 def eligible_branches(
     open_prs: Iterable[tuple[int, str]],
     dispositions: Mapping[int, bool | None],
@@ -131,6 +156,13 @@ def main(argv: list[str] | None = None) -> int:
         ]
         if not candidates:
             print("no open pricelog PRs; nothing to merge")
+            return 0
+        present, gone = _present_refs(runner, repo_root, [head for _number, head in candidates])
+        for head in gone:
+            print(f"skipping {head}: branch ref deleted, PR mid-close")
+        candidates = [c for c in candidates if c[1] in present]
+        if not candidates:
+            print("no open pricelog PR with a live branch; nothing to merge")
             return 0
         bot_login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=repo_root).strip()
         dispositions = {

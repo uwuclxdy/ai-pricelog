@@ -119,6 +119,7 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
         ),
     )
     runner.on("repo view", output="mommy\n")
+    runner.on("pricelog/stale-99999999", output="a" * 40 + "\n")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
 
@@ -129,3 +130,96 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
     monkeypatch.setattr(automerge, "merge_branches", _fake_merge)
     assert merge_verified.main([]) == 0
     assert calls == [(["pricelog/stale-99999999"], "mommy", True)]
+
+
+def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
+    # a sibling run merged a PR and deleted its branch while github has not
+    # closed it yet: the open list still names it, but there is nothing to
+    # merge. the run must skip it, never red on the dangling ref (observed
+    # 2026-09-20: the 19:00 run red'd on an 18:55 PR mid-close)
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [
+                {"number": 278, "headRefName": "pricelog/gone-12345678"},
+                {"number": 279, "headRefName": "pricelog/live-87654321"},
+            ]
+        ),
+    )
+    runner.on("api user", output="uwuclxdybot\n")
+    runner.on(
+        "pr view 278",
+        output=json.dumps(
+            {
+                "comments": [
+                    {
+                        "author": {"login": "uwuclxdybot"},
+                        "body": "automerge: yes",
+                        "createdAt": "2026-09-20T19:05:00Z",
+                    }
+                ]
+            }
+        ),
+    )
+    runner.on(
+        "pr view 279",
+        output=json.dumps(
+            {
+                "comments": [
+                    {
+                        "author": {"login": "uwuclxdybot"},
+                        "body": "automerge: yes",
+                        "createdAt": "2026-09-20T19:05:00Z",
+                    }
+                ]
+            }
+        ),
+    )
+    runner.on("repo view", output="mommy\n")
+    runner.on("pricelog/gone-12345678", output="")
+    runner.on("pricelog/live-87654321", output="a" * 40 + "\trefs/heads/pricelog/live-87654321\n")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    calls: list[tuple[list[str], str, bool]] = []
+
+    def _fake_merge(branches, repo_root, runner_arg, base, push):
+        calls.append((branches, base, push))
+        return ("f" * 40, [])
+
+    monkeypatch.setattr(automerge, "merge_branches", _fake_merge)
+    assert merge_verified.main([]) == 0
+    assert calls == [(["pricelog/live-87654321"], "mommy", True)]
+    assert "skipping pricelog/gone-12345678" in capsys.readouterr().out
+
+
+def test_main_propagates_a_remote_error_not_as_gone(monkeypatch):
+    # a remote or auth failure must red the run, never read as "nothing to
+    # merge" and silently strand verified PRs
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps([{"number": 279, "headRefName": "pricelog/live-87654321"}]),
+    )
+    runner.on("api user", output="uwuclxdybot\n")
+    runner.on(
+        "pr view 279",
+        output=json.dumps(
+            {
+                "comments": [
+                    {
+                        "author": {"login": "uwuclxdybot"},
+                        "body": "automerge: yes",
+                        "createdAt": "2026-09-20T19:05:00Z",
+                    }
+                ]
+            }
+        ),
+    )
+    runner.on("repo view", output="mommy\n")
+    runner.on(
+        "pricelog/live-87654321",
+        failure=pr.PrError("fatal: unable to access 'https://github.com': Could not resolve host"),
+    )
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
+    assert merge_verified.main([]) == 1
