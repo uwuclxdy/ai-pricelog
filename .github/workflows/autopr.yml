@@ -166,8 +166,12 @@ jobs:
     timeout-minutes: 10
     # the box dispatches the weekly probe without the input (a manual-shaped
     # dispatch, same as a human's); the hourly timer and the cron fallback set
-    # scheduled=true, and an hourly moonshot probe is not wanted
-    if: github.event_name == 'workflow_dispatch' && inputs.scheduled != 'true'
+    # scheduled=true, and an hourly moonshot probe is not wanted. the gate
+    # reads the event payload: the inputs-context form (inputs.scheduled !=
+    # 'true') ran smoke on flagged dispatches anyway (measured 2026-09-20:
+    # every hourly run since the 2026-09-15 refactor executed the smoke job),
+    # so it cannot be trusted at job level
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.scheduled != 'true'
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
