@@ -7457,6 +7457,15 @@
       },
       "vendor": "z-ai"
     },
+    "openrouter/z-ai/glm-5.3-flashx": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "z-ai/glm-5.3-flashx"
+        ]
+      },
+      "vendor": "z-ai"
+    },
     "openrouter/z-ai/glm-5.3:batch": {
       "curated": false,
       "sources": {
