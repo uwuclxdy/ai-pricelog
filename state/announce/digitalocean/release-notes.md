@@ -189,7 +189,6 @@ SSO is configured per cluster with an issuer URL and client ID from your identit
 You can enable it using doctl , the DigitalOcean API , or Terraform .
 The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.1 For more information, see the Available Models page .
 A Fedora 44 ( fedora-44-x64 ) Droplet base image is now available in the Control Panel and through the API.
-22 June The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.2 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
