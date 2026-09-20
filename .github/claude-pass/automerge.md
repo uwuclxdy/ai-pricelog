@@ -59,7 +59,7 @@ after every PR is judged and every comment posted, your part is done: you never 
 - `state/announce/`: each channel lands from the branch that last CHANGED it against the burst base (its index sha differs; a failed fetch keeps the base sha, so a stale copy never wins) — never the newest branch wholesale; a channel the newest branch's index no longer lists is dropped. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
-github auto-marks each PR merged once its head lands in the default branch. the merge writes no derived file: the publish workflow owns the `dist` branch and the README stats outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
+github auto-marks each PR merged once its head lands in the default branch. the merge amends the refreshed README stats into its final merge commit, so the pushed head always satisfies the stats recompute test; the publish workflow owns the `dist` branch outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
 
 when the script fails: the merge step reds the run, every PR stays open, and this run retries nothing — a yes-marked PR stays eligible, and the next data-changing run's merge step picks it up. the next run re-derives the rows.
 
