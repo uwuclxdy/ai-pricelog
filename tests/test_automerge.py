@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import absence, announce, automerge, models, pr, store, validate
+from ai_pricelog import absence, announce, automerge, models, pr, stats, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
 from conftest import FakeRunner, git, git_init_repo
 
@@ -66,6 +66,22 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     )
     (repo / "tests").mkdir()
     (repo / "tests" / "test_billing_rules.py").write_text("# pin placeholder\n")
+    init_rows = [make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)]
+    init_mapping = {
+        "deepseek/deepseek-v4-pro": {
+            "vendor": "deepseek",
+            "curated": False,
+            "sources": {"deepseek": ["deepseek-v4-pro"]},
+        }
+    }
+    (repo / "README.md").write_text(
+        stats.render(
+            "<!-- stats:start --><!-- stats:end -->\n"
+            "<!-- stats-row:start --><!-- stats-row:end -->\n",
+            stats.compute(init_rows, init_mapping),
+        ),
+        encoding="utf-8",
+    )
     git(repo, "add", ".")
     git(repo, "commit", "-m", "init")
     bare = tmp_path / "origin.git"
@@ -214,6 +230,82 @@ def test_merge_lands_union(tmp_path):
     assert not any("pricelog/" in ref for ref in refs)
     # the merged tree is clean
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refreshes_the_committed_readme_stats(tmp_path):
+    # the burst appends rows, so the committed README stats are stale by
+    # construction; the pushed head must carry the recomputed README or ci on
+    # the merge commit reds the stats recompute test (observed 2026-09-11,
+    # 39c8ee4 -> 6be85a9)
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    _sha, results = automerge.merge_branches(
+        ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    # the pushed HEAD carries the recomputed stats, not just the worktree
+    readme = git(repo, "show", "HEAD:README.md")
+    rows = store.load_shards(repo / store.SHARD_DIR)
+    mapping = models.load_models(repo / models.MODELS_FILE)
+    assert stats.render(readme, stats.compute(rows, mapping)) == readme
+    # the refresh rides the final merge commit: the push stays one merge
+    # commit per branch and the tip keeps the branch subject
+    assert git(repo, "log", "-1", "--format=%s").strip() == "feat: pricelog/alpha-00000000"
+    assert len(git(repo, "log", "--merges", "--format=%P").splitlines()) == 1
+    assert results[-1].commit == git(repo, "rev-parse", "HEAD").strip()
+
+
+def test_merge_skips_the_amend_when_the_stats_did_not_drift(tmp_path):
+    # the drift guard is load-bearing: an amend with nothing staged still
+    # rewrites the final merge commit (new sha), so a guardless merge would
+    # add a spurious second commit on every stats-stable branch
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/notes"
+    commit_announce(repo, {"deepseek": {url: "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/announce-00000000",
+        [],
+        announce_texts={"deepseek": {url: "new prose"}},
+    )
+    base = git(repo, "rev-parse", "main").strip()
+    branch_commits = git(
+        repo, "rev-list", "--count", f"{base}..origin/pricelog/announce-00000000"
+    ).strip()
+
+    automerge.merge_branches(
+        ["pricelog/announce-00000000"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    # the merge adds exactly its one commit on top of the branch's own; a
+    # spurious amend would rewrite the merge commit and leave it as HEAD@{1}
+    expected = str(int(branch_commits) + 1)
+    assert git(repo, "rev-list", "--count", f"{base}..HEAD").strip() == expected
+    assert git(repo, "rev-parse", "HEAD@{1}").strip() == base
+
+
+def test_merge_names_a_broken_readme_marker_refusal(tmp_path):
+    # a committed README whose stats markers no longer pair stops the merge
+    # with the repo's named refusal, never a raw traceback
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    (repo / "README.md").write_text("<!-- stats:start --><!-- stats:end -->\n", encoding="utf-8")
+    git(repo, "add", "README.md")
+    git(repo, "commit", "-m", "break the stats markers")
+
+    with pytest.raises(automerge.AutoMergeError, match="refreshing the README stats failed"):
+        automerge.merge_branches(
+            ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+        )
 
 
 def test_merge_sanitizes_a_literal_newline_escape_subject(tmp_path):

@@ -1,6 +1,7 @@
 # publish the dist branch: rebuild every derived view from the committed store
 # and force-push the tree as one commit, then commit README.md back to mommy
-# when it drifted. both pushes authenticate with GITHUB_TOKEN:
+# when it drifted (the merge refreshes it first; this step is the safety net
+# for pushes that bypass the merge). both pushes authenticate with GITHUB_TOKEN:
 # a GITHUB_TOKEN push creates no workflow run, so neither push can retrigger
 # this workflow (a PAT push like autopr's GH_TOKEN would).
 
