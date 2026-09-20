@@ -243,9 +243,12 @@ def test_merge_refreshes_the_committed_readme_stats(tmp_path):
         "pricelog/alpha-00000000",
         [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
     )
-    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+    _sha, results = automerge.merge_branches(
+        ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+    )
 
-    readme = (repo / "README.md").read_text(encoding="utf-8")
+    # the pushed HEAD carries the recomputed stats, not just the worktree
+    readme = git(repo, "show", "HEAD:README.md")
     rows = store.load_shards(repo / store.SHARD_DIR)
     mapping = models.load_models(repo / models.MODELS_FILE)
     assert stats.render(readme, stats.compute(rows, mapping)) == readme
@@ -253,6 +256,7 @@ def test_merge_refreshes_the_committed_readme_stats(tmp_path):
     # commit per branch and the tip keeps the branch subject
     assert git(repo, "log", "-1", "--format=%s").strip() == "feat: pricelog/alpha-00000000"
     assert len(git(repo, "log", "--merges", "--format=%P").splitlines()) == 1
+    assert results[-1].commit == git(repo, "rev-parse", "HEAD").strip()
 
 
 def test_merge_sanitizes_a_literal_newline_escape_subject(tmp_path):

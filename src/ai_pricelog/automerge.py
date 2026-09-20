@@ -829,7 +829,13 @@ def merge_branches(
     # merge commit as an amend, so the push stays exactly one merge commit
     # per branch. publish's refresh step remains the safety net for pushes
     # that bypass the merge.
-    publish.refresh_committed(store.load_shards(repo_root / SHARD_DIR), repo_root)
+    try:
+        publish.refresh_committed(store.load_shards(repo_root / SHARD_DIR), repo_root)
+    except (OSError, ValueError) as exc:
+        raise AutoMergeError(
+            f"refreshing the README stats failed: {exc};"
+            " fix: the committed README.md and its stats markers, then re-run"
+        ) from exc
     if runner.run(["git", "status", "--porcelain", "--", "README.md"], cwd=repo_root).strip():
         runner.run(["git", "add", "--", "README.md"], cwd=repo_root)
         runner.run(["git", "commit", "--amend", "--no-edit"], cwd=repo_root)
