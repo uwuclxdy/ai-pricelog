@@ -829,12 +829,17 @@ def merge_branches(
     # merge commit as an amend, so the push stays exactly one merge commit
     # per branch. publish's refresh step remains the safety net for pushes
     # that bypass the merge.
+    # a KeyError from stats.compute is left unwrapped on purpose: a row
+    # missing its source/model_id/observed_at reds the ci recompute test on
+    # the default branch long before any merge reaches here, and the
+    # traceback names the missing key better than a README-fix message would
     try:
         publish.refresh_committed(store.load_shards(repo_root / SHARD_DIR), repo_root)
     except (OSError, ValueError) as exc:
         raise AutoMergeError(
             f"refreshing the README stats failed: {exc};"
-            " fix: the committed README.md and its stats markers, then re-run"
+            " fix: the named input above (the README stats blocks, the store rows,"
+            " or the models file), then re-run"
         ) from exc
     if runner.run(["git", "status", "--porcelain", "--", "README.md"], cwd=repo_root).strip():
         runner.run(["git", "add", "--", "README.md"], cwd=repo_root)

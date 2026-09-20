@@ -259,6 +259,55 @@ def test_merge_refreshes_the_committed_readme_stats(tmp_path):
     assert results[-1].commit == git(repo, "rev-parse", "HEAD").strip()
 
 
+def test_merge_skips_the_amend_when_the_stats_did_not_drift(tmp_path):
+    # the drift guard is load-bearing: an amend with nothing staged still
+    # rewrites the final merge commit (new sha), so a guardless merge would
+    # add a spurious second commit on every stats-stable branch
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/notes"
+    commit_announce(repo, {"deepseek": {url: "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/announce-00000000",
+        [],
+        announce_texts={"deepseek": {url: "new prose"}},
+    )
+    base = git(repo, "rev-parse", "main").strip()
+    branch_commits = git(
+        repo, "rev-list", "--count", f"{base}..origin/pricelog/announce-00000000"
+    ).strip()
+
+    automerge.merge_branches(
+        ["pricelog/announce-00000000"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    # the merge adds exactly its one commit on top of the branch's own; a
+    # spurious amend would rewrite the merge commit and leave it as HEAD@{1}
+    expected = str(int(branch_commits) + 1)
+    assert git(repo, "rev-list", "--count", f"{base}..HEAD").strip() == expected
+    assert git(repo, "rev-parse", "HEAD@{1}").strip() == base
+
+
+def test_merge_names_a_broken_readme_marker_refusal(tmp_path):
+    # a committed README whose stats markers no longer pair stops the merge
+    # with the repo's named refusal, never a raw traceback
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    (repo / "README.md").write_text("<!-- stats:start --><!-- stats:end -->\n", encoding="utf-8")
+    git(repo, "add", "README.md")
+    git(repo, "commit", "-m", "break the stats markers")
+
+    with pytest.raises(automerge.AutoMergeError, match="refreshing the README stats failed"):
+        automerge.merge_branches(
+            ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+        )
+
+
 def test_merge_sanitizes_a_literal_newline_escape_subject(tmp_path):
     # the pass's hand-edit commits can carry their message as one line with
     # literal \n\n escapes (a double-escaped -m); the merge commit must keep
