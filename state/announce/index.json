@@ -29,8 +29,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "ca3993d6ec5aa854503d4d96ee33239568045fa3719f4eaba8da5ac3da98b2bf",
-      "fetched": "2026-09-18"
+      "sha256": "f4923ecee6ff4605d2d1427ce94da603ec10b403e89cc0ef22ecb38753222c9a",
+      "fetched": "2026-09-20"
     }
   },
   "moonshot": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "3b447179ccfdd28f1e8c689a1f114bd30e1458142fe2cb496013307313d725a0",
-      "fetched": "2026-09-18"
+      "sha256": "df5cb577de7aefc1ff993df8ec792fe51d707310358151ea420b9b192ea41f32",
+      "fetched": "2026-09-20"
     }
   },
   "scaleway": {
