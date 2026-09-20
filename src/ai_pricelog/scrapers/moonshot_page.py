@@ -175,7 +175,7 @@ def _pricing(
     write_1h_col = _column_index(titles, "Cache Write Price (TTL 1h)")
     context_col = _column_index(titles, "Context Window")
     if input_col is None or output_col is None:
-        raise FetchError("pricing table is missing the Model/Input/Output columns")
+        raise FetchError("pricing table is missing the Input/Output columns")
     needed = max(
         model_col,
         input_col,
