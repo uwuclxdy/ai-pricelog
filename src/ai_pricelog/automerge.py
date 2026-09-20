@@ -31,8 +31,10 @@ as a merged PR. the step passes only branches the pass marked
   exact lines only. the union then re-sorts on (model_id, observed_at), the
   order every shard writer holds, so a merged shard still puts a new row
   beside its siblings in the review diff
-- the README stats and the dist branch belong to publish.yml, which fires on
-  a push to the default branch; the merge regenerates no derived file at all
+- the README stats refresh rides the final merge commit as an amend (the push
+  stays one merge commit per branch): a pushed head whose stats lag the store
+  reds the stats recompute test (observed 2026-09-11, 39c8ee4 -> 6be85a9).
+  the dist branch stays publish.yml's outright
 - the announce tree resolves per channel against the burst base: each url
   lands from the last branch that changed it, so a branch whose run failed a
   channel's fetch (and carries the base's stale entry) never reverts the
@@ -53,7 +55,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from ai_pricelog import models, pr, store, validate
+from ai_pricelog import models, pr, publish, store, validate
 from ai_pricelog.absence import ABSENCE_DIR
 from ai_pricelog.announce import ANNOUNCE_DIR, ANNOUNCE_INDEX, BILLING_RULES_FILE, channel_files
 
@@ -819,6 +821,20 @@ def merge_branches(
         )
         commit = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
         results.append(MergeResult(branch, commit, appended))
+
+    # the pushed head carries the refreshed README stats: the burst appended
+    # rows, so the committed stats are stale by construction and ci on the
+    # raw merge commit reds the stats recompute test (observed 2026-09-11,
+    # 39c8ee4 -> 6be85a9, and again 2026-09-20). the refresh rides the final
+    # merge commit as an amend, so the push stays exactly one merge commit
+    # per branch. publish's refresh step remains the safety net for pushes
+    # that bypass the merge.
+    publish.refresh_committed(store.load_shards(repo_root / SHARD_DIR), repo_root)
+    if runner.run(["git", "status", "--porcelain", "--", "README.md"], cwd=repo_root).strip():
+        runner.run(["git", "add", "--", "README.md"], cwd=repo_root)
+        runner.run(["git", "commit", "--amend", "--no-edit"], cwd=repo_root)
+        head = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
+        results[-1] = MergeResult(results[-1].branch, head, results[-1].appended)
 
     leftover = _uncommitted(runner, repo_root)
     if leftover:

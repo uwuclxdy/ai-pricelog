@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import absence, announce, automerge, models, pr, store, validate
+from ai_pricelog import absence, announce, automerge, models, pr, stats, store, validate
 from ai_pricelog.announce import BILLING_RULES_FILE
 from conftest import FakeRunner, git, git_init_repo
 
@@ -66,6 +66,22 @@ def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     )
     (repo / "tests").mkdir()
     (repo / "tests" / "test_billing_rules.py").write_text("# pin placeholder\n")
+    init_rows = [make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435)]
+    init_mapping = {
+        "deepseek/deepseek-v4-pro": {
+            "vendor": "deepseek",
+            "curated": False,
+            "sources": {"deepseek": ["deepseek-v4-pro"]},
+        }
+    }
+    (repo / "README.md").write_text(
+        stats.render(
+            "<!-- stats:start --><!-- stats:end -->\n"
+            "<!-- stats-row:start --><!-- stats-row:end -->\n",
+            stats.compute(init_rows, init_mapping),
+        ),
+        encoding="utf-8",
+    )
     git(repo, "add", ".")
     git(repo, "commit", "-m", "init")
     bare = tmp_path / "origin.git"
@@ -214,6 +230,29 @@ def test_merge_lands_union(tmp_path):
     assert not any("pricelog/" in ref for ref in refs)
     # the merged tree is clean
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refreshes_the_committed_readme_stats(tmp_path):
+    # the burst appends rows, so the committed README stats are stale by
+    # construction; the pushed head must carry the recomputed README or ci on
+    # the merge commit reds the stats recompute test (observed 2026-09-11,
+    # 39c8ee4 -> 6be85a9)
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    readme = (repo / "README.md").read_text(encoding="utf-8")
+    rows = store.load_shards(repo / store.SHARD_DIR)
+    mapping = models.load_models(repo / models.MODELS_FILE)
+    assert stats.render(readme, stats.compute(rows, mapping)) == readme
+    # the refresh rides the final merge commit: the push stays one merge
+    # commit per branch and the tip keeps the branch subject
+    assert git(repo, "log", "-1", "--format=%s").strip() == "feat: pricelog/alpha-00000000"
+    assert len(git(repo, "log", "--merges", "--format=%P").splitlines()) == 1
 
 
 def test_merge_sanitizes_a_literal_newline_escape_subject(tmp_path):
