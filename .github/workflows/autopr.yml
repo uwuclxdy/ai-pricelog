@@ -128,11 +128,17 @@ jobs:
         # already posted when the pass dies, and the merge must still run.
         # the script reads every open pricelog PR's marker, so a yes-marked
         # PR a failed merge step stranded merges on a later data-changing
-        # run's merge step
+        # run's merge step. the pass leaves the checkout wherever it last
+        # worked (observed 2026-09-20: two runs red'd when the merge's own
+        # guard refused the pass's review branch), so the step re-establishes
+        # the base the run started from before the script's guard reads it;
+        # -f discards the pass's leftover edits, which are already pushed,
+        # and .run-changed is untracked, so it survives
         if: always()
         timeout-minutes: 10
         run: |
           [ -f .run-changed ] || { echo "run changed nothing; no merge"; exit 0; }
+          git checkout -f -B mommy origin/mommy
           uv run ai-pricelog-merge-verified
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
