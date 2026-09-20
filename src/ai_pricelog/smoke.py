@@ -2,7 +2,7 @@
 
 kimi's pricing HTML is JS-rendered; the pipeline runs entirely on the static
 .md twins (models.md for detection, llms.txt resolving the merged pricing
-chat page and its <DocTable> block for scraping). the fixture tests pin saved
+chat page and its <DocTable> blocks for scraping). the fixture tests pin saved
 copies and cannot catch the upstream pages changing shape or disappearing,
 so the cron workflow runs this probe against the live endpoints. exit 0 =
 every endpoint still serves what the pipeline expects.
@@ -53,7 +53,7 @@ def check_pricing(pricing: Pricing | None, model_id: str) -> Pricing:
 def check_pricing_pages(index_url: str) -> str:
     """the resolved chat page fetches and carries a DocTable; its url."""
     page_url = scraper._load_index(index_url)
-    if scraper._doc_table(scraper.fetch_text(page_url)) is None:
+    if not scraper._doc_tables(scraper.fetch_text(page_url)):
         raise ValueError(f"no DocTable block on pricing page {page_url}")
     return page_url
 

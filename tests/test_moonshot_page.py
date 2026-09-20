@@ -85,12 +85,16 @@ def test_detect_header_wording_drift_still_matches(monkeypatch):
 
 def test_scrape_k3(monkeypatch):
     # the live llms.txt also carries an /api/chat.md link; resolution must
-    # key on /pricing/ so it cannot match that one
+    # key on /pricing/ so it cannot match that one. kimi-k3 lives in the K3
+    # series table, the FIRST DocTable block: the scrape must search every
+    # block, not just the last
     monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)  # cache miss, not hit
     assert pricing.cache_read_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.cache_write_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.cache_write_1h_cost_per_token == pytest.approx(6.00 / 1e6)
     assert pricing.output_cost_per_token == pytest.approx(15.00 / 1e6)
     assert pricing.mode == "chat"
     assert pricing.max_tokens_in == 1_048_576
@@ -170,6 +174,43 @@ def test_scrape_page_without_doctable_raises(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_text", fake)
     with pytest.raises(FetchError, match="DocTable"):
         scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_scrape_page_without_model_table_raises(monkeypatch):
+    # a DocTable without a Model column is not a pricing table; a page whose
+    # tables are all like that is a shape break, not "model absent"
+    page_text = '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return page_text
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(FetchError, match="Model pricing table"):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_scrape_skips_non_pricing_table(monkeypatch):
+    # a non-pricing DocTable beside the pricing one is skipped, not a failure;
+    # it sits LAST so the pre-fix last-block-only read cannot pass this
+    page_text = (FIXTURES / "chat.md").read_text() + (
+        '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
+    )
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return page_text
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
 
 
 def test_scrape_index_fetched_once(monkeypatch):
