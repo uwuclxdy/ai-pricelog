@@ -167,10 +167,12 @@ jobs:
     # the box dispatches the weekly probe without the input (a manual-shaped
     # dispatch, same as a human's); the hourly timer and the cron fallback set
     # scheduled=true, and an hourly moonshot probe is not wanted. the gate
-    # reads the event payload: the inputs-context form (inputs.scheduled !=
-    # 'true') ran smoke on flagged dispatches anyway (measured 2026-09-20:
-    # every hourly run since the 2026-09-15 refactor executed the smoke job),
-    # so it cannot be trusted at job level
+    # reads the event payload as a string: the inputs context holds a real
+    # boolean for a type: boolean input, and a mixed-type comparison coerces
+    # both sides to numbers (boolean true -> 1, a string that is no number ->
+    # NaN), so `inputs.scheduled != 'true'` is `1 != NaN` and never skips
+    # (measured 2026-09-20: every hourly run since the 2026-09-15 refactor
+    # executed the smoke job)
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.scheduled != 'true'
     steps:
       - uses: actions/checkout@v6
