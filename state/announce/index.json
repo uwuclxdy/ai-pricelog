@@ -91,7 +91,7 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "0abc1f0104a4c35f9c5d2975e93d3082523c61259cad0c7e8e44c022998a8c1b",
+      "sha256": "68ff9d1aeb09c88ab0de37203c179abfc0deecc4f95036732412aefb41afa868",
       "fetched": "2026-09-18"
     }
   },
