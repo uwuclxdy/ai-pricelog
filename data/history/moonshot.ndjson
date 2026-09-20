@@ -14,6 +14,7 @@
 {"schema":4,"source":"moonshot","model_id":"kimi-k3","observed_at":"2026-07-16","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"url":"https://www.kimi.com/blog/kimi-k3"}}
 {"schema":4,"source":"moonshot","model_id":"kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0},"limits":{"context":1048576},"provenance":{"url":"https://platform.kimi.ai/docs/llms.txt"}}
 {"schema":4,"source":"moonshot","model_id":"kimi-k3","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"url":"https://platform.kimi.ai/docs/pricing/chat-k3.md"}}
+{"schema":4,"source":"moonshot","model_id":"kimi-k3","observed_at":"2026-09-20","rates":{"input":3.0,"output":15.0,"cache_read":0.3,"cache_write":3.0,"cache_write_1h":6.0},"limits":{"context":1048576},"provenance":{"url":"https://platform.kimi.ai/docs/pricing/chat.md"}}
 {"schema":4,"source":"moonshot","model_id":"moonshot-v1-128k","observed_at":"2026-08-29","rates":{"input":2.0,"output":5.0},"limits":{"context":131072},"provenance":{"url":"https://platform.kimi.ai/docs/pricing/chat-v1.md"}}
 {"schema":4,"source":"moonshot","model_id":"moonshot-v1-128k","observed_at":"2026-09-02","removed":true,"rates":{"input":2.0,"output":5.0},"limits":{"context":131072}}
 {"schema":4,"source":"moonshot","model_id":"moonshot-v1-128k-vision-preview","observed_at":"2026-08-29","rates":{"input":2.0,"output":5.0},"limits":{"context":131072},"provenance":{"url":"https://platform.kimi.ai/docs/pricing/chat-v1.md"}}
