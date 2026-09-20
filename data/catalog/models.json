@@ -2201,7 +2201,8 @@
       "vendor": "deepseek"
     },
     "fireworks/deepseek-v4.1-flash-us": {
-      "curated": false,
+      "curated": true,
+      "name": "DeepSeek V4.1 Flash (US)",
       "sources": {
         "fireworks": [
           "deepseek-v4.1-flash-us"
@@ -2246,7 +2247,8 @@
       "vendor": "zai"
     },
     "fireworks/glm-5.3-flash-us": {
-      "curated": false,
+      "curated": true,
+      "name": "GLM 5.3 Flash (US)",
       "sources": {
         "fireworks": [
           "glm-5.3-flash-us"
@@ -2255,7 +2257,8 @@
       "vendor": "zai"
     },
     "fireworks/glm-5.3-us": {
-      "curated": false,
+      "curated": true,
+      "name": "GLM 5.3 (US)",
       "sources": {
         "fireworks": [
           "glm-5.3-us"
@@ -7457,15 +7460,6 @@
       },
       "vendor": "z-ai"
     },
-    "openrouter/z-ai/glm-5.3-flashx": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "z-ai/glm-5.3-flashx"
-        ]
-      },
-      "vendor": "z-ai"
-    },
     "openrouter/z-ai/glm-5.3:batch": {
       "curated": false,
       "sources": {
@@ -8720,8 +8714,12 @@
       "vendor": "zai"
     },
     "zai/glm-5.3-flashx": {
-      "curated": false,
+      "curated": true,
+      "name": "GLM 5.3 FlashX",
       "sources": {
+        "openrouter": [
+          "z-ai/glm-5.3-flashx"
+        ],
         "zai": [
           "glm-5.3-flashx"
         ]
