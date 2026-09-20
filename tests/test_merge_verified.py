@@ -177,11 +177,8 @@ def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
         ),
     )
     runner.on("repo view", output="mommy\n")
-    runner.on(
-        "pricelog/gone-12345678",
-        failure=pr.PrError("fatal: ambiguous argument"),
-    )
-    runner.on("pricelog/live-87654321", output="a" * 40 + "\n")
+    runner.on("pricelog/gone-12345678", output="")
+    runner.on("pricelog/live-87654321", output="a" * 40 + "\trefs/heads/pricelog/live-87654321\n")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
 
@@ -193,3 +190,36 @@ def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
     assert merge_verified.main([]) == 0
     assert calls == [(["pricelog/live-87654321"], "mommy", True)]
     assert "skipping pricelog/gone-12345678" in capsys.readouterr().out
+
+
+def test_main_propagates_a_remote_error_not_as_gone(monkeypatch):
+    # a remote or auth failure must red the run, never read as "nothing to
+    # merge" and silently strand verified PRs
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps([{"number": 279, "headRefName": "pricelog/live-87654321"}]),
+    )
+    runner.on("api user", output="uwuclxdybot\n")
+    runner.on(
+        "pr view 279",
+        output=json.dumps(
+            {
+                "comments": [
+                    {
+                        "author": {"login": "uwuclxdybot"},
+                        "body": "automerge: yes",
+                        "createdAt": "2026-09-20T19:05:00Z",
+                    }
+                ]
+            }
+        ),
+    )
+    runner.on("repo view", output="mommy\n")
+    runner.on(
+        "pricelog/live-87654321",
+        failure=pr.PrError("fatal: unable to access 'https://github.com': Could not resolve host"),
+    )
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
+    assert merge_verified.main([]) == 1

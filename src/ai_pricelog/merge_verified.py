@@ -65,19 +65,18 @@ def _present_refs(
     its rows are already landed (or its branch is gone for good), so it must
     skip the merge rather than red the whole run (observed 2026-09-20: the
     19:00 run red'd on an 18:55 PR mid-close, stranding the newer PR).
+
+    The remote is queried, never the checkout's stale tracking refs: the
+    workflow fetched at checkout time, minutes before this runs, so a ref
+    pushed or deleted by a sibling since then is invisible to `rev-parse`.
+    A remote or auth error raises and reds the run rather than reading as
+    "nothing to merge".
     """
     present: list[str] = []
     gone: list[str] = []
     for head in heads:
-        try:
-            runner.run(
-                ["git", "rev-parse", "--verify", "--quiet", f"origin/{head}"],
-                cwd=repo_root,
-            )
-        except pr.PrError:
-            gone.append(head)
-        else:
-            present.append(head)
+        out = runner.run(["git", "ls-remote", "origin", head], cwd=repo_root).strip()
+        (present if out else gone).append(head)
     return present, gone
 
 
