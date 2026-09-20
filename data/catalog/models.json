@@ -2200,6 +2200,15 @@
       },
       "vendor": "deepseek"
     },
+    "fireworks/deepseek-v4.1-flash-us": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "deepseek-v4.1-flash-us"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "fireworks/glm-5.2-fast": {
       "curated": false,
       "sources": {
@@ -2232,6 +2241,24 @@
       "sources": {
         "fireworks": [
           "glm-5.3-flash"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "fireworks/glm-5.3-flash-us": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "glm-5.3-flash-us"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "fireworks/glm-5.3-us": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "glm-5.3-us"
         ]
       },
       "vendor": "zai"
