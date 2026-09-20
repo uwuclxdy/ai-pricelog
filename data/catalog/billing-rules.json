@@ -144,6 +144,16 @@
       "citation": [
         "https://docs.fireworks.ai/updates/changelog"
       ]
+    },
+    {
+      "id": "fireworks-deepseek-v41-flash-rate-update-2026-10-01",
+      "provider": "fireworks",
+      "effective": "2026-10-01",
+      "timezone": "UTC",
+      "statement": "on 2026-10-01 at 00:00 UTC serverless pricing for DeepSeek V4.1 Flash changes (uncached input / cached input / output per 1M tokens): Standard $0.22 / $0.007 / $0.66 to $0.30 / $0.006 / $1.20, Priority $0.275 / $0.00875 / $0.825 to $0.375 / $0.0075 / $1.50; dedicated deployments and Reserved Throughput are unaffected. the pricing page already shows the new Standard rates, so the stored row carries them with effective_at = 2026-10-01",
+      "citation": [
+        "https://docs.fireworks.ai/updates/changelog"
+      ]
     }
   ]
 }
