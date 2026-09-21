@@ -3688,6 +3688,19 @@
       },
       "vendor": "xai"
     },
+    "grok-4.7": {
+      "curated": true,
+      "name": "Grok 4.7",
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-4.7"
+        ],
+        "xai": [
+          "grok-4.7"
+        ]
+      },
+      "vendor": "xai"
+    },
     "grok-build-0.1": {
       "curated": true,
       "name": "Grok Build 0.1",
@@ -4040,6 +4053,36 @@
         ],
         "openrouter": [
           "xiaomi/mimo-v2.5-pro"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "mimo-v2.6-flash": {
+      "curated": true,
+      "name": "MiMo-V2.6-Flash",
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-flash"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "mimo-v2.6-pro": {
+      "curated": true,
+      "name": "MiMo-V2.6-Pro",
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-pro"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "mimo-v2.6-pro-ultraspeed": {
+      "curated": true,
+      "name": "MiMo-V2.6-Pro-UltraSpeed",
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-pro-ultraspeed"
         ]
       },
       "vendor": "xiaomi"
@@ -7433,42 +7476,6 @@
       },
       "vendor": "x-ai"
     },
-    "openrouter/x-ai/grok-4.7": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "x-ai/grok-4.7"
-        ]
-      },
-      "vendor": "x-ai"
-    },
-    "openrouter/xiaomi/mimo-v2.6-flash": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "xiaomi/mimo-v2.6-flash"
-        ]
-      },
-      "vendor": "xiaomi"
-    },
-    "openrouter/xiaomi/mimo-v2.6-pro": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "xiaomi/mimo-v2.6-pro"
-        ]
-      },
-      "vendor": "xiaomi"
-    },
-    "openrouter/xiaomi/mimo-v2.6-pro-ultraspeed": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "xiaomi/mimo-v2.6-pro-ultraspeed"
-        ]
-      },
-      "vendor": "xiaomi"
-    },
     "openrouter/z-ai/glm-5.2:batch": {
       "curated": false,
       "sources": {
@@ -8682,15 +8689,6 @@
       "sources": {
         "xai": [
           "grok-4-fast-reasoning"
-        ]
-      },
-      "vendor": "xai"
-    },
-    "xai/grok-4.7": {
-      "curated": false,
-      "sources": {
-        "xai": [
-          "grok-4.7"
         ]
       },
       "vendor": "xai"
