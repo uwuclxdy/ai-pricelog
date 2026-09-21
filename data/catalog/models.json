@@ -8650,6 +8650,15 @@
       },
       "vendor": "xai"
     },
+    "xai/grok-4.7": {
+      "curated": false,
+      "sources": {
+        "xai": [
+          "grok-4.7"
+        ]
+      },
+      "vendor": "xai"
+    },
     "zai/glm-4-32b-0414-128k": {
       "curated": false,
       "sources": {
