@@ -164,6 +164,16 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "xai-grok-4.7-intro-2026-09-21",
+      "provider": "xai",
+      "effective": "2026-09-21",
+      "timezone": "UTC",
+      "statement": "grok-4.7 launches on the xAI API with a 500k context window: $2 / $0.50 / $6 per 1M tokens (input / cached input / output) below 200k prompt tokens, and $4 / $1 / $12 at or above. grok-4.7-fast, the same model at twice the token rates, is available only through Cursor and Grok Build, not on the public xAI API. the release note names no timezone for the launch; the index stores the in-force launch rates",
+      "citation": [
+        "https://docs.x.ai/developers/release-notes"
+      ]
     }
   ]
 }
