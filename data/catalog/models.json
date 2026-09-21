@@ -7433,6 +7433,15 @@
       },
       "vendor": "x-ai"
     },
+    "openrouter/x-ai/grok-4.7": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-4.7"
+        ]
+      },
+      "vendor": "x-ai"
+    },
     "openrouter/z-ai/glm-5.2:batch": {
       "curated": false,
       "sources": {
