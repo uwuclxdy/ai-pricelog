@@ -145,8 +145,8 @@
   "scaleway": {
     "https://www.scaleway.com/en/docs/changelog/": {
       "file": "state/announce/scaleway/changelog.md",
-      "sha256": "bf10c5991dbb30998ab779e767478ab7a0d0a59dc95105f0f1d6102fbdfcd810",
-      "fetched": "2026-09-03"
+      "sha256": "4ed47b8b2af1e2800af2b429c24b360cdd48133d4339e8c8f795a05b1c943a39",
+      "fetched": "2026-09-21"
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
