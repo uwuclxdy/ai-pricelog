@@ -19,6 +19,8 @@ a row is verified when you re-read its rate on its `url` page (the api for openr
 
 ## the flip-flop disposition
 
+a row that matches today's api is the verified class whatever the prior stored row says — the flip-flop rule below binds only rows that differ from today's api (a PR 296 misroute, 2026-09-21).
+
 openrouter reseller rates flip-flop: a row can record a transient the api reverted in a day. land a row that differs from today's api when BOTH hold:
 
 1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history/<source>.ndjson`)
