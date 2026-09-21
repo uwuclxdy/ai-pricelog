@@ -7433,6 +7433,33 @@
       },
       "vendor": "x-ai"
     },
+    "openrouter/xiaomi/mimo-v2.6-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-flash"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "openrouter/xiaomi/mimo-v2.6-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-pro"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "openrouter/xiaomi/mimo-v2.6-pro-ultraspeed": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-pro-ultraspeed"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
     "openrouter/z-ai/glm-5.2:batch": {
       "curated": false,
       "sources": {
