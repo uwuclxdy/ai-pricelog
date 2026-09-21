@@ -51,6 +51,13 @@ def isolated_git_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "global.gitconfig"))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    # the box's git runs ~/.config/git/hooks for every repo regardless of
+    # core.hooksPath, and its strip-trailers post-commit deletes any message
+    # matching the strip file (observed: a synthetic Co-Authored-By subject
+    # stored empty, redding the newline-escape sanitizer test); redirect HOME
+    # so no box hook or state file can reach the tests
+    (tmp_path / "home").mkdir()
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
 
 def git(cwd: Path, *args: str) -> str:
@@ -62,6 +69,13 @@ def git_init_repo(path: Path) -> None:
     git(path, "init", "-b", "main")
     git(path, "config", "user.name", "Test")
     git(path, "config", "user.email", "test@example.com")
+    # the box's git template symlinks gate hooks (pre-commit, commit-msg,
+    # a commit-rewriting strip-trailers post-commit) into every fresh repo;
+    # test commits must not run them (observed: the strip-trailers hook
+    # deletes a synthetic one-line Co-Authored-By message and empties its
+    # subject, redding the newline-escape sanitizer test)
+    (path / "no-hooks").mkdir(exist_ok=True)
+    git(path, "config", "core.hooksPath", str(path / "no-hooks"))
 
 
 def register_fake_module(monkeypatch: pytest.MonkeyPatch, kind: str, name: str) -> types.ModuleType:
