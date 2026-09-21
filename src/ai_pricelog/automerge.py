@@ -254,14 +254,16 @@ def _merge_announce(
 
     The url set comes from the newest branch's index, the newest config the
     burst observed: a url it no longer carries is deleted. Each url lands from
-    the last branch of the burst whose index carries a sha256 differing from
-    the base's — a branch whose run failed that channel's fetch keeps the
-    base's stale entry and must not revert the fresh prose an earlier branch
-    landed (observed 2026-09-11 on PRs 180-184) — and from the base itself
-    when no branch changed it. Shas compare from the index entries, never the
-    file bytes: the wrap shape may differ while the prose is identical. A url
-    absent from the base counts as differing, so a branch always wins one the
-    newest index carries; the base wins only urls it already holds unchanged.
+    the burst entry with the newest `fetched` date (a same-date tie goes to
+    the newest branch), and from the base itself when no branch entry is
+    newer: a branch whose run failed that channel's fetch carries a stale
+    entry (observed 2026-09-11 on PRs 180-184) and so does a branch cut
+    before a later landed refresh (observed 2026-09-21 on PR 283), and
+    neither may revert the base's prose. Shas compare from the index entries,
+    never the file bytes: the wrap shape may differ while the prose is
+    identical. A url absent from the base counts as differing, so a branch
+    always wins one the newest index carries; the base wins only urls it
+    already holds unchanged.
 
     Each channel file lands at the newest index's path, the one the merged
     url set derives (slug collisions rename with the set), with the winner's
@@ -279,7 +281,11 @@ def _merge_announce(
                 candidate = index.get(source, {}).get(url)
                 if candidate is None or candidate["sha256"] == (base_entry or {}).get("sha256"):
                     continue
-                winner_rev, winner_entry = rev, candidate
+                winner_fetched = (winner_entry or {}).get("fetched", "")
+                if candidate["fetched"] > winner_fetched or (
+                    winner_rev != base_sha and candidate["fetched"] == winner_fetched
+                ):
+                    winner_rev, winner_entry = rev, candidate
             file = winner_entry["file"]
             try:
                 text = runner.run(["git", "show", f"{winner_rev}:{file}"], cwd=repo_root)
@@ -683,11 +689,11 @@ def merge_branches(
     """Union-merge each branch onto HEAD, then push and delete the refs.
 
     `branches` is the merge order: oldest PR first, newest last (each announce
-    channel lands from the last branch that changed it, each absence file from
-    the newest branch that carries it). every branch pre-flights the churn
-    bounds (waived with a logged count under `human`) and the catalog-claim
-    check (never waived) before the first merge commit. a failure anywhere
-    leaves the refs in place and raises; nothing is pushed.
+    channel lands from the burst entry with the newest fetched date, each
+    absence file from the newest branch that carries it). every branch
+    pre-flights the churn bounds (waived with a logged count under `human`)
+    and the catalog-claim check (never waived) before the first merge commit.
+    a failure anywhere leaves the refs in place and raises; nothing is pushed.
     """
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
@@ -780,12 +786,12 @@ def merge_branches(
                 encoding="utf-8",
             )
 
-        # the announce tree resolves per channel against the burst base: a
-        # branch whose run failed a channel's fetch carries the base's stale
-        # entry for it, and the newest branch's whole-tree write would revert
-        # the fresh prose an earlier branch of the burst landed. a branch
-        # carrying no index.json at all skips the announce step: its tree
-        # cannot name a url set
+        # the announce tree resolves per channel: the burst entry with the
+        # newest fetched date wins, a same-date tie goes to the newest
+        # branch, and the base wins every tie — so a stale branch (a failed
+        # fetch, or one cut before a later landed refresh) never reverts a
+        # channel. a branch carrying no index.json at all skips the announce
+        # step: its tree cannot name a url set
         branch_index = _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
         if branch_index is not None:
             burst.append((f"origin/{branch}", branch_index))

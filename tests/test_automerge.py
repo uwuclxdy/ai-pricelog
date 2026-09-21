@@ -232,6 +232,55 @@ def test_merge_lands_union(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_keeps_a_newer_base_announce_channel_over_a_stale_branch(tmp_path):
+    # a branch cut before a later landed refresh carries the older snapshot
+    # for a channel; the merge must not revert the base's newer prose
+    # (observed 2026-09-21: PR 283 carried the 09-18 scaleway snapshot while
+    # mommy had refreshed it on 09-21)
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/changelog"
+    commit_announce(repo, {"scaleway": {url: "old prose"}}, "2026-09-18")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        announce_texts={"scaleway": {url: "old prose"}},
+        announce_fetched="2026-09-18",
+    )
+    # the base advances past the branch: a later run refreshed the channel
+    commit_announce(repo, {"scaleway": {url: "new prose"}}, "2026-09-21")
+    git(repo, "push", "origin", "main")
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    channel_file = index["scaleway"][url]["file"]
+    assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("new prose")
+
+
+def test_merge_lands_a_branchs_newer_announce_channel_over_the_base(tmp_path):
+    # the flip side: a stranded branch can carry a channel refresh newer than
+    # the base's; its content lands
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/changelog"
+    commit_announce(repo, {"scaleway": {url: "old prose"}}, "2026-09-18")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        announce_texts={"scaleway": {url: "new prose"}},
+        announce_fetched="2026-09-22",
+    )
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    channel_file = index["scaleway"][url]["file"]
+    assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("new prose")
+
+
 def test_merge_refreshes_the_committed_readme_stats(tmp_path):
     # the burst appends rows, so the committed README stats are stale by
     # construction; the pushed head must carry the recomputed README or ci on
