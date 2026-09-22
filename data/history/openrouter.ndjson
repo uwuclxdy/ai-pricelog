@@ -654,6 +654,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-08-29","rates":{"input":0.66,"output":3.4,"cache_read":0.18},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-09-08","rates":{"input":0.71,"output":3.5,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-09-16","rates":{"input":0.7062,"output":3.21,"cache_read":0.18},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-09-22","rates":{"input":0.7062,"output":3.3,"cache_read":0.18},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-26","rates":{"input":0.95,"output":4.0,"cache_read":0.19},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
