@@ -19,8 +19,8 @@
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "be5302eb4ccb44f7e0ef8a8ee00ebf189fd29f35a98bf09b4eee6089a87fcd0d",
-      "fetched": "2026-09-03"
+      "sha256": "961d4076d5da967bb3e20ff6a4a99f17f0ccaca81b16f26be2cfcf14ddd83bf0",
+      "fetched": "2026-09-22"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
@@ -29,8 +29,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "f4923ecee6ff4605d2d1427ce94da603ec10b403e89cc0ef22ecb38753222c9a",
-      "fetched": "2026-09-20"
+      "sha256": "ca3993d6ec5aa854503d4d96ee33239568045fa3719f4eaba8da5ac3da98b2bf",
+      "fetched": "2026-09-22"
     }
   },
   "moonshot": {
@@ -119,8 +119,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "2c79a4f6edcc3f9c2c20176eafbd6c6e02d4be416cb36f594cc7b97f674f72f2",
-      "fetched": "2026-09-18"
+      "sha256": "079ef4bbc9ed3235302c561bbcbd759c57f9d9deea42731d5135b21c2435360e",
+      "fetched": "2026-09-22"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
