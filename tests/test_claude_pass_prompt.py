@@ -140,3 +140,29 @@ def test_review_workflow_names_the_prompt_and_stays_read_only() -> None:
     assert "name: verify the review comment landed" in text
     assert "if: ${{ always() && !cancelled() }}" in text
     assert "pr-review: $head" in text
+
+
+def test_prompt_carries_the_openrouter_fetch_and_identity_rules():
+    # the pass's false absence verdicts (2026-09-22, PRs 333/337) came from
+    # WebFetch extraction over the ~750KB payload and a substring id match
+    # (PR 331's kwaipilot read); these rules are the fix's prompt half
+    schema = _section_body(PROMPT.read_text(), "row schema")
+    assert "curl -fsSL" in schema
+    assert "exact id equality" in schema
+    assert "never absence evidence" in schema
+    assert "never substring-match an id" in schema
+
+
+def test_prompt_settles_the_absence_file_lifecycle():
+    # a branch deleting state/absence/<source>.json is the documented
+    # cleanup of landed removals; PR 331's pass misread it as lost delistings
+    job = _section_body(PROMPT.read_text(), "your job")
+    assert "documented cleanup" in job
+
+
+def test_output_contract_pins_one_comment_per_pr():
+    # PR 331 got a yes marker and a contradicting no as a second comment;
+    # the contract is one comment, edited in place when a verdict overturns
+    contract = _section_body(PROMPT.read_text(), "output contract")
+    assert "EDIT that comment" in contract
+    assert "one comment, one disposition marker per PR" in contract

@@ -32,3 +32,14 @@ def test_merge_step_writes_its_rc_marker():
     text = AUTOPR_WF.read_text()
     assert 'echo "$merge_rc" > /tmp/merge.rc' in text
     assert "--merge-alive" in text and "--merge-dead" in text
+
+
+def test_pass_may_fetch_sources_full_body():
+    # WebFetch extraction over the ~750KB openrouter payload silently omits
+    # records and produced false absence verdicts (2026-09-22, PRs 333/337);
+    # the pass's presence checks need curl for the full body and jq/uv to
+    # parse it by exact id equality
+    tools = re.search(r"--allowedTools(.+)", AUTOPR_WF.read_text())
+    assert tools is not None, "autopr lost its --allowedTools line"
+    for tool in ('"Bash(curl:*)"', '"Bash(jq:*)"', '"Bash(uv:*)"'):
+        assert tool in tools.group(1), f"the pass lost {tool}; absence checks degrade to WebFetch"
