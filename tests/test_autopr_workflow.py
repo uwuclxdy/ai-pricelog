@@ -24,3 +24,11 @@ def test_autopr_serializes_duplicate_dispatches():
         text,
         re.M,
     ), "autopr lost its concurrency group; duplicate dispatches race again"
+
+
+def test_merge_step_writes_its_rc_marker():
+    # the health step's deduped `merge step failed` ping reads this marker;
+    # a step killed before it writes reads as dead, never as clean
+    text = AUTOPR_WF.read_text()
+    assert 'echo "$merge_rc" > /tmp/merge.rc' in text
+    assert "--merge-alive" in text and "--merge-dead" in text

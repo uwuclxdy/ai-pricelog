@@ -154,7 +154,14 @@ jobs:
           [ -f .run-changed ] || { echo "run changed nothing; no merge"; exit 0; }
           git fetch origin
           git checkout -f -B mommy origin/mommy
+          # the rc marker mirrors the pass step's: the health step's deduped
+          # `merge step failed` ping reads it, and a step killed before it
+          # writes (the timeout) reads as dead there, never as clean
+          set +e
           uv run ai-pricelog-merge-verified
+          merge_rc=$?
+          echo "$merge_rc" > /tmp/merge.rc
+          exit "$merge_rc"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -183,6 +190,11 @@ jobs:
               args+=(--pass-dead)
             else
               args+=(--pass-alive)
+            fi
+            if [ ! -f /tmp/merge.rc ] || [ "$(cat /tmp/merge.rc)" != "0" ]; then
+              args+=(--merge-dead)
+            else
+              args+=(--merge-alive)
             fi
           fi
           uv run ai-pricelog-health "${args[@]}"

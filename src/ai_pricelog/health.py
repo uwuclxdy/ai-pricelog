@@ -10,7 +10,10 @@ parse and row-build skips and validation rejects (additive drift, the
 provider stays alive). a provider that passed this run closes its own
 `provider broken: <key>` issue (recovery). the pass state flags sync the
 `review pass dead` ping issue: opened when the pass died on a
-data-changing run, closed on the next clean data-changing pass.
+data-changing run, closed on the next clean data-changing pass. the merge
+state flags sync the `merge step failed` ping the same way: a refused
+merge reds every later data-changing run on the same failure until a
+human resolves it, so the ping is what ends the silence.
 """
 
 from __future__ import annotations
@@ -25,6 +28,7 @@ from pathlib import Path
 
 ISSUE_PREFIX = "provider broken: "
 PASS_DEAD_TITLE = "review pass dead"
+MERGE_DEAD_TITLE = "merge step failed"
 
 # the detect-stage skip line every detector logs; the pipeline watches for it
 # live (absence suppression) and this module parses it from the run log, so
@@ -219,23 +223,72 @@ def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
     return None
 
 
+def sync_merge_dead_issue(merge_state: str | None, run_url: str) -> str | None:
+    """open or close the merge-failure ping issue; None when nothing changed.
+
+    merge_state: "alive" (the merge step finished clean on a data-changing
+    run), "dead" (it exited nonzero or never wrote its rc marker), or None
+    (the run changed nothing, so the step never ran the script and the issue
+    is left alone).
+    """
+    if merge_state is None:
+        return None
+    rows = _open_issue_rows()
+    if rows is None:
+        return None
+    numbers = [number for number, title in rows if title == MERGE_DEAD_TITLE]
+    if merge_state == "dead" and not numbers:
+        _gh(
+            [
+                "issue",
+                "create",
+                "--title",
+                MERGE_DEAD_TITLE,
+                "--body",
+                f"@uwuclxdy the merge step failed on [this run]({run_url}): "
+                "its error line names the branch and the fix, the PRs stay "
+                "open, and every later data-changing run reds on the same "
+                "failure until it is resolved.",
+            ]
+        )
+        return "opened"
+    if merge_state == "alive" and numbers:
+        for number in numbers:
+            _gh(
+                [
+                    "issue",
+                    "close",
+                    str(number),
+                    "--comment",
+                    "the merge step completed clean on a data-changing run; closing",
+                ]
+            )
+        return "closed"
+    return None
+
+
+def _usage() -> str:
+    return (
+        f"usage: {Path(sys.argv[0]).name} <run-log>"
+        " [--pass-alive|--pass-dead] [--merge-alive|--merge-dead]"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not 1 <= len(args) <= 2:
-        print(
-            f"usage: {Path(sys.argv[0]).name} <run-log> [--pass-alive|--pass-dead]",
-            file=sys.stderr,
-        )
+    if not 1 <= len(args) <= 3:
+        print(_usage(), file=sys.stderr)
         return 2
     pass_state: str | None = None
-    if len(args) == 2:
-        if args[1] not in ("--pass-alive", "--pass-dead"):
-            print(
-                f"usage: {Path(sys.argv[0]).name} <run-log> [--pass-alive|--pass-dead]",
-                file=sys.stderr,
-            )
+    merge_state: str | None = None
+    for arg in args[1:]:
+        if arg in ("--pass-alive", "--pass-dead") and pass_state is None:
+            pass_state = arg.removeprefix("--pass-")
+        elif arg in ("--merge-alive", "--merge-dead") and merge_state is None:
+            merge_state = arg.removeprefix("--merge-")
+        else:
+            print(_usage(), file=sys.stderr)
             return 2
-        pass_state = args[1].removeprefix("--pass-")
     now = parse_log(Path(args[0]).read_text(encoding="utf-8").splitlines())
     annotation = warning(now)
     if annotation is not None:
@@ -247,6 +300,9 @@ def main(argv: list[str] | None = None) -> int:
         pass_action = sync_pass_dead_issue(pass_state, run_url)
         if pass_action is not None:
             print(f"::warning::{pass_action} issue {PASS_DEAD_TITLE}")
+        merge_action = sync_merge_dead_issue(merge_state, run_url)
+        if merge_action is not None:
+            print(f"::warning::{merge_action} issue {MERGE_DEAD_TITLE}")
         for title in close_recovered(now):
             print(f"::warning::closed issue {title}")
         previous = previous_run(repo, run_id)
