@@ -5466,6 +5466,15 @@
       },
       "vendor": "deepseek"
     },
+    "openrouter/deepseek/deepseek-v4.1-flash:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepseek/deepseek-v4.1-flash:batch"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "openrouter/dots-studio/dots-3-note-preview:free": {
       "curated": false,
       "sources": {
