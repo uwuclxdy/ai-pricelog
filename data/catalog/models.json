@@ -1314,6 +1314,15 @@
       },
       "vendor": null
     },
+    "databricks/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "databricks": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "databricks/glm-5.2-priority": {
       "curated": false,
       "sources": {
@@ -1341,6 +1350,24 @@
       },
       "vendor": "zai"
     },
+    "databricks/glm-5.3-flash-priority": {
+      "curated": false,
+      "sources": {
+        "databricks": [
+          "glm-5.3-flash-priority"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "databricks/glm-5.3-priority": {
+      "curated": false,
+      "sources": {
+        "databricks": [
+          "glm-5.3-priority"
+        ]
+      },
+      "vendor": "zai"
+    },
     "databricks/gte": {
       "curated": false,
       "sources": {
@@ -1355,6 +1382,15 @@
       "sources": {
         "databricks": [
           "kimi-k2.7"
+        ]
+      },
+      "vendor": "moonshot"
+    },
+    "databricks/kimi-k3-priority": {
+      "curated": false,
+      "sources": {
+        "databricks": [
+          "kimi-k3-priority"
         ]
       },
       "vendor": "moonshot"
