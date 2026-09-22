@@ -7336,6 +7336,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3.8-omni-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.8-omni-flash"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/rekaai/reka-edge": {
       "curated": false,
       "sources": {
