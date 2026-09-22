@@ -6207,11 +6207,29 @@
       },
       "vendor": "nex-agi"
     },
+    "openrouter/nex-agi/nex-n2.5-mini": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nex-agi/nex-n2.5-mini"
+        ]
+      },
+      "vendor": "nex-agi"
+    },
     "openrouter/nex-agi/nex-n2.5-mini:free": {
       "curated": false,
       "sources": {
         "openrouter": [
           "nex-agi/nex-n2.5-mini:free"
+        ]
+      },
+      "vendor": "nex-agi"
+    },
+    "openrouter/nex-agi/nex-n2.5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nex-agi/nex-n2.5-pro"
         ]
       },
       "vendor": "nex-agi"
