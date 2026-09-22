@@ -243,6 +243,15 @@
       },
       "vendor": "zai"
     },
+    "baseten/glm-53-fast": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "glm-53-fast"
+        ]
+      },
+      "vendor": "zai"
+    },
     "baseten/glm-53-flash": {
       "curated": false,
       "sources": {
