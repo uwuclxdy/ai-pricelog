@@ -5,6 +5,10 @@ logs Data logging and sharing Safety Safety settings Safety guidance Frameworks 
 Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 3.8 Flash is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
+September 18, 2026 Gemini 2.5 models access update : To ensure reliable performance for everyone, we are limiting access to the 2.5 models to users who have actively used them in the past.
+These models are not deprecated and will continue to be served until further notice through the API.
+For any new projects, use our latest models: 3.5 Flash-Lite or 3.8 Flash.
+This helps us maintain sufficient capacity for both ongoing legacy workflows and new applications.
 September 17, 2026 Antigravity Agent 09-2026 : Released antigravity-preview-09-2026 , which replaces and deprecates antigravity-preview-05-2026 .
 If you run on a remote sandbox ( environment: "remote" ) and read only output_text or model_output steps, update the agent string and nothing else changes.
 If you run tools locally ( local_environment ) or parse function_call steps, the built-in tools changed.
@@ -349,5 +353,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-09-17 UTC.
+Last updated 2026-09-22 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
