@@ -162,6 +162,15 @@
       },
       "vendor": "anthropic"
     },
+    "anthropic/claude-opus-5-5": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-opus-5-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "anthropic/claude-sonnet-4-5": {
       "curated": false,
       "sources": {
