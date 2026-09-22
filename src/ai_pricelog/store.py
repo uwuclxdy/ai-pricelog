@@ -509,6 +509,8 @@ def build_row(
             when["days"] = entry["days"]
         if "window" in entry:
             when["window"] = entry["window"]
+        if "min_tokens" in entry:
+            when["min_tokens"] = entry["min_tokens"]
         if "mode" in entry:
             when["mode"] = entry["mode"]
         if when and pricing.timezone is not None:

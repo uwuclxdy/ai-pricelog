@@ -521,6 +521,27 @@ def test_build_row_appends_converted_window_rates_entries():
     ]
 
 
+def test_build_row_window_rates_entry_carries_min_tokens():
+    # the volume-threshold when-key (the openrouter min_prompt_tokens shape)
+    # passes through window_rates entries like days/window/mode; no timezone
+    # rides it unless the pricing names one
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="chat",
+        window_rates=(
+            {"min_tokens": 200000, "input_mtok": 4.0, "output_mtok": 12.0, "cache_read_mtok": 1.0},
+        ),
+    )
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["overrides"] == [
+        {
+            "when": {"min_tokens": 200000},
+            "rates": {"input": 4.0, "output": 12.0, "cache_read": 1.0},
+        }
+    ]
+
+
 def test_build_row_stamps_timezone_inside_scheduled_override_when():
     pricing = Pricing(
         input_cost_per_token=1e-6,
