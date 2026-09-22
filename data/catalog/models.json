@@ -162,15 +162,6 @@
       },
       "vendor": "anthropic"
     },
-    "anthropic/claude-opus-5-5": {
-      "curated": false,
-      "sources": {
-        "anthropic": [
-          "claude-opus-5-5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
     "anthropic/claude-sonnet-4-5": {
       "curated": false,
       "sources": {
@@ -454,6 +445,19 @@
         ],
         "openrouter": [
           "anthropic/claude-opus-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "claude-opus-5-5": {
+      "curated": true,
+      "name": "Claude Opus 5.5",
+      "sources": {
+        "anthropic": [
+          "claude-opus-5-5"
+        ],
+        "openrouter": [
+          "anthropic/claude-opus-5.5"
         ]
       },
       "vendor": "anthropic"
@@ -5237,15 +5241,6 @@
       "sources": {
         "openrouter": [
           "anthropic/claude-opus-5-fast"
-        ]
-      },
-      "vendor": "anthropic"
-    },
-    "openrouter/anthropic/claude-opus-5.5": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "anthropic/claude-opus-5.5"
         ]
       },
       "vendor": "anthropic"
