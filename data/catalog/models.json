@@ -1885,6 +1885,24 @@
       },
       "vendor": "anthropic"
     },
+    "digitalocean/claude-opus-5.5": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-opus-5.5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "digitalocean/claude-opus-5.5-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-opus-5.5-fast-mode"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "digitalocean/deepseek-v4.1-flash": {
       "curated": false,
       "sources": {
