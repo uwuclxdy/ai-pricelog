@@ -198,6 +198,24 @@
       },
       "vendor": "xiaomi"
     },
+    "avian/mimo-v2.6-flash": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "mimo-v2.6-flash"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
+    "avian/mimo-v2.6-pro": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "mimo-v2.6-pro"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
     "baseten/deepseek-v4": {
       "curated": false,
       "sources": {

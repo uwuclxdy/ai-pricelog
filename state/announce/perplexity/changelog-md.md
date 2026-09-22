@@ -2,7 +2,13 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Agent API", "Connectors"]}> **Custom connectors: Bring your own MCP server** Register a remote MCP server once on your [Project connectors page](https://console.perplexity.ai/project/connectors).
+</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6 Luna** The Agent API now supports `openai/gpt-6-luna`.
+See the [Agent API Models reference](/docs/agent-api/models).
+**Claude Opus 5.5** The Agent API now supports `anthropic/claude-opus-5-5`.
+See the [Agent API Models reference](/docs/agent-api/models).
+**Grok 4.7** The Agent API now supports `xai/grok-4.7`.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="September 2026" tags={["Agent API", "Connectors"]}> **Custom connectors: Bring your own MCP server** Register a remote MCP server once on your [Project connectors page](https://console.perplexity.ai/project/connectors).
 Perplexity stores the server's credential, so your application does not need to store or send it with each request.
 Use the generated connector ID with `type: "connector"` in Agent API requests.
 Custom connectors are available to all Projects and support API-key or no authentication, with Streamable HTTP or SSE transport.
