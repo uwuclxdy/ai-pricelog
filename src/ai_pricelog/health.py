@@ -26,6 +26,11 @@ from pathlib import Path
 ISSUE_PREFIX = "provider broken: "
 PASS_DEAD_TITLE = "review pass dead"
 
+# the detect-stage skip line every detector logs; the pipeline watches for it
+# live (absence suppression) and this module parses it from the run log, so
+# the contract has one owner
+DETECT_SKIP = re.compile(r"detect skip for (\S+):")
+
 # (pattern, class, fixed provider key or None when the pattern carries the key)
 _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"detector for (\S+) failed"), "hard", None),
@@ -38,7 +43,7 @@ _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"entry \S+ failed row build for (\S+):"), "soft", None),
     (re.compile(r"parse skip for (\S+):"), "soft", None),
     (re.compile(r"refresh for \S+ skipped in (\S+):"), "soft", None),
-    (re.compile(r"detect skip for (\S+):"), "soft", None),
+    (DETECT_SKIP, "soft", None),
 )
 
 

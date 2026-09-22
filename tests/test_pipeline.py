@@ -95,6 +95,9 @@ class PipelineRunner:
         return self.real.run(cmd, cwd)
 
 
+fake_det_log = logging.getLogger("ai_pricelog.detectors.fake_det")
+
+
 @pytest.fixture
 def fake_modules(monkeypatch):
     detect_controls: dict[str, object] = {}
@@ -106,6 +109,16 @@ def fake_modules(monkeypatch):
         result = detect_controls[cfg.key]
         if isinstance(result, Exception):
             raise result
+        # an (ids, skips) tuple logs `skips` detect-skip warnings, the
+        # detectors' additive-drift line the absence suppression watches
+        if isinstance(result, tuple):
+            ids, skips = result
+            for _ in range(skips):
+                fake_det_log.warning(
+                    "detect skip for %s: unmapped model name 'Drifted' on https://example.com/models",
+                    cfg.key,
+                )
+            return list(ids)
         return list(result)
 
     def scrape(cfg, model_id):
@@ -1544,6 +1557,58 @@ def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
     assert branch_absence(repo_root, batch_branch("zai")) == {}
     assert (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_detect_skips_freeze_absence_counters(tmp_path, fake_modules, repo_root):
+    # a detect that skipped rows has an incomplete id set: a renamed or merged
+    # display row skips as unmapped drift, and the stored ids it used to cover
+    # must not read as delisted. the counters neither bump (no removal at the
+    # threshold) nor clear (a present id keeps its entry), so the branch
+    # carries the landed absence state unchanged
+    detect, scrape = fake_modules
+    detect["deepseek"] = (["deepseek-kept", "deepseek-new"], 1)
+    scrape["deepseek"] = {
+        "deepseek-kept": pricing(),
+        "deepseek-new": pricing(3.0e-7, 1.2e-6),
+    }
+    cfg = make_cfg("deepseek")
+    kept = store.build_row(
+        "deepseek",
+        "deepseek-kept",
+        pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+        VERSION,
+    )
+    seed_store(repo_root, [deepseek_prior(), kept])
+    seed_absence(
+        repo_root,
+        {
+            "deepseek": {
+                "deepseek-chat": {"absent_runs": 2, "since": TODAY},
+                "deepseek-kept": {"absent_runs": 1, "since": TODAY},
+            }
+        },
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    branch = batch_branch("deepseek")
+    rows = branch_rows(repo_root, branch, "deepseek")
+    assert [row["model_id"] for row in rows] == [
+        "deepseek-chat",
+        "deepseek-kept",
+        "deepseek-new",
+    ]
+    assert all(row.get("removed") is not True for row in rows)
+    assert branch_absence(repo_root, branch) == {
+        "deepseek": {
+            "deepseek-chat": {"absent_runs": 2, "since": TODAY},
+            "deepseek-kept": {"absent_runs": 1, "since": TODAY},
+        }
+    }
+    assert_default_branch_clean(repo_root, tip="land absence state")
 
 
 def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, repo_root):

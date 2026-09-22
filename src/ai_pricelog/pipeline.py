@@ -18,7 +18,10 @@ all rows; while that seed pr is still open, the run skips itself.
 A stored model absent from its source's page twice (both observations landed
 through prs) gets a removal row; the counters live in state/absence/,
 which only ever lands on pr branches, so a flaky page never fakes a
-delisting. When the run opens a pr it touches `.run-changed` for the CI step
+delisting. A run whose detect logged skip warnings for a source advances no
+counter for it: a renamed or merged display row skips as unmapped drift, and
+the stored id it used to cover must not read as delisted while the id set is
+incomplete. When the run opens a pr it touches `.run-changed` for the CI step
 that reads it; a state-only diff with no pr opens nothing reviewable and
 leaves the marker alone.
 """
@@ -27,14 +30,25 @@ from __future__ import annotations
 
 import logging
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
 
-from ai_pricelog import absence, announce, config, models, openrouter, pr, store, validate
+from ai_pricelog import (
+    absence,
+    announce,
+    config,
+    health,
+    models,
+    openrouter,
+    pr,
+    store,
+    validate,
+)
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +83,35 @@ class _PrGroup:
     provider: str
     source_url: str
     rows: list[dict[str, object]] = field(default_factory=list)
+
+
+class _DetectSkipWatch(logging.Handler):
+    """Counts one key's detect-skip warnings while installed.
+
+    A detect that skipped rows has an incomplete id set, so the run cannot
+    settle absence: a renamed or merged display row would read as a delisting
+    of the stored id it used to cover. The counters skip the run, the shape
+    of the priced-detection-failure rule.
+    """
+
+    def __init__(self, key: str) -> None:
+        super().__init__(level=logging.WARNING)
+        self._key = key
+        self.count = 0
+
+    def emit(self, record: logging.LogRecord) -> None:
+        match = health.DETECT_SKIP.search(record.getMessage())
+        if match is not None and match.group(1) == self._key:
+            self.count += 1
+
+    @contextmanager
+    def installed(self) -> Iterator[None]:
+        root = logging.getLogger()
+        root.addHandler(self)
+        try:
+            yield
+        finally:
+            root.removeHandler(self)
 
 
 def run(
@@ -133,9 +176,11 @@ def run(
 
     for pcfg in cfg.providers:
         provider_report = report.providers[pcfg.key] = ProviderReport()
+        skip_watch = _DetectSkipWatch(pcfg.key)
         try:
             detector = config.resolve_provider_module("detectors", pcfg.detector)
-            detected = list(detector.detect(pcfg))
+            with skip_watch.installed():
+                detected = list(detector.detect(pcfg))
         except Exception as exc:
             log.exception("detector for %s failed", pcfg.key)
             provider_report.errors.append(_describe(exc))
@@ -154,11 +199,19 @@ def run(
         detect_priced = getattr(detector, "detect_priced", None)
         if detect_priced is not None:
             try:
-                absence_ids = list(detect_priced(pcfg))
+                with skip_watch.installed():
+                    absence_ids = list(detect_priced(pcfg))
             except Exception as exc:
                 log.exception("priced detection for %s failed", pcfg.key)
                 provider_report.errors.append(_describe(exc))
                 absence_ids = None
+        if skip_watch.count:
+            log.info(
+                "absence counters for %s skip this run: %d detect skips",
+                pcfg.key,
+                skip_watch.count,
+            )
+            absence_ids = None
 
         _add_candidates(
             pcfg,
@@ -583,10 +636,12 @@ def _track_provider_absence(
 
     `absence_ids` is the priced set when the detector exposes `detect_priced`
     (a model still carded but no longer priced counts absent), else the full
-    detected set. a `None` set means priced detection failed and the counters
-    skip this run (skip-and-retry). Only stored ids can be absent, and the
-    scraper's dedup decides which page id covers which stored spelling, so a
-    deduped spelling never counts as absent while its page twin is listed.
+    detected set. a `None` set means the detection could not settle absence —
+    priced detection failed, or the detect logged skip warnings and its id set
+    is incomplete — and the counters skip this run (skip-and-retry). Only
+    stored ids can be absent, and the scraper's dedup decides which page id
+    covers which stored spelling, so a deduped spelling never counts as absent
+    while its page twin is listed.
     """
     if absence_ids is None:
         return
