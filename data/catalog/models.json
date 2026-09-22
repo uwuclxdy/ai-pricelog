@@ -5506,6 +5506,15 @@
       },
       "vendor": "cohere"
     },
+    "openrouter/cohere/command-a-plus": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/command-a-plus"
+        ]
+      },
+      "vendor": "cohere"
+    },
     "openrouter/cohere/command-r7b-12-2024": {
       "curated": false,
       "sources": {
