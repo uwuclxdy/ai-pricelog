@@ -6877,6 +6877,78 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6-luna": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-luna"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-luna-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-luna-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-luna-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-luna-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-luna:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-luna:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-sol": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-sol-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-sol-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-sol-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-sol-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6-sol:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-sol:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-audio": {
       "curated": false,
       "sources": {
