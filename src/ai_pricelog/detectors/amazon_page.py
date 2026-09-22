@@ -12,11 +12,13 @@ reachable only through version ids already recorded).
 the api's model key is a display name ("Nova Lite"), not the canonical model
 id; the carded names join through NAME_TO_ID to the `amazon.nova-*` ids the
 aws docs model cards carry. every other product skips, by mechanism: a
-nova-family chat name with no card (today nova 2.0 lite and nova pro latency
-optimized) is additive drift and skips with a warning (plan #22); a nova
-name whose products carry only non-chat inferenceTypes (canvas, reel, sonic,
-MME, the 2.0 omni/pro audio-image rows) never passes the axis filter; a
-third-party chat model (the file serves dozens: claude, llama, mistral) is
+nova-family chat name with no card and no known tier-variant spelling is
+additive drift and skips with a warning (plan #22); a name in
+CARDLESS_TIER_VARIANTS (a serving tier of a carded model, never its own
+index entry) skips silently, the digitalocean by-name exclusion shape; a
+nova name whose products carry only non-chat inferenceTypes (canvas, reel,
+sonic, MME, the 2.0 omni/pro audio-image rows) never passes the axis filter;
+a third-party chat model (the file serves dozens: claude, llama, mistral) is
 another provider's coverage and skips silently; a product with no model
 attribute at all (titan keys on titanModel) skips at the name check. a page
 with no carded nova name is structural absence and raises, so the provider
@@ -45,16 +47,23 @@ ON_DEMAND_FEATURE = "On-demand Inference"
 # display name -> canonical model id, joined from the aws docs model cards'
 # "Model ID" rows (static markdown, 0 price numbers):
 # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-lite.md
-# (the {pro,micro,premier} twins hold the same table). only carded names join;
-# every other nova name in the api is drift to skip with a warning.
+# (the {pro,micro,premier,2-lite} twins hold the same table). only carded
+# names join; every other nova name in the api is drift to skip with a
+# warning unless it is a known tier variant.
 NAME_TO_ID = {
     "Nova Lite": "amazon.nova-lite-v1:0",
     "Nova Micro": "amazon.nova-micro-v1:0",
     "Nova Pro": "amazon.nova-pro-v1:0",
     "Nova Premier": "amazon.nova-premier-v1:0",
+    "Nova 2.0 Lite": "amazon.nova-2-lite-v1:0",
 }
 
 ID_TO_NAME = {model_id: name for name, model_id in NAME_TO_ID.items()}
+
+# nova chat-axis names that are serving tiers of a carded model and carry no
+# model card of their own: tier variants never join (the scraper docstring's
+# rule), and a permanent warning for one would mask a genuinely new name
+CARDLESS_TIER_VARIANTS = frozenset({"Nova Pro Latency Optimized"})
 
 # the chat price axes: on-demand inferenceType -> axis
 AXIS_INFERENCE_TYPES = {
@@ -142,10 +151,10 @@ def detect(cfg: ProviderCfg) -> list[str]:
         model_id = NAME_TO_ID.get(name)
         if model_id is None:
             # only the nova family is this provider's watch scope: a nova
-            # name with no card is drift to report, a third-party bedrock
-            # model (the file serves dozens) is another provider's coverage
-            # and skips silently
-            if name.startswith("Nova"):
+            # name with no card is drift to report, a known tier variant and
+            # a third-party bedrock model (the file serves dozens) skip
+            # silently
+            if name.startswith("Nova") and name not in CARDLESS_TIER_VARIANTS:
                 unjoined.add(name)
             continue
         if model_id not in seen:
