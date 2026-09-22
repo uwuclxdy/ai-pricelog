@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
@@ -10,19 +11,59 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import xai_page
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.scrapers import xai_page as xai_scraper
+from ai_pricelog.store import build_row
+from ai_pricelog.validate import load_schema_keys, validate_row
 
 FIXTURES = Path(__file__).parent / "fixtures" / "xai_page"
 PAGE_URL = "https://docs.x.ai/docs/models"
+ROOT = Path(__file__).resolve().parents[1]
+VERSION = load_schema_keys(ROOT).version
 
 EXPECTED_IDS = [
     "grok-4.3",
     "grok-4.5",
     "grok-4.6",
+    "grok-4.7",
     "grok-build-0.1",
     "grok-4.20-0309-reasoning",
     "grok-4.20-0309-non-reasoning",
     "grok-4.20-multi-agent-0309",
 ]
+
+# the long-context tier every language model's entry carries: the threshold
+# and the per-1M rates the blob's *LongContext fields scale to
+_LC = {
+    "grok-4.5": {
+        "min_tokens": 200000,
+        "input_mtok": 4.0,
+        "output_mtok": 12.0,
+        "cache_read_mtok": 0.6,
+    },
+    "grok-4.6": {
+        "min_tokens": 200000,
+        "input_mtok": 4.0,
+        "output_mtok": 12.0,
+        "cache_read_mtok": 1.0,
+    },
+    "grok-4.3": {
+        "min_tokens": 200000,
+        "input_mtok": 2.5,
+        "output_mtok": 5.0,
+        "cache_read_mtok": 0.4,
+    },
+    "grok-build-0.1": {
+        "min_tokens": 200000,
+        "input_mtok": 2.0,
+        "output_mtok": 4.0,
+        "cache_read_mtok": 0.4,
+    },
+    "grok-4.7": {
+        "min_tokens": 200000,
+        "input_mtok": 4.0,
+        "output_mtok": 12.0,
+        "cache_read_mtok": 1.0,
+    },
+}
 
 
 def make_cfg(url: str = PAGE_URL) -> ProviderCfg:
@@ -71,8 +112,9 @@ def test_detect_lists_language_models_in_page_order(live_blob):
 def test_detect_excludes_non_language_entries(live_blob):
     ids = xai_page.detect(make_cfg())
     assert "grok-imagine-image-2.0" not in ids
+    assert "grok-imagine-video-1.5" not in ids
     assert "grok-tts" not in ids
-    assert "grok-stt" not in ids
+    assert "grok-voice-transcribe-2.0" not in ids
 
 
 def test_detect_propagates_fetch_error(monkeypatch):
@@ -163,14 +205,108 @@ def test_detect_extracts_blob_from_html(snippet):
 
 def test_scrape_exact_prices(live_blob):
     cfg = make_cfg()
-    assert xai_scraper.scrape(cfg, "grok-4.5") == Pricing(2e-6, 6e-6, "chat", 500000, 0.3 / 1e6)
-    assert xai_scraper.scrape(cfg, "grok-4.6") == Pricing(2e-6, 6e-6, "chat", 500000, 0.5 / 1e6)
+    assert xai_scraper.scrape(cfg, "grok-4.5") == Pricing(
+        2e-6, 6e-6, "chat", 500000, 0.3 / 1e6, window_rates=(_LC["grok-4.5"],)
+    )
+    assert xai_scraper.scrape(cfg, "grok-4.6") == Pricing(
+        2e-6, 6e-6, "chat", 500000, 0.5 / 1e6, window_rates=(_LC["grok-4.6"],)
+    )
     assert xai_scraper.scrape(cfg, "grok-4.3") == Pricing(
-        1.25e-6, 2.5e-6, "chat", 1000000, 0.2 / 1e6
+        1.25e-6, 2.5e-6, "chat", 1000000, 0.2 / 1e6, window_rates=(_LC["grok-4.3"],)
     )
     assert xai_scraper.scrape(cfg, "grok-build-0.1") == Pricing(
-        1e-6, 2e-6, "chat", 256000, 0.2 / 1e6
+        1e-6, 2e-6, "chat", 256000, 0.2 / 1e6, window_rates=(_LC["grok-build-0.1"],)
     )
+    assert xai_scraper.scrape(cfg, "grok-4.7") == Pricing(
+        2e-6, 6e-6, "chat", 500000, 0.5 / 1e6, window_rates=(_LC["grok-4.7"],)
+    )
+
+
+def test_build_row_long_context_lands_as_min_tokens_override(live_blob):
+    # the row shape the review-corrected grok-4.7 rows already store: base
+    # rates plus one when.min_tokens override carrying the tier's rates
+    pricing = xai_scraper.scrape(make_cfg(), "grok-4.7")
+    assert pricing is not None
+    row = build_row("xai", "grok-4.7", pricing, "2026-09-22", PAGE_URL, VERSION)
+    validate_row(row, load_schema_keys(ROOT))
+    assert row["rates"] == {"input": 2.0, "output": 6.0, "cache_read": 0.5}
+    assert row["overrides"] == [
+        {
+            "when": {"min_tokens": 200000},
+            "rates": {"input": 4.0, "output": 12.0, "cache_read": 1.0},
+        }
+    ]
+    assert row["limits"] == {"context": 500000}
+
+
+def _serve_model(monkeypatch: pytest.MonkeyPatch, entry: dict) -> None:
+    blob = {"clusterConfigs": [{"languageModels": [entry]}]}
+    serve_html(monkeypatch, f"globalThis.__XAI_PUBLIC_MODELS__={json.dumps(blob)};")
+
+
+def test_scrape_long_context_without_threshold_raises(monkeypatch: pytest.MonkeyPatch):
+    # a tier the page prices but cannot schedule is a shape break on the
+    # chosen row, never a silently dropped rate
+    _serve_model(
+        monkeypatch,
+        {
+            "name": "grok-x",
+            "promptTextTokenPrice": "20000",
+            "completionTextTokenPrice": "60000",
+            "promptTextTokenPriceLongContext": "40000",
+        },
+    )
+    with pytest.raises(web.FetchError, match="longContextThreshold"):
+        xai_scraper.scrape(make_cfg(), "grok-x")
+
+
+def test_scrape_threshold_without_tier_rates_raises(monkeypatch: pytest.MonkeyPatch):
+    _serve_model(
+        monkeypatch,
+        {
+            "name": "grok-x",
+            "promptTextTokenPrice": "20000",
+            "completionTextTokenPrice": "60000",
+            "longContextThreshold": "200000",
+        },
+    )
+    with pytest.raises(web.FetchError, match="long-context tier"):
+        xai_scraper.scrape(make_cfg(), "grok-x")
+
+
+def test_scrape_unreadable_tier_rate_raises(monkeypatch: pytest.MonkeyPatch):
+    _serve_model(
+        monkeypatch,
+        {
+            "name": "grok-x",
+            "promptTextTokenPrice": "20000",
+            "completionTextTokenPrice": "60000",
+            "longContextThreshold": "200000",
+            "promptTextTokenPriceLongContext": "40000",
+            "completionTokenPriceLongContext": "negotiable",
+        },
+    )
+    with pytest.raises(web.FetchError, match="output rate"):
+        xai_scraper.scrape(make_cfg(), "grok-x")
+
+
+def test_scrape_tier_without_cache_read_inherits_base(monkeypatch: pytest.MonkeyPatch):
+    # a missing long-context cache rate omits the axis: consumers inherit
+    # the base rate for it
+    _serve_model(
+        monkeypatch,
+        {
+            "name": "grok-x",
+            "promptTextTokenPrice": "20000",
+            "completionTextTokenPrice": "60000",
+            "longContextThreshold": "200000",
+            "promptTextTokenPriceLongContext": "40000",
+            "completionTokenPriceLongContext": "120000",
+        },
+    )
+    pricing = xai_scraper.scrape(make_cfg(), "grok-x")
+    assert pricing is not None
+    assert pricing.window_rates == ({"min_tokens": 200000, "input_mtok": 4.0, "output_mtok": 12.0},)
 
 
 def test_dedup_keys_dated_snapshots():
