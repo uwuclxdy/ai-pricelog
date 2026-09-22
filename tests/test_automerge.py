@@ -1541,3 +1541,55 @@ def test_merge_refuses_when_the_winner_tree_lacks_the_channel_file(tmp_path):
         )
 
     assert git(repo, "rev-parse", "main").strip() == before
+
+
+def test_merge_fetches_a_branch_pushed_after_the_checkout(tmp_path):
+    # the CI checkout fetches at job start; a sibling run pushes its branch
+    # afterwards and the merge red'd reading the stale local origin/* ref
+    # (observed 2026-09-22: `unknown revision` on the branch diff). deleting
+    # the tracking ref reproduces the state; the merge must fetch it back
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-flash", "2026-09-01", 0.05)],
+    )
+    git(repo, "update-ref", "-d", "refs/remotes/origin/pricelog/alpha-00000000")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert results[0].appended == 1
+
+
+def test_merge_refuses_a_checkout_behind_the_remote_base(tmp_path):
+    # a merge from a stale base drops the rows that landed upstream; before
+    # the guard it surfaced only as a push rejection after the merge commits
+    # (observed 2026-09-18, and on a 2026-09-22 hand merge)
+    repo, bare = build_repo(tmp_path)
+    other = tmp_path / "other"
+    git(tmp_path, "clone", str(bare), str(other))
+    git(other, "config", "user.name", "Test")
+    git(other, "config", "user.email", "test@example.com")
+    (other / "no-hooks").mkdir()
+    git(other, "config", "core.hooksPath", str(other / "no-hooks"))
+    store.save_shard(
+        store.load_shard(other / "data" / "history", "deepseek")
+        + [make_row("deepseek", "deepseek-v4-flash", "2026-08-31", 0.05)],
+        other / "data" / "history",
+        "deepseek",
+    )
+    git(other, "add", ".")
+    git(other, "commit", "-m", "landed upstream")
+    git(other, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-01", 0.44)],
+    )
+
+    with pytest.raises(automerge.AutoMergeError, match="behind"):
+        automerge.merge_branches(
+            ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+        )

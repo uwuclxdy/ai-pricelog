@@ -652,15 +652,29 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
         )
 
 
+def _is_ancestor(runner: pr.PrRunner, repo_root: Path, a: str, b: str) -> bool:
+    proc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", a, b],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode not in (0, 1):
+        raise AutoMergeError(f"git merge-base --is-ancestor {a[:7]} {b[:7]} failed: {proc.stderr}")
+    return proc.returncode == 0
+
+
 def _check_checkout(repo_root: Path, runner: pr.PrRunner, base: str) -> None:
-    """Refuse a merge run from a checkout that is not the base branch.
+    """Refuse a merge run from a checkout that is not at or ahead of the base tip.
 
     Every pricelog branch is a descendant of the base, so a merge started
     from one pushes as a fast-forward: the branch's own unverified commits
     ride into the default branch's history. The sanctioned states are a
     checkout at the remote base tip (a detached CI checkout included) and a
-    checkout on the base branch itself, which a local ``--no-push`` run
-    advances past it.
+    local ``--no-push`` run that has advanced past it. A checkout BEHIND the
+    tip merges over rows that already landed upstream (the push rejects
+    non-fast-forward afterwards, observed 2026-09-18 and 2026-09-22), so it
+    is refused by name rather than by a failed push.
     """
     try:
         base_tip = runner.run(
@@ -670,11 +684,22 @@ def _check_checkout(repo_root: Path, runner: pr.PrRunner, base: str) -> None:
         # no origin ref to compare against: the push would fail loudly anyway
         return
     head = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
-    branch = runner.run(["git", "branch", "--show-current"], cwd=repo_root).strip()
-    if head == base_tip or branch == base:
+    if head == base_tip:
         return
+    branch = runner.run(["git", "branch", "--show-current"], cwd=repo_root).strip()
+    if branch != base:
+        raise AutoMergeError(
+            f"checkout is on {branch or head[:7]}, not {base};"
+            " run the merge from the default branch"
+        )
+    if _is_ancestor(runner, repo_root, base_tip, head):
+        # the one sanctioned lag-free deviation: a local --no-push run that
+        # has advanced the base past its remote tip
+        return
+    state = "behind" if _is_ancestor(runner, repo_root, head, base_tip) else "diverged from"
     raise AutoMergeError(
-        f"checkout is on {branch or head[:7]}, not {base}; run the merge from the default branch"
+        f"the checkout is {state} {base}'s remote tip {base_tip[:7]}: merging here would"
+        " drop the rows that landed upstream; fix: git pull and re-run"
     )
 
 
@@ -697,6 +722,13 @@ def merge_branches(
     """
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
+    # refs first: every check below and the merges themselves read origin/*
+    # refs, and the checkout fetched at job start minutes ago (a local clone
+    # can be arbitrarily stale) — a branch a sibling run or a human pushed
+    # since then is invisible to them (observed 2026-09-22: the merge died
+    # `unknown revision` on a concurrent run's ref). the base rides along so
+    # _check_checkout reads the true tip
+    runner.run(["git", "fetch", "origin", base, *branches], cwd=repo_root)
     _check_branches(branches, repo_root, runner)
     _check_checkout(repo_root, runner, base)
     # the runner checkout carries no git identity; the merge commits need one
