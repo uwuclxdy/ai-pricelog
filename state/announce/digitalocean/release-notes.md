@@ -5,7 +5,16 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 21 September Managed Agents is now available in public preview for all users.
+Managed Agents is a set of services that gives every agent its own microVM execution environment and governed tool access so that developers can scale agentic work without having to build and maintain infrastructure themselves.
+Developers can pick from agent harnesses that they already use (like Claude Code or agents built with frameworks like LangGraph and Hermes), securely connect it to more than 16,000 tools and have their agents do meaningful work in seconds, from the Control Panel or the DigitalOcean CLI.
+Teams can also register custom OCI images as sandbox templates with Bring-Your-Own-Template (BYOT).
+DigitalOcean Harness Runtime combines the functionality of a lightweight microVM, built-in tools like chromium and a coding sandbox needed by agents to do work.
+The product also offers rich lifecycle APIs that persist conversational history and working state across sessions, along with pause/resume/fork semantics so that developers can control costs and adapt workflows to the nonlinear quirks of agentic work.
+Action Gateway gives agents governed access to 16,000+ tools through a single managed MCP endpoint.
+This includes DigitalOcean-maintained tools such as Web Search, Web Fetch, Browser Automation, and DigitalOcean infrastructure management APIs, along with connectors for platforms like GitHub, HubSpot, Stripe, Snowflake, and more.
+Teams can also extend the catalog with their own MCP servers and internal tools.
+17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
 To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
 10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
