@@ -1,6 +1,6 @@
 """databricks pricing pair tests, pinned against the saved live pricing page.
 
-the fixture is the full 2026-09-07 capture of the foundation-model-serving
+the fixture is the full 2026-09-22 capture of the foundation-model-serving
 pricing page. the per-token rates live in two tables ("Standard Pay Per
 Token" and "Priority Pay Per Token", each `Input | Output | Cache read`);
 the page carries display names only, so ids resolve through the detector's
@@ -26,8 +26,9 @@ PAGE_URL = "https://www.databricks.com/product/pricing/foundation-model-serving"
 FIXTURE = Path(__file__).parent / "fixtures" / "databricks_page" / "pricing.html"
 
 # every priced row across the two per-token tables, page order; the merged
-# "GLM-5.2, 5.3" row covers both store ids at one rate pair; the Priority
-# table rows carry "-priority" ids; embedding rows emit with output 0.0
+# "GLM-5.2, 5.3" row covers both store ids at one rate pair in EACH table;
+# the Priority table rows carry "-priority" ids; embedding rows emit with
+# output 0.0
 EXPECTED_IDS = [
     "kimi-k3",
     "glm-5.2",
@@ -36,6 +37,7 @@ EXPECTED_IDS = [
     "inkling",
     "kimi-k2.7",
     "glm-5.3-flash",
+    "deepseek-v4.1-flash",
     "deepseek-v4-flash",
     "qwen3.5-122b-a10b",
     "llama-4-maverick",
@@ -48,7 +50,10 @@ EXPECTED_IDS = [
     "gte",
     "bge-large",
     "qwen3-embedding-0.6b",
+    "kimi-k3-priority",
     "glm-5.2-priority",
+    "glm-5.3-priority",
+    "glm-5.3-flash-priority",
     "qwen3.5-122b-a10b-priority",
 ]
 
@@ -157,11 +162,16 @@ def test_detect_matches_both_pay_per_token_tables(monkeypatch: pytest.MonkeyPatc
         monkeypatch,
         [
             table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
-            table(_PRIORITY_HEADER, row("GLM-5.2", "35.000", "110.000", "6.500")),
+            table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
             table(_HOURLY_HEADER, row("GLM-5.2, 5.3", "142.857", "-", "-")),
         ],
     )
-    assert detector.detect(make_cfg()) == ["glm-5.2", "glm-5.3", "glm-5.2-priority"]
+    assert detector.detect(make_cfg()) == [
+        "glm-5.2",
+        "glm-5.3",
+        "glm-5.2-priority",
+        "glm-5.3-priority",
+    ]
 
 
 def test_detect_skips_dash_rate_rows(monkeypatch: pytest.MonkeyPatch):
@@ -290,10 +300,43 @@ def test_scrape_priority_tier(live_page):
 
 def test_scrape_priority_table_row_never_matches_base_id(monkeypatch: pytest.MonkeyPatch):
     # the base id's row scan must stay scoped to the standard table: the
-    # priority table's GLM-5.2 row must not answer a glm-5.2 scrape
-    text = table(_PRIORITY_HEADER, row("GLM-5.2", "35.000", "110.000", "6.500"))
+    # priority table's merged GLM row must not answer a glm-5.2 scrape
+    text = table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500"))
     serve(monkeypatch, text)
     assert scraper.scrape(make_cfg(), "glm-5.2") is None
+
+
+def test_scrape_priority_merged_row_covers_both_ids(live_page):
+    # the priority table's merged "GLM-5.2, 5.3" row carries one rate pair
+    # for both "-priority" ids, the standard table's merged-row shape
+    for model_id in ("glm-5.2-priority", "glm-5.3-priority"):
+        pricing = scraper.scrape(make_cfg(), model_id)
+        assert pricing is not None, model_id
+        assert pricing.input_cost_per_token == pytest.approx(35.000 / 1e6)
+        assert pricing.output_cost_per_token == pytest.approx(110.000 / 1e6)
+        assert pricing.cache_read_cost_per_token == pytest.approx(6.500 / 1e6)
+
+
+def test_scrape_new_priority_listings(live_page):
+    kimi = scraper.scrape(make_cfg(), "kimi-k3-priority")
+    assert kimi is not None
+    assert kimi.input_cost_per_token == pytest.approx(75.000 / 1e6)
+    assert kimi.output_cost_per_token == pytest.approx(375.000 / 1e6)
+    assert kimi.cache_read_cost_per_token == pytest.approx(7.500 / 1e6)
+    flash = scraper.scrape(make_cfg(), "glm-5.3-flash-priority")
+    assert flash is not None
+    assert flash.input_cost_per_token == pytest.approx(3.750 / 1e6)
+    assert flash.output_cost_per_token == pytest.approx(12.500 / 1e6)
+    assert flash.cache_read_cost_per_token == pytest.approx(0.750 / 1e6)
+
+
+def test_scrape_deepseek_v4_1_flash(live_page):
+    pricing = scraper.scrape(make_cfg(), "deepseek-v4.1-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(4.286 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(17.143 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.429 / 1e6)
+    assert pricing.currency == "DBU"
 
 
 def test_scrape_without_cache_read(live_page):

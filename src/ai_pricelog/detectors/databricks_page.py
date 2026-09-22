@@ -71,6 +71,7 @@ _DISPLAY_IDS: dict[str, tuple[str, ...]] = {
     "GLM-5.3 Flash": ("glm-5.3-flash",),
     "Inkling": ("inkling",),
     "DeepSeek V4 Pro": ("deepseek-v4-pro",),
+    "DeepSeek V4.1 Flash": ("deepseek-v4.1-flash",),
     "DeepSeek V4 Flash": ("deepseek-v4-flash",),
     "Qwen 3.5 122B": ("qwen3.5-122b-a10b",),
     "Qwen 3 80B Instruct": ("qwen3-next-80b-a3b-instruct",),
@@ -86,10 +87,13 @@ _DISPLAY_IDS: dict[str, tuple[str, ...]] = {
 }
 
 # the priority table re-lists a subset of the models at priority rates,
-# under the base display spellings (no "(Priority)" annotation and no
-# merged rows since the 2026-09-05 restructure; measured on the live page)
+# under the base display spellings (no "(Priority)" annotation); since the
+# 2026-09-21 page change it carries the merged GLM row too, covering both
+# "-priority" ids at the one rate pair like the standard table's merged row
 _PRIORITY_DISPLAYS: dict[str, tuple[str, ...]] = {
-    "GLM-5.2": ("glm-5.2-priority",),
+    "Kimi K3": ("kimi-k3-priority",),
+    "GLM-5.2, 5.3": ("glm-5.2-priority", "glm-5.3-priority"),
+    "GLM-5.3 Flash": ("glm-5.3-flash-priority",),
     "Qwen 3.5 122B": ("qwen3.5-122b-a10b-priority",),
 }
 
