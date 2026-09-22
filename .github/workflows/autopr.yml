@@ -33,6 +33,17 @@ permissions:
   pull-requests: write
   issues: write
 
+# a duplicate dispatch is priced as a no-op (the pending scan finds every
+# model covered), which only holds when it never overlaps the run it
+# duplicates: concurrent runs race the scan and both open PRs for the same
+# models (observed 2026-09-22: a late fallback mark fired 14s before the box
+# timer; the pair opened duplicate PRs and one merge step died on the
+# other's unfetched branch ref). the group serializes them; the queued run
+# then opens nothing and stays green
+concurrency:
+  group: autopr
+  cancel-in-progress: false
+
 # an unfrozen `uv run` re-resolves the committed lock here, because the lock
 # records the resolver settings that wrote it and this runner carries none of
 # them. the rewritten uv.lock leaves the checkout dirty, which the merge step
