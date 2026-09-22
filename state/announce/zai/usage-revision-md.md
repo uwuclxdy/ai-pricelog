@@ -43,7 +43,9 @@ Plans are not switched automatically.
 You must subscribe or switch manually.
 **Q: Can I still use the migration discount I received on April 30?** **A:** Yes.
 If you met the eligibility requirements in the [Legacy Plan Migration Notice](/devpack/transition), your **50% Migration Support discount** remains valid through its original validity period and can be used for the new credits-based plan.
-## Usage Reference for Legacy Plans ### Legacy Plan V2 To manage resources and ensure fair access for all users, we apply usage limits on a 5-hour and weekly basis.
+## Usage Reference for Legacy Plans <Tip> From September 25 to October 7, 2026, all-day usage will be charged at the **off-peak rate**.
+</Tip> <Tip> Plus, with the **GLM-5.3-Flash Usage Campaign** now on, your actual available quota can go far beyond these figures.
+[View details](/devpack/notice/event-glm-5.3-flash) </Tip> ### Legacy Plan V2 To manage resources and ensure fair access for all users, we apply usage limits on a 5-hour and weekly basis.
 You can check your quota consumption progress in [Usage Statistics](https://z.ai/manage-apikey/subscription).
 One prompt refers to one query.
 Each prompt is estimated to invoke the model 15–20 times.

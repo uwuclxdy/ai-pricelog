@@ -375,7 +375,7 @@ The key stays active and no longer expires automatically.
 See [Authentication](/docs/api-keys-authentication#best-practices).
 </Update> <Update label="July 23, 2026" tags={["New releases", "Improvements"]}> ## Dedicated containers OpenAI-compatible endpoints [Dedicated container inference](/docs/dedicated-container-inference) now supports HTTP server mode for synchronous, OpenAI-compatible endpoints.
 Run your worker without the `--queue` flag, wire an OpenAI route with Sprocket, and call it with the OpenAI SDK or plain HTTP, with no Together-specific request shapes.
-See [Serve an OpenAI-compatible endpoint](/docs/dedicated_containers_openai).
+See [Serve an OpenAI-compatible endpoint](/docs/dedicated-containers-openai).
 ## Fine-tuning output object names Fine-tune retrieve and list-checkpoints responses now include qualified Together model registry names alongside object IDs.
 On [`GET /fine-tunes/{id}`](/reference/get-fine-tunes-id), use `model_object_name` and `adapter_object_name` (LoRA jobs) for the final artifacts in `<project_slug>/<model_name>` form.
 On [`GET /fine-tunes/{id}/checkpoints`](/reference/get-fine-tunes-id-checkpoint), each entry adds `object_name` with the same naming pattern (including `-<step>` or `-adapter` suffixes).
