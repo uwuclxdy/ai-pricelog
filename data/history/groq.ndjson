@@ -5,3 +5,4 @@
 {"schema":4,"source":"groq","model_id":"openai/gpt-oss-safeguard-20b","observed_at":"2026-08-29","rates":{"input":0.075,"output":0.3},"limits":{"context":131072,"output":65536},"provenance":{"url":"https://console.groq.com/docs/models.md"}}
 {"schema":4,"source":"groq","model_id":"qwen/qwen3.6-27b","observed_at":"2026-08-29","rates":{"input":0.6,"output":3.0},"limits":{"context":131072,"output":16384},"provenance":{"url":"https://console.groq.com/docs/models.md"}}
 {"schema":4,"source":"groq","model_id":"qwen/qwen3.8-27b","observed_at":"2026-08-29","rates":{"input":0.8,"output":4.0},"limits":{"context":131042,"output":16384},"provenance":{"url":"https://console.groq.com/docs/models.md"}}
+{"schema":4,"source":"groq","model_id":"qwen/qwen3.8-27b","observed_at":"2026-09-23","rates":{"input":0.8,"output":4.0},"limits":{"context":131072,"output":16384},"provenance":{"url":"https://console.groq.com/docs/models.md"}}
