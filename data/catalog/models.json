@@ -5164,6 +5164,15 @@
       },
       "vendor": "aion-labs"
     },
+    "openrouter/aion-labs/aion-3.5-mini": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "aion-labs/aion-3.5-mini"
+        ]
+      },
+      "vendor": "aion-labs"
+    },
     "openrouter/aion-labs/aion-rp-llama-3.1-8b": {
       "curated": false,
       "sources": {
@@ -7539,6 +7548,15 @@
       "sources": {
         "openrouter": [
           "stealth/ox-alpha"
+        ]
+      },
+      "vendor": "stealth"
+    },
+    "openrouter/stealth/space-bunny-alpha": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "stealth/space-bunny-alpha"
         ]
       },
       "vendor": "stealth"
