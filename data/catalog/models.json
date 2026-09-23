@@ -5155,6 +5155,15 @@
       },
       "vendor": "aion-labs"
     },
+    "openrouter/aion-labs/aion-3.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "aion-labs/aion-3.5"
+        ]
+      },
+      "vendor": "aion-labs"
+    },
     "openrouter/aion-labs/aion-rp-llama-3.1-8b": {
       "curated": false,
       "sources": {
