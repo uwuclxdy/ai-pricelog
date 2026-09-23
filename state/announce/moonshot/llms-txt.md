@@ -55,7 +55,7 @@ Supports text-based formats such as pdf, doc, and txt.
 - [List Files](https://platform.kimi.ai/docs/api/files-list.md): List the files uploaded to the current account.
 - [Get File Information](https://platform.kimi.ai/docs/api/files-retrieve.md): Get metadata for a specific file.
 - [Delete File](https://platform.kimi.ai/docs/api/files-delete.md): Delete a specific uploaded file.
-- [Get File Content](https://platform.kimi.ai/docs/api/files-content.md): Retrieve the extracted text content of a file uploaded with purpose file-extract.
+- [Get File Content](https://platform.kimi.ai/docs/api/files-content.md): Retrieve the extracted content of a file uploaded with purpose file-extract, returned as Markdown-formatted text.
 - [Create Batch](https://platform.kimi.ai/docs/api/batch-create.md): Create a batch job to process requests asynchronously at a lower price.
 - [List Batches](https://platform.kimi.ai/docs/api/batch-list.md): List the batch jobs of the current account.
 - [Retrieve Batch](https://platform.kimi.ai/docs/api/batch-retrieve.md): Get the details and progress of a specific batch job.

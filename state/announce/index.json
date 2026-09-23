@@ -41,8 +41,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "6574f04a1d8719d7549e248e242da35489c31cf599b987b7ebaa12c91649b279",
-      "fetched": "2026-09-21"
+      "sha256": "04265cf7e3fd37e151c56aea501978a94f2c362110647e714b52ef3b12325ec6",
+      "fetched": "2026-09-23"
     }
   },
   "minimax": {
