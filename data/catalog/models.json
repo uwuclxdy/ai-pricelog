@@ -4798,6 +4798,15 @@
       },
       "vendor": "inclusionai"
     },
+    "novita/inclusionai/ling-3.0-flash-vl": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "inclusionai/ling-3.0-flash-vl"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "novita/kwaipilot/kat-coder-pro": {
       "curated": false,
       "sources": {
