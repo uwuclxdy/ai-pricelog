@@ -3196,6 +3196,24 @@
       },
       "vendor": "google"
     },
+    "google/gemini-3.8-flash-lite-tts": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-3.8-flash-lite-tts"
+        ]
+      },
+      "vendor": "google"
+    },
+    "google/gemini-3.8-flash-tts": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-3.8-flash-tts"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-3.8-live": {
       "curated": false,
       "sources": {
