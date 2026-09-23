@@ -14,6 +14,7 @@ A Droplet created before 2 October 2024, or one using a custom base image, needs
 Manage subnets and routes using the DigitalOcean API.
 The Control Panel does not support them yet.
 See How to Manage VPC Subnets and How to Manage Routes .
+The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6 Sol GPT-6 Luna For more information, see the Available Models page .
 21 September Managed Agents is now available in public preview for all users.
 Managed Agents is a set of services that gives every agent its own microVM execution environment and governed tool access so that developers can scale agentic work without having to build and maintain infrastructure themselves.
 Developers can pick from agent harnesses that they already use (like Claude Code or agents built with frameworks like LangGraph and Hermes), securely connect it to more than 16,000 tools and have their agents do meaningful work in seconds, from the Control Panel or the DigitalOcean CLI.
