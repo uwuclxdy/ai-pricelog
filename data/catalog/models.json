@@ -7444,6 +7444,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3.8-max-prime": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.8-max-prime"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/qwen/qwen3.8-omni-flash": {
       "curated": false,
       "sources": {
