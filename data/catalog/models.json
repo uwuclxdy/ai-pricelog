@@ -2191,6 +2191,24 @@
       },
       "vendor": "openai"
     },
+    "digitalocean/gpt-6-luna": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6-luna"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6-sol": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
     "digitalocean/llama-4-maverick-17b-128e-instruct": {
       "curated": false,
       "sources": {
