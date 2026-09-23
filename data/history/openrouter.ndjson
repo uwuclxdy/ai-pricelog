@@ -493,6 +493,7 @@
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin:free","observed_at":"2026-08-29","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Fin (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-sante:free","observed_at":"2026-09-04","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Sante (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-vl","observed_at":"2026-09-11","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":131072},"provenance":{"name":"Ling 3.0 Flash VL"}}
+{"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-vl","observed_at":"2026-09-23","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash VL"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-vl:free","observed_at":"2026-09-10","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash VL (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-12","rates":{"input":0.05,"output":0.23},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-13","rates":{"input":0.05,"output":0.23,"cache_read":0.05},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
@@ -606,6 +607,7 @@
 {"schema":4,"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-08-24","rates":{"input":0.44,"output":2.2,"cache_read":0.044},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=mistralai/devstral-2512&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-08-26","rates":{"input":0.44,"output":2.2,"cache_read":0.044},"limits":{"context":262144},"provenance":{"name":"Devstral 2 2512"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-08-30","rates":{"input":0.4,"output":2.0,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Devstral 2 2512"}}
+{"schema":4,"source":"openrouter","model_id":"mistralai/devstral-2512","observed_at":"2026-09-23","removed":true,"rates":{"input":0.4,"output":2.0,"cache_read":0.04},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/ministral-14b-2512","observed_at":"2025-12-28","rates":{"input":0.2,"output":0.2},"limits":{"context":262144},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/ministral-14b-2512","observed_at":"2026-03-17","rates":{"input":0.2,"output":0.2,"cache_read":0.02},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=mistralai/ministral-14b-2512&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/ministral-14b-2512","observed_at":"2026-08-26","rates":{"input":0.2,"output":0.2,"cache_read":0.02},"limits":{"context":262144},"provenance":{"name":"Ministral 3 14B 2512"}}
@@ -1289,6 +1291,7 @@
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"name":"Ox Alpha"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"stealth/space-bunny-alpha","observed_at":"2026-09-23","rates":{"input":0.0,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Space Bunny Alpha"}}
+{"schema":4,"source":"openrouter","model_id":"stealth/space-bunny-alpha","observed_at":"2026-09-23","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":1000000}}
 {"schema":4,"source":"openrouter","model_id":"stealth/union-alpha","observed_at":"2026-09-16","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Union Alpha"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/union-alpha","observed_at":"2026-09-18","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"stepfun/step-3.5-flash","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.3},"limits":{"context":262144},"provenance":{"name":"Step 3.5 Flash"}}
@@ -1463,6 +1466,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-08","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-22","rates":{"input":0.06,"output":0.2,"cache_read":0.012},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flashx","observed_at":"2026-09-19","rates":{"input":0.37,"output":1.25,"cache_read":0.075},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 FlashX"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flashx","observed_at":"2026-09-23","rates":{"input":0.37,"output":1.25,"cache_read":0.09},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 FlashX"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-09-08","rates":{"input":0.7,"output":2.2,"cache_read":0.13},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-09-22","rates":{"input":0.72,"output":2.4,"cache_read":0.12},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-09-23","rates":{"input":0.45,"output":2.0,"cache_read":0.1},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}

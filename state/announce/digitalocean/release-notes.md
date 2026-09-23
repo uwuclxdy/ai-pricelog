@@ -14,6 +14,8 @@ A Droplet created before 2 October 2024, or one using a custom base image, needs
 Manage subnets and routes using the DigitalOcean API.
 The Control Panel does not support them yet.
 See How to Manage VPC Subnets and How to Manage Routes .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
+The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6 Sol GPT-6 Luna For more information, see the Available Models page .
 21 September Managed Agents is now available in public preview for all users.
 Managed Agents is a set of services that gives every agent its own microVM execution environment and governed tool access so that developers can scale agentic work without having to build and maintain infrastructure themselves.
 Developers can pick from agent harnesses that they already use (like Claude Code or agents built with frameworks like LangGraph and Hermes), securely connect it to more than 16,000 tools and have their agents do meaningful work in seconds, from the Control Panel or the DigitalOcean CLI.
@@ -23,7 +25,6 @@ The product also offers rich lifecycle APIs that persist conversational history 
 Action Gateway gives agents governed access to 16,000+ tools through a single managed MCP endpoint.
 This includes DigitalOcean-maintained tools such as Web Search, Web Fetch, Browser Automation, and DigitalOcean infrastructure management APIs, along with connectors for platforms like GitHub, HubSpot, Stripe, Snowflake, and more.
 Teams can also extend the catalog with their own MCP servers and internal tools.
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
 To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
