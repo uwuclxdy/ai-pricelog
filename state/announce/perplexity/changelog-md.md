@@ -2,7 +2,9 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6 Luna** The Agent API now supports `openai/gpt-6-luna`.
+</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6 Sol** The Agent API now supports `openai/gpt-6-sol`.
+See the [Agent API Models reference](/docs/agent-api/models).
+**GPT-6 Luna** The Agent API now supports `openai/gpt-6-luna`.
 See the [Agent API Models reference](/docs/agent-api/models).
 **Claude Opus 5.5** The Agent API now supports `anthropic/claude-opus-5-5`.
 See the [Agent API Models reference](/docs/agent-api/models).

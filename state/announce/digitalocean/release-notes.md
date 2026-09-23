@@ -5,7 +5,16 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 21 September Managed Agents is now available in public preview for all users.
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 22 September VPC subnets and routes are now in public preview .
+Subnets let you add IP ranges to an existing VPC network, and resources in a VPC’s subnets can reach each other.
+Routes let you direct a subnet’s traffic to targets you manage, such as a Droplet acting as a firewall or VPN gateway.
+Droplets need routing information to reach resources in other subnets, the same way they do for VPC peering.
+A Droplet created before its VPC had more than one subnet needs its network service restarted .
+A Droplet created before 2 October 2024, or one using a custom base image, needs its routes added manually .
+Manage subnets and routes using the DigitalOcean API.
+The Control Panel does not support them yet.
+See How to Manage VPC Subnets and How to Manage Routes .
+21 September Managed Agents is now available in public preview for all users.
 Managed Agents is a set of services that gives every agent its own microVM execution environment and governed tool access so that developers can scale agentic work without having to build and maintain infrastructure themselves.
 Developers can pick from agent harnesses that they already use (like Claude Code or agents built with frameworks like LangGraph and Hermes), securely connect it to more than 16,000 tools and have their agents do meaningful work in seconds, from the Control Panel or the DigitalOcean CLI.
 Teams can also register custom OCI images as sandbox templates with Bring-Your-Own-Template (BYOT).
@@ -14,6 +23,7 @@ The product also offers rich lifecycle APIs that persist conversational history 
 Action Gateway gives agents governed access to 16,000+ tools through a single managed MCP endpoint.
 This includes DigitalOcean-maintained tools such as Web Search, Web Fetch, Browser Automation, and DigitalOcean infrastructure management APIs, along with connectors for platforms like GitHub, HubSpot, Stripe, Snowflake, and more.
 Teams can also extend the catalog with their own MCP servers and internal tools.
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
 To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
@@ -185,19 +195,6 @@ You can add a prepayment manually or enable auto-reload to replenish your balanc
 For more information, see Manage Serverless Inference Prepayment .
 The DigitalOcean Control Panel now supports light and dark themes.
 From the profile menu in the top right corner of the control panel, you can set your theme to a light or dark appearance, or match your operating system’s appearance setting.
-25 June You can now attach Network File Storage shares to multiple VPC networks, and expose specific subdirectories to single VPC networks by creating access points.
-A share can connect to up to 10 VPC networks in the same region.
-Access points restrict clients to a specific path within the share, and are isolated from one another so that clients on one cannot see the directories governed by another.
-This lets you host multiple tenants on a single share, each scoped to their own directory.
-For details, see How to Create and Delete Network File Storage Access Points .
-Released v1.163.0 of doctl , the official DigitalOcean CLI.
-This release adds a vector-databases command group for managing vector databases .
-24 June Single sign-on (SSO) with OIDC for DigitalOcean Kubernetes (DOKS) clusters is now in general availability .
-You can authenticate users to your Kubernetes clusters through an identity provider like Auth0, authentik, JumpCloud, Keycloak, or Okta, instead of using token-based authentication.
-SSO is configured per cluster with an issuer URL and client ID from your identity provider.
-You can enable it using doctl , the DigitalOcean API , or Terraform .
-The following Z.ai model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : GLM-5.1 For more information, see the Available Models page .
-A Fedora 44 ( fedora-44-x64 ) Droplet base image is now available in the Control Panel and through the API.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
