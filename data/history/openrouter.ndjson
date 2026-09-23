@@ -1350,6 +1350,7 @@
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2025-09-22","rates":{"input":0.45,"output":0.65},"limits":{"context":6144},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-08-26","rates":{"input":0.45,"output":0.65},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-09-04","rates":{"input":0.35,"output":0.65},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
+{"schema":4,"source":"openrouter","model_id":"upstage/solar-mini4","observed_at":"2026-09-23","rates":{"input":0.05,"output":0.2,"cache_read":0.005},"limits":{"context":524288},"provenance":{"name":"Solar Mini 4"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro-3","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"limits":{"context":131072},"provenance":{"name":"Solar Pro 3"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro4","observed_at":"2026-08-26","rates":{"input":0.03,"output":0.12,"cache_read":0.006},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro4","observed_at":"2026-09-11","rates":{"input":0.09,"output":0.36,"cache_read":0.018},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4"}}

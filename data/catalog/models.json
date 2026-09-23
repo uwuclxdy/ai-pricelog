@@ -7705,6 +7705,15 @@
       },
       "vendor": "undi95"
     },
+    "openrouter/upstage/solar-mini4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "upstage/solar-mini4"
+        ]
+      },
+      "vendor": "upstage"
+    },
     "openrouter/upstage/solar-pro-3": {
       "curated": false,
       "sources": {
