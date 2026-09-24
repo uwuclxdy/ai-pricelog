@@ -2209,6 +2209,15 @@
       },
       "vendor": "openai"
     },
+    "digitalocean/jev": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "jev"
+        ]
+      },
+      "vendor": null
+    },
     "digitalocean/llama-4-maverick-17b-128e-instruct": {
       "curated": false,
       "sources": {

@@ -89,6 +89,7 @@
 {"schema":4,"source":"digitalocean","model_id":"gpt-oss-120b","observed_at":"2026-09-18","rates":{"input":0.055,"output":0.385},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"gpt-oss-120b","observed_at":"2026-09-22","rates":{"input":0.1,"output":0.7},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"gpt-oss-20b","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.45},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"jev","observed_at":"2026-09-24","rates":{"input":0.042,"output":0.0},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"kimi-k2.5","observed_at":"2026-08-29","rates":{"input":0.5,"output":2.7,"cache_read":0.203},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"kimi-k2.5","observed_at":"2026-09-11","removed":true,"rates":{"input":0.5,"output":2.7,"cache_read":0.203}}
 {"schema":4,"source":"digitalocean","model_id":"kimi-k2.6","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.19},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
