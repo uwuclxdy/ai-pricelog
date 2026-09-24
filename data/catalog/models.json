@@ -5677,6 +5677,15 @@
       },
       "vendor": "dots-studio"
     },
+    "openrouter/fireworks/ember-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fireworks/ember-1"
+        ]
+      },
+      "vendor": "fireworks"
+    },
     "openrouter/google/gemini-2.5-flash-image": {
       "curated": false,
       "sources": {
