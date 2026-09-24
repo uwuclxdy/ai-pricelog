@@ -79,7 +79,7 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "9d2c0f2292fa0de0a642e6a6f16bcae43ea56e7ce4dbf140e51e7add762cf4c5",
+      "sha256": "7870aba30838aa247df928b9b90db1edc6772430016703417e0ada536e759160",
       "fetched": "2026-09-24"
     }
   },
@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "49dc7663e65dc36d4e7550335bdbd4e1815e01c81094a56e675e0bae64700145",
+      "sha256": "8194280db08563badebe14e7b053e4bf701eab84325eb301a44a5686d8cb4b2a",
       "fetched": "2026-09-24"
     }
   },
