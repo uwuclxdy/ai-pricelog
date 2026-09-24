@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 16, 2026" tags={["New releases"]}> ## Automatic idle shutdown for dedicated deployments Deployments can now stop themselves when they go unused.
+# Changelog <Update label="September 23, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `together/Tev1-4B-experimental`: 32,768 context length.
+Pricing: \$0.042 input / free output (per 1M tokens).
+</Update> <Update label="September 16, 2026" tags={["New releases"]}> ## Automatic idle shutdown for dedicated deployments Deployments can now stop themselves when they go unused.
 Set an inactivity timeout with `--inactive-timeout` (the `inactiveTimeout` field in the management API), and if the deployment serves no inference requests for that many minutes, it scales to zero replicas, releasing its hardware and stopping billing.
 See [Automatic idle shutdown](/docs/dedicated-endpoints/scaling#automatic-idle-shutdown).
 </Update> <Update label="September 15, 2026" tags={["New releases", "Deprecations"]}> ## Rollouts for dedicated model inference [Rollouts](/docs/dedicated-endpoints/rollouts) shift live traffic from one deployment to another under the same endpoint, without changing the endpoint URL.
