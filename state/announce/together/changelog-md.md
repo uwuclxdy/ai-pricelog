@@ -1,5 +1,9 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 23, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `together/Tev1-4B-experimental`: 32,768 context length.
+# Changelog <Update label="September 24, 2026" tags={["New releases"]}> ## TogetherLink beta TogetherLink runs coding agents such as Claude Code and Codex, plus the Claude and ChatGPT desktop apps, on models hosted by Together AI.
+It's now in beta, with automatic model routing, cost tracking, and a headless mode.
+By default, sessions use the auto router, which sends straightforward requests to Together AI models and more difficult requests to Claude Opus.
+Your normal agent configuration is untouched: ```bash theme={null} # Install TogetherLink curl -fsSL https://link.together.ai/install | bash # Open the interactive launcher togetherlink # Or pin a session to one model togetherlink --main moonshotai/Kimi-K3 claude ``` See [TogetherLink](/docs/togetherlink) for more details.
+</Update> <Update label="September 23, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `together/Tev1-4B-experimental`: 32,768 context length.
 Pricing: \$0.042 input / free output (per 1M tokens).
 </Update> <Update label="September 16, 2026" tags={["New releases"]}> ## Automatic idle shutdown for dedicated deployments Deployments can now stop themselves when they go unused.
 Set an inactivity timeout with `--inactive-timeout` (the `inactiveTimeout` field in the management API), and if the deployment serves no inference requests for that many minutes, it scales to zero replicas, releasing its hardware and stopping billing.
@@ -464,7 +468,7 @@ OIDC cluster SSH (`tg beta clusters ssh`) no longer requires a Together API key,
 See [SSH into a cluster](/reference/cli/clusters#ssh-into-a-cluster).
 </Update> <Update label="July 15, 2026" tags={["New releases", "Improvements"]}> ## TogetherLink TogetherLink is an open-source launcher that connects Claude Code, Codex, ChatGPT Desktop, Pi Code, and OpenCode to models hosted by Together AI.
 Install with one command and run your existing tools without hand-editing provider settings.
-See [Configure Claude Code, Codex, and ChatGPT with Together AI models](/docs/how-to-use-togetherlink).
+See [TogetherLink](/docs/togetherlink).
 ## Slurm cluster OIDC SSH Slurm GPU clusters with OIDC enabled now support browser-based SSH through the Together CLI.
 Choose **OIDC** on the cluster details page to sign in without uploading an SSH key.
 Key-based SSH remains available.
