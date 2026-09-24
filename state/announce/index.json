@@ -86,27 +86,27 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "29a9c43232c2a194a0ce4bcdcf5992ddf8e1a2fbcf5cef28a38d1635cb41f665",
-      "fetched": "2026-09-23"
+      "sha256": "e61d3e9593f8cf4f0649f3497e9406f1956baec61793735444f1350cafbc3682",
+      "fetched": "2026-09-24"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "7612ca6c2637a582100221c06f71a4c34899729e64569cad7a94ed67d6177046",
-      "fetched": "2026-09-23"
+      "sha256": "1122ad80c858908964296f7fdf223abdaed56f4dc1813325e85747defe6e5f83",
+      "fetched": "2026-09-24"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "f4daa74016db09aaa6f432e3fcc963b8f54dd2ef59c4ffe4beab53b6736b3b0c",
-      "fetched": "2026-09-23"
+      "sha256": "e2b8baa04fae38ceb481e651004d9b1a37041f64c74717cc8fa769c7ac41ae4c",
+      "fetched": "2026-09-24"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "4d5c2c8454f0fcfe4442f89e7b1c70a98d4a91d6a00bf00d3acb8d178e101d15",
-      "fetched": "2026-09-19"
+      "sha256": "5774ffc43fae80c2676b22655f37befe74be069175b655a1a73cfeceaeacbd88",
+      "fetched": "2026-09-24"
     }
   },
   "cohere": {
@@ -124,8 +124,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "892ecbfc146c76c7571d0b3331143fc43a3d0902b31e70f40a16c7942ed5505e",
-      "fetched": "2026-09-22"
+      "sha256": "49dc7663e65dc36d4e7550335bdbd4e1815e01c81094a56e675e0bae64700145",
+      "fetched": "2026-09-24"
     }
   },
   "cloudflare": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "e1d475109b36e94bb9cb1093578af5e6631eea2ad9bd82a042b29d0090ef68fd",
-      "fetched": "2026-09-23"
+      "sha256": "39ef4a0a6514671ae6ed67ee862d348ad56022a3bae86246a2f66a20c13da0b7",
+      "fetched": "2026-09-24"
     }
   },
   "scaleway": {
