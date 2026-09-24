@@ -30,7 +30,7 @@ See the [Agent API Models reference](/docs/agent-api/models) or the [Router mode
 No request changes are required, and an explicit `prompt_cache_key` still overrides the preset default.
 This can reduce costs by about 5% for applications that use presets frequently, depending on cache utilization.
 The [current preset values](/docs/agent-api/presets#current-preset-values) include each key for frozen configurations.
-</Update> <Update label="August 2026" tags={["Agent API", "Presets"]}> **Fast preset updated** The Agent API `fast` preset now uses `openai/gpt-5.6-luna` with `minimal` reasoning effort and priority processing.
+</Update> <Update label="August 2026" tags={["Agent API", "Presets"]}> **Fast preset updated** The Agent API `fast` preset now uses `openai/gpt-6-luna` with reasoning effort set to `none` and priority processing.
 Dynamic `fast` preset requests pick up the change automatically.
 If you use a [frozen configuration](/docs/agent-api/presets#current-preset-values), update the model and reasoning effort and set `service_tier` to `priority`.
 Priority processing uses 2× the model's standard token prices.
