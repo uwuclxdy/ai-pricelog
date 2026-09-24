@@ -124,8 +124,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "892ecbfc146c76c7571d0b3331143fc43a3d0902b31e70f40a16c7942ed5505e",
-      "fetched": "2026-09-22"
+      "sha256": "49dc7663e65dc36d4e7550335bdbd4e1815e01c81094a56e675e0bae64700145",
+      "fetched": "2026-09-23"
     }
   },
   "cloudflare": {
