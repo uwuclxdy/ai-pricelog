@@ -10,9 +10,9 @@ from conftest import FakeRunner
 
 def test_parse_disposition_yes():
     comments = [
-        ("uwuclxdybot", "**claude pass review — verified**\n\nall rows re-read.\n\nautomerge: yes")
+        ("cldbot", "**claude pass review — verified**\n\nall rows re-read.\n\nautomerge: yes")
     ]
-    assert merge_verified.parse_disposition(comments, "uwuclxdybot") is True
+    assert merge_verified.parse_disposition(comments, "cldbot") is True
 
 
 def test_parse_disposition_no():
@@ -21,29 +21,29 @@ def test_parse_disposition_no():
 
 
 def test_parse_disposition_absent_marker_is_none():
-    comments = [("uwuclxdybot", "**claude pass review — findings**\nno marker here")]
-    assert merge_verified.parse_disposition(comments, "uwuclxdybot") is None
+    comments = [("cldbot", "**claude pass review — findings**\nno marker here")]
+    assert merge_verified.parse_disposition(comments, "cldbot") is None
 
 
 def test_parse_disposition_last_bot_comment_wins():
     comments = [
-        ("uwuclxdybot", "automerge: yes"),
+        ("cldbot", "automerge: yes"),
         ("human", "automerge: no"),
-        ("uwuclxdybot", "automerge: no"),
+        ("cldbot", "automerge: no"),
     ]
-    assert merge_verified.parse_disposition(comments, "uwuclxdybot") is False
-    assert merge_verified.parse_disposition(list(reversed(comments)), "uwuclxdybot") is True
+    assert merge_verified.parse_disposition(comments, "cldbot") is False
+    assert merge_verified.parse_disposition(list(reversed(comments)), "cldbot") is True
 
 
 def test_parse_disposition_ignores_non_bot_authors():
     comments = [("human", "automerge: yes"), ("other", "automerge: no")]
-    assert merge_verified.parse_disposition(comments, "uwuclxdybot") is None
+    assert merge_verified.parse_disposition(comments, "cldbot") is None
 
 
 def test_parse_disposition_requires_a_marker_line():
     # a mid-line mention is prose, not the machine line the merge step reads
     body = "the automerge: yes marker is what the merge step reads"
-    assert merge_verified.parse_disposition([("uwuclxdybot", body)], "uwuclxdybot") is None
+    assert merge_verified.parse_disposition([("cldbot", body)], "cldbot") is None
 
 
 def test_eligible_branches_gates_every_refusal():
@@ -103,14 +103,14 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
         "pr list",
         output=json.dumps([{"number": 197, "headRefName": "pricelog/stale-99999999"}]),
     )
-    runner.on("api user", output="uwuclxdybot\n")
+    runner.on("api user", output="cldbot\n")
     runner.on(
         "pr view 197",
         output=json.dumps(
             {
                 "comments": [
                     {
-                        "author": {"login": "uwuclxdybot"},
+                        "author": {"login": "cldbot"},
                         "body": "automerge: yes",
                         "createdAt": "2026-09-18T11:00:00Z",
                     }
@@ -147,14 +147,14 @@ def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
             ]
         ),
     )
-    runner.on("api user", output="uwuclxdybot\n")
+    runner.on("api user", output="cldbot\n")
     runner.on(
         "pr view 278",
         output=json.dumps(
             {
                 "comments": [
                     {
-                        "author": {"login": "uwuclxdybot"},
+                        "author": {"login": "cldbot"},
                         "body": "automerge: yes",
                         "createdAt": "2026-09-20T19:05:00Z",
                     }
@@ -168,7 +168,7 @@ def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
             {
                 "comments": [
                     {
-                        "author": {"login": "uwuclxdybot"},
+                        "author": {"login": "cldbot"},
                         "body": "automerge: yes",
                         "createdAt": "2026-09-20T19:05:00Z",
                     }
@@ -200,14 +200,14 @@ def test_main_propagates_a_remote_error_not_as_gone(monkeypatch):
         "pr list",
         output=json.dumps([{"number": 279, "headRefName": "pricelog/live-87654321"}]),
     )
-    runner.on("api user", output="uwuclxdybot\n")
+    runner.on("api user", output="cldbot\n")
     runner.on(
         "pr view 279",
         output=json.dumps(
             {
                 "comments": [
                     {
-                        "author": {"login": "uwuclxdybot"},
+                        "author": {"login": "cldbot"},
                         "body": "automerge: yes",
                         "createdAt": "2026-09-20T19:05:00Z",
                     }
