@@ -317,6 +317,164 @@ def test_malformed_matrix_no_standard_rates_raises(monkeypatch):
         scraper.scrape(cfg(), "kimi-k3")
 
 
+def test_scrape_input_only_standard_row_prices_output_zero(monkeypatch):
+    # Jev's matrix: one Standard row, input $0.042, output N/A, no cache
+    # columns. an input-only model bills input tokens only, so the free
+    # output reads as a real zero (the litellm convention)
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Jev",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$0.042</span>'
+            '<span role="cell">N/A</span></span>',
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "jev")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.042 / 1e6)
+    assert pricing.output_cost_per_token == 0.0
+    assert pricing.cache_read_cost_per_token is None
+    assert pricing.mode == "chat"
+
+
+def test_scrape_input_only_blank_output_cell_prices_zero(monkeypatch):
+    # "-" and empty output cells are explicit no-rate statements too: the
+    # input-only class covers every cell the page leaves rate-less, while a
+    # matrix without the Output column stays a shape break
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Jev",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$0.042</span>'
+            '<span role="cell">-</span></span>',
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "jev")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.042 / 1e6)
+    assert pricing.output_cost_per_token == 0.0
+
+
+def test_scrape_missing_output_column_raises(monkeypatch):
+    # a matrix whose header drops the Output column is a page-shape break:
+    # only an explicit rate-less output cell prices 0.0, a missing column
+    # must never silently zero every model on the provider
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Jev",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$0.042</span></span>',
+        ),
+    )
+    with pytest.raises(FetchError, match="without an 'output' column"):
+        scraper.scrape(cfg(), "jev")
+
+
+def test_detect_input_only_model_emits_id(monkeypatch):
+    # the detector emits the input-only model's id from its four-column
+    # matrix; the scrape fallback is pinned in
+    # test_scrape_input_only_standard_row_prices_output_zero
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Jev",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$0.042</span>'
+            '<span role="cell">N/A</span></span>',
+        ),
+    )
+    assert detector.detect(cfg()) == ["jev"]
+
+
+def test_scrape_input_only_row_loses_to_later_priced_row(monkeypatch):
+    # a tiered matrix whose first Standard row is input-only: the later
+    # row carrying both rates still prices the model
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Tiered Thing",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">&lt;= 272K tokens</span>'
+            '<span role="cell">$1.00</span>'
+            '<span role="cell">N/A</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">&gt; 272K tokens</span>'
+            '<span role="cell">$2.00</span>'
+            '<span role="cell">$4.00</span></span>',
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "tiered-thing")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(2.00 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
+
+
+def test_scrape_input_only_mode_row_raises(monkeypatch):
+    # a mode row with no output amount is still a shape break: the
+    # input-only fallback is a Standard-row class only
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            name="Jev",
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Fast Mode</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$0.10</span>'
+            '<span role="cell">N/A</span></span>',
+        ),
+    )
+    with pytest.raises(FetchError, match="no per-1M input/output rates"):
+        scraper.scrape(cfg(), "jev-fast-mode")
+
+
 def test_malformed_rate_cell_raises(monkeypatch):
     # a rate cell whose text is not a plain dollar amount is a shape break
     monkeypatch.setattr(

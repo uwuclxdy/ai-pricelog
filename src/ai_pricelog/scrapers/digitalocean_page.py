@@ -7,15 +7,22 @@ write (1h), Cache read) and one data row per processing mode. the
 standard rate is the first Standard row carrying both an input and an
 output amount (tiered models price the "<= 272K tokens" row first);
 later prompt-length rows are long-context tiers the index has no slot
-for and are dropped. the cache-read rate is the chosen row's Cache read
-cell; a matrix without the column (or with an N/A cell) carries no cache
-rate. the Cache write columns are write rates the index skips (owner
-ruling 2026-09-18; todo 46). a mode row prices its own stored id, the
-base id with the mode's slug appended, so "claude-opus-5-fast-mode"
-reads the Fast Mode row and "claude-opus-5" the Standard row. a matrix
-whose columns lack the pinned labels, whose chosen row carries no
-input/output amounts, or whose rate cells hold unparseable text is a
-page-shape break (FetchError), so a silent misread cannot ship.
+for and are dropped. when no Standard row carries both, the first
+Standard row with a priced input and an explicit rate-less output cell
+(N/A, "-", empty) prices output 0.0: an input-only model bills input
+tokens only, so its free output is a real zero (the litellm convention,
+google's embedding rows); a matrix without an Output column at all is a
+shape break, never an input-only model, and a matrix whose Standard rows
+carry no priced input stays one too. the
+cache-read rate is the chosen row's Cache read cell; a matrix without
+the column (or with an N/A cell) carries no cache rate. the Cache write
+columns are write rates the index skips (owner ruling 2026-09-18; todo
+46). a mode row prices its own stored id, the base id with the mode's
+slug appended, so "claude-opus-5-fast-mode" reads the Fast Mode row and
+"claude-opus-5" the Standard row. a matrix whose columns lack the pinned
+labels, whose chosen row carries no input amount, or whose rate cells
+hold unparseable text is a page-shape break (FetchError), so a silent
+misread cannot ship.
 
 None = the model id is not among the in-scope rows (image models are out
 of scope, and a mode row the page no longer carries reads absent).
@@ -47,6 +54,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     for name, matrix in _priced_rows(fetch_soup(cfg.scraper_url), cfg.scraper_url):
         labels, data_rows = _matrix_rows(matrix, cfg.scraper_url)
         mode_col = _column_index(labels, _MODE_LABEL, cfg.scraper_url)
+        input_only: tuple[float, float | None] | None = None
         for row in data_rows:
             slug = _normalize_id(row[mode_col])
             candidate = name if slug == "standard" else f"{name}-{slug}"
@@ -55,15 +63,26 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             input_cost, output_cost, cache_read = _row_rates(
                 labels, row, requested, cfg.scraper_url
             )
-            if input_cost is None or output_cost is None:
-                if slug != "standard":
-                    raise FetchError(
-                        f"no per-1M input/output rates for {requested} on {cfg.scraper_url}"
-                    )
-                continue
+            if input_cost is not None and output_cost is not None:
+                return Pricing(
+                    input_cost_per_token=input_cost / 1e6,
+                    output_cost_per_token=output_cost / 1e6,
+                    mode="chat",
+                    cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
+                )
+            if slug != "standard":
+                raise FetchError(
+                    f"no per-1M input/output rates for {requested} on {cfg.scraper_url}"
+                )
+            if input_cost is not None and input_only is None:
+                # an input-only Standard row: the page prices no output
+                # (free output); a later row carrying both still wins
+                input_only = (input_cost, cache_read)
+        if input_only is not None:
+            input_cost, cache_read = input_only
             return Pricing(
                 input_cost_per_token=input_cost / 1e6,
-                output_cost_per_token=output_cost / 1e6,
+                output_cost_per_token=0.0,
                 mode="chat",
                 cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
             )
@@ -75,7 +94,13 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
 def _row_rates(
     labels: tuple[str, ...], row: tuple[str, ...], model_id: str, url: str
 ) -> tuple[float | None, float | None, float | None]:
-    """(input, output, cache_read) per-1M dollars from one matrix data row."""
+    """(input, output, cache_read) per-1M dollars from one matrix data row.
+
+    a matrix without an Output column is a shape break, never an input-only
+    model: only an explicit N/A (or blank) output cell prices output 0.0.
+    """
+    if "output" not in labels:
+        raise FetchError(f"pricing matrix without an 'output' column on {url}")
     return (
         _cell_amount(labels, row, "input", model_id, url),
         _cell_amount(labels, row, "output", model_id, url),
