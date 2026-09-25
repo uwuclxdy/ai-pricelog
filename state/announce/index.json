@@ -79,15 +79,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "9d2c0f2292fa0de0a642e6a6f16bcae43ea56e7ce4dbf140e51e7add762cf4c5",
-      "fetched": "2026-09-24"
+      "sha256": "7870aba30838aa247df928b9b90db1edc6772430016703417e0ada536e759160",
+      "fetched": "2026-09-25"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "e61d3e9593f8cf4f0649f3497e9406f1956baec61793735444f1350cafbc3682",
-      "fetched": "2026-09-24"
+      "sha256": "a0fc74acea44d5da389131e43b31374e335e1a8f819593868293679e19cf0f54",
+      "fetched": "2026-09-25"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -124,8 +124,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "49dc7663e65dc36d4e7550335bdbd4e1815e01c81094a56e675e0bae64700145",
-      "fetched": "2026-09-24"
+      "sha256": "8194280db08563badebe14e7b053e4bf701eab84325eb301a44a5686d8cb4b2a",
+      "fetched": "2026-09-25"
     }
   },
   "cloudflare": {
