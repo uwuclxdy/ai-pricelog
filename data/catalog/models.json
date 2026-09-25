@@ -7255,6 +7255,15 @@
       },
       "vendor": "perceptron"
     },
+    "openrouter/perceptron/perceptron-mk1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perceptron/perceptron-mk1.5"
+        ]
+      },
+      "vendor": "perceptron"
+    },
     "openrouter/perplexity/sonar-pro-search": {
       "curated": false,
       "sources": {
