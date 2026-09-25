@@ -131,8 +131,8 @@
   "cloudflare": {
     "https://developers.cloudflare.com/workers-ai/changelog/": {
       "file": "state/announce/cloudflare/changelog.md",
-      "sha256": "46545941b8a7376c49f14425be3f1774454e5d6f05c050c37f4eabc722a30563",
-      "fetched": "2026-09-18"
+      "sha256": "ea07cb9d50e4d3aee96cbfca243b06a8b43e9cb4845d4d096e788bc84e3d246f",
+      "fetched": "2026-09-25"
     }
   },
   "digitalocean": {
