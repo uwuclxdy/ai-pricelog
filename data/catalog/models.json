@@ -7777,6 +7777,15 @@
       },
       "vendor": "thinkingmachines"
     },
+    "openrouter/typesafe/jev-router": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "typesafe/jev-router"
+        ]
+      },
+      "vendor": "typesafe"
+    },
     "openrouter/unbiased/pareto": {
       "curated": false,
       "sources": {
