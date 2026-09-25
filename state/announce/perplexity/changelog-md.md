@@ -2,7 +2,10 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Search API", "Agent API"]}> **Fast Search** Set `search_type: "fast"` on the Search API or the Agent API `web_search` tool to use a lower-latency search path.
+</Tip> <Update label="September 2026" tags={["Agent API", "Presets"]}> **Fast preset uses Fast Search** The Agent API `fast` preset now uses Fast Search (`search_type: "fast"`).
+`web_search` drops from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
+See [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
+</Update> <Update label="September 2026" tags={["Search API", "Agent API"]}> **Fast Search** Set `search_type: "fast"` on the Search API or the Agent API `web_search` tool to use a lower-latency search path.
 Fast Search costs \$1.00 per 1,000 Search API requests or `web_search` invocations, with model tokens billed separately for Agent API.
 Set `search_type: "web"` for standard web search.
 See [Search API Fast Search](/docs/search/fast-search) or [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
