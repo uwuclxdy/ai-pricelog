@@ -2,7 +2,14 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Search API", "Agent API"]}> **Fast Search** Set `search_type: "fast"` on the Search API or the Agent API `web_search` tool to use a lower-latency search path.
+</Tip> <Update label="September 2026" tags={["Agent API", "Router", "Models", "Deprecation"]}> **Upcoming retirement of older OpenAI models** On October 24, 2026 at 00:00 UTC, the Agent API and Router API will retire these model IDs: * `openai/gpt-5.4` * `openai/gpt-5.4-mini` * `openai/gpt-5.4-nano` * `openai/gpt-5.2` * `openai/gpt-5.1` * `openai/gpt-5` * `openai/gpt-5-mini` Update direct model selections and fallback chains before the cutoff.
+The models remain available until then.
+After the cutoff, the retired IDs will no longer be accepted or returned by model-list endpoints.
+For new integrations, choose a current OpenAI model in the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="September 2026" tags={["Agent API", "Presets"]}> **Fast preset uses Fast Search** The Agent API `fast` preset now uses Fast Search (`search_type: "fast"`).
+`web_search` drops from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
+See [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
+</Update> <Update label="September 2026" tags={["Search API", "Agent API"]}> **Fast Search** Set `search_type: "fast"` on the Search API or the Agent API `web_search` tool to use a lower-latency search path.
 Fast Search costs \$1.00 per 1,000 Search API requests or `web_search` invocations, with model tokens billed separately for Agent API.
 Set `search_type: "web"` for standard web search.
 See [Search API Fast Search](/docs/search/fast-search) or [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
