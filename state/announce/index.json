@@ -79,8 +79,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "7870aba30838aa247df928b9b90db1edc6772430016703417e0ada536e759160",
-      "fetched": "2026-09-25"
+      "sha256": "11b4e0ef1e86c29055d912ac04faacc0fb0a1284cde3bd56461998bf5cb425e4",
+      "fetched": "2026-09-26"
     }
   },
   "together": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "39ef4a0a6514671ae6ed67ee862d348ad56022a3bae86246a2f66a20c13da0b7",
-      "fetched": "2026-09-24"
+      "sha256": "56143553f1b1c04bd29ac70f177dac44242d51686a81fd8ce70682c19d7ee866",
+      "fetched": "2026-09-26"
     }
   },
   "scaleway": {
