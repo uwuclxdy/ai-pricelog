@@ -5,7 +5,8 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Nemotron 3 Diarization For more information, see the Available Models page .
+23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
 22 September VPC subnets and routes are now in public preview .
 Subnets let you add IP ranges to an existing VPC network, and resources in a VPC’s subnets can reach each other.
 Routes let you direct a subnet’s traffic to targets you manage, such as a Droplet acting as a firewall or VPN gateway.
