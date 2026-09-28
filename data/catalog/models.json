@@ -5461,6 +5461,24 @@
       },
       "vendor": "anthropic"
     },
+    "openrouter/anthropic/claude-sonnet-5.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "anthropic/claude-sonnet-5.5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "openrouter/anthropic/claude-sonnet-5.5:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "anthropic/claude-sonnet-5.5:batch"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "openrouter/anthropic/claude-sonnet-5:batch": {
       "curated": false,
       "sources": {
