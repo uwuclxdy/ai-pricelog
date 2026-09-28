@@ -5,7 +5,8 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Nemotron 3 Diarization For more information, see the Available Models page .
+23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
 22 September VPC subnets and routes are now in public preview .
 Subnets let you add IP ranges to an existing VPC network, and resources in a VPC’s subnets can reach each other.
 Routes let you direct a subnet’s traffic to targets you manage, such as a Droplet acting as a firewall or VPN gateway.
@@ -191,12 +192,6 @@ Use Evaluations to create test cases, run evaluation datasets, and measure model
 Presets are now available for DigitalOcean Evaluations .
 You can save and reuse evaluation configurations, including the candidate model, system prompt, hyperparameters, judge model, and metrics.
 Model Evaluations is now renamed to DigitalOcean Evaluations .
-29 June Serverless Inference now requires a positive prepaid account balance before you can send inference requests.
-Usage charges are deducted from this balance, and access is suspended if it reaches $0.
-You can add a prepayment manually or enable auto-reload to replenish your balance automatically.
-For more information, see Manage Serverless Inference Prepayment .
-The DigitalOcean Control Panel now supports light and dark themes.
-From the profile menu in the top right corner of the control panel, you can set your theme to a light or dark appearance, or match your operating system’s appearance setting.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
