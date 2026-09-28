@@ -180,6 +180,15 @@
       },
       "vendor": "anthropic"
     },
+    "anthropic/claude-sonnet-5-5": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-sonnet-5-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "avian/deepseek-v3.2-legacy": {
       "curated": false,
       "sources": {
