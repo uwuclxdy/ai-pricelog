@@ -14,15 +14,15 @@ Pay-as-you-go uses standard Open Platform API Keys and consumes your account bal
 
 <Tabs>
   <Tab title="Standard">
-    | Model                                                                                                                                                                                                                    | Input                        | Output                       | Prompt caching Read          |
-    | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- | :--------------------------- | :--------------------------- |
-    | **MiniMax-M3**<br />≤ 512k input tokens <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">Permanent 50% off</span>   | ~~\$0.60~~ \$0.30 / M tokens | ~~\$2.40~~ \$1.20 / M tokens | ~~\$0.12~~ \$0.06 / M tokens |
+    | Model | Input | Output | Prompt caching Read |
+    | :- | :- | :- | :- |
+    | **MiniMax-M3**<br />≤ 512k input tokens <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">Permanent 50% off</span> | ~~\$0.60~~ \$0.30 / M tokens | ~~\$2.40~~ \$1.20 / M tokens | ~~\$0.12~~ \$0.06 / M tokens |
     | **MiniMax-M3**<br />> 512k input tokens\* <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">Permanent 50% off</span> | ~~\$1.20~~ \$0.60 / M tokens | ~~\$4.80~~ \$2.40 / M tokens | ~~\$0.24~~ \$0.12 / M tokens |
   </Tab>
 
   <Tab title="Priority*">
-    | Model                                                                                                                                                                                                                  | Input                        | Output                       | Prompt caching Read          |
-    | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- | :--------------------------- | :--------------------------- |
+    | Model | Input | Output | Prompt caching Read |
+    | :- | :- | :- | :- |
     | **MiniMax-M3**<br />≤ 512k input tokens <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">Permanent 50% off</span> | ~~\$0.90~~ \$0.45 / M tokens | ~~\$3.60~~ \$1.80 / M tokens | ~~\$0.18~~ \$0.09 / M tokens |
     | **MiniMax-M3**<br />> 512k input tokens <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300">Permanent 50% off</span> | ~~\$1.80~~ \$0.90 / M tokens | ~~\$7.20~~ \$3.60 / M tokens | ~~\$0.36~~ \$0.18 / M tokens |
 
@@ -30,19 +30,19 @@ Pay-as-you-go uses standard Open Platform API Keys and consumes your account bal
   </Tab>
 </Tabs>
 
-| Model                      | Input            | Output           | Prompt caching Read | Prompt caching Write |
-| :------------------------- | :--------------- | :--------------- | :------------------ | :------------------- |
-| **MiniMax-M2.7**           | \$0.3 / M tokens | \$1.2 / M tokens | \$0.06 / M tokens   | \$0.375 / M tokens   |
-| **MiniMax-M2.7-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.06 / M tokens   | \$0.375 / M tokens   |
+| Model | Input | Output | Prompt caching Read | Prompt caching Write |
+| :- | :- | :- | :- | :- |
+| **MiniMax-M2.7** | \$0.3 / M tokens | \$1.2 / M tokens | \$0.06 / M tokens | \$0.375 / M tokens |
+| **MiniMax-M2.7-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.06 / M tokens | \$0.375 / M tokens |
 
 <Accordion title="Legacy Models">
-  | Model                      | Input            | Output           | Prompt caching Read | Prompt caching Write |
-  | :------------------------- | :--------------- | :--------------- | :------------------ | :------------------- |
-  | **MiniMax-M2.5**           | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens   | \$0.375 / M tokens   |
-  | **MiniMax-M2.5-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.03 / M tokens   | \$0.375 / M tokens   |
-  | **MiniMax-M2.1**           | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens   | \$0.375 / M tokens   |
-  | **MiniMax-M2.1-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.03 / M tokens   | \$0.375 / M tokens   |
-  | **MiniMax-M2**             | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens   | \$0.375 / M tokens   |
+  | Model | Input | Output | Prompt caching Read | Prompt caching Write |
+  | :- | :- | :- | :- | :- |
+  | **MiniMax-M2.5** | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens | \$0.375 / M tokens |
+  | **MiniMax-M2.5-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.03 / M tokens | \$0.375 / M tokens |
+  | **MiniMax-M2.1** | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens | \$0.375 / M tokens |
+  | **MiniMax-M2.1-highspeed** | \$0.6 / M tokens | \$2.4 / M tokens | \$0.03 / M tokens | \$0.375 / M tokens |
+  | **MiniMax-M2** | \$0.3 / M tokens | \$1.2 / M tokens | \$0.03 / M tokens | \$0.375 / M tokens |
 </Accordion>
 
 <Info>
@@ -56,18 +56,33 @@ Pay-as-you-go uses standard Open Platform API Keys and consumes your account bal
 
 [Recharge Now](https://platform.minimax.io/user-center/payment/balance)
 
-| API                     | Model            | Price              |
-| :---------------------- | :--------------- | :----------------- |
-| **T2A**                 | speech-2.8-turbo | \$60/M characters  |
-| **T2A**                 | speech-2.8-hd    | \$100/M characters |
-| **Rapid Voice Cloning** | All Models       | \$1.5 per voice    |
-| **Voice Design**        | All Models       | \$3 per voice      |
+**Automatic Speech Recognition (ASR)**
+
+| **API** | **Endpoint** | **Description** | **Price** |
+| :- | :- | :- | :- |
+| Speech Recognition | Speech-to-Text | Audio-to-text transcription with streaming, speaker diarization, and subtitle (srt/vtt) export. | \$0.38 / hour |
+
+**Text-to-Speech (TTS)**
+
+| **API** | **Model** | **Description** | **Price** |
+| :- | :- | :- | :- |
+| **T2A** (Sync) | speech-2.8-hd | Real-time synthesis with volume/pitch/speed/mixing controls and bitrate/sample-rate options. Best for short-form conversational audio. | \$100 / M characters |
+| **T2A** (Sync) | speech-2.8-turbo | Same capabilities as hd, optimized for speed and cost. | \$60 / M characters |
+| **T2A Async** | speech-2.8-hd | Asynchronous long-form synthesis, up to 1M characters per request, retrieved asynchronously. | \$100 / M characters |
+| **T2A Async** | speech-2.8-turbo | Same capabilities as hd, optimized for speed and cost. | \$60 / M characters |
+
+**Voice Management**
+
+| **API** | **Description** | **Price** | **Notes** |
+| :- | :- | :- | :- |
+| **Voice Design** | Generate a voice (voice\_id) from a natural-language description; usable in both sync and async T2A endpoints. | \$3 per voice | Charged when the designed voice is first used for synthesis, not at generation time. In-API preview synthesis is billed at \$60 / M characters. |
+| **Rapid Voice Cloning** | LLM-powered voice cloning that produces a high-fidelity replica in seconds, without long high-quality reference audio. | \$1.5 per voice | Charged when the cloned voice is first used for synthesis, not at cloning time. Preview characters are billed at the selected preview model's rate. |
 
 <Accordion title="Legacy Models">
-  | API     | Model                              | Price              |
-  | :------ | :--------------------------------- | :----------------- |
-  | **T2A** | speech-2.6-turbo / speech-02-turbo | \$60/M characters  |
-  | **T2A** | speech-2.6-hd / speech-02-hd       | \$100/M characters |
+  | API | Model | Price |
+  | :- | :- | :- |
+  | **T2A** | speech-2.6-turbo / speech-02-turbo | \$60/M characters |
+  | **T2A** | speech-2.6-hd / speech-02-hd | \$100/M characters |
 </Accordion>
 
 ## Video
@@ -76,57 +91,62 @@ Pay-as-you-go uses standard Open Platform API Keys and consumes your account bal
 
 **Video Generation - Output Pricing**
 
-| **Model / API**                                  | **Resolution** | **Billing Rules** | **List Price**  |
-| :----------------------------------------------- | :------------- | :---------------- | :-------------- |
-| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | 2K             | Billed per second | \$0.13 / second |
-| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | 768P           | Billed per second | \$0.08 / second |
+| **Model / API** | **Resolution** | **Billing Rules** | **List Price** |
+| :- | :- | :- | :- |
+| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | 768P | Billed per second | \$0.08 / second |
+| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | 2K | Billed per second | \$0.13 / second |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Max</div> | 480P | Billed per second | \$0.05 / second |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Max</div> | 768P | Billed per second | \$0.08 / second |
 
 **Video Generation - Input Material Pricing**
 
-| **Model / API**                                  | **Material Type** | **Billing Rules**                                                                                  |
-| :----------------------------------------------- | :---------------- | :------------------------------------------------------------------------------------------------- |
-| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Audio             | Free                                                                                               |
-| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Image             | First **5 images** free; **\$0.04 per additional image**                                           |
-| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Video             | Billed by input video duration and output video resolution: **2K \$0.13/sec**, **768P \$0.08/sec** |
+| **Model / API** | **Material Type** | **Billing Rules** |
+| :- | :- | :- |
+| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Audio | Free |
+| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Image | First **5 images** free; **\$0.04 per additional image** |
+| <div style={{minWidth:'240px'}}>MiniMax-H3</div> | Video | Billed by input video duration and output video resolution: **2K \$0.13/sec**, **768P \$0.08/sec** |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Max</div> | Audio | Free |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Max</div> | Image | First **2 images** free; **\$0.074 per additional image** |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Max</div> | Video | Billed by input video duration and output video resolution: **480P \$0.0553/sec**, **768P \$0.143/sec** |
 
 **Video Regeneration - Output Pricing**
 
 Regenerate a previously produced 768P video into 2K, billed per second of the regenerated output.
 
-| **Model / API**                                               | **Resolution** | **Billing Rules**                           | **List Price**  |
-| :------------------------------------------------------------ | :------------- | :------------------------------------------ | :-------------- |
-| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | 768P → 2K      | Billed per second of the regenerated output | \$0.05 / second |
+| **Model / API** | **Resolution** | **Billing Rules** | **List Price** |
+| :- | :- | :- | :- |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | 768P → 2K | Billed per second of the regenerated output | \$0.05 / second |
 
 **Video Regeneration - Input Material Pricing**
 
 The input materials used in the original 768P generation task will be billed again.
 
-| **Model / API**                                               | **Material Type** | **Billing Rules**                                                               |
-| :------------------------------------------------------------ | :---------------- | :------------------------------------------------------------------------------ |
-| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Audio             | Free                                                                            |
-| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Image             | First **5 images** free; **\$0.025 per additional image**                       |
-| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Video             | Billed by input video duration from the original 768P task: **\$0.05 / second** |
+| **Model / API** | **Material Type** | **Billing Rules** |
+| :- | :- | :- |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Audio | Free |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Image | First **5 images** free; **\$0.025 per additional image** |
+| <div style={{minWidth:'240px'}}>MiniMax-H3-Regeneration</div> | Video | Billed by input video duration from the original 768P task: **\$0.05 / second** |
 
 **H3-Context-IR Task Pricing**
 
-| **Model / API**                                             |  **Input Price**  |  **Output Price** |
-| :---------------------------------------------------------- | :---------------: | :---------------: |
+| **Model / API** | **Input Price** | **Output Price** |
+| :- | :-: | :-: |
 | <div style={{minWidth:'240px'}}>MiniMax-H3-Context-IR</div> | \$0.90 / M tokens | \$3.60 / M tokens |
 
 <Accordion title="Legacy Models">
-  | Model                   | Price                      |
-  | :---------------------- | :------------------------- |
-  | MiniMax-Hailuo-2.3-Fast | \$0.19 per 768P, 6s video  |
+  | Model | Price |
+  | :- | :- |
+  | MiniMax-Hailuo-2.3-Fast | \$0.19 per 768P, 6s video |
   | MiniMax-Hailuo-2.3-Fast | \$0.32 per 768P, 10s video |
   | MiniMax-Hailuo-2.3-Fast | \$0.33 per 1080P, 6s video |
-  | MiniMax-Hailuo-2.3      | \$0.28 per 768P, 6s video  |
-  | MiniMax-Hailuo-2.3      | \$0.56 per 768P, 10s video |
-  | MiniMax-Hailuo-2.3      | \$0.49 per 1080P, 6s video |
-  | MiniMax-Hailuo-02       | \$0.28 per 768P, 6s video  |
-  | MiniMax-Hailuo-02       | \$0.56 per 768P, 10s video |
-  | MiniMax-Hailuo-02       | \$0.49 per 1080P, 6s video |
-  | MiniMax-Hailuo-02       | \$0.10 per 512P, 6s video  |
-  | MiniMax-Hailuo-02       | \$0.15 per 512P, 10s video |
+  | MiniMax-Hailuo-2.3 | \$0.28 per 768P, 6s video |
+  | MiniMax-Hailuo-2.3 | \$0.56 per 768P, 10s video |
+  | MiniMax-Hailuo-2.3 | \$0.49 per 1080P, 6s video |
+  | MiniMax-Hailuo-02 | \$0.28 per 768P, 6s video |
+  | MiniMax-Hailuo-02 | \$0.56 per 768P, 10s video |
+  | MiniMax-Hailuo-02 | \$0.49 per 1080P, 6s video |
+  | MiniMax-Hailuo-02 | \$0.10 per 512P, 6s video |
+  | MiniMax-Hailuo-02 | \$0.15 per 512P, 10s video |
 </Accordion>
 
 ## Music
@@ -137,34 +157,34 @@ The input materials used in the original 768P generation task will be billed aga
   To experience or use music generation capabilities, please visit [MiniMax Audio](https://www.minimax.io/audio), or use the open-source [MiniMax Music 3 model on Hugging Face](https://huggingface.co/MiniMaxAI/MiniMax-Music3).
 </Note>
 
-| Model                            | Description                          |             Price            |
-| :------------------------------- | :----------------------------------- | :--------------------------: |
-| Music-3.0 (Discontinued)         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
-| Music-2.6 (Discontinued)         | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
-| Lyrics Generation (Discontinued) | Lyrics generation/editing            |        \$0.01/per song       |
+| Model | Description | Price |
+| :- | :- | :-: |
+| Music-3.0 (Discontinued) | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
+| Music-2.6 (Discontinued) | RPM = 120, contact sales to increase | \$0.15/up-to-5 minutes music |
+| Lyrics Generation (Discontinued) | Lyrics generation/editing | \$0.01/per song |
 
 <Accordion title="Legacy Models">
-  | Model                     | Description                                           |             Price            |
-  | :------------------------ | :---------------------------------------------------- | :--------------------------: |
+  | Model | Description | Price |
+  | :- | :- | :-: |
   | Music-2.5+ (Discontinued) | Instrumental unlocked, break through style boundaries | \$0.15/up-to-5 minutes music |
-  | Music-2.5 (Discontinued)  | Direct the detail, define the real                    | \$0.15/up-to-5 minutes music |
-  | Music-2.0 (Discontinued)  | Enhanced musical expression                           | \$0.03/up-to-5 minutes music |
+  | Music-2.5 (Discontinued) | Direct the detail, define the real | \$0.15/up-to-5 minutes music |
+  | Music-2.0 (Discontinued) | Enhanced musical expression | \$0.03/up-to-5 minutes music |
 </Accordion>
 
 ## Image
 
 [Recharge Now](https://platform.minimax.io/user-center/payment/balance)
 
-| Model    | Price              |
-| :------- | :----------------- |
+| Model | Price |
+| :- | :- |
 | image-01 | \$0.0035 per image |
 
 ## MCP
 
 [Recharge Now](https://platform.minimax.io/user-center/payment/balance)
 
-| Model       | Input Price      |
-| :---------- | :--------------- |
+| Model | Input Price |
+| :- | :- |
 | **API-vlm** | \$0.01 / request |
 
 When API-vlm is called through Token Plan, usage deducts from the included Token Plan quota according to its pay-as-you-go price. If the included quota is exhausted and purchased Credits are available, additional usage can be automatically covered by purchased Credits.
@@ -177,6 +197,6 @@ When API-vlm is called through Token Plan, usage deducts from the included Token
 
 [Recharge Now](https://platform.minimax.io/user-center/payment/balance)
 
-| Server Tool     | Description                                                                                                                     | Price            |
-| :-------------- | :------------------------------------------------------------------------------------------------------------------------------ | :--------------- |
+| Server Tool | Description | Price |
+| :- | :- | :- |
 | **web\_search** | Web search; the model runs the search on the server and answers based on the results. See [Server Tools](/docs/guides/server-tools). | \$0.01 / request |

@@ -39,6 +39,7 @@ def feed_fixtures(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_detect_returns_language_models_in_page_order(minimax_cfg, feed_fixtures):
     assert minimax_detect.detect(minimax_cfg) == [
+        "MiniMax-M3.1-Flash-Preview",
         "MiniMax-M3",
         "MiniMax-M2.7",
         "MiniMax-M2.7-highspeed",
@@ -79,6 +80,10 @@ def test_scrape_video_model_has_no_token_pricing(minimax_cfg, feed_fixtures):
 
 def test_scrape_audio_model_has_no_token_pricing(minimax_cfg, feed_fixtures):
     assert minimax_scrape.scrape(minimax_cfg, "speech-2.8-turbo") is None
+
+
+def test_scrape_token_plan_only_model_has_no_paygo_pricing(minimax_cfg, feed_fixtures):
+    assert minimax_scrape.scrape(minimax_cfg, "MiniMax-M3.1-Flash-Preview") is None
 
 
 def test_scrape_m3_cache_read_takes_last_amount(minimax_cfg, feed_fixtures):
