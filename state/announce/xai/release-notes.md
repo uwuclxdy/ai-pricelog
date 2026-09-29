@@ -3,13 +3,18 @@ Resources llms.txt Discord Email support Terms and Policies Get Started Overview
 Collection Metadata Generated Media Tools Overview Function Calling Web Search X Search Code Execution Image Generation Collections Search (RAG) Remote MCP Tools In Depth Advanced API Usage Rate Limits Prompt Caching Context Compaction Priority Processing Batch API Deferred Completions Async Requests WebSocket Mode mTLS Authentication Regional Endpoints New Cost Tracking Debugging Errors Platforms Community Integrations Google Cloud Vertex AI Microsoft Foundry Docs MCP Migration Guides Imagine Image Quality Retirement (Nov 2, 2026) New Model Retirement (May 15, 2026) Migrating to Responses API
 Chat Completions (Legacy) FAQ Data & Privacy General API Docs REST Reference Grok Build Grok Bot Grok Get Started Overview Quickstart Grok 4.7 Latest Models Pricing Release Notes Text Text Generation Streaming Reasoning Structured Outputs Image Understanding Multi Agent Imagine Overview Image Generation Image Editing Multi-Image Editing Video Generation Image-to-Video Reference-to-Video New Video Editing Video Extension Voice Overview Speech to Speech Text to Speech Speech to Text New Custom Voices Ephemeral Tokens Files & Collections Files Overview Managing Files Public URLs New Chat with
 Files Collections Collections via API Collection Metadata Generated Media Tools Overview Function Calling Web Search X Search Code Execution Image Generation Collections Search (RAG) Remote MCP Tools In Depth Advanced API Usage Rate Limits Prompt Caching Context Compaction Priority Processing Batch API Deferred Completions Async Requests WebSocket Mode mTLS Authentication Regional Endpoints New Cost Tracking Debugging Errors Platforms Community Integrations Google Cloud Vertex AI Microsoft Foundry Docs MCP Migration Guides Imagine Image Quality Retirement (Nov 2, 2026) New Model Retirement
-(May 15, 2026) Migrating to Responses API Chat Completions (Legacy) FAQ Data & Privacy General Release Notes Release Notes Copy for LLM View as Markdown Create API key Meet grok-4.7 September September 21 Grok 4.7 Grok 4.7, SpaceXAI's frontier model for coding, agentic tasks, and knowledge work, is now available on the xAI API as grok-4.7 .
+(May 15, 2026) Migrating to Responses API Chat Completions (Legacy) FAQ Data & Privacy General Release Notes Release Notes Copy for LLM View as Markdown Create API key Meet grok-4.7 September September 25 safety_identifier request field You can now send safety_identifier , an opaque end-user identifier assigned by your application, on Chat Completions, the Responses API, deferred chat completions, the Batch API, and the gRPC GetCompletionsRequest .
+It lets SpaceXAI attribute a policy violation to one of your end users rather than to your API key.
+The legacy user field is still accepted.
+See the Security FAQ .
+September 21 Grok 4.7 Grok 4.7, SpaceXAI's frontier model for coding, agentic tasks, and knowledge work, is now available on the xAI API as grok-4.7 .
 It has a 500k context window, text and image inputs with text-only output, and no text output limit.
 Pricing is $2 / $0.50 / $6 per 1M tokens (input / cached input / output) below 200k prompt tokens, and $4 / $1 / $12 above.
 Reasoning effort supports low, medium, high (default), and xhigh.
 On the Responses API, grok-4.7 always returns reasoning.encrypted_content , even when include does not list it.
 It is also served on the US regional endpoint .
-Grok 4.7 Fast, the same model at twice the token rates, is available only through Cursor and Grok Build, not on the public xAI API.
+Grok 4.7 Fast is the same model and costs 2x the standard token rates, or 1.5x for long-context requests.
+It's available only in Cursor and Grok Build, not on the public xAI API, and is billed through your plan there.
 See the Grok 4.7 overview and the announcement .
 September 17 Grok Voice Transcribe 2.0 grok-voice-transcribe-2.0 is now available.
 Use grok-voice-transcribe-1.0 or grok-voice-transcribe-2.0 ; the default is grok-voice-transcribe-1.0 .
@@ -76,7 +81,7 @@ For more details, see the WebSocket Mode docs .
 May 27 Image Search in Web Search Web Search now supports explicitly searching for images.
 Enable enable_image_search to let Grok search directly for relevant images; responses can include returned images as Markdown image embeds.
 For details, see Enable Image Search .
-May 19 Grok Build 0.1 xAI's coding model, trained specifically for agentic coding workflows.
+May 19 Grok Build 0.1 SpaceXAI's coding model, trained specifically for agentic coding workflows.
 Currently in early access.
 The model slug is grok-build-0.1 .
 May 14 Grok Build Grok Build is now available in beta.
@@ -138,7 +143,7 @@ March 2025 Mar 19 Image Generation Model available on API The image generation m
 Visit Image Generations for more details on using the model.
 February 2025 Feb 7 Audit Logs Team admins can now view audit logs on console.x.ai .
 January 2025 Jan 24 Docs Dark Mode Released dark mode support on docs.x.ai Jan 6 Status Page Check service statuses across all SpaceXAI products at status.x.ai .
-December 2024 Dec 31 Replit & xAI Replit Agents can now integrate with xAI!
+December 2024 Dec 31 Replit & SpaceXAI Replit Agents can now integrate with SpaceXAI!
 Start empowering your agents with Grok.
 Check out the announcement for more information.
 Dec 30 Tokenizer Playground Understanding tokens can be hard.
@@ -150,9 +155,9 @@ Specify the desired schema Text { "name": "movie_response", "schema": { "type": 
 Check out the docs for more information.
 Dec 14 Released the new grok-2-1212 and grok-2-vision-1212 models A month ago, we launched the public beta of our enterprise API with grok-beta and grok-vision-beta.
 We’re adding grok-2-1212 and grok-2-vision-1212 , offering better accuracy, instruction-following, and multilingual capabilities.
-November 2024 Nov 19 LangChain & xAI Our API is now available through LangChain!
+November 2024 Nov 19 LangChain & SpaceXAI Our API is now available through LangChain!
 Python Docs: https://python.langchain.com/integrations/providers/xai/ Javascript Docs: https://js.langchain.com/integrations/chat/xai/ What are you going to build?
 Nov 4 API Public Beta We are happy to announce the immediate availability of our API, which gives developers programmatic access to our Grok series of foundation models.
 To get started, head to console.x.ai and sign up to create an account.
 We are excited to see what developers build using Grok.
-Last updated: September 21, 2026
+Last updated: September 28, 2026
