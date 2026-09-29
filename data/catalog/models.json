@@ -2340,6 +2340,15 @@
       },
       "vendor": "deepseek"
     },
+    "fireworks/ember-1": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "ember-1"
+        ]
+      },
+      "vendor": null
+    },
     "fireworks/glm-5.2-fast": {
       "curated": false,
       "sources": {
