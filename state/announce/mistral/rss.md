@@ -1,4 +1,6 @@
-Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Mistral and Mozilla are bringing open, private and multilingual AI to your web browser https://mistral.ai/news/mistral-x-mozilla/ https://mistral.ai/news/mistral-x-mozilla/ Open, private and multilingual AI is coming to your web browser.
+Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Hallo, Deutschland!
+https://mistral.ai/news/hallo-deutschland/ https://mistral.ai/news/hallo-deutschland/ Mistral opens a Munich hub for Physics AI and Industrial AI research, partnering with German industry.
+Mistral and Mozilla are bringing open, private and multilingual AI to your web browser https://mistral.ai/news/mistral-x-mozilla/ https://mistral.ai/news/mistral-x-mozilla/ Open, private and multilingual AI is coming to your web browser.
 Mistral and Mozilla team up to put powerful, trustworthy AI where you already browse.
 Cloudera and Mistral Partner to Bring Specialized, Sovereign Intelligence to Enterprise Data https://mistral.ai/news/mistral-x-cloudera/ https://mistral.ai/news/mistral-x-cloudera/ Cloudera and Mistral join forces to bring specialized, sovereign AI intelligence to enterprise data, helping regulated industries innovate on their own terms.
 Modernizing complex legacy code with AI agents.
