@@ -4933,6 +4933,24 @@
       },
       "vendor": "tencent"
     },
+    "novita/xiaomimimo/mimo-v2.6-flash": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "xiaomimimo/mimo-v2.6-flash"
+        ]
+      },
+      "vendor": "xiaomimimo"
+    },
+    "novita/xiaomimimo/mimo-v2.6-pro": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "xiaomimimo/mimo-v2.6-pro"
+        ]
+      },
+      "vendor": "xiaomimimo"
+    },
     "novita/zai-org/autoglm-phone-9b-multilingual": {
       "curated": false,
       "sources": {

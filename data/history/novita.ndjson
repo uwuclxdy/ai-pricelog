@@ -40,6 +40,7 @@
 {"schema":4,"source":"novita","model_id":"inclusionai/ling-3.0-flash-fast","observed_at":"2026-08-19","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":32768},"provenance":{"url":"https://blogs.novita.ai/ling-3-0-flash-fast-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"inclusionai/ling-3.0-flash-fast","observed_at":"2026-08-26","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"inclusionai/ling-3.0-flash-fast","observed_at":"2026-08-29","removed":true}
+{"schema":4,"source":"novita","model_id":"inclusionai/ling-3.0-flash-fin","observed_at":"2026-09-28","rates":{"input":0.075,"output":0.22,"cache_read":0.015},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"inclusionai/ling-3.0-flash-vl","observed_at":"2026-09-23","rates":{"input":0.075,"output":0.22,"cache_read":0.015},"limits":{"context":262144},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"kwaipilot/kat-coder-pro","observed_at":"2025-10-31","rates":{"input":0.98,"output":3.8},"provenance":{"url":"https://blogs.novita.ai/kat-coder-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"kwaipilot/kat-coder-pro","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":256000},"provenance":{"url":"https://novita.ai/pricing"}}
@@ -140,6 +141,8 @@
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5-pro","observed_at":"2026-06-08","rates":{"input":0.522,"output":1.044,"cache_read":0.0043},"provenance":{"url":"https://blogs.novita.ai/xiaomi-mimo-v2-5-pro-api/"}}
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5-pro","observed_at":"2026-08-26","rates":{"input":0.522,"output":1.044,"cache_read":0.0043},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.5-pro","observed_at":"2026-09-02","removed":true,"rates":{"input":0.522,"output":1.044,"cache_read":0.0043},"limits":{"context":1048576}}
+{"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.6-flash","observed_at":"2026-09-29","rates":{"input":0.14,"output":0.28,"cache_read":0.0028},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"xiaomimimo/mimo-v2.6-pro","observed_at":"2026-09-29","rates":{"input":0.435,"output":0.87,"cache_read":0.0036},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"zai-org/autoglm-phone-9b-multilingual","observed_at":"2026-08-26","rates":{"input":0.035,"output":0.138},"limits":{"context":65536},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"zai-org/glm-4.5-air","observed_at":"2025-10-22","rates":{"input":0.13,"output":0.85},"provenance":{"url":"https://blogs.novita.ai/how-to-access-glm-4-5-air-complete-integration-guide/"}}
 {"schema":4,"source":"novita","model_id":"zai-org/glm-4.5-air","observed_at":"2026-08-26","rates":{"input":0.13,"output":0.85,"cache_read":0.025},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
