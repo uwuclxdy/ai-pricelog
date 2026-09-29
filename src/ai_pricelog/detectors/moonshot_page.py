@@ -3,7 +3,9 @@
 models.md (https://platform.kimi.ai/docs/models.md) is static markdown.
 model tables carry a `Model Name` header (pinned after folding case,
 whitespace, and &/and via web.fold_heading) and the first column of every
-body row holds the raw model id, backtick-wrapped. the table under a heading
+body row holds the raw model id, backtick-wrapped. separator cells are
+GFM-minimal single dashes (`| - | - |`) since the 2026-09-28 docs
+restructure. the table under a heading
 containing "deprecated" is excluded. ids are lowercased (they are lowercase
 on the page already; litellm keys are lowercase). a page with no Model Name
 table rows is a parse failure (FetchError).
@@ -18,7 +20,7 @@ from ai_pricelog.web import FetchError, fetch_text, fold_heading
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 _HEADING_PATTERN = re.compile(r"^#{1,6}\s+(.*)")
-_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
+_SEPARATOR_PATTERN = re.compile(r"^:?-+:?$")
 _FOLDED_MODEL_NAME_HEADER = fold_heading("model name")
 
 
