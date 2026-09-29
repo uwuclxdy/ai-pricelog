@@ -335,6 +335,47 @@ def test_detect_header_case_drift_still_matches(monkeypatch):
     assert detector.detect(cfg()) == ["glm-5.3"]
 
 
+def test_scrape_header_case_drift_still_scrapes(monkeypatch):
+    # scrape indexes through the same folded headers detection pins, so a
+    # fold-equal but differently-cased Input/Output header still scrapes
+    # instead of crashing on the raw-spelling index
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>input</th><th>Cached Input</th>"
+            "<th>output</th></tr>"
+            "<tr><td>GLM-5.3</td><td>$1.4</td><td>$0.26</td><td>$4.4</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "glm-5.3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.4 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(4.4 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.26 / 1e6)
+
+
+def test_scrape_all_lowercase_header_still_scrapes(monkeypatch):
+    # a fully lowercased header must scrape: the Cached Input admission is
+    # fold-equal too, so a recased page never false-raises the missing-column
+    # FetchError
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>model</th><th>input</th><th>cached input</th>"
+            "<th>output</th></tr>"
+            "<tr><td>GLM-5.3</td><td>$1.4</td><td>$0.26</td><td>$4.4</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "glm-5.3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.4 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.26 / 1e6)
+
+
 def test_fetch_error_propagates(monkeypatch):
     def boom(url):
         raise FetchError(f"fetch failed for {url}")

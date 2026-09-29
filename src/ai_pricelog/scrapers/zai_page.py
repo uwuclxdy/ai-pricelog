@@ -36,9 +36,16 @@ from functools import cache
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.zai_page import _token_model_tables
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup, fetch_text
+from ai_pricelog.web import FetchError, fetch_soup, fetch_text, fold_heading
 
 _PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
+
+# fold-equal column lookups, never raw spellings: the detector admits a
+# recased header, and a raw Cached Input check there false-raises the
+# missing-column FetchError instead of scraping
+_FOLDED_INPUT = fold_heading("Input")
+_FOLDED_OUTPUT = fold_heading("Output")
+_FOLDED_CACHED_INPUT = fold_heading("Cached Input")
 
 # the quota notice (a watched announce channel) prices glm plan consumption
 # with peak/off-peak quota multipliers; the pricing page carries no peak
@@ -82,18 +89,19 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         )
         if row is None:
             continue
-        if "Cached Input" not in header:
+        folded = [fold_heading(cell) for cell in header]
+        if _FOLDED_CACHED_INPUT not in folded:
             raise FetchError(
                 f"malformed pricing table for {model_id} on {cfg.scraper_url}: "
                 "no Cached Input column"
             )
         if len(row) < len(header):
             raise FetchError(f"malformed pricing row for {model_id} on {cfg.scraper_url}")
-        input_cost = _dollars(row[header.index("Input")])
-        output_cost = _dollars(row[header.index("Output")])
+        input_cost = _dollars(row[folded.index(_FOLDED_INPUT)])
+        output_cost = _dollars(row[folded.index(_FOLDED_OUTPUT)])
         if input_cost is None or output_cost is None:
             return None
-        cache_read = _dollars(row[header.index("Cached Input")])
+        cache_read = _dollars(row[folded.index(_FOLDED_CACHED_INPUT)])
         window_rates = _quota_window_rates(cfg, model_id)
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
