@@ -61,7 +61,7 @@ def extract_markdown_tables(text: str) -> list[list[list[str]]]:
     tables: list[list[list[str]]] = []
     for lines in blocks:
         rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in lines]
-        if len(rows) >= 2 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in rows[1]):
+        if len(rows) >= 2 and all(re.fullmatch(r":?-+:?", cell) for cell in rows[1]):
             tables.append(rows)
     return tables
 
