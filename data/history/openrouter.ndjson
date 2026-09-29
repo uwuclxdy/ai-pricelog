@@ -1107,6 +1107,7 @@
 {"schema":4,"source":"openrouter","model_id":"openrouter/fusion","observed_at":"2026-08-26","limits":{"context":1000000},"provenance":{"name":"Fusion"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/pareto-code","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Pareto Code Router"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.5},"limits":{"context":32768},"provenance":{"name":"Perceptron Mk1"}}
+{"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1.5","observed_at":"2026-09-25","rates":{"input":0.15,"output":1.5},"limits":{"context":36864},"provenance":{"name":"Perceptron Mk1.5"}}
 {"schema":4,"source":"openrouter","model_id":"perplexity/sonar","observed_at":"2025-09-22","rates":{"input":1.0,"output":1.0},"limits":{"context":127072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"perplexity/sonar","observed_at":"2026-08-26","rates":{"input":1.0,"output":1.0},"fees":{"web_search":0.005},"limits":{"context":127072},"provenance":{"name":"Sonar"}}
 {"schema":4,"source":"openrouter","model_id":"perplexity/sonar","observed_at":"2026-08-30","rates":{"input":1.0,"output":1.0},"fees":{"web_search":0.005},"limits":{"context":127072},"provenance":{"name":"Sonar"}}
