@@ -96,9 +96,9 @@ provider = "Perplexity"
 vendor = "perplexity"
 kind = "first_party"
 detector = "perplexity_page"
-detector_url = "https://docs.perplexity.ai/guides/pricing"
+detector_url = "https://docs.perplexity.ai/docs/agent-api/models"
 scraper = "perplexity_page"
-scraper_url = "https://docs.perplexity.ai/guides/pricing"
+scraper_url = "https://docs.perplexity.ai/docs/agent-api/models"
 announce_urls = [
   "https://docs.perplexity.ai/docs/resources/changelog.md",
 ]
