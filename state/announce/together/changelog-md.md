@@ -780,12 +780,12 @@ This first version already includes beta APIs for instant clusters.
 ## Model deprecations The following models have been deprecated and are no longer available: * `deepseek-ai/DeepSeek-R1-0528-tput`.
 </Update> <Update label="January 29, 2026" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :----------------------------------- | :---------------------------------------- | | `mistralai/Mistral-7B-Instruct-v0.3` | `mistralai/Ministral-3-14B-Instruct-2512` | | `zai-org/GLM-4.6` | `zai-org/GLM-4.7` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `mistralai/Mistral-7B-Instruct-v0.3` | `mistralai/Ministral-3-14B-Instruct-2512` | | `zai-org/GLM-4.6` | `zai-org/GLM-4.7` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="January 27, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `moonshotai/Kimi-K2.5`.
 </Update> <Update label="January 23, 2026" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :----------------- | :-------------- | | `DeepSeek-V3-0324` | `DeepSeek-V3.1` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `DeepSeek-V3-0324` | `DeepSeek-V3.1` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="January 21, 2026" tags={["Improvements", "Deprecations"]}> ## Prompt caching now enabled by default for dedicated model inference Prompt caching is now **automatically enabled** for all newly created dedicated endpoints.
 This change improves performance and reduces costs by default.
@@ -811,7 +811,7 @@ This only affects endpoint creation.
 * `meta-llama/Meta-Llama-Guard-3-8B`.
 </Update> <Update label="December 17, 2025" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :------------- | :----------------- | | `Kimi-K2` | `Kimi-K2-0905` | | `DeepSeek-V3` | `DeepSeek-V3-0324` | | `DeepSeek-R1` | `DeepSeek-R1-0528` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `Kimi-K2` | `Kimi-K2-0905` | | `DeepSeek-V3` | `DeepSeek-V3-0324` | | `DeepSeek-R1` | `DeepSeek-R1-0528` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="December 12, 2025" tags={["New releases"]}> ## Python SDK v2.0 release candidate Together AI is releasing the **Python SDK v2.0 Release Candidate**, a new, OpenAPI-generated, strongly-typed client that replaces the legacy v1.0 package and brings the SDK into lock-step with the latest platform features.
 * **Install:** `pip install together==2.0.0a9`.
