@@ -4,7 +4,7 @@ A new-generation open general-purpose multimodal video model.
 ➔ View docs .
 MiniMax API Docs home page Search...
 ⌘ K Documentation Pricing Console Search...
-Navigation Models Developer Guides API Token Plan Pricing Release Notes Developer Program Models APIs On this page Jul.
+Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Jul.
 31, 2026 Jul.
 16, 2026 Jun.
 1, 2026 Apr.
