@@ -1,6 +1,12 @@
 Changelog | Mistral Docs Docs & API Search docs ⌘K Vibe Studio Inference & Models Admin Resources API Reference Search docs ⌘K Toggle theme Reach out Try Studio Home Resources Build API Reference SDKs MCP Supported languages Cookbooks Migration guides Updates Release notes Changelogs Security advisories Knowledge base Glossary Error glossary Known limitations Observability integrations Deprecated features Community Ambassadors Mistral Events ↗ Resources Changelogs Changelog Find out about all the latest changes to our tool.
 You may filter by date and type of release.
-Aug 26 August 31 OCR 4.1 ( mistral-ocr-4-1 ) is now Generally Available.
+Sep 26 September 29 OCR 4.0 ( mistral-ocr-4-0 ) is deprecated and retires on September 30, 2026.
+Use OCR 4.1 ( mistral-ocr-4-1 or mistral-ocr-latest ) instead, at the same price.
+DEPRECATED Leanstral 1.5 ( labs-leanstral-1-5 ), an experimental Labs model, is deprecated and retires on September 30, 2026.
+DEPRECATED Z.ai GLM 5.2 ( zai-glm-5-2 ) is deprecated and retires on October 31, 2026.
+Use Z.ai GLM 5.3 ( zai-glm-5-3 ) instead, at the same price.
+DEPRECATED September 28 Z.ai GLM 5.3 ( zai-glm-5-3 ) is now Generally Available.
+MODEL RELEASED Aug 26 August 31 OCR 4.1 ( mistral-ocr-4-1 ) is now Generally Available.
 MODEL RELEASED Jul 26 July 16 We released OCR 4.1 ( mistral-ocr-4-1 ).
 mistral-ocr-latest and mistral-ocr-4 now point to it.
 MODEL RELEASED The OCR API confidence_scores_granularity parameter now supports "block" granularity.
@@ -118,5 +124,5 @@ Previously the API would silently ignores unsupported parameters in the requests
 If you have unsupported parameters in your request, you will see the error message "Extra inputs are not permitted".
 API UPDATED A previous version of the guardrailing documentation incorrectly referred to the API parameter as safe_mode instead of safe_prompt .
 We corrected this in the documentation.
-OTHER WHY MISTRAL About us Our customers Careers Contact us EXPLORE AI Solutions Partners Research DOCUMENTATION Documentation Ambassadors Cookbooks BUILD Studio Vibe Mistral Code Mistral Compute Try the API LEGAL Terms of service Privacy policy Legal notice Privacy Choices Brand COMMUNITY Discord ↗ X ↗ Github ↗ LinkedIn ↗ Ambassadors Mistral AI © 2026 Toggle theme YEAR TAG Supported languages Cookbooks YEAR 2026 August July June May April March February January 2025 December September August July June May April March February January 2024 November October September July June May April March
-February January Filters Clear model api other security Go to Top
+OTHER WHY MISTRAL About us Our customers Careers Contact us EXPLORE AI Solutions Partners Research DOCUMENTATION Documentation Ambassadors Cookbooks BUILD Studio Vibe Mistral Code Mistral Compute Try the API LEGAL Terms of service Privacy policy Legal notice Privacy Choices Brand COMMUNITY Discord ↗ X ↗ Github ↗ LinkedIn ↗ Ambassadors Mistral AI © 2026 Toggle theme YEAR TAG Supported languages Cookbooks YEAR 2026 September August July June May April March February January 2025 December September August July June May April March February January 2024 November October September July June May
+April March February January Go to Top Filters Clear model api other security
