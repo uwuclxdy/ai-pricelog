@@ -5470,6 +5470,15 @@
       },
       "vendor": "anthropic"
     },
+    "openrouter/apodex/apodex-1.1-mini:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "apodex/apodex-1.1-mini:free"
+        ]
+      },
+      "vendor": "apodex"
+    },
     "openrouter/arcee-ai/trinity-large-thinking": {
       "curated": false,
       "sources": {
