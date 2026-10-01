@@ -5,7 +5,38 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Nemotron 3 Diarization For more information, see the Available Models page .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates Upcoming Changes Beginning 15 October 2026 for accounts that have never created a PostgreSQL or MySQL database cluster and 30 November 2026 for all accounts, PostgreSQL and MySQL Standard Edition no longer offer plans with more than 4 GiB of RAM or support standby and read-only nodes.
+On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
+Existing clusters are not affected.
+Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
+October 2026 1 October You can now prepay for Serverless Inference and Managed Agents with the Inference and Agents balance, which no other products draw from.
+Add $5 to $500 at a time or turn on auto-reload from the Billing page.
+Funds do not expire.
+You can also pay for eligible usage at a discount with a monthly plan, now in public preview .
+See Inference and Agents Balance and How to Pay for Harness Runtime .
+DigitalOcean Insights is now available in public preview , providing dashboards, metrics, logs, traces, and metric alerts for supported DigitalOcean resources and regions.
+For more information, see DigitalOcean Insights .
+September 2026 30 September You can no longer install extensions on PostgreSQL Advanced Edition clusters with CREATE EXTENSION .
+The pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions remain available.
+To request another extension, contact support .
+See Supported PostgreSQL Extensions .
+Organization owners and admins can now view and adjust resource limits for every team in their organization from the new Resource limits tab of the organization dashboard.
+The tab shows per-resource usage and limits for each team, supports inline edits within each team’s tier maximum, and lets you request increases beyond the maximum on a team’s behalf.
+For more information, see How to Manage Resource Limits for Organization Teams .
+The following OpenAI model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : GPT-6.1 Sol For more information, see the Available Models page .
+You can now set how long your DigitalOcean session remains active before you need to sign in again.
+On the My Account page , the Session duration setting accepts whole-number values from 1 hour to 30 days and applies to all browsers and devices where you’re signed in.
+29 September Isolated Worker Nodes for DigitalOcean Kubernetes (DOKS) are now in general availability .
+Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
+Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
+The Kubernetes API server stays publicly reachable so you can still manage the cluster.
+You can enable isolation only when you create a cluster running Kubernetes 1.36 or later.
+28 September Valkey 9 is now available for database clusters .
+New clusters use Valkey 9 by default.
+Valkey 8 remains available for new and existing clusters.
+For version support, see Valkey Limits .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Claude Sonnet 5.5 For more information, see the Available Models page .
+25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Nemotron 3 Diarization For more information, see the Available Models page .
 23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
 22 September VPC subnets and routes are now in public preview .
 Subnets let you add IP ranges to an existing VPC network, and resources in a VPC’s subnets can reach each other.
@@ -16,6 +47,8 @@ A Droplet created before 2 October 2024, or one using a custom base image, needs
 Manage subnets and routes using the DigitalOcean API.
 The Control Panel does not support them yet.
 See How to Manage VPC Subnets and How to Manage Routes .
+DigitalOcean Insights is now enabled by default when you create a new DigitalOcean Managed Agents resource.
+Insights is in private preview .
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6 Sol GPT-6 Luna For more information, see the Available Models page .
 21 September Managed Agents is now available in public preview for all users.
@@ -29,10 +62,16 @@ This includes DigitalOcean-maintained tools such as Web Search, Web Fetch, Brows
 Teams can also extend the catalog with their own MCP servers and internal tools.
 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
 To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
+16 September DigitalOcean Insights now supports exploring and querying metrics in private preview .
+You can explore, filter, compare, and save metrics to dashboards.
+For more information, see How to Explore and Query Metrics .
 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
 10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
 See How to Create Regional Load Balancers and How to Manage Regional Load Balancers .
 Global load balancers do not support firewall rules, and DigitalOcean Kubernetes (DOKS)-managed load balancers continue to use Kubernetes service configuration.
+DigitalOcean Insights now supports tracing in private preview .
+You can search, filter, and inspect traces and spans for supported resources and regions.
+For more information, see How to View Traces .
 9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
 You can run worker nodes on interruptible Spot GPU capacity for AMD Instinct MI350X and MI355X and NVIDIA B300 GPUs, at a lower, variable rate than on-demand GPU nodes.
 Spot GPU node pools work with the cluster autoscaler, and you can pair them with an on-demand GPU node pool as a configurable fallback.
@@ -113,6 +152,8 @@ New clusters use OpenSearch 2.19 by default.
 Kafka versions 3.9 and 4.1 are now available for database clusters .
 New clusters use Kafka 4.1 by default.
 For version support and Kafka 3.8 end of availability, see Kafka Limits .
+DigitalOcean Insights is now available in private preview with custom dashboards, metrics, logs, and metric alerts for supported resources and regions.
+For more information, see DigitalOcean Insights features .
 28 July DigitalOcean Kubernetes (DOKS) now includes an optional peer-to-peer OCI registry plugin in public preview .
 The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
@@ -153,51 +194,6 @@ DOKS can automatically replace worker nodes that stay unhealthy, based on Kubern
 The Data Plane Operator runs in your cluster, watches node conditions, and replaces a worker when a condition matches your rules for a configured duration.
 You can act on standard kubelet conditions, such as Ready , and on custom conditions you publish from your own health checks.
 You configure remediation by deploying the DataPlaneOperatorConfig and NodeRemediationConfig custom resources to your cluster.
-2 July DigitalOcean Kubernetes (DOKS) now runs a node readiness controller in public preview .
-The controller watches node conditions and holds NoSchedule taints on nodes until required components, including GPU drivers on GPU nodes, report healthy, which prevents pods from scheduling onto nodes that are not yet ready.
-DOKS deploys and manages the controller automatically.
-For GPU node pools, you can also customize which GPU health metrics gate scheduling, without redeploying any components.
-1 July DigitalOcean Managed Weaviate is now in public preview and enabled for all users.
-Weaviate is a fully managed vector database for retrieval-augmented generation and semantic search workloads.
-Create clusters from the Vector Databases page , the /v2/vector-databases API , or doctl vector-databases .
-Select Weaviate as the engine and review the public preview disclaimer and legal terms in the create flow.
-For setup, limits, and pricing, see Managed Weaviate .
-Claude Fable 5 is available again on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents .
-For more information, see the Available Models page .
-Prompt caching for open-source models in serverless inference chat completions and responses API is now in public preview .
-Open-source models cache context automatically, so you do not need to set the cache_control or prompt_cache_retention parameters.
-Prompt caching is available for the following open-source models: DeepSeek V3.2 DeepSeek V4 Pro DeepSeek V4 Flash Kimi K2.5 Kimi K2.6 GLM 5 GLM-5.1 GLM-5.2 gpt-oss-120b MiMo V2.5 MiMo V2.5 Pro MiniMax M2.5 Qwen 3.5 Qwen3 Coder Flash For more information, see Use Prompt Caching .
-The Ubuntu 26.04 LTS ( ubuntu-26-04-x64 ) base image is now available in the control panel and via the API.
-Invoice and Billing Insights CSV files now include a tag_name column that lists the tags applied to each resource.
-Tag information is included only for resource usage on or after 1 July 2026.
-June 2026 30 June DigitalOcean Managed Valkey database clusters now support custom CNAME records, allowing clients to connect through your own hostname instead of the default *.db.ondigitalocean.com address.
-Custom CNAMEs are available through the API when creating clusters or when updating an existing cluster, and apply to the public network connection only.
-For more information, see Configure Custom CNAMEs for Valkey .
-Private Droplets are now generally available in all regions.
-Private Droplets have no public network interface and no public IP address, using VPC-only networking with automatic integration with VPC NAT gateway, VPC peering, and VPC private DNS.
-See the Private Droplets documentation for setup instructions and limitations.
-The following agent evaluation metrics are deprecated and should no longer be used: Tone Retrieved Chunk Usage Prompt Perplexity Use the currently supported metrics listed in Agent Evaluation Metrics instead.
-To monitor deployed agent behavior outside of evaluations, use Agent Metrics and Runtime Logs .
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Sonnet 5 For more information, see the Available Models page .
-Agent evaluations support for the Agent Development Kit (ADK), previously in preview, is now removed.
-To evaluate agents, use agent evaluations via the DigitalOcean Control Panel for supported agent types.
-To monitor ADK agent behavior, use Agent Metrics and Runtime Logs .
-Insights, agent tracing, and conversation logs are deprecated for all agents, including agents created through the Control Panel, CLI, API, and Agent Development Kit (ADK).
-To monitor deployed agent behavior, use Agent Metrics and Runtime Logs instead.
-The Agent Evaluations MCP server tool has been renamed to Evaluations .
-Custom metrics are now available for DigitalOcean Evaluations .
-You can define your own metrics to evaluate model behavior against criteria specific to your use case.
-DigitalOcean Evaluations is now generally available.
-Use Evaluations to create test cases, run evaluation datasets, and measure model performance against selected metrics.
-Presets are now available for DigitalOcean Evaluations .
-You can save and reuse evaluation configurations, including the candidate model, system prompt, hyperparameters, judge model, and metrics.
-Model Evaluations is now renamed to DigitalOcean Evaluations .
-29 June Serverless Inference now requires a positive prepaid account balance before you can send inference requests.
-Usage charges are deducted from this balance, and access is suspended if it reaches $0.
-You can add a prepayment manually or enable auto-reload to replenish your balance automatically.
-For more information, see Manage Serverless Inference Prepayment .
-The DigitalOcean Control Panel now supports light and dark themes.
-From the profile menu in the top right corner of the control panel, you can set your theme to a light or dark appearance, or match your operating system’s appearance setting.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
