@@ -6598,6 +6598,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/switchyard": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/switchyard"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/openai/gpt-3.5-turbo-0613": {
       "curated": false,
       "sources": {
