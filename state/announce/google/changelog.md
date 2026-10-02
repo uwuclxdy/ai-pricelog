@@ -357,5 +357,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-09-23 UTC.
+Last updated 2026-10-01 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
