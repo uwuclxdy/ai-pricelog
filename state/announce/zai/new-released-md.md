@@ -36,4 +36,4 @@ Learn more in our [documentation](/guides/agents/slide).\* </Update> <Update lab
 * It also offers seamless one-click compatibility with the Claude Code framework.
 Learn more in our [documentation](/guides/llm/glm-4.5).\* </Update> <Update label="2025-07-15" description=" CogVideoX-3"> * We’ve launched CogVideoX-3, an incremental upgrade to our video generation model with improved quality and new features.
 * It adds support for start and end frame synthesis.
-Learn more in our [documentation](/guides/video/cogvideox-3).\* </Update>
+Learn more in our [documentation](/guides/video/cogvideox-3).\* </Update> This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
