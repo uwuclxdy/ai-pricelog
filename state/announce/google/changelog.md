@@ -5,6 +5,11 @@ engineering Logs and datasets Get started with logs Data logging and sharing Saf
 Try out LearnLM Troubleshooting Access for Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 3.8 Flash is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
+October 6, 2026 Gemini Nano Banana 2.1 generally available (GA) : Released Gemini Nano Banana 2.1 ( gemini-nano-banana-2.1 ), the latest high-efficiency image generation and conversational editing model.
+An update to Nano Banana 2 ( gemini-3.1-flash-image ), it maintains Flash-level speed and cost efficiency while delivering significant improvements in visual quality, prompt adherence, multi-turn character consistency, text rendering, and wide and panoramic aspect ratio generation ( 1:4 , 4:1 , 1:8 , 8:1 ) across 1K , 2K , and 4K resolutions.
+See the Image generation guide to get started.
+Deprecation announcement : The gemini-3.1-flash-image model is deprecated and will be shut down on October 29, 2026.
+Migrate to gemini-nano-banana-2.1 .
 September 22, 2026 Gemini 3.8 Flash TTS and Gemini 3.8 Flash-Lite TTS generally available (GA) : Released our next-generation text-to-speech (TTS) audio models and the Gemini API Voices endpoint ( /v1beta/voices ): Gemini 3.8 Flash TTS ( gemini-3.8-flash-tts ) : Flagship creative TTS model engineered for studio-grade voice fidelity, nuanced acting, regional dialects, and long-form multi-turn stability.
 Gemini 3.8 Flash-Lite TTS ( gemini-3.8-flash-lite-tts ) : Fast, cost-efficient TTS model built to replace gemini-3.1-flash-tts-preview for high-throughput production and real-time voice agent cascades.
 Voice design , Voice replication , and the Extended Voice Library : Create persistent custom vocal personas from text prompts, replicate voices with consent verification, and query 150+ prebuilt and custom voices.
@@ -357,5 +362,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-09-23 UTC.
+Last updated 2026-10-06 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
