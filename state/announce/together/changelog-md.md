@@ -1,10 +1,54 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 24, 2026" tags={["New releases"]}> ## TogetherLink beta TogetherLink runs coding agents such as Claude Code and Codex, plus the Claude and ChatGPT desktop apps, on models hosted by Together AI.
-It's now in beta, with automatic model routing, cost tracking, and a headless mode.
-By default, sessions use the auto router, which sends straightforward requests to Together AI models and more difficult requests to Claude Opus.
-Your normal agent configuration is untouched: ```bash theme={null} # Install TogetherLink curl -fsSL https://link.together.ai/install | bash # Open the interactive launcher togetherlink # Or pin a session to one model togetherlink --main moonshotai/Kimi-K3 claude ``` See [TogetherLink](/docs/togetherlink) for more details.
+# Changelog <Update label="October 1, 2026" tags={["New releases"]}> ## Together Link beta Together Link runs six coding agents on models hosted by Together AI: Claude Code, Codex, OpenCode, and Pi Code in the terminal, plus Claude Desktop (including Cowork) and ChatGPT Desktop.
+Install it with one command, launch your agent through it, and your normal agent configuration stays untouched.
+It's now in beta on macOS and Linux.
+```bash theme={null} # Install Together Link curl -fsSL https://link.together.ai/install | bash # Open the interactive launcher togetherlink # Or launch an agent directly, pinned to one model togetherlink --main moonshotai/Kimi-K3 claude ``` **What's included:** * **Six agents:** Launch Claude Code (`tclaude`), Codex (`tcodex`), OpenCode (`topencode`), or Pi Code (`tpi`) in your terminal, or switch Claude Desktop and ChatGPT Desktop to a reversible Together Link profile.
+OpenCode requires OpenCode 2, and Pi Code requires version 0.80.8 or newer.
+* **Auto router:** Sessions default to the `auto` model, which picks a Together AI model for each request.
+In Claude Code and Claude Desktop sessions with an Anthropic API key, it sends the most difficult requests to Claude Opus.
+* **Models:** `moonshotai/Kimi-K3`, `zai-org/GLM-5.3`, `zai-org/GLM-5.3-Flash`, and `deepseek-ai/DeepSeek-V4.1-Flash`, all with 1M context, billed at standard serverless rates.
+Pin one with `--main`, or switch with your agent's `/model` command.
+* **Cost tracking:** A session receipt on exit, an estimated spend in Claude Code's status line, and `togetherlink usage` for spend across sessions.
+* **Image generation:** Claude Code, Claude Desktop, and ChatGPT Desktop sessions include a skill that generates and edits images with Together AI image models.
+* **Headless mode:** Each agent's own non-interactive flags pass through, so scripts can drive `tclaude -p`, `tcodex exec`, `topencode run`, and `tpi -p`.
+See [Together Link](/docs/togetherlink) for details.
+## Code sandbox SDK and CLI The new `together-sandbox` SDK runs commands and code in isolated runtime environments built from Docker-image snapshots.
+It ships as a Python SDK, a TypeScript SDK, and a standalone CLI, and is available to organizations on an allowlist ([contact us](https://www.together.ai/contact) to request access).
+**What's changed from the [legacy SDK](/docs/together-code-sandbox-legacy) (`@codesandbox/sdk`):** * **Together-native authentication:** Clients authenticate with your Together API key (`TOGETHER_API_KEY`) instead of a CodeSandbox API token.
+* **Python support:** The legacy SDK was TypeScript-only.
+The new SDK is published on both PyPI and npm, and the CLI installs as a self-contained binary.
+* **Docker-defined environments:** Sandboxes boot from snapshots built from a Docker image or Dockerfile by Together's remote image builder, replacing templates built with the CodeSandbox CLI.
+No local Docker is required.
+* **Snapshot-based persistence:** Sandboxes are ephemeral by default and termination is permanent.
+To maintain state, snapshot the filesystem on termination and start a new sandbox from it.
+This replaces the legacy hibernate and resume model.
+See [Code sandbox](/docs/together-code-sandbox) for the new workflow.
+</Update> <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train LoRA adapters with a rank of up to 128 for the majority of models, up from 64.
+The default rank for these models stays at 64, so set `lora_r` to use a higher one.
+The [model limits](/reference/get-fine-tunes-models-limits) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
+Run [`tg fine-tuning model-limits <model>`](/reference/cli/finetune#model-limits) to see both values for a model.
+Version 2.36.0 of the Together CLI and Python SDK uses the default rank when you don't set `lora_r`.
+Earlier versions, including the 1.x SDK, use the model's maximum rank instead, which is now 128 on these models.
+Upgrade to 2.36.0 or set `lora_r` yourself, especially if you [continue training](/docs/fine-tuning/lora-vs-full#continue-training-from-a-checkpoint) from a rank-64 adapter, where the rank has to match.
+In the console, the rank field now starts at the model's default rank (64 on most models) instead of 8.
+See [Supported models](/docs/fine-tuning/supported-models) for each model's default and maximum rank.
+## Longer fine-tuning context for Qwen 27B models `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.6-27B`, and `Qwen/Qwen3.5-27B` now support a 131,072-token context for SFT (up from 32,768) and 65,536 for DPO (up from 16,384), for both LoRA and full fine-tuning.
+Batch size limits have also changed: LoRA jobs on these models run at a batch size of 2, down from 16, and the maximum DPO batch size for full fine-tuning drops from 16 to 8.
+See [Supported models](/docs/fine-tuning/supported-models) for each model's limits.
+## Batch API files are now retained for 7 days The input file you upload for a batch job, along with the output and error files the job produces, are now retained for 7 days.
+After that the files are no longer accessible, so download your results before the window closes.
+Reusing an uploaded input file across batch jobs also works only within that window.
+See [Batch inference](/docs/inference/batch/overview#data-retention).
+</Update> <Update label="September 24, 2026" tags={["Improvements"]}> ## Deploy a fine-tuned model by its registry name Since Together CLI version `2.24.0`, `tg beta endpoints deploy` accepts a completed fine-tuning job's `model_object_name`, the qualified `<project_slug>/<model_name>` registry name, in place of its `model_object_id`.
+The CLI resolves the name to the same model, so you can deploy straight from the name shown in the [fine-tuning jobs dashboard](https://api.together.ai/jobs).
+The SDK and API take `model_object_id`.
+See [Deploy a fine-tuned model](/docs/fine-tuning/deployment).
 </Update> <Update label="September 23, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `together/Tev1-4B-experimental`: 32,768 context length.
 Pricing: \$0.042 input / free output (per 1M tokens).
+</Update> <Update label="September 22, 2026" tags={["Pricing"]}> ## Pricing update The following models have lower pricing, effective September 22, 2026.
+All usage from that date forward is billed at the new rates (per 1M tokens): * `Qwen/Qwen3.7-Max`: \$2.50 → \$1.50 (input), \$7.50 → \$4.50 (output).
+* `Qwen/Qwen3.8-Flash`: \$0.15 → \$0.09 (input), \$0.47 → \$0.282 (output).
+See [Serverless models](/docs/serverless/models) for the full pricing catalog.
 </Update> <Update label="September 16, 2026" tags={["New releases"]}> ## Automatic idle shutdown for dedicated deployments Deployments can now stop themselves when they go unused.
 Set an inactivity timeout with `--inactive-timeout` (the `inactiveTimeout` field in the management API), and if the deployment serves no inference requests for that many minutes, it scales to zero replicas, releasing its hardware and stopping billing.
 See [Automatic idle shutdown](/docs/dedicated-endpoints/scaling#automatic-idle-shutdown).
@@ -758,7 +802,7 @@ The platform-wide \$5 credit purchase is the only gate.
 DCI lets you containerize, deploy, and scale custom models on Together AI.
 * [Blog post](https://www.together.ai/blog/dedicated-container-inference).
 * [Documentation](/docs/dedicated-container-inference).
-* [Getting started](/docs/containers-quickstart#example-guides).
+* [Getting started](/docs/containers-quickstart#tutorials).
 </Update> <Update label="February 6, 2026" tags={["Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available: * `togethercomputer/m2-bert-80M-32k-retrieval`.
 * `Salesforce/Llama-Rank-V1`.
 * `togethercomputer/Refuel-Llm-V2`.
@@ -780,12 +824,12 @@ This first version already includes beta APIs for instant clusters.
 ## Model deprecations The following models have been deprecated and are no longer available: * `deepseek-ai/DeepSeek-R1-0528-tput`.
 </Update> <Update label="January 29, 2026" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :----------------------------------- | :---------------------------------------- | | `mistralai/Mistral-7B-Instruct-v0.3` | `mistralai/Ministral-3-14B-Instruct-2512` | | `zai-org/GLM-4.6` | `zai-org/GLM-4.7` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `mistralai/Mistral-7B-Instruct-v0.3` | `mistralai/Ministral-3-14B-Instruct-2512` | | `zai-org/GLM-4.6` | `zai-org/GLM-4.7` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="January 27, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `moonshotai/Kimi-K2.5`.
 </Update> <Update label="January 23, 2026" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :----------------- | :-------------- | | `DeepSeek-V3-0324` | `DeepSeek-V3.1` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `DeepSeek-V3-0324` | `DeepSeek-V3.1` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="January 21, 2026" tags={["Improvements", "Deprecations"]}> ## Prompt caching now enabled by default for dedicated model inference Prompt caching is now **automatically enabled** for all newly created dedicated endpoints.
 This change improves performance and reduces costs by default.
@@ -811,7 +855,7 @@ This only affects endpoint creation.
 * `meta-llama/Meta-Llama-Guard-3-8B`.
 </Update> <Update label="December 17, 2025" tags={["Deprecations"]}> ## Model redirects The following models are now being automatically redirected to their upgraded versions.
 See the [Model Lifecycle Policy](/docs/deprecations#model-lifecycle-policy) for details.
-| Original model | Redirects to | | :------------- | :----------------- | | `Kimi-K2` | `Kimi-K2-0905` | | `DeepSeek-V3` | `DeepSeek-V3-0324` | | `DeepSeek-R1` | `DeepSeek-R1-0528` | These are same-lineage upgrades with compatible behavior.
+| Original model | Redirects to | | :- | :- | | `Kimi-K2` | `Kimi-K2-0905` | | `DeepSeek-V3` | `DeepSeek-V3-0324` | | `DeepSeek-R1` | `DeepSeek-R1-0528` | These are same-lineage upgrades with compatible behavior.
 If you need the original version, deploy it as a [dedicated endpoint](/docs/dedicated-endpoints).
 </Update> <Update label="December 12, 2025" tags={["New releases"]}> ## Python SDK v2.0 release candidate Together AI is releasing the **Python SDK v2.0 Release Candidate**, a new, OpenAPI-generated, strongly-typed client that replaces the legacy v1.0 package and brings the SDK into lock-step with the latest platform features.
 * **Install:** `pip install together==2.0.0a9`.
@@ -1044,4 +1088,4 @@ Score and classify LLM outputs.
 * Simplified vendor approval and procurement.
 * Reduced due diligence requirements.
 * Support for regulated industries.
-</Update>
+</Update> This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
