@@ -6283,6 +6283,15 @@
       },
       "vendor": "mistralai"
     },
+    "openrouter/mistralai/mistral-large-4-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/mistral-large-4-0"
+        ]
+      },
+      "vendor": "mistralai"
+    },
     "openrouter/mistralai/mistral-medium-3": {
       "curated": false,
       "sources": {

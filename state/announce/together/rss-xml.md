@@ -1,4 +1,7 @@
-Together.ai https://www.together.ai The latest from Together 60 Webflow How to train your own Jev for $17 https://www.together.ai/blog/how-to-train-your-own-jev https://www.together.ai/blog/how-to-train-your-own-jev We just launched our own Jev-like classifier, together/Tev1-4B-experimental, on top of Qwen3.5 4B on Together’s serverless platform.
+Together.ai https://www.together.ai The latest from Together 60 Webflow Together Link: open models in the harness you already use.
+Start with one command today.
+https://www.together.ai/blog/together-link-frontier-quality-open-models-in-the-harness-you-already-use https://www.together.ai/blog/together-link-frontier-quality-open-models-in-the-harness-you-already-use Together Link brings frontier open models like GLM 5.3 and Kimi K3 into the coding agent your team already uses, cutting model spend by over 50%.
+How to train your own Jev for $17 https://www.together.ai/blog/how-to-train-your-own-jev https://www.together.ai/blog/how-to-train-your-own-jev We just launched our own Jev-like classifier, together/Tev1-4B-experimental, on top of Qwen3.5 4B on Together’s serverless platform.
 In this blog post we’ll show you how to fine-tune your own version!
 Canary rollouts: upgrade models in production without downtime https://www.together.ai/blog/canary-rollouts-upgrade-models-in-production-without-downtime https://www.together.ai/blog/canary-rollouts-upgrade-models-in-production-without-downtime A hard model swap exposes every user at once, and rolling back means cold-starting the old deployment under pressure.
 Here's how staged traffic ramps, metric gates, and automatic rollback work on dedicated inference.
@@ -159,4 +162,3 @@ AdapTive-LeArning Speculator System (ATLAS): A New Paradigm in LLM Inference via
 Our runtime-learning accelerator adapts continuously to your workload, delivering 500 TPS on DeepSeek-V3.1, a 4x speedup over baseline performance without manual tuning.
 Improved Batch Inference API: Enhanced UI, Expanded Model Support, and 3000× Rate Limit Increase https://www.together.ai/blog/batch-inference-api-updates-2025 https://www.together.ai/blog/batch-inference-api-updates-2025 Our new Batch Inference API makes large-scale AI workloads simpler, faster, and cheaper.
 With a streamlined UI, universal model support, and 3000× higher rate limits—now up to 30B tokens—you can process massive datasets at half the cost of real-time APIs.
-Together AI welcomes Mahadev Konar as SVP for Infrastructure Engineering https://www.together.ai/blog/mahadev-konar-svp-infrastructure-engineering https://www.together.ai/blog/mahadev-konar-svp-infrastructure-engineering Hiring Mahadev Konar further deepens Together AI’s commitment to deliver the most reliable and scalable GPU infrastructure.
