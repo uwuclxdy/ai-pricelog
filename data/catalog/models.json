@@ -126,6 +126,24 @@
       },
       "vendor": "anthropic"
     },
+    "anthropic/claude-haiku-5-5-for-prompts-over-100-000-tokens": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-haiku-5-5-for-prompts-over-100-000-tokens"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-haiku-5-5-for-prompts-up-to-100-000-tokens": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-haiku-5-5-for-prompts-up-to-100-000-tokens"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "anthropic/claude-mythos-5": {
       "curated": false,
       "sources": {
