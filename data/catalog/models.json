@@ -8882,6 +8882,15 @@
       },
       "vendor": "google"
     },
+    "together/kimi-k3-promo-promotion-valid-until-10/11/2026": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "kimi-k3-promo-promotion-valid-until-10/11/2026"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "together/lfm2.5-8b-a1b": {
       "curated": false,
       "sources": {
