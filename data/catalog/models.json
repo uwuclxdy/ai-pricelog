@@ -7651,6 +7651,15 @@
       },
       "vendor": "stepfun"
     },
+    "openrouter/stepfun/step-5-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "stepfun/step-5-preview"
+        ]
+      },
+      "vendor": "stepfun"
+    },
     "openrouter/tencent/hunyuan-a13b-instruct": {
       "curated": false,
       "sources": {
