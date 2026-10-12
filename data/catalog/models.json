@@ -8754,6 +8754,15 @@
       },
       "vendor": null
     },
+    "scaleway/lightonocr-3-0.8b": {
+      "curated": false,
+      "sources": {
+        "scaleway": [
+          "lightonocr-3-0.8b"
+        ]
+      },
+      "vendor": null
+    },
     "scaleway/mistral-medium-3.5-128b": {
       "curated": false,
       "sources": {
