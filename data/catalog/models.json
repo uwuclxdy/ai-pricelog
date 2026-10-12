@@ -6148,6 +6148,15 @@
       },
       "vendor": "meta"
     },
+    "openrouter/meta/muse-wonder": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "meta/muse-wonder"
+        ]
+      },
+      "vendor": "meta"
+    },
     "openrouter/microsoft/wizardlm-2-7b": {
       "curated": false,
       "sources": {
