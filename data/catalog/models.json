@@ -5821,6 +5821,15 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-4-argon": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-argon"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemma-2-27b-it": {
       "curated": false,
       "sources": {
