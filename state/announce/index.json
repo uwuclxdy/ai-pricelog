@@ -14,23 +14,23 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "025350152150edd5518fcbf0b2e0021fac4ed4adb40bad6f9b7fd20127c26c07",
-      "fetched": "2026-09-03"
+      "sha256": "1ef6f0de6813c792cffbef9fa91b39a5bc89163db32576c5eddad1811e0c1602",
+      "fetched": "2026-10-13"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "961d4076d5da967bb3e20ff6a4a99f17f0ccaca81b16f26be2cfcf14ddd83bf0",
-      "fetched": "2026-09-22"
+      "sha256": "672894656836e55418826ae2447624a1ae3461eb5eadc348568fe95c4770e683",
+      "fetched": "2026-10-13"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
-      "sha256": "7ad0d8bcd7afbf7e2df7f90b0090857751ded289ed042c68eba0d01ee32bb51e",
-      "fetched": "2026-09-03"
+      "sha256": "d4f846ad64eaf36c274fce82bc0ae05c48f5ab3b9a395dee4616ac61824c3197",
+      "fetched": "2026-10-13"
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "ca3993d6ec5aa854503d4d96ee33239568045fa3719f4eaba8da5ac3da98b2bf",
-      "fetched": "2026-09-22"
+      "sha256": "5e274e449b528134ae3f2903ada56ae13de318fa9e70bfd24a230d87d735a6f2",
+      "fetched": "2026-10-13"
     }
   },
   "moonshot": {
@@ -41,91 +41,91 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "d5392e1c22a56e5a3f06c9c8b89ae6a911012704b1ef1039c3e436fd43adc6dc",
-      "fetched": "2026-09-24"
+      "sha256": "f9365aaa854d609000e42b0fe66dacf9dac4f18ade423edb16c233de5117183f",
+      "fetched": "2026-10-13"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "fc6ad056901b0d8054655bb1b615cd3d89907a5497c05fee187e25e56094ddc1",
-      "fetched": "2026-09-03"
+      "sha256": "abe33120b938c3e4eaa03c1de08940c13bd339ff0e6428cc6102688ec43cced2",
+      "fetched": "2026-10-13"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "892c617d1d8c8a2122ee38f460f021349dcf22d36ffbc9acd070f11d77a04261",
-      "fetched": "2026-09-03"
+      "sha256": "441d679737d3275ad5d6bafaeb7e75cb5cd6a1534e9e10e8c7fb8f5440fd8030",
+      "fetched": "2026-10-13"
     }
   },
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "65625f4b3ded3fb1ce1e0b26e22a9759635e2add2e0d2ba09bd2da09f3b28cbb",
-      "fetched": "2026-09-21"
+      "sha256": "0bae12599c9f58396233d60c32c6813a49026c988d8566da261db004f74d846b",
+      "fetched": "2026-10-13"
     }
   },
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "716dc61fe38fe038e082b6b5396df1e597131caffc4f8f463bf8cf7ca19fa996",
-      "fetched": "2026-09-03"
+      "sha256": "8ce8d95e9aec0b63d48c7205f9ea34296539960e30a3a6f037abec3e3b4f9a28",
+      "fetched": "2026-10-13"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "8b04716609ad90c8a97126e742280310b74ad9d875cb33563640b26a678a7a45",
-      "fetched": "2026-09-18"
+      "sha256": "5857199f45b0e940af3de9e1226c699412f99b6fc411de0a535407ef2d6c0b37",
+      "fetched": "2026-10-13"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "ff176a54093308607e27943c3cf5c543fa867b2470162ba057b1f76ebbee406a",
-      "fetched": "2026-09-27"
+      "sha256": "c44d32049b1bac6fdf18bfd6fb5dae20e0ffb9d58fa9cf4225db5bf45838162f",
+      "fetched": "2026-10-13"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "a0fc74acea44d5da389131e43b31374e335e1a8f819593868293679e19cf0f54",
-      "fetched": "2026-09-25"
+      "sha256": "e6f944cf4e18d7cde52db5c80133a2b9d55a8ee54ebc2ef70679b96cda300d05",
+      "fetched": "2026-10-13"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "1122ad80c858908964296f7fdf223abdaed56f4dc1813325e85747defe6e5f83",
-      "fetched": "2026-09-24"
+      "sha256": "75e4432b06f835ac077762af3e58a95b392452aee4b8073e601faee4b7fcb92d",
+      "fetched": "2026-10-13"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "e2b8baa04fae38ceb481e651004d9b1a37041f64c74717cc8fa769c7ac41ae4c",
-      "fetched": "2026-09-24"
+      "sha256": "fc72c7c1f2f85f53c77a92cf2cc0147cb89fde9b8989d90ade53f9be41369363",
+      "fetched": "2026-10-13"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "5774ffc43fae80c2676b22655f37befe74be069175b655a1a73cfeceaeacbd88",
-      "fetched": "2026-09-24"
+      "sha256": "9ff6481a03e83b2e399e1dff0eb3f032b1239c9522a1c942c433cccfa3c041c8",
+      "fetched": "2026-10-13"
     }
   },
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "4c1eccb19f006d0a0b2cb9749096821a41b93deabee521f1fb161059759afc85",
-      "fetched": "2026-09-23"
+      "sha256": "4363231cdf2cbbae2734d362399b46d7323a3fd16174824ea5fb4dc2bf23d506",
+      "fetched": "2026-10-13"
     }
   },
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "10d500be750818c86429752b2c6bff075033b0cdf0b22d2d0b5031b7b020c933",
-      "fetched": "2026-09-23"
+      "sha256": "cdaf1a047259b13799108ba68f2132f84bff35e6dc508c044c1e01eccfcc6ee5",
+      "fetched": "2026-10-13"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "8194280db08563badebe14e7b053e4bf701eab84325eb301a44a5686d8cb4b2a",
-      "fetched": "2026-09-25"
+      "sha256": "e9adf29c3048a90e907863a16dc032522706399b77613404a124e1f32b332443",
+      "fetched": "2026-10-13"
     }
   },
   "cloudflare": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "56143553f1b1c04bd29ac70f177dac44242d51686a81fd8ce70682c19d7ee866",
-      "fetched": "2026-09-27"
+      "sha256": "cc949ba15d17e356a9c3fa4f59ca5683120e1ab16dd82734193714b21fca560f",
+      "fetched": "2026-10-13"
     }
   },
   "scaleway": {
@@ -150,15 +150,15 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "b2549ddbf70fe96db3b49685faa8763c680172557cf8e13b102dd9e5f62bdc59",
-      "fetched": "2026-09-25"
+      "sha256": "3a71fe5048a6483c4ef0b734cb3bde76d599bce4014a248c8b1b8d8217b35630",
+      "fetched": "2026-10-13"
     }
   },
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "6491de8b46bfe0b6db7659bf43d5facc14e9d60432ac4e7d50ee2802978db289",
-      "fetched": "2026-09-18"
+      "sha256": "07b9b7f3d3c3445a078faa7283699f29e93daf87cf23f11f6974695799e29bee",
+      "fetched": "2026-10-13"
     }
   }
 }
