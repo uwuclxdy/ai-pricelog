@@ -7804,6 +7804,15 @@
       },
       "vendor": "unbiased"
     },
+    "openrouter/unbiased/pareto-26.9": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "unbiased/pareto-26.9"
+        ]
+      },
+      "vendor": "unbiased"
+    },
     "openrouter/undi95/remm-slerp-l2-13b": {
       "curated": false,
       "sources": {
