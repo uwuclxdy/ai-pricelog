@@ -3,11 +3,32 @@ from __future__ import annotations
 import os
 import sys
 import types
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 
 from ai_pricelog.pr import PrRunner
+
+# `-n auto` otherwise resolves to every CPU the process may run on, and every concurrent
+# caller (a commit hook, a spawned agent, a second session) multiplies it into the same memory.
+_AUTO_WORKER_CAP = 4
+
+
+# `optionalhook` because the hookspec is xdist's: a run with the plugin off must still load.
+@pytest.hookimpl(wrapper=True, optionalhook=True)
+def pytest_xdist_auto_num_workers(config: pytest.Config) -> Generator[None, int, int]:
+    """Caps xdist's own `-n auto` (or `-n logical`) answer, unless the caller named a count.
+
+    xdist returns `PYTEST_XDIST_AUTO_NUM_WORKERS` when it parses as an integer, so a count
+    that parses is the caller's and passes through; anything else was detected off the box.
+    """
+    count = yield
+    try:
+        int(os.environ.get("PYTEST_XDIST_AUTO_NUM_WORKERS", ""))
+    except ValueError:
+        return min(_AUTO_WORKER_CAP, count)
+    return count
 
 
 class FakeRunner:
@@ -51,11 +72,11 @@ def isolated_git_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "global.gitconfig"))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    # the box's git runs ~/.config/git/hooks for every repo regardless of
-    # core.hooksPath, and its strip-trailers post-commit deletes any message
-    # matching the strip file (observed: a synthetic Co-Authored-By subject
-    # stored empty, redding the newline-escape sanitizer test); redirect HOME
-    # so no box hook or state file can reach the tests
+    # a developer's global git hooks can run for every repo regardless of
+    # core.hooksPath and rewrite a commit message (observed: a synthetic
+    # Co-Authored-By subject stored empty, redding the newline-escape
+    # sanitizer test); redirect HOME so no global hook or state file can
+    # reach the tests
     (tmp_path / "home").mkdir()
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
@@ -69,11 +90,11 @@ def git_init_repo(path: Path) -> None:
     git(path, "init", "-b", "main")
     git(path, "config", "user.name", "Test")
     git(path, "config", "user.email", "test@example.com")
-    # the box's git template symlinks gate hooks (pre-commit, commit-msg,
-    # a commit-rewriting strip-trailers post-commit) into every fresh repo;
-    # test commits must not run them (observed: the strip-trailers hook
-    # deletes a synthetic one-line Co-Authored-By message and empties its
-    # subject, redding the newline-escape sanitizer test)
+    # a developer's git template can install hooks into every fresh repo
+    # (a pre-commit gate, a commit-msg lint, a post-commit that rewrites
+    # messages); test commits must not run them (observed: such a post-commit
+    # emptied a synthetic one-line Co-Authored-By subject, redding the
+    # newline-escape sanitizer test)
     (path / "no-hooks").mkdir(exist_ok=True)
     git(path, "config", "core.hooksPath", str(path / "no-hooks"))
 
