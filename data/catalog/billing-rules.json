@@ -235,6 +235,16 @@
       "citation": [
         "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
       ]
+    },
+    {
+      "id": "novita-model-retirement-2026-10-29",
+      "provider": "novita",
+      "effective": "2026-10-29",
+      "timezone": "UTC",
+      "statement": "Novita retires baidu/ernie-4.5-21B-a3b at 08:00 UTC on 2026-10-29 (the changelog's Oct 29, 2026 Model Deprecation Notice); the notice names deepseek/deepseek-v4.1-flash as the migration target and says applications must migrate before the cutoff. requests to the model stop being served at the cutoff, so its stored rates stop applying from that instant",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }
