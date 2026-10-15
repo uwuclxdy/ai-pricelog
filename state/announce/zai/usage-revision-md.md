@@ -65,4 +65,4 @@ style={{ width: "calc((100% - 140px) / 2 + 5%)", textAlign: "center", padding: "
 </tr> <tr> <td style={{ width: "140px", whiteSpace: "nowrap", textAlign: "center", padding: "12px", border: "1px solid #e5e7eb" }}> Notes </td> <td colSpan={2} style={{ padding: "16px", border: "1px solid #e5e7eb" }}> <p> “Maximum” refers to the total number of Tokens that can actually be consumed when the **off-peak consumption multiplier** applies.
 </p> <p>The current quota consumption rules for each model are as follows:</p> <ul> <li> **GLM-5.3**: As the flagship model, API calls consume quota at a rate of "1× during off-peak hours and 3× during peak hours".
 </li> <li> **GLM-5.3-Flash**: API calls consume quota at a rate of 0.4× during off-peak hours and 1.2× during peak hours.
-</li> </ul> <p>\*Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).</p> </td> </tr> </tbody> </table> </div>
+</li> </ul> <p>\*Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).</p> </td> </tr> </tbody> </table> </div> This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

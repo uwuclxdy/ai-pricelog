@@ -34,3 +34,4 @@ We will grant 2 months of the corresponding online version plan based on the tie
 **Q: Can the value of the 2 complimentary months be used as credit when subscribing to a new plan?** Under the current subscription mechanism, plan upgrades are only available when there is a single active personal plan on the account.
 While your account holds both your current legacy plan and the complimentary plan, you will not be able to perform an upgrade.
 Once the complimentary plan has taken effect and becomes the only active plan on your account, upgrades will become available again, and the offset will be handled according to the applicable rules.
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

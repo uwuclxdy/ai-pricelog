@@ -14,23 +14,23 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "025350152150edd5518fcbf0b2e0021fac4ed4adb40bad6f9b7fd20127c26c07",
-      "fetched": "2026-09-03"
+      "sha256": "504588f55d7be846ed49927ac838a9ceb83409ac7dd98efa9bbf367607cb75e5",
+      "fetched": "2026-10-01"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "cfd907c398a6499d229e4472ce6978345196f7b5ff343b3dd42fe7ad39089d5e",
+      "sha256": "dbf18ad462d94d5109a76f3408a95951d630a6eb5c516128aaef9ab60fbdb8e2",
       "fetched": "2026-10-01"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
-      "sha256": "e6fe7c982c815fd0f03f75600824069c475dd5bcaf8fa2934c4a1bef3ba0f2bc",
+      "sha256": "d4f846ad64eaf36c274fce82bc0ae05c48f5ab3b9a395dee4616ac61824c3197",
       "fetched": "2026-10-01"
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "ca3993d6ec5aa854503d4d96ee33239568045fa3719f4eaba8da5ac3da98b2bf",
-      "fetched": "2026-09-22"
+      "sha256": "c5b4c5f73c6526324955a83954c94a0fd1386ea9b7caa9d4439ae3b1526a4780",
+      "fetched": "2026-10-01"
     }
   },
   "moonshot": {
@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "353058dc8b42caa1516cf8f19c48f234d9f4d5ecd00ef51c69592f9ca1905d69",
+      "sha256": "3cd25f0ecdfc706952906781f390599863bedacc392ac1c524938c520897f37e",
       "fetched": "2026-10-01"
     },
     "https://www.together.ai/blog/rss.xml": {
@@ -119,8 +119,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "10d500be750818c86429752b2c6bff075033b0cdf0b22d2d0b5031b7b020c933",
-      "fetched": "2026-09-23"
+      "sha256": "2349aa22917f03457f6b223508470c2b900b94cc23e00257e8deaaf68f85cb0f",
+      "fetched": "2026-10-01"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",

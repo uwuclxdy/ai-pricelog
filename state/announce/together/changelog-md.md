@@ -12,6 +12,17 @@ Pin one with `--main`, or switch with your agent's `/model` command.
 * **Image generation:** Claude Code, Claude Desktop, and ChatGPT Desktop sessions include a skill that generates and edits images with Together AI image models.
 * **Headless mode:** Each agent's own non-interactive flags pass through, so scripts can drive `tclaude -p`, `tcodex exec`, `topencode run`, and `tpi -p`.
 See [Together Link](/docs/togetherlink) for details.
+## Code sandbox SDK and CLI The new `together-sandbox` SDK runs commands and code in isolated runtime environments built from Docker-image snapshots.
+It ships as a Python SDK, a TypeScript SDK, and a standalone CLI, and is available to organizations on an allowlist ([contact us](https://www.together.ai/contact) to request access).
+**What's changed from the [legacy SDK](/docs/together-code-sandbox-legacy) (`@codesandbox/sdk`):** * **Together-native authentication:** Clients authenticate with your Together API key (`TOGETHER_API_KEY`) instead of a CodeSandbox API token.
+* **Python support:** The legacy SDK was TypeScript-only.
+The new SDK is published on both PyPI and npm, and the CLI installs as a self-contained binary.
+* **Docker-defined environments:** Sandboxes boot from snapshots built from a Docker image or Dockerfile by Together's remote image builder, replacing templates built with the CodeSandbox CLI.
+No local Docker is required.
+* **Snapshot-based persistence:** Sandboxes are ephemeral by default and termination is permanent.
+To maintain state, snapshot the filesystem on termination and start a new sandbox from it.
+This replaces the legacy hibernate and resume model.
+See [Code sandbox](/docs/together-code-sandbox) for the new workflow.
 </Update> <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train LoRA adapters with a rank of up to 128 for the majority of models, up from 64.
 The default rank for these models stays at 64, so set `lora_r` to use a higher one.
 The [model limits](/reference/get-fine-tunes-models-limits) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
@@ -1077,4 +1088,4 @@ Score and classify LLM outputs.
 * Simplified vendor approval and procurement.
 * Reduced due diligence requirements.
 * Support for regulated industries.
-</Update>
+</Update> This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

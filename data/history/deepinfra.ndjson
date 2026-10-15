@@ -25,6 +25,7 @@
 {"schema":4,"source":"deepinfra","model_id":"gemma-3-4b-it","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-4-26b-a4b-it","observed_at":"2026-08-29","rates":{"input":0.07,"output":0.34},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-4-31b-it","observed_at":"2026-08-29","rates":{"input":0.13,"output":0.38},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"gemma-4-31b-it","observed_at":"2026-10-01","rates":{"input":0.15,"output":0.4},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-4-31b-it-turbo","observed_at":"2026-08-29","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-4-31b-it-ultra","observed_at":"2026-08-29","rates":{"input":0.27,"output":0.76},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-4-e4b-it","observed_at":"2026-08-29","rates":{"input":0.02,"output":0.1},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
