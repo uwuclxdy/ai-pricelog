@@ -1948,6 +1948,15 @@
       },
       "vendor": "anthropic"
     },
+    "digitalocean/claude-haiku-5.5": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-haiku-5.5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "digitalocean/claude-opus-4.8-fast-mode": {
       "curated": false,
       "sources": {
@@ -1980,6 +1989,15 @@
       "sources": {
         "digitalocean": [
           "claude-opus-5.5-fast-mode"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "digitalocean/claude-sonnet-5.5": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-sonnet-5.5"
         ]
       },
       "vendor": "anthropic"
@@ -2268,6 +2286,15 @@
       "sources": {
         "digitalocean": [
           "gpt-6-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6.1-sol": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6.1-sol"
         ]
       },
       "vendor": "openai"
