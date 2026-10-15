@@ -15,22 +15,22 @@
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
       "sha256": "504588f55d7be846ed49927ac838a9ceb83409ac7dd98efa9bbf367607cb75e5",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
       "sha256": "dbf18ad462d94d5109a76f3408a95951d630a6eb5c516128aaef9ab60fbdb8e2",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
       "sha256": "d4f846ad64eaf36c274fce82bc0ae05c48f5ab3b9a395dee4616ac61824c3197",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
       "sha256": "c5b4c5f73c6526324955a83954c94a0fd1386ea9b7caa9d4439ae3b1526a4780",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "moonshot": {
@@ -42,52 +42,52 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "f9365aaa854d609000e42b0fe66dacf9dac4f18ade423edb16c233de5117183f",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
       "sha256": "abe33120b938c3e4eaa03c1de08940c13bd339ff0e6428cc6102688ec43cced2",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
       "sha256": "441d679737d3275ad5d6bafaeb7e75cb5cd6a1534e9e10e8c7fb8f5440fd8030",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
       "sha256": "8d7204a501b691c2392e5a94c02bee4e2988893a880c09db4029727fbc02d7b1",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
       "sha256": "b4f9341a305c72686ababa814ce18afa28993b30a26f1a6072d172c6e60b297d",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
       "sha256": "f60273a13c00a3ecfad23d5d16bc83a302db21e25d286f42bc9e2d65601c3f3f",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "88a911714103354725081dfc17ecd25bc307341d37ff0bc460b68ed245e62af5",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
       "sha256": "3cd25f0ecdfc706952906781f390599863bedacc392ac1c524938c520897f37e",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -99,33 +99,33 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "ae3f52c62b07b047148ba9386ac8bdc273c42f5502fc16648d3029981e4315ac",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "14d21c50178a36b626f24c5ce47892dcfdf76d067ce946ad887819a44ac71914",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
       "sha256": "ad108180d693aa7433fefbf6d852bfd09f51c5bb4e925facf7e40f6721be2652",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
       "sha256": "2349aa22917f03457f6b223508470c2b900b94cc23e00257e8deaaf68f85cb0f",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
       "sha256": "750401e7b53fc512331cbd8055aab73a9609edefa71b3b26ea4a1e5883fc43a6",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "cloudflare": {
@@ -139,7 +139,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "3ee122a834cac84751e7a9c5057d5c735ddbd1154a442bdaf6cd44df9abe7384",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "scaleway": {
@@ -151,7 +151,7 @@
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
       "sha256": "c2bdec368653c4512eb5641bc90951d2a8d95b7f614a3e7217771a6482c562cb",
-      "fetched": "2026-10-03"
+      "fetched": "2026-10-04"
     }
   },
   "databricks": {
