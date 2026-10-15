@@ -105,7 +105,7 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "14d21c50178a36b626f24c5ce47892dcfdf76d067ce946ad887819a44ac71914",
+      "sha256": "9ff6481a03e83b2e399e1dff0eb3f032b1239c9522a1c942c433cccfa3c041c8",
       "fetched": "2026-10-07"
     }
   },
@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "6d9062613946757a4fc148c9bc89a03b6538f7d77e8c6047b590eb3eff389fb8",
+      "sha256": "92a3c7fa6fa5694f743955361e8a515eacd5134df4753df629f18938c63cbd4e",
       "fetched": "2026-10-07"
     }
   },
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "52bd1071a06000ac62bd1f3401f0795f0661cd15ebf192f9036edb3b5c84cf9e",
+      "sha256": "b883a3f13e294aac3c0d0923f689aa4f89e0fb4358262f28cd7d17e8a5f0ff17",
       "fetched": "2026-10-07"
     }
   },

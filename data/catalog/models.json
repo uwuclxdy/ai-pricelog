@@ -5425,6 +5425,15 @@
       },
       "vendor": "anthropic"
     },
+    "openrouter/anthropic/claude-haiku-5.5:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "anthropic/claude-haiku-5.5:batch"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "openrouter/anthropic/claude-opus-4.1": {
       "curated": false,
       "sources": {
