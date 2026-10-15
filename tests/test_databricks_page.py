@@ -1,10 +1,11 @@
 """databricks pricing pair tests, pinned against the saved live pricing page.
 
-the fixture is the full 2026-09-22 capture of the foundation-model-serving
-pricing page. the per-token rates live in two tables ("Standard Pay Per
-Token" and "Priority Pay Per Token", each `Input | Output | Cache read`);
-the page carries display names only, so ids resolve through the detector's
-display-name mapping.
+the fixture is the full 2026-10-14 capture of the foundation-model-serving
+pricing page. the per-token rates live in two tables ("Pay Per Token" and
+"Priority Pay Per Token", each `Input | Output | Cache read`; the standard
+table's span read "Standard Pay Per Token" until the page dropped the
+qualifier, by 2026-10-06); the page carries display names only, so ids
+resolve through the detector's display-name mapping.
 """
 
 from __future__ import annotations
@@ -161,12 +162,17 @@ def test_detect_matches_both_pay_per_token_tables(monkeypatch: pytest.MonkeyPatc
     _detect_serve(
         monkeypatch,
         [
-            table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+            table(
+                _STANDARD_HEADER,
+                row("GTE", "1.857", "-", "-"),
+                row("GLM-5.2, 5.3", "20.000", "62.857", "3.714"),
+            ),
             table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
             table(_HOURLY_HEADER, row("GLM-5.2, 5.3", "142.857", "-", "-")),
         ],
     )
     assert detector.detect(make_cfg()) == [
+        "gte",
         "glm-5.2",
         "glm-5.3",
         "glm-5.2-priority",
@@ -184,11 +190,12 @@ def test_detect_skips_dash_rate_rows(monkeypatch: pytest.MonkeyPatch):
             table(
                 _STANDARD_HEADER,
                 row("GTE", "-", "-", "-"),
+                row("BGE Large", "1.000", "-", "-"),
                 row("GLM-5.2, 5.3", "20.000", "62.857", "3.714"),
             )
         ],
     )
-    assert detector.detect(make_cfg()) == ["glm-5.2", "glm-5.3"]
+    assert detector.detect(make_cfg()) == ["bge-large", "glm-5.2", "glm-5.3"]
 
 
 def test_detect_hourly_table_alone_raises(monkeypatch: pytest.MonkeyPatch):
@@ -200,24 +207,530 @@ def test_detect_hourly_table_alone_raises(monkeypatch: pytest.MonkeyPatch):
         detector.detect(make_cfg())
 
 
-def test_detect_reworded_tier_span_raises(monkeypatch: pytest.MonkeyPatch):
-    # the tier pin matches one of the two known wordings or raises: the
-    # tables share display names, so a priority row read under the standard
-    # mapping silently dedupes its base id away instead of pinging
-    header = (
-        "<tr><th rowspan='2'>Model</th><th colspan='3'>"
-        "Priority Pay Per Token (DBU Per 1M Tokens) (beta)</th></tr>"
-        "<tr><th>Input</th><th>Output</th><th>Cache read</th></tr>"
-    )
+def test_detect_unqualified_span_is_the_standard_tier(monkeypatch: pytest.MonkeyPatch):
+    # the page dropped the standard table's "Standard" qualifier (issue 458):
+    # the bare span still names the standard tier, so its rows keep their
+    # base ids while the priority table keeps its "-priority" ids
+    unqualified = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    assert unqualified != _STANDARD_HEADER
     _detect_serve(
         monkeypatch,
         [
-            table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
-            table(header, row("Qwen 3.5 122B", "6.286", "62.857", "-")),
+            table(
+                unqualified,
+                row("GTE", "1.857", "-", "-"),
+                row("GLM-5.2, 5.3", "20.000", "62.857", "3.714"),
+            ),
+            table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
         ],
     )
-    with pytest.raises(FetchError, match="unreadable pay-per-token tier span"):
+    assert detector.detect(make_cfg()) == [
+        "gte",
+        "glm-5.2",
+        "glm-5.3",
+        "glm-5.2-priority",
+        "glm-5.3-priority",
+    ]
+
+
+def _detect_error(monkeypatch: pytest.MonkeyPatch, tables: list[str]) -> str:
+    _detect_serve(monkeypatch, tables)
+    with pytest.raises(FetchError) as excinfo:
         detector.detect(make_cfg())
+    return str(excinfo.value)
+
+
+def test_detect_unknown_tier_qualifier_raises(monkeypatch: pytest.MonkeyPatch):
+    # tolerating the dropped "Standard" must not admit any other qualifier: a
+    # guessed tier for a new "Flex" table would price its rows under the base
+    # ids or under the "-priority" ids
+    flex = _STANDARD_HEADER.replace("Standard Pay Per Token", "Flex Pay Per Token")
+    tables = [
+        table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(flex, row("GLM-5.2, 5.3", "10.000", "31.429", "1.857")),
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        f"unreadable pay-per-token tier span 'flex pay per token (dbu per 1m tokens)' on {PAGE_URL}"
+    )
+
+
+def test_detect_reworded_tier_span_raises(monkeypatch: pytest.MonkeyPatch):
+    # a reworded tier span outside the pins raises rather than guessing a tier
+    reworded = _PRIORITY_HEADER.replace(
+        "Priority Pay Per Token (DBU Per 1M Tokens)",
+        "Priority Pay Per Token (DBU Per 1M Tokens) (beta)",
+    )
+    tables = [
+        table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(reworded, row("Qwen 3.5 122B", "6.286", "62.857", "-")),
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        "unreadable pay-per-token tier span"
+        f" 'priority pay per token (dbu per 1m tokens) (beta)' on {PAGE_URL}"
+    )
+
+
+def test_detect_priority_table_losing_its_qualifier_raises(monkeypatch: pytest.MonkeyPatch):
+    # the page dropped "Standard" once; dropping "Priority" the same way leaves
+    # two bare spans that both read as standard, and the priority rows would
+    # price the base ids or vanish behind them with no warning
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    tables = [
+        table(bare, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(bare, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
+    ]
+    expected = f"two pay-per-token tables read as the standard tier on {PAGE_URL}"
+    assert _detect_error(monkeypatch, tables) == expected
+    with pytest.raises(FetchError) as excinfo:
+        scraper.scrape(make_cfg(), "glm-5.2")
+    assert str(excinfo.value) == expected
+
+
+def test_detect_two_priority_tables_raise(monkeypatch: pytest.MonkeyPatch):
+    tables = [
+        table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
+        table(_PRIORITY_HEADER, row("Qwen 3.5 122B", "6.286", "62.857", "-")),
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        f"two pay-per-token tables read as the priority tier on {PAGE_URL}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("drifted", "kept", "span"),
+    [
+        # the standard table's sub-header drifts while the priority table goes
+        # bare: the priority table would read as the only standard table and
+        # price the base ids at priority rates
+        (
+            _STANDARD_HEADER.replace("<th>Cache read</th>", "<th>Cached input</th>"),
+            _PRIORITY_HEADER.replace("Priority Pay Per Token", "Pay Per Token"),
+            "standard pay per token (dbu per 1m tokens)",
+        ),
+        # the priority table's sub-header drifts: its rows would vanish and
+        # every "-priority" id would read as delisted
+        (
+            _PRIORITY_HEADER.replace("<th>Cache read</th>", "<th>Cached input</th>"),
+            _STANDARD_HEADER,
+            "priority pay per token (dbu per 1m tokens)",
+        ),
+    ],
+    ids=["standard-drifts-priority-bare", "priority-drifts"],
+)
+def test_detect_pinned_table_off_the_sub_header_pin_raises(
+    monkeypatch: pytest.MonkeyPatch, drifted: str, kept: str, span: str
+):
+    tables = [
+        table(drifted, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(kept, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        f"pay-per-token table {span!r} off the sub-header pin on {PAGE_URL}"
+    )
+
+
+def test_detect_pinned_table_without_a_sub_header_raises(monkeypatch: pytest.MonkeyPatch):
+    one_row = (
+        "<tr><th>Model</th><th colspan='3'>Priority Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+    )
+    tables = [
+        table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "20.000", "62.857", "3.714")),
+        table(one_row, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")),
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        "pay-per-token table 'priority pay per token (dbu per 1m tokens)'"
+        f" off the sub-header pin on {PAGE_URL}"
+    )
+
+
+def test_detect_missing_standard_table_raises(monkeypatch: pytest.MonkeyPatch):
+    # a page whose standard table is gone (or drifted off the sub-header pin)
+    # would emit only "-priority" ids and delist every base id after two runs
+    tables = [table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500"))]
+    assert _detect_error(monkeypatch, tables) == (f"no standard pay-per-token table on {PAGE_URL}")
+
+
+_NO_STANDARD_ONLY = (
+    "pay-per-token table read as the standard tier carries no readable priced"
+    f" standard-only row on {PAGE_URL}"
+)
+
+
+def test_detect_relabelled_priority_table_alone_raises(monkeypatch: pytest.MonkeyPatch):
+    # the standard table gone and the priority span gone bare: the lone table
+    # reads as the standard tier and its priority rates would price the base
+    # ids; the priority tier lists no standard-only model, so the table raises
+    bare = _PRIORITY_HEADER.replace("Priority Pay Per Token", "Pay Per Token")
+    assert bare != _PRIORITY_HEADER
+    tables = [
+        table(
+            bare,
+            row("Kimi K3 ⌖", "60.000", "300.000", "6.000"),
+            row("GLM-5.2, 5.3", "35.000", "110.000", "6.500"),
+            row("GLM-5.3 Flash", "8.000", "28.000", "0.800"),
+            row("Qwen 3.5 122B", "6.286", "62.857", "-"),
+        )
+    ]
+    assert _detect_error(monkeypatch, tables) == _NO_STANDARD_ONLY
+    with pytest.raises(FetchError) as excinfo:
+        scraper.scrape(make_cfg(), "kimi-k3")
+    assert str(excinfo.value) == _NO_STANDARD_ONLY
+
+
+def test_detect_lone_standard_table_reads_after_priority_retirement(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # a retired priority tier leaves the standard table alone on the page; it
+    # lists standard-only models (GTE), so it keeps reading as the standard
+    # tier and only the "-priority" ids go absent
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    _detect_serve(
+        monkeypatch,
+        [
+            table(
+                bare,
+                row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+                row("GTE", "1.857", "-", "-"),
+            )
+        ],
+    )
+    assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+
+
+def test_detect_relabelled_priority_table_with_an_unpriced_standard_only_row_raises(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # a "-" row is unpriced (detect skips it), so it is no evidence that a
+    # table is the standard one: a relabelled priority table listing GTE as
+    # "-" still raises
+    bare = _PRIORITY_HEADER.replace("Priority Pay Per Token", "Pay Per Token")
+    tables = [
+        table(
+            bare,
+            row("Kimi K3 ⌖", "60.000", "300.000", "6.000"),
+            row("GLM-5.2, 5.3", "35.000", "110.000", "6.500"),
+            row("GTE", "-", "-", "-"),
+        )
+    ]
+    assert _detect_error(monkeypatch, tables) == _NO_STANDARD_ONLY
+
+
+@pytest.mark.parametrize("order", ["page-order", "reordered"])
+def test_detect_swapped_tier_labels_raise(monkeypatch: pytest.MonkeyPatch, order: str):
+    # both tables stay with their tier labels swapped: the table read as
+    # standard holds the priority rows and prices no standard-only model
+    standard_rows_labelled_priority = table(
+        _STANDARD_HEADER.replace("Standard Pay Per Token", "Priority Pay Per Token"),
+        row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+        row("GTE", "1.857", "-", "-"),
+    )
+    priority_rows_labelled_bare = table(
+        _PRIORITY_HEADER.replace("Priority Pay Per Token", "Pay Per Token"),
+        row("Kimi K3 ⌖", "60.000", "300.000", "6.000"),
+    )
+    tables = [standard_rows_labelled_priority, priority_rows_labelled_bare]
+    if order == "reordered":
+        tables.reverse()
+    assert _detect_error(monkeypatch, tables) == _NO_STANDARD_ONLY
+
+
+_PRIORITY_ROWS = row("Kimi K3 ⌖", "60.000", "300.000", "6.000") + row(
+    "GLM-5.2, 5.3", "35.000", "110.000", "6.500"
+)
+
+
+@pytest.mark.parametrize(
+    "priority_table",
+    [
+        f"<table class='table'><tbody>{_PRIORITY_HEADER}{_PRIORITY_ROWS}</tbody></table>",
+        f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>{_PRIORITY_ROWS}</table>",
+        table(
+            _PRIORITY_HEADER.replace("<th", "<td").replace("</th>", "</td>"),
+            row("Kimi K3 ⌖", "60.000", "300.000", "6.000"),
+        ),
+    ],
+    ids=["header-rows-in-tbody", "no-tbody", "td-header-cells"],
+)
+def test_detect_priority_table_off_the_structural_pin_raises(
+    monkeypatch: pytest.MonkeyPatch, priority_table: str
+):
+    # a priority table that drops out of the pin's structural view would
+    # vanish with every "-priority" id; a table carrying a pinned tier span
+    # and naming a known model raises off-pin instead
+    tables = [
+        table(
+            _STANDARD_HEADER,
+            row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+            row("GTE", "1.857", "-", "-"),
+        ),
+        priority_table,
+    ]
+    assert _detect_error(monkeypatch, tables) == (
+        "pay-per-token table 'priority pay per token (dbu per 1m tokens)'"
+        f" off the sub-header pin on {PAGE_URL}"
+    )
+
+
+def test_detect_spacer_row_in_a_lone_standard_table_reads(monkeypatch: pytest.MonkeyPatch):
+    # a cell-less spacer row names no model; the guard reads past it
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    _detect_serve(
+        monkeypatch,
+        [
+            table(
+                bare,
+                "<tr></tr>",
+                row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+                row("GTE", "1.857", "-", "-"),
+            )
+        ],
+    )
+    assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+
+
+def test_detect_uplift_marked_standard_only_name_counts(monkeypatch: pytest.MonkeyPatch):
+    # the guard reads names through parse_id's normalizer, so an uplift
+    # marker on the only standard-only name still counts
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    _detect_serve(
+        monkeypatch,
+        [
+            table(
+                bare,
+                row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+                row("GTE ⌖", "1.857", "-", "-"),
+            )
+        ],
+    )
+    assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+
+
+_STANDARD_TABLE = table(
+    _STANDARD_HEADER,
+    row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+    row("GTE", "1.857", "-", "-"),
+)
+_PRIORITY_BODY = row("Kimi K3 ⌖", "60.000", "300.000", "6.000") + row(
+    "GLM-5.2, 5.3", "35.000", "110.000", "6.500"
+)
+_PRIORITY_OFF_PIN = (
+    "pay-per-token table 'priority pay per token (dbu per 1m tokens)'"
+    f" off the sub-header pin on {PAGE_URL}"
+)
+
+
+@pytest.mark.parametrize(
+    "priority_thead",
+    [
+        # the tier span restyled into a full-width first row
+        "<tr><th colspan='4'>Priority Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+        "<tr><th>Model</th><th>Input</th><th>Output</th><th>Cache read</th></tr>",
+        # a banner row added above the tier row
+        "<tr><th colspan='4'>New: Priority tier</th></tr>" + _PRIORITY_HEADER,
+        # a third header row under the sub-header
+        _PRIORITY_HEADER + "<tr><th>note</th></tr>",
+    ],
+    ids=["spanning-tier-row", "banner-row", "third-header-row"],
+)
+def test_detect_priority_table_with_a_moved_tier_span_raises(
+    monkeypatch: pytest.MonkeyPatch, priority_thead: str
+):
+    # a pricing table (it names known models) whose own cells carry a pinned
+    # tier span anywhere, but which misses the structural pin, raises instead
+    # of vanishing with every "-priority" id
+    priority = (
+        f"<table class='table'><thead>{priority_thead}</thead>"
+        f"<tbody>{_PRIORITY_BODY}</tbody></table>"
+    )
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
+
+
+def test_detect_priority_table_nested_in_a_layout_table_raises(monkeypatch: pytest.MonkeyPatch):
+    wrapped = (
+        "<table><thead><tr><th>Priority pricing</th></tr></thead><tbody><tr><td>"
+        + table(_PRIORITY_HEADER, _PRIORITY_BODY)
+        + "</td></tr></tbody></table>"
+    )
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, wrapped]) == (
+        "pay-per-token table 'priority pay per token (dbu per 1m tokens)'"
+        f" nested in another table on {PAGE_URL}"
+    )
+
+
+def test_detect_legend_table_carrying_a_tier_span_reads(monkeypatch: pytest.MonkeyPatch):
+    # a table that names no known model is no pricing table: a pinned span
+    # in its cells raises nothing
+    legend = (
+        "<table><tr><th>Tier</th><th>Pay Per Token (DBU Per 1M Tokens)</th>"
+        "<th>Priority Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+        "<tr><td>SLA</td><td>best effort</td><td>99.9%</td></tr></table>"
+    )
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), legend])
+    assert detector.detect(make_cfg()) == [
+        "kimi-k3",
+        "gte",
+        "kimi-k3-priority",
+        "glm-5.2-priority",
+        "glm-5.3-priority",
+    ]
+
+
+def test_detect_standard_table_nested_in_a_layout_table_raises(monkeypatch: pytest.MonkeyPatch):
+    # a nested standard table still looks like a pricing table (pinned span
+    # plus a mapped display), so it raises its own message instead of the
+    # "no standard pay-per-token table" a lone priority table reads
+    wrapped = (
+        "<table><thead><tr><th>Standard pricing</th></tr></thead><tbody><tr><td>"
+        + _STANDARD_TABLE
+        + "</td></tr></tbody></table>"
+    )
+    assert _detect_error(monkeypatch, [table(_PRIORITY_HEADER, _PRIORITY_BODY), wrapped]) == (
+        "pay-per-token table 'standard pay per token (dbu per 1m tokens)'"
+        f" nested in another table on {PAGE_URL}"
+    )
+
+
+def test_detect_reads_every_tbody_of_a_table(monkeypatch: pytest.MonkeyPatch):
+    # a standard table split into chat and embedding groups keeps both
+    split = (
+        f"<table class='table'><thead>{_STANDARD_HEADER}</thead>"
+        f"<tbody>{row('Kimi K3 ⌖', '42.857', '214.286', '4.286')}"
+        f"{row('GPT-OSS-120B', '2.143', '8.571')}</tbody>"
+        f"<tbody>{row('GTE', '1.857', '-', '-')}"
+        f"{row('BGE Large', '1.429', '-', '-')}</tbody></table>"
+    )
+    _detect_serve(monkeypatch, [split, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert detector.detect(make_cfg()) == [
+        "kimi-k3",
+        "gpt-oss-120b",
+        "gte",
+        "bge-large",
+        "kimi-k3-priority",
+        "glm-5.2-priority",
+        "glm-5.3-priority",
+    ]
+    pricing = scraper.scrape(make_cfg(), "bge-large")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.429 / 1e6)
+
+
+def test_detect_three_cell_standard_only_row_is_no_evidence(monkeypatch: pytest.MonkeyPatch):
+    # the guard counts only four-cell priced rows: a short GTE row in a
+    # relabelled priority table does not make it the standard table
+    bare = _PRIORITY_HEADER.replace("Priority Pay Per Token", "Pay Per Token")
+    tables = [table(bare, _PRIORITY_BODY, "<tr><td>GTE</td><td>1.857</td><td>-</td></tr>")]
+    assert _detect_error(monkeypatch, tables) == _NO_STANDARD_ONLY
+
+
+def test_detect_section_row_in_a_lone_standard_table_reads(monkeypatch: pytest.MonkeyPatch):
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    _detect_serve(
+        monkeypatch,
+        [
+            table(
+                bare,
+                "<tr><td colspan='4'>Embedding models</td></tr>",
+                row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+                row("GTE", "1.857", "-", "-"),
+            )
+        ],
+    )
+    assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+
+
+_TWO_TABLE_IDS = ["kimi-k3", "gte", "kimi-k3-priority", "glm-5.2-priority", "glm-5.3-priority"]
+
+
+def test_detect_priority_rows_beside_a_nested_tbody_raise(monkeypatch: pytest.MonkeyPatch):
+    # the priority rows sit straight under <table> and one row nests a
+    # footnote table with a tbody: a tbody anywhere below must not satisfy
+    # the pin while the row reader finds no own tbody
+    note = (
+        "<tr><td colspan='4'><table><tbody><tr><td>see footnote 4</td></tr>"
+        "</tbody></table></td></tr>"
+    )
+    priority = (
+        f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>{_PRIORITY_BODY}{note}</table>"
+    )
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
+
+
+def test_detect_and_scrape_agree_past_an_unpriced_duplicate_row(monkeypatch: pytest.MonkeyPatch):
+    # a "-" listing of Kimi K3 in an earlier tbody and its priced row in a
+    # later one: detect skips the "-" row, so scrape must too, or the id is
+    # detected while its price never refreshes
+    standard = (
+        f"<table class='table'><thead>{_STANDARD_HEADER}</thead>"
+        f"<tbody>{row('Kimi K3 ⌖', '-', '-', '-')}</tbody>"
+        f"<tbody>{row('Kimi K3 ⌖', '42.857', '214.286', '4.286')}"
+        f"{row('GTE', '1.857', '-', '-')}</tbody></table>"
+    )
+    _detect_serve(monkeypatch, [standard, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert "kimi-k3" in detector.detect(make_cfg())
+    pricing = scraper.scrape(make_cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(42.857 / 1e6)
+
+
+def test_detect_model_naming_table_nesting_a_span_legend_reads(monkeypatch: pytest.MonkeyPatch):
+    # a span in a nested table's cell is no span of the outer table
+    legend = "<table><tr><th>Tier</th><th>Pay Per Token (DBU Per 1M Tokens)</th></tr></table>"
+    outer = f"<table><tr><td>Kimi K3</td><td>{legend}</td></tr></table>"
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), outer])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_span_legend_wrapping_the_hourly_table_reads(monkeypatch: pytest.MonkeyPatch):
+    # the model rows of a nested table are no rows of the outer legend
+    hourly = table(_HOURLY_HEADER, row("Kimi K3 ⌖", "-", "142.857", "128.571"))
+    wrapper = (
+        "<table><tr><th>Tier</th><th>Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+        f"<tr><td colspan='2'>{hourly}</td></tr></table>"
+    )
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), wrapper])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_off_pin_priority_with_a_spacer_row_raises_off_pin(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    spanning = (
+        "<tr><th colspan='4'>Priority Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+        "<tr><th>Model</th><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+    )
+    priority = (
+        f"<table class='table'><thead>{spanning}</thead>"
+        f"<tbody><tr></tr>{_PRIORITY_BODY}</tbody></table>"
+    )
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
+
+
+def test_guard_reads_standard_only_rows_in_a_later_tbody(monkeypatch: pytest.MonkeyPatch):
+    split = (
+        f"<table class='table'><thead>{_STANDARD_HEADER}</thead>"
+        f"<tbody>{row('Kimi K3 ⌖', '42.857', '214.286', '4.286')}</tbody>"
+        f"<tbody>{row('GTE', '1.857', '-', '-')}</tbody></table>"
+    )
+    _detect_serve(monkeypatch, [split, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_nested_table_rows_stay_out_of_the_outer_table(monkeypatch: pytest.MonkeyPatch):
+    # a tbody of a table nested in a pinned table's cell is not the pinned
+    # table's tbody: its row must never price an id
+    note = (
+        "<tr><td colspan='4'><table><tbody>"
+        f"{row('BGE Large', '9.999', '-', '-')}</tbody></table></td></tr>"
+    )
+    standard = table(
+        _STANDARD_HEADER,
+        row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+        row("GTE", "1.857", "-", "-"),
+        note,
+    )
+    _detect_serve(monkeypatch, [standard, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert "bge-large" not in detector.detect(make_cfg())
 
 
 def test_scrape_kimi_k3(live_page):
@@ -261,7 +774,11 @@ def test_scrape_glm_5_3_flash(live_page):
 def test_scrape_matched_row_odd_cell_raises(monkeypatch: pytest.MonkeyPatch):
     # the matched row's cells are strict: an unknown shape raises, never
     # reads as unpriced (plan #22)
-    text = table(_STANDARD_HEADER, row("Kimi K3", "42.857 DBU", "214.286"))
+    text = table(
+        _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
+        row("Kimi K3", "42.857 DBU", "214.286"),
+    )
     serve(monkeypatch, text)
     with pytest.raises(FetchError, match="unreadable dbu rate cell"):
         scraper.scrape(make_cfg(), "kimi-k3")
@@ -270,6 +787,7 @@ def test_scrape_matched_row_odd_cell_raises(monkeypatch: pytest.MonkeyPatch):
 def test_scrape_skips_unrelated_odd_rows(monkeypatch: pytest.MonkeyPatch):
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("Kimi K3", "42.857 DBU", "214.286"),
         row("GLM-5.2, 5.3", "20.000", "62.857"),
     )
@@ -282,6 +800,7 @@ def test_scrape_skips_unrelated_odd_rows(monkeypatch: pytest.MonkeyPatch):
 def test_scrape_skips_unmapped_rows(monkeypatch: pytest.MonkeyPatch):
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("Brand New Model", "20.000", "62.857"),
         row("GLM-5.2, 5.3", "20.000", "62.857"),
     )
@@ -300,8 +819,11 @@ def test_scrape_priority_tier(live_page):
 
 def test_scrape_priority_table_row_never_matches_base_id(monkeypatch: pytest.MonkeyPatch):
     # the base id's row scan must stay scoped to the standard table: the
-    # priority table's merged GLM row must not answer a glm-5.2 scrape
-    text = table(_PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500"))
+    # priority table's merged GLM row must not answer a glm-5.2 scrape when
+    # the standard table carries no GLM row
+    text = table(_STANDARD_HEADER, row("GTE", "1.857", "-", "-")) + table(
+        _PRIORITY_HEADER, row("GLM-5.2, 5.3", "35.000", "110.000", "6.500")
+    )
     serve(monkeypatch, text)
     assert scraper.scrape(make_cfg(), "glm-5.2") is None
 
@@ -374,6 +896,7 @@ def test_scrape_dash_input_returns_none(monkeypatch: pytest.MonkeyPatch):
     # per-token pricing: None, never a priced row
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("GLM-5.2, 5.3", "-", "-", "-"),
         row("Kimi K3", "42.857", "214.286", "4.286"),
     )
@@ -395,7 +918,11 @@ def test_detect_zero_rate_rows_emitted(monkeypatch: pytest.MonkeyPatch):
 
 def test_scrape_both_zero_rates_price_zero(monkeypatch: pytest.MonkeyPatch):
     # free is a price: a fully free row scrapes as a 0.0/0.0 pair, never None
-    text = table(_STANDARD_HEADER, row("GLM-5.2, 5.3", "0.000", "0.000"))
+    text = table(
+        _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
+        row("GLM-5.2, 5.3", "0.000", "0.000"),
+    )
     serve(monkeypatch, text)
     pricing = scraper.scrape(make_cfg(), "glm-5.2")
     assert pricing is not None
@@ -411,12 +938,13 @@ def test_detect_unknown_rate_shape_skips(
     # is the wrong-data guard
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("GLM-5.2", "20.000 DBU", "62.857"),
         row("Kimi K3", "42.857", "214.286"),
     )
     serve(monkeypatch, text)
     with caplog.at_level(logging.WARNING):
-        assert detector.detect(make_cfg()) == ["kimi-k3"]
+        assert detector.detect(make_cfg()) == ["gte", "kimi-k3"]
     assert "unreadable dbu rate cell" in caplog.text
 
 
@@ -425,12 +953,13 @@ def test_detect_unknown_output_shape_skips(
 ):
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("GLM-5.2", "20.000", "62.857 DBU"),
         row("Kimi K3", "42.857", "214.286"),
     )
     serve(monkeypatch, text)
     with caplog.at_level(logging.WARNING):
-        assert detector.detect(make_cfg()) == ["kimi-k3"]
+        assert detector.detect(make_cfg()) == ["gte", "kimi-k3"]
     assert "unreadable dbu rate cell" in caplog.text
 
 
@@ -439,12 +968,13 @@ def test_detect_unknown_cache_shape_skips(
 ):
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("GLM-5.2", "20.000", "62.857", "3.714 DBU"),
         row("Kimi K3", "42.857", "214.286"),
     )
     serve(monkeypatch, text)
     with caplog.at_level(logging.WARNING):
-        assert detector.detect(make_cfg()) == ["kimi-k3"]
+        assert detector.detect(make_cfg()) == ["gte", "kimi-k3"]
     assert "unreadable dbu rate cell" in caplog.text
 
 
@@ -455,20 +985,28 @@ def test_detect_unmapped_name_skips(
     # a warning; one new model can no longer blind the provider (plan #22)
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "1.857", "-", "-"),
         row("Brand New Model", "20.000", "62.857"),
         row("GLM-5.2, 5.3", "20.000", "62.857"),
     )
     serve(monkeypatch, text)
     with caplog.at_level(logging.WARNING):
-        assert detector.detect(make_cfg()) == ["glm-5.2", "glm-5.3"]
+        assert detector.detect(make_cfg()) == ["gte", "glm-5.2", "glm-5.3"]
     assert "unmapped model name" in caplog.text
 
 
 def test_detect_all_rows_skipped_raises(monkeypatch: pytest.MonkeyPatch):
-    text = table(_STANDARD_HEADER, row("GLM-5.2", "20.000 DBU", "62.857"))
+    # GTE's priced input satisfies the guard, then its output cell fails the
+    # strict read, so every row skips and the empty result still raises
+    text = table(
+        _STANDARD_HEADER,
+        row("GTE", "1.857", "1.000 DBU", "-"),
+        row("GLM-5.2", "20.000 DBU", "62.857"),
+    )
     serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="no per-token model rows"):
+    with pytest.raises(FetchError) as excinfo:
         detector.detect(make_cfg())
+    assert str(excinfo.value) == f"no per-token model rows on {PAGE_URL}"
 
 
 def test_detect_missing_table_raises(monkeypatch: pytest.MonkeyPatch):
@@ -480,12 +1018,16 @@ def test_detect_missing_table_raises(monkeypatch: pytest.MonkeyPatch):
 def test_detect_no_priced_rows_raises(monkeypatch: pytest.MonkeyPatch):
     text = table(
         _STANDARD_HEADER,
+        row("GTE", "-", "-", "-"),
         row("GLM-5.2", "-", "-"),
         row("Kimi K3", "-", "-"),
     )
     serve(monkeypatch, text)
-    with pytest.raises(FetchError, match="no per-token model rows"):
+    # a table pricing nothing prices no standard-only model either: the guard
+    # is the earlier raise
+    with pytest.raises(FetchError) as excinfo:
         detector.detect(make_cfg())
+    assert str(excinfo.value) == _NO_STANDARD_ONLY
 
 
 def test_dedup_keys_dated_snapshots():

@@ -14,23 +14,29 @@ scan passes over (odd cell counts, unmapped names) are additive drift
 detection already reported. the page carries no context/max-tokens column
 and no peak tier, so those fields stay unset. mode is chat.
 
-None = the model id is not on the page, or its row carries no per-token
-input rate. zero rates scrape as 0.0 (free is a price), so a fully free
-row lands a 0.0 price row; the detector still emits the id, so a stored
-model whose row turns free stays mapped. FetchError = the fetch failed,
-the page has no per-token table, a tier span reworded past the pin, or
-the matched row's rate cells are outside the known shapes.
+None = no four-cell row names the model id, or each one that does reads
+"-" as its input (an unreadable input raises first). zero rates scrape as
+0.0 (free is a price), so a fully free row lands a 0.0 price row; the
+detector still emits the id, so a stored model whose row turns free stays
+mapped. FetchError = the fetch failed, the page has no per-token table or
+no standard one, a table that names a
+mapped display and carries a pinned tier span off the sub-header pin or
+nested in another table, a tier span row is outside the header shape or
+its span outside the pinned spellings, two per-token tables read as one
+tier, the table read as the standard tier carries no readable priced
+standard-only row, or the matched row's rate cells are outside the known
+shapes.
 """
 
 from __future__ import annotations
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.databricks_page import (
-    _is_priority_table,
     _model_tables,
     _page,
     _rate,
     _row_cells,
+    _rows,
     parse_id,
 )
 from ai_pricelog.pricing import Pricing
@@ -55,9 +61,8 @@ def dedup_keys(model_id: str) -> tuple[str, ...]:
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = _page(cfg.scraper_url)
-    for table in _model_tables(soup, cfg.scraper_url):
-        priority = _is_priority_table(table, cfg.scraper_url)
-        for row in table.find("tbody").find_all("tr", recursive=False):
+    for table, priority in _model_tables(soup, cfg.scraper_url):
+        for row in _rows(table):
             try:
                 cells = _row_cells(row, cfg.scraper_url)
                 if model_id not in parse_id(cells[0], cfg.scraper_url, priority=priority):
@@ -66,7 +71,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 continue  # additive drift; detect already reported the row
             input_rate = _rate(cells[1], cfg.scraper_url)
             if input_rate is None:
-                return None  # the row carries no per-token input rate
+                continue  # a "-" input row: no per-token pricing, keep scanning
             output_rate = _rate(cells[2], cfg.scraper_url)
             if output_rate is None:
                 output_rate = 0.0  # "-" output: embedding rows bill input only
