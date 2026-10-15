@@ -639,6 +639,7 @@
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2026-09-08","rates":{"input":0.4,"output":2.2},"limits":{"context":1000000},"provenance":{"name":"MiniMax M1"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2026-09-09","rates":{"input":0.55,"output":2.2},"limits":{"context":1000000},"provenance":{"name":"MiniMax M1"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2026-09-16","rates":{"input":0.4,"output":2.2},"limits":{"context":1000000},"provenance":{"name":"MiniMax M1"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2026-10-01","rates":{"input":0.55,"output":2.2},"limits":{"context":1000000},"provenance":{"name":"MiniMax M1"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2025-12-28","rates":{"input":0.2,"output":1.0,"cache_read":0.03},"limits":{"context":196608},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-01-25","rates":{"input":0.255,"output":1.02},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=minimax/minimax-m2&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-08-26","rates":{"input":0.255,"output":1.02},"limits":{"context":204800},"provenance":{"name":"MiniMax M2"}}
@@ -743,6 +744,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2-thinking","observed_at":"2026-09-10","rates":{"input":0.6,"output":2.5,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2 Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2-thinking","observed_at":"2026-09-12","rates":{"input":0.6,"output":2.5},"limits":{"context":262144},"provenance":{"name":"Kimi K2 Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2-thinking","observed_at":"2026-09-13","rates":{"input":0.6,"output":2.5,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2 Thinking"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2-thinking","observed_at":"2026-10-01","rates":{"input":0.6,"output":2.5},"limits":{"context":262144},"provenance":{"name":"Kimi K2 Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.5","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.0,"cache_read":0.1},"limits":{"context":262144},"provenance":{"name":"Kimi K2.5"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.5","observed_at":"2026-08-31","rates":{"input":0.45,"output":2.25,"cache_read":0.07},"limits":{"context":262144},"provenance":{"name":"Kimi K2.5"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.6","observed_at":"2026-08-26","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"limits":{"context":262144},"provenance":{"name":"Kimi K2.6"}}
