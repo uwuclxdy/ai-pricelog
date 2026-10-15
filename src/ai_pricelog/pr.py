@@ -8,6 +8,7 @@ import logging
 import os
 import re
 import subprocess
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,19 +38,113 @@ class PrError(Exception):
         self.stdout = stdout
 
 
+_GH_READ_SUBCOMMANDS = (("pr", "list"), ("pr", "view"), ("repo", "view"))
+# gh api flags that never turn a GET into a write; a value flag consumes the
+# token after it. every other `-` token is denied by default, so a body flag,
+# an unknown flag or a short-flag cluster reads as a write and never retries.
+_GH_API_READ_VALUE_FLAGS = (
+    "--jq",
+    "-q",
+    "--hostname",
+    "--cache",
+    "-H",
+    "--header",
+    "-t",
+    "--template",
+    "-p",
+    "--preview",
+)
+_GH_API_READ_BOOL_FLAGS = ("--paginate", "--slurp", "-i", "--include", "--silent", "--verbose")
+
+
+def _read_only_gh(cmd: Sequence[str]) -> bool:
+    """Whether cmd is a read-only gh call; only these may retry a 5xx.
+
+    the subcommand allowlist covers the gh verbs this repo reads with; `gh
+    api` defaults to deny, so every `-` token must be a known read-safe flag
+    (or an explicit GET method).
+    """
+    if cmd[:1] != ["gh"]:
+        return False
+    if tuple(cmd[1:3]) in _GH_READ_SUBCOMMANDS:
+        return True
+    if cmd[1:2] != ["api"]:
+        return False
+    tokens = list(cmd[2:])
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if not token.startswith("-"):
+            index += 1
+            continue
+        if token == "--":
+            return True
+        name, sep, value = token.partition("=")
+        if sep:  # --name=value
+            if name == "--method":
+                if value.upper() != "GET":
+                    return False
+            elif name not in _GH_API_READ_VALUE_FLAGS and name not in _GH_API_READ_BOOL_FLAGS:
+                return False
+            index += 1
+            continue
+        if token in ("-X", "--method"):
+            if index + 1 >= len(tokens) or tokens[index + 1].upper() != "GET":
+                return False
+            index += 2
+            continue
+        if token in _GH_API_READ_BOOL_FLAGS:
+            index += 1
+            continue
+        if token in _GH_API_READ_VALUE_FLAGS:
+            index += 2
+            continue
+        if token.startswith("-X"):
+            if token[2:].upper() != "GET":
+                return False
+            index += 1
+            continue
+        return False
+    return True
+
+
+def _github_5xx(stderr: str) -> bool:
+    return re.search(r"HTTP 5\d\d", stderr) is not None
+
+
 class PrRunner:
+    def __init__(self) -> None:
+        # one instance's retry sleep cap: the merge step retries many reads, so
+        # a per-call cap alone could still eat the step's timeout; once spent,
+        # a 5xx raises on its first failure like any non-5xx failure
+        self._retry_budget = 60.0
+
     def run(self, cmd: list[str], cwd: Path) -> str:
-        try:
-            result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
-        except FileNotFoundError as exc:
-            raise PrError(f"command {cmd} failed to start: {exc}") from exc
-        if result.returncode != 0:
-            raise PrError(
-                f"command {cmd} failed: {_stderr_tail(result.stderr)}",
-                stderr=result.stderr,
-                stdout=result.stdout,
-            )
-        return result.stdout
+        read_only = _read_only_gh(cmd)
+        attempts = 3 if read_only else 1
+        delays = (5, 15)
+        refusal = ""
+        for attempt in range(attempts):
+            try:
+                result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+            except FileNotFoundError as exc:
+                raise PrError(f"command {cmd} failed to start: {exc}") from exc
+            if result.returncode == 0:
+                return result.stdout
+            if read_only and _github_5xx(result.stderr) and attempt < attempts - 1:
+                delay = delays[attempt]
+                if self._retry_budget < delay:
+                    refusal = "; too little retry budget is left, so this 5xx was not retried"
+                    break
+                self._retry_budget -= delay
+                time.sleep(delay)
+                continue
+            break
+        raise PrError(
+            f"command {cmd} failed: {_stderr_tail(result.stderr)}{refusal}",
+            stderr=result.stderr,
+            stdout=result.stdout,
+        )
 
 
 def stage_tree(runner: PrRunner, repo_root: Path, tree_dir: str) -> None:
@@ -370,7 +465,7 @@ def open_pull_requests(runner: PrRunner, cwd: Path) -> list[OpenPr]:
             "--state",
             "open",
             "--limit",
-            "100",
+            "1000",
             "--json",
             "title,body,headRefName",
         ],

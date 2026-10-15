@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -470,7 +472,7 @@ def test_open_pull_requests_uses_limit_and_json_fields():
     (cmd, _cwd) = fake.calls[0]
     assert cmd[0:3] == ["gh", "pr", "list"]
     assert "--state" in cmd and "open" in cmd
-    assert "--limit" in cmd and "100" in cmd
+    assert "--limit" in cmd and "1000" in cmd
     assert "--json" in cmd and "title,body,headRefName" in cmd
     assert "--repo" not in cmd
 
@@ -601,3 +603,185 @@ def test_open_pr_uses_spec_title_and_body():
     assert cmd[cmd.index("--head") + 1] == pr.branch_name(BATCH_KEY)
     assert cmd[cmd.index("--title") + 1] == s.title
     assert cmd[cmd.index("--body") + 1] == s.body
+
+
+# the merge step's 2026-10-10 and 2026-10-12 reds: one transient graphql 504
+# on a read failed the whole run and opened a `merge step failed` ping that
+# closed itself an hour later (runs 38025995209, 38246250722)
+_GATEWAY_504 = "HTTP 504: 504 Gateway Timeout (https://api.github.com/graphql)\n"
+
+
+def _scripted_subprocess(
+    monkeypatch: pytest.MonkeyPatch, results: list[tuple[int, str, str]]
+) -> tuple[list[list[str]], list[float]]:
+    """Feed PrRunner one (returncode, stdout, stderr) per call; record calls and sleeps."""
+    calls: list[list[str]] = []
+    sleeps: list[float] = []
+
+    def fake_run(cmd, cwd, capture_output, text):
+        calls.append(cmd)
+        returncode, stdout, stderr = results[len(calls) - 1]
+        return subprocess.CompletedProcess(cmd, returncode, stdout, stderr)
+
+    monkeypatch.setattr(pr.subprocess, "run", fake_run)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    return calls, sleeps
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        ["gh", "pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"],
+        ["gh", "pr", "view", "459", "--json", "comments"],
+        ["gh", "api", "user", "--jq", ".login"],
+        ["gh", "repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"],
+        ["gh", "api", "repos/o/r/pulls", "--method=GET"],
+        ["gh", "api", "user", "-X", "GET"],
+        ["gh", "api", "user", "--method", "GET"],
+        ["gh", "api", "user", "-XGET"],
+    ],
+    ids=[
+        "pr-list",
+        "pr-view",
+        "api-get",
+        "repo-view",
+        "api-explicit-get",
+        "api-x-get",
+        "api-method-get",
+        "api-x-get-joined",
+    ],
+)
+def test_runner_retries_a_github_read_through_a_5xx(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cmd: list[str]
+):
+    calls, sleeps = _scripted_subprocess(
+        monkeypatch, [(1, "", _GATEWAY_504), (1, "", _GATEWAY_504), (0, "ok\n", "")]
+    )
+    assert pr.PrRunner().run(cmd, tmp_path) == "ok\n"
+    assert calls == [cmd, cmd, cmd]
+    assert len(sleeps) == 2 and all(delay > 0 for delay in sleeps)
+
+
+def test_runner_gives_up_on_a_5xx_after_three_attempts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    cmd = ["gh", "pr", "view", "459", "--json", "comments"]
+    calls, _sleeps = _scripted_subprocess(monkeypatch, [(1, "", _GATEWAY_504)] * 3)
+    with pytest.raises(pr.PrError, match="504 Gateway Timeout"):
+        pr.PrRunner().run(cmd, tmp_path)
+    assert len(calls) == 3
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        ["gh", "pr", "create", "--draft", "--base", "mommy", "--head", "pricelog/x"],
+        ["gh", "api", "repos/o/r/issues/comments/1", "-X", "PATCH", "-F", "body=@/tmp/b"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "-f", "body=hi"],
+        # the joined spellings gh also accepts are writes too
+        ["gh", "api", "repos/o/r/issues/comments/1", "--method=PATCH"],
+        ["gh", "api", "repos/o/r/issues/comments/1", "-XPATCH"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "--field=body=hi"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "-fbody=hi"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "--input=/tmp/body.json"],
+        # a separate method flag, a body flag in any spelling, or a short-flag
+        # cluster that gh parses as a write are writes too
+        ["gh", "api", "repos/o/r/issues/comments/1", "--method", "PATCH"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "-F", "x=y"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "--raw-field", "x=y"],
+        ["gh", "api", "repos/o/r/issues/1/comments", "-if", "body=hi"],
+        ["gh", "api", "repos/o/r/issues/comments/1", "-iXPATCH"],
+    ],
+    ids=[
+        "pr-create",
+        "api-patch",
+        "api-post-field",
+        "api-method-joined",
+        "api-x-joined",
+        "api-field-joined",
+        "api-short-field-joined",
+        "api-input-joined",
+        "api-method-patch-separate",
+        "api-field-separate",
+        "api-raw-field-separate",
+        "api-cluster-if",
+        "api-cluster-ixpatch",
+    ],
+)
+def test_runner_never_retries_a_github_write(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cmd: list[str]
+):
+    # a 5xx can arrive after github applied the write: a retried create
+    # opens a duplicate PR, a retried comment posts it twice
+    calls, sleeps = _scripted_subprocess(monkeypatch, [(1, "", _GATEWAY_504)])
+    with pytest.raises(pr.PrError):
+        pr.PrRunner().run(cmd, tmp_path)
+    assert len(calls) == 1
+    assert sleeps == []
+
+
+def test_runner_never_retries_a_non_5xx_failure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    cmd = ["gh", "pr", "view", "459", "--json", "comments"]
+    calls, sleeps = _scripted_subprocess(
+        monkeypatch, [(1, "", "HTTP 401: Bad credentials (https://api.github.com/graphql)\n")]
+    )
+    with pytest.raises(pr.PrError, match="Bad credentials"):
+        pr.PrRunner().run(cmd, tmp_path)
+    assert len(calls) == 1
+    assert sleeps == []
+
+
+def test_runner_retry_budget_bounds_aggregate_sleep(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    # three full read retries spend one instance's whole budget
+    # (3 * (5 + 15) = 60 s); the next 5xx must raise on its first failure
+    # instead of pushing the merge step past its own timeout
+    cmd = ["gh", "pr", "view", "459", "--json", "comments"]
+    calls, sleeps = _scripted_subprocess(monkeypatch, [(1, "", _GATEWAY_504)] * 10)
+    runner = pr.PrRunner()
+    for _ in range(3):
+        with pytest.raises(pr.PrError):
+            runner.run(cmd, tmp_path)
+    assert sleeps == [5, 15, 5, 15, 5, 15]
+    before = len(calls)
+    with pytest.raises(pr.PrError):
+        runner.run(cmd, tmp_path)
+    assert len(calls) == before + 1
+    assert sleeps == [5, 15, 5, 15, 5, 15]
+
+
+def test_runner_budget_refused_retry_names_the_budget(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    # a 5xx read the spent budget refuses to retry fails on its first attempt;
+    # without the reason, a reader expecting three attempts sees one
+    cmd = ["gh", "pr", "view", "459", "--json", "comments"]
+    _scripted_subprocess(monkeypatch, [(1, "", _GATEWAY_504)] * 10)
+    runner = pr.PrRunner()
+    for _ in range(3):
+        with pytest.raises(pr.PrError):
+            runner.run(cmd, tmp_path)
+    with pytest.raises(pr.PrError) as excinfo:
+        runner.run(cmd, tmp_path)
+    assert str(excinfo.value) == (
+        f"command {cmd} failed: {_GATEWAY_504.strip()}"
+        "; too little retry budget is left, so this 5xx was not retried"
+    )
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [_GATEWAY_504, "HTTP 401: Bad credentials (https://api.github.com/graphql)\n"],
+    ids=["three-5xx", "non-5xx"],
+)
+def test_runner_failure_without_a_refused_retry_keeps_the_plain_message(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, stderr: str
+):
+    # a read that spent its three attempts, or failed on a non-5xx, never had a
+    # retry refused: the budget clause there would name a refusal that never ran
+    cmd = ["gh", "pr", "view", "459", "--json", "comments"]
+    _scripted_subprocess(monkeypatch, [(1, "", stderr)] * 3)
+    with pytest.raises(pr.PrError) as excinfo:
+        pr.PrRunner().run(cmd, tmp_path)
+    assert str(excinfo.value) == f"command {cmd} failed: {stderr.strip()}"

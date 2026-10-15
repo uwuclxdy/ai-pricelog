@@ -166,3 +166,31 @@ def test_output_contract_pins_one_comment_per_pr():
     contract = _section_body(PROMPT.read_text(), "output contract")
     assert "EDIT that comment" in contract
     assert "one comment, one disposition marker per PR" in contract
+
+
+def test_prompt_works_the_review_queue_not_the_run():
+    # the workflow appends the queue under this heading; a prompt scoped to
+    # "the PRs this run opened" left every PR an earlier, dead pass never
+    # judged open forever (2026-09-27..10-14: 80 stranded PRs)
+    text = PROMPT.read_text()
+    assert "## PRs awaiting review" in text
+    for scoped in ("this run opened", "the run opened", "the run did not open"):
+        assert scoped not in text, f"the prompt still scopes the pass to {scoped!r}"
+    automerge_rules = (ROOT / ".github" / "claude-pass" / "automerge.md").read_text()
+    assert "the run did not open" not in automerge_rules
+
+
+def test_prompt_spells_listed_branches_as_remote_refs_in_reads_only():
+    # a PR an earlier run opened exists here only as origin/<branch>, so every
+    # read names that spelling; a fix commit needs the local branch, and
+    # `git switch origin/<branch>` dies "a branch is expected" (measured in a
+    # fresh clone, 2026-10-14). residual: the pin forbids one phrasing, so a
+    # reworded scope sentence that widens the spelling back to writes passes
+    # unseen
+    text = PROMPT.read_text()
+    job = _section_body(text, "your job")
+    assert "1. for each listed PR: diff `origin/mommy...origin/<branch>`." in job
+    assert "`git show origin/<branch>:<path>`" in text
+    assert "in every git command" not in text
+    assert "`git switch <branch>`" in job
+    assert "`git push origin <branch>`" in job

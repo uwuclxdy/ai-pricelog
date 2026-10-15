@@ -21,9 +21,7 @@ which only ever lands on pr branches, so a flaky page never fakes a
 delisting. A run whose detect logged skip warnings for a source advances no
 counter for it: a renamed or merged display row skips as unmapped drift, and
 the stored id it used to cover must not read as delisted while the id set is
-incomplete. When the run opens a pr it touches `.run-changed` for the CI step
-that reads it; a state-only diff with no pr opens nothing reviewable and
-leaves the marker alone.
+incomplete.
 """
 
 from __future__ import annotations
@@ -54,7 +52,6 @@ log = logging.getLogger(__name__)
 
 HISTORY_DIR = store.SHARD_DIR
 FX_FILE = "data/catalog/fx-rates.json"
-MARKER_FILE = ".run-changed"
 
 
 @dataclass
@@ -124,8 +121,6 @@ def run(
     runner = runner or pr.PrRunner()
     today = today or date.today().isoformat()
     stamp = now or datetime.now().strftime("%H%M%S")
-    marker_path = repo_root / MARKER_FILE
-    marker_path.unlink(missing_ok=True)
 
     rows = store.load_shards(repo_root / HISTORY_DIR)
     keys = validate.load_schema_keys(repo_root)
@@ -262,8 +257,10 @@ def run(
     absence_diff = fresh_absence != absence_state
 
     if not plan and not removal_groups:
-        # no pr opened, so nothing reviewable landed: no marker, whatever the
-        # in-memory state diff says (skip-and-retry re-derives it next run)
+        # no pr opened, so nothing reviewable landed, whatever the in-memory
+        # state diff says (skip-and-retry re-derives it next run): this run
+        # adds nothing to the review queue, though earlier PRs may still be
+        # listed in it
         return report
 
     mapping = models.load_models(repo_root / models.MODELS_FILE, allow_missing=False)
@@ -343,7 +340,6 @@ def run(
             return report
         for group in plan.values():
             _record_pr(report, group, url)
-        _touch_marker(marker_path)
         return report
 
     # one pr per source per run: a source's removal rows and price rows ride
@@ -361,7 +357,6 @@ def run(
         )
         target.rows.extend(group.rows)
 
-    opened = 0
     for group in batches.values():
         spec = pr.PrSpec(
             source=group.source,
@@ -394,16 +389,8 @@ def run(
             _record_error(report, group.source, f"pr open failed for {len(group.rows)} rows")
             continue
         _record_pr(report, group, url)
-        opened += 1
         log.info("opened pr for %s: %s", group.source, url)
-    if opened > 0:
-        _touch_marker(marker_path)
     return report
-
-
-def _touch_marker(path: Path) -> None:
-    """One line, no content: the signal for the CI step that reads it."""
-    path.write_text("\n", encoding="utf-8")
 
 
 def _stored_spelling(
@@ -702,7 +689,7 @@ def _track_absence(
     for model_id in [mid for mid in source_state if mid in present_ids]:
         del source_state[model_id]
     # a landed removal ends tracking: the row is the record, and re-counting
-    # would churn the state (and the CI marker) on every later run. only a
+    # would churn the state on every later run. only a
     # LANDED row counts: a pending removal still has an open pr, and dropping
     # its entry early would lose the counters if that pr gets rejected. an id
     # with no landed row at all (its rows ride a pending branch) has no landed

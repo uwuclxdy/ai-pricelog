@@ -11,7 +11,9 @@ the run green) stranded its verified PRs, and a failed merge step strands
 them too (observed 2026-09-18: the 11:00 run's merge push rejected
 `fetch first`, its 8 yes-marked PRs merged by hand) — reading dispositions
 of every open pricelog PR, whatever run posted them, lets a later
-data-changing run's merge step pick the stranded ones up. the pure halves
+run's merge step pick the stranded ones up. the workflow's list
+step also runs this script with `--awaiting-review` to print the unjudged
+pricelog PRs the claude pass must review, oldest first. the pure halves
 are network-free; main() owns the network, health.py's shape.
 """
 
@@ -22,8 +24,9 @@ import re
 import sys
 from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import TextIO
 
-from ai_pricelog import automerge, pr
+from ai_pricelog import automerge, health, pr
 
 # the marker the pass ends every PR comment with: one whole line
 _DISPOSITION_LINE = re.compile(r"automerge: (yes|no)")
@@ -101,6 +104,26 @@ def eligible_branches(
     return [head_ref for _number, head_ref in eligible]
 
 
+def awaiting_review(
+    open_prs: Iterable[tuple[int, str]],
+    dispositions: Mapping[int, bool | None],
+    limit: int,
+) -> list[tuple[int, str]]:
+    """The unjudged pricelog PRs, oldest first, capped at `limit`.
+
+    a PR queues when its head is a `pricelog/` branch that is not the seed
+    and the pass's disposition is None — no marker at all, or only bot
+    comments the pass never finished. `automerge: no` waits on a human, so it
+    stays out of the pass's queue.
+    """
+    queued = sorted(
+        (number, head_ref)
+        for number, head_ref in open_prs
+        if _pricelog_head(head_ref) and dispositions.get(number) is None
+    )
+    return queued[:limit]
+
+
 def _open_prs(runner: pr.PrRunner, repo_root: Path) -> list[tuple[int, str]]:
     """(number, head ref) for every open PR, one gh call.
 
@@ -142,33 +165,88 @@ def _pr_comments(runner: pr.PrRunner, repo_root: Path, number: int) -> list[tupl
     return pairs
 
 
+def _listing(
+    runner: pr.PrRunner, repo_root: Path, diag: TextIO
+) -> tuple[list[tuple[int, str]], dict[int, bool | None], list[str]]:
+    """Open pricelog PRs whose refs still resolve, plus their dispositions.
+
+    The listing both mains share: the open list, the deleted-ref skip, the
+    bot login and the per-PR comment reads. returns (candidates,
+    dispositions, gone), candidates in gh list order; candidates and
+    dispositions are empty when no live pricelog PR remains. `diag` receives
+    the skipped-ref lines, so the queue mode keeps stdout a machine list.
+    """
+    open_prs = _open_prs(runner, repo_root)
+    candidates = [(number, head_ref) for number, head_ref in open_prs if _pricelog_head(head_ref)]
+    if not candidates:
+        return [], {}, []
+    present, gone = _present_refs(runner, repo_root, [head for _number, head in candidates])
+    for head in gone:
+        print(f"skipping {head}: branch ref deleted, PR mid-close", file=diag)
+    candidates = [c for c in candidates if c[1] in present]
+    if not candidates:
+        return [], {}, gone
+    bot_login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=repo_root).strip()
+    dispositions = {
+        number: parse_disposition(_pr_comments(runner, repo_root, number), bot_login)
+        for number, _head_ref in candidates
+    }
+    return candidates, dispositions, gone
+
+
+def _usage() -> None:
+    print(f"usage: {Path(sys.argv[0]).name} [--awaiting-review <limit>]", file=sys.stderr)
+
+
+def _dispatch_publish(runner: pr.PrRunner, repo_root: Path, base: str) -> None:
+    """Kick publish.yml after the push; a failed dispatch warns, never fails.
+
+    a GITHUB_TOKEN push starts no workflow run, so the published index would
+    otherwise wait for the next human push. the push already landed, so a
+    failed dispatch only delays the site to the next pushing merge or a
+    manual publish.yml dispatch.
+    """
+    try:
+        runner.run(["gh", "workflow", "run", "publish.yml", "--ref", base], cwd=repo_root)
+    except pr.PrError as exc:
+        cause = health.escape_command_data(str(exc))
+        print(
+            f"::warning::the publish dispatch failed: {cause}; the published index"
+            " waits for the next pushing merge or a manual publish.yml dispatch"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
+    limit: int | None = None
     if args:
-        print(f"usage: {Path(sys.argv[0]).name}", file=sys.stderr)
-        return 2
+        if len(args) != 2 or args[0] != "--awaiting-review":
+            _usage()
+            return 2
+        try:
+            limit = int(args[1])
+        except ValueError:
+            _usage()
+            return 2
+        if limit <= 0:
+            _usage()
+            return 2
     runner = pr.PrRunner()
     repo_root = Path.cwd()
     try:
-        open_prs = _open_prs(runner, repo_root)
-        candidates = [
-            (number, head_ref) for number, head_ref in open_prs if _pricelog_head(head_ref)
-        ]
-        if not candidates:
-            print("no open pricelog PRs; nothing to merge")
+        candidates, dispositions, gone = _listing(
+            runner, repo_root, sys.stderr if limit is not None else sys.stdout
+        )
+        if limit is not None:
+            for number, head_ref in awaiting_review(candidates, dispositions, limit):
+                print(f"{number} {head_ref}")
             return 0
-        present, gone = _present_refs(runner, repo_root, [head for _number, head in candidates])
-        for head in gone:
-            print(f"skipping {head}: branch ref deleted, PR mid-close")
-        candidates = [c for c in candidates if c[1] in present]
         if not candidates:
-            print("no open pricelog PR with a live branch; nothing to merge")
+            if gone:
+                print("no open pricelog PR with a live branch; nothing to merge")
+            else:
+                print("no open pricelog PRs; nothing to merge")
             return 0
-        bot_login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=repo_root).strip()
-        dispositions = {
-            number: parse_disposition(_pr_comments(runner, repo_root, number), bot_login)
-            for number, _head_ref in candidates
-        }
         branches = eligible_branches(candidates, dispositions)
         if not branches:
             print("no PR marked automerge: yes; nothing to merge")
@@ -176,10 +254,11 @@ def main(argv: list[str] | None = None) -> int:
         base = pr.default_branch(runner, repo_root)
         sha, results = automerge.merge_branches(branches, repo_root, runner, base, push=True)
     except (automerge.AutoMergeError, pr.PrError) as exc:
-        # the script's own semantics: every PR stays open, nothing retried
+        # the script's own semantics: every PR stays open, nothing merged
         print(f"error: {exc}", file=sys.stderr)
         return 1
     for result in results:
         print(f"merged {result.branch} ({result.appended} rows) as {result.commit[:7]}")
     print(f"pushed {sha[:7]} to {base}, branch refs deleted")
+    _dispatch_publish(runner, repo_root, base)
     return 0

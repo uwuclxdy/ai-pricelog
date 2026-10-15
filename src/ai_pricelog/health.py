@@ -9,11 +9,13 @@ raised, so the provider is blind or its rows are rejected; soft = detect,
 parse and row-build skips and validation rejects (additive drift, the
 provider stays alive). a provider that passed this run closes its own
 `provider broken: <key>` issue (recovery). the pass state flags sync the
-`review pass dead` ping issue: opened when the pass died on a
-data-changing run, closed on the next clean data-changing pass. the merge
-state flags sync the `merge step failed` ping the same way: a refused
-merge reds every later data-changing run on the same failure until a
-human resolves it, so the ping is what ends the silence.
+`review pass dead` ping issue: opened when the pass died with PRs
+awaiting review, closed on a later clean pass. the merge state flags
+sync the `merge step failed` ping the same way: opened when the merge
+step failed, closed by a later run whose merge step finishes clean. the
+merge step runs every run, so a transient failure's ping closes on a
+later clean run, while a deterministic refusal reds every later run
+until it is resolved; the ping is what ends that silence.
 """
 
 from __future__ import annotations
@@ -74,7 +76,15 @@ def warning(now: dict[str, dict[str, list[str]]]) -> str | None:
         parts.append("hard failures: " + ", ".join(hard))
     if soft:
         parts.append("skips: " + ", ".join(soft))
-    return "::warning::" + "; ".join(parts) if parts else None
+    return "::warning::" + escape_command_data("; ".join(parts)) if parts else None
+
+
+def escape_command_data(text: str) -> str:
+    """Escape text as workflow-command data, the way actions/toolkit's `escapeData` does.
+
+    `%` goes first, so the `%0D` and `%0A` escapes that follow are never escaped again.
+    """
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
 def providers_to_ping(
@@ -182,9 +192,9 @@ def close_recovered(now: dict[str, dict[str, list[str]]]) -> list[str]:
 def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
     """open or close the pass-death ping issue; None when nothing changed.
 
-    pass_state: "alive" (the pass finished clean on a data-changing run),
-    "dead" (it exited nonzero or never ran to completion), or None (the
-    run changed nothing, so the pass never ran and the issue is left alone).
+    pass_state: "alive" (the pass finished clean with PRs awaiting review),
+    "dead" (it exited nonzero or never ran to completion), or None (no PR
+    awaited review, so the pass never ran and the issue is left alone).
     """
     if pass_state is None:
         return None
@@ -200,11 +210,12 @@ def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
                 "--title",
                 PASS_DEAD_TITLE,
                 "--body",
-                f"@uwuclxdy the claude review pass died on [this run]({run_url}): "
-                "the run's new rows got no review and no merge, and the PR "
-                "queue piles up until the pass is fixed.\n\n"
-                "rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_BASE_URL / "
-                "ANTHROPIC_MODEL.",
+                f"@uwuclxdy the claude review pass died with PRs awaiting review "
+                f"on [this run]({run_url}): the queued PRs stay unjudged and "
+                "queue again on the next pass; yes-marked PRs still merge.\n\n"
+                "read the pass log in the run, then rotate the ANTHROPIC_API_KEY "
+                "secret or fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo "
+                "variables (an unset ANTHROPIC_MODEL makes the pass refuse).",
             ]
         )
         return "opened"
@@ -216,7 +227,7 @@ def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
                     "close",
                     str(number),
                     "--comment",
-                    "the pass completed clean on a data-changing run; closing",
+                    "the pass completed clean on a run with PRs awaiting review; closing",
                 ]
             )
         return "closed"
@@ -226,10 +237,9 @@ def sync_pass_dead_issue(pass_state: str | None, run_url: str) -> str | None:
 def sync_merge_dead_issue(merge_state: str | None, run_url: str) -> str | None:
     """open or close the merge-failure ping issue; None when nothing changed.
 
-    merge_state: "alive" (the merge step finished clean on a data-changing
-    run), "dead" (it exited nonzero or never wrote its rc marker), or None
-    (the run changed nothing, so the step never ran the script and the issue
-    is left alone).
+    merge_state: "alive" (the merge step finished clean), "dead" (it exited
+    nonzero or never wrote its rc marker), or None (the caller passed no
+    merge state, so the issue is left alone).
     """
     if merge_state is None:
         return None
@@ -246,9 +256,8 @@ def sync_merge_dead_issue(merge_state: str | None, run_url: str) -> str | None:
                 MERGE_DEAD_TITLE,
                 "--body",
                 f"@uwuclxdy the merge step failed on [this run]({run_url}): "
-                "its error line names the branch and the fix, the PRs stay "
-                "open, and every later data-changing run reds on the same "
-                "failure until it is resolved.",
+                "read its error line. the PRs stay open, and a later run whose "
+                "merge step finishes clean closes this issue.",
             ]
         )
         return "opened"
@@ -260,7 +269,7 @@ def sync_merge_dead_issue(merge_state: str | None, run_url: str) -> str | None:
                     "close",
                     str(number),
                     "--comment",
-                    "the merge step completed clean on a data-changing run; closing",
+                    "the merge step completed clean; closing",
                 ]
             )
         return "closed"
@@ -304,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         if merge_action is not None:
             print(f"::warning::{merge_action} issue {MERGE_DEAD_TITLE}")
         for title in close_recovered(now):
-            print(f"::warning::closed issue {title}")
+            print(f"::warning::closed issue {escape_command_data(title)}")
         previous = previous_run(repo, run_id)
         if previous is not None:
             prev_id, prev_lines = previous
@@ -316,5 +325,5 @@ def main(argv: list[str] | None = None) -> int:
                 f"https://github.com/{repo}/actions/runs/{prev_id}",
             )
             for title in created:
-                print(f"::warning::opened issue {title}")
+                print(f"::warning::opened issue {escape_command_data(title)}")
     return 0

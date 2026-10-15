@@ -69,6 +69,7 @@ jobs:
           # pipefail so pass_rc below is claude's status, never tee's
           set -o pipefail
           [ ! -f /tmp/skip-review ] || { echo "review skipped by the guard"; exit 0; }
+          [ -n "$CLAUDE_MODEL" ] || { echo "::error::the ANTHROPIC_MODEL repo variable is unset; the pass refuses to fall back to the CLI default model"; exit 1; }
           git fetch origin mommy
           {
             cat .github/claude-pass/human-pr-prompt.md
@@ -78,8 +79,8 @@ jobs:
           } > /tmp/prompt.md
           npm install -g @anthropic-ai/claude-code@2 >/dev/null
           export ANTHROPIC_API_KEY
+          export ANTHROPIC_MODEL="$CLAUDE_MODEL"
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
-          [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
           # stream-json emits one event per line (tee flushes per line), so
           # a killed pass still trails how far it got in the visible log
           set +e
@@ -95,8 +96,8 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           # GH_TOKEN holds the cloudybot PAT, so the review comment posts as
           # the bot and a @-mention would ping the owner (the prompt bans it)
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
@@ -122,7 +123,7 @@ jobs:
           fi
           # grep, never rg: the runner image ships no rg
           if [ -f /tmp/pass.log ] && grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
-            echo "::warning::the claude review failed to authenticate; read the pass log in this run. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_MODEL."
+            echo "::warning::the claude review failed to authenticate; read the pass log in this run. rotate ANTHROPIC_API_KEY and fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo variables."
           fi
           head="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)" || {
             echo "::warning::could not verify the review comment landed: gh pr view failed; read the run log."

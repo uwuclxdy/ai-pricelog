@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from ai_pricelog import health
 
 
@@ -60,6 +62,17 @@ def test_warning_lists_classes():
 def test_warning_hard_only_without_soft():
     now = {"anthropic": {"hard": ["a"], "soft": []}}
     assert "skips:" not in health.warning(now)
+
+
+def test_warning_escapes_its_provider_keys():
+    # a key is whatever parse_log captured after a pattern phrase, and the
+    # runner decodes %25, %0D and %0A inside the annotation, so the keys
+    # ride the workflow command escaped
+    now = {
+        "x%y\r\nz": {"hard": ["a"], "soft": []},
+        "a%0Ab": {"hard": [], "soft": ["b"]},
+    }
+    assert health.warning(now) == "::warning::hard failures: x%25y%0D%0Az; skips: a%250Ab"
 
 
 def test_providers_to_ping_two_consecutive_hard():
@@ -142,7 +155,14 @@ def test_sync_pass_dead_issue_opens_once(monkeypatch):
     assert health.sync_pass_dead_issue("dead", run_url) == "opened"
     created = next(c for c in calls if c[1] == "create")
     assert created[3] == "review pass dead"
-    assert "ANTHROPIC_BASE_URL" in created[5] and run_url in created[5]
+    assert created[5] == (
+        f"@uwuclxdy the claude review pass died with PRs awaiting review on [this run]({run_url}): "
+        "the queued PRs stay unjudged and queue again on the next pass; "
+        "yes-marked PRs still merge.\n\n"
+        "read the pass log in the run, then rotate the ANTHROPIC_API_KEY "
+        "secret or fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo "
+        "variables (an unset ANTHROPIC_MODEL makes the pass refuse)."
+    )
 
 
 def test_sync_pass_dead_issue_closes_on_alive(monkeypatch):
@@ -161,7 +181,7 @@ def test_sync_pass_dead_issue_closes_on_alive(monkeypatch):
         "close",
         "7",
         "--comment",
-        "the pass completed clean on a data-changing run; closing",
+        "the pass completed clean on a run with PRs awaiting review; closing",
     ]
 
 
@@ -223,7 +243,13 @@ def test_sync_merge_dead_issue_opens_once(monkeypatch):
     assert health.sync_merge_dead_issue("dead", run_url) == "opened"
     created = next(c for c in calls if c[1] == "create")
     assert created[3] == "merge step failed"
-    assert "names the branch and the fix" in created[5] and run_url in created[5]
+    # a transient failure's next run merges clean and closes this issue, so
+    # the body promises no red on every later run
+    assert created[5] == (
+        f"@uwuclxdy the merge step failed on [this run]({run_url}): "
+        "read its error line. the PRs stay open, and a later run whose "
+        "merge step finishes clean closes this issue."
+    )
 
 
 def test_sync_merge_dead_issue_closes_on_alive(monkeypatch):
@@ -242,7 +268,7 @@ def test_sync_merge_dead_issue_closes_on_alive(monkeypatch):
         "close",
         "9",
         "--comment",
-        "the merge step completed clean on a data-changing run; closing",
+        "the merge step completed clean; closing",
     ]
 
 
@@ -279,3 +305,42 @@ def test_main_rejects_bad_flags(tmp_path):
     assert health.main([str(log_path), "--nope"]) == 2
     assert health.main([str(log_path), "--pass-dead", "--pass-alive"]) == 2
     assert health.main([str(log_path), "--merge-dead", "--merge-dead"]) == 2
+
+
+def test_main_escapes_a_closed_issue_title_in_its_warning(monkeypatch, tmp_path, capsys):
+    # the title comes back from `gh issue list` as a human typed it, so the
+    # workflow command escapes its `%`, CR and LF like any other data
+    log_path = tmp_path / "run.log"
+    log_path.write_text("", encoding="utf-8")
+    title = "provider broken: x%y\r\nz\nw"
+
+    def gh(args: list[str]) -> str:
+        if args[0] == "api":
+            return '{"workflow_runs": []}'
+        if args[:2] == ["issue", "list"]:
+            return json.dumps([{"number": 5, "title": title}])
+        return ""
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "44")
+    assert health.main([str(log_path)]) == 0
+    assert capsys.readouterr().out == (
+        "::warning::closed issue provider broken: x%25y%0D%0Az%0Aw\n"
+    )
+
+
+def test_main_escapes_an_opened_issue_title_in_its_warning(monkeypatch, tmp_path, capsys):
+    # the title carries the parse_log key verbatim, so a `%0A` in it would
+    # decode into a line break unless the `%` is escaped
+    line = "ERROR:ai_pricelog.pipeline:detector for x%0Ay failed"
+    log_path = tmp_path / "run.log"
+    log_path.write_text(line + "\n", encoding="utf-8")
+    monkeypatch.setattr(health, "_gh", lambda args: "[]" if args[:2] == ["issue", "list"] else "")
+    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: ("41", [line]))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "45")
+    assert health.main([str(log_path)]) == 0
+    assert capsys.readouterr().out == (
+        "::warning::hard failures: x%250Ay\n::warning::opened issue provider broken: x%250Ay\n"
+    )

@@ -10,9 +10,15 @@ instead of silently reopening the class.
 from __future__ import annotations
 
 import re
+import subprocess
+import textwrap
 from pathlib import Path
 
+import pytest
+
 AUTOPR_WF = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "autopr.yml"
+REVIEW_WF = AUTOPR_WF.parent / "review.yml"
+PASS_WORKFLOWS = (AUTOPR_WF, REVIEW_WF)
 
 
 def test_autopr_serializes_duplicate_dispatches():
@@ -43,3 +49,128 @@ def test_pass_may_fetch_sources_full_body():
     assert tools is not None, "autopr lost its --allowedTools line"
     for tool in ('"Bash(curl:*)"', '"Bash(jq:*)"', '"Bash(uv:*)"'):
         assert tool in tools.group(1), f"the pass lost {tool}; absence checks degrade to WebFetch"
+
+
+@pytest.mark.parametrize("workflow", PASS_WORKFLOWS, ids=lambda path: path.name)
+def test_pass_reads_model_and_base_url_from_repo_variables(workflow: Path):
+    # a secret masks its value in every log line (the 2026-09 model secret
+    # turned `deepseek-v4-flash-0731` into `***-0731` in the watchdog log) and
+    # cannot be read back, so the 09-28 endpoint swap failed invisibly for
+    # 17 days; neither value is secret, so both live in repo variables
+    text = workflow.read_text()
+    assert "CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}" in text
+    assert "CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}" in text
+    assert "secrets.ANTHROPIC_MODEL" not in text
+    assert "secrets.ANTHROPIC_BASE_URL" not in text
+
+
+@pytest.mark.parametrize("workflow", PASS_WORKFLOWS, ids=lambda path: path.name)
+def test_pass_refuses_an_unset_model(workflow: Path):
+    # an unset model used to fall through to the CLI's default model, the
+    # priciest tier, on a budgeted key: the pass refuses instead, which the
+    # dead-pass check reds and pings
+    text = workflow.read_text()
+    guard = re.search(r'\[ -n "\$CLAUDE_MODEL" \] \|\| \{[^}\n]*exit 1; \}', text)
+    assert guard is not None, f"{workflow.name} lost the unset-model refusal"
+    assert guard.start() < text.index("claude -p"), "the refusal must run before the pass"
+    assert '[ -n "$CLAUDE_MODEL" ] && export' not in text
+
+
+def test_pass_runs_on_the_review_queue():
+    # the pass judges up to the 10 oldest PRs that carry no disposition yet,
+    # listed by the merge script, so a PR an earlier pass never judged queues
+    # again; the run-changed marker only knew about this run's own PRs
+    text = AUTOPR_WF.read_text()
+    assert "ai-pricelog-merge-verified --awaiting-review" in text
+    assert 'echo "## PRs awaiting review"' in text
+    assert ".run-changed" not in text
+    # the -s queue guard must be the pass step's own: the bare literal occurs
+    # three times, so pin it inside that step's run block, before claude -p
+    block = re.search(
+        r"name: claude review pass\b.*?run: \|\n(?P<body>.*?)(?=\n      - name:|\n  smoke:|\Z)",
+        text,
+        re.S,
+    )
+    assert block is not None, "the claude review pass step lost its run block"
+    body = block.group("body")
+    assert re.search(r"^[ \t]*\[ -s /tmp/review-queue\.txt \] \|\| \{", body, re.M), (
+        "the pass step lost its -s queue guard; an empty queue must skip the pass"
+    )
+    assert body.find("[ -s /tmp/review-queue.txt ]") < body.find("claude -p")
+
+
+def _step(text: str, name: str) -> str:
+    """the `- name: <name>` step's lines, up to the next step or job."""
+    match = re.search(
+        rf"^      - name: {re.escape(name)}\n(?P<body>.*?)(?=^      - name: |^  \S|\Z)",
+        text,
+        re.M | re.S,
+    )
+    assert match is not None, f"autopr lost its {name!r} step"
+    return match.group("body")
+
+
+@pytest.mark.parametrize("name", ["list PRs awaiting review", "claude review pass"])
+def test_queue_steps_run_after_a_failed_watchdog(name: str):
+    # the queue is decoupled from this run's own output: a red watchdog step
+    # (a git, gh or config failure, or a crash) must still list and judge the
+    # PRs earlier passes left
+    body = _step(AUTOPR_WF.read_text(), name)
+    assert re.search(r"^        if: \$\{\{ !cancelled\(\) \}\}$", body, re.M), (
+        f"the {name!r} step lost its !cancelled() gate"
+    )
+
+
+def _pass_guards(text: str, queue: Path) -> str:
+    """the pass step's shell up to the CLI install, reading `queue` as its queue file."""
+    run = re.search(
+        r"^        run: \|\n(?P<script>.*?)^          npm install ",
+        _step(text, "claude review pass"),
+        re.M | re.S,
+    )
+    assert run is not None, "the claude review pass step lost its run block or its CLI install"
+    return textwrap.dedent(run.group("script")).replace("/tmp/review-queue.txt", str(queue))
+
+
+def _list_outcome_env(text: str, outcome: str) -> dict[str, str]:
+    """the pass step's env entries a runner fills with the list step's outcome."""
+    list_id = re.search(r"^        id: (\S+)$", _step(text, "list PRs awaiting review"), re.M)
+    if list_id is None:
+        return {}
+    entry = rf"^          (\w+): \$\{{\{{ steps\.{re.escape(list_id.group(1))}\.outcome \}}\}}$"
+    return dict.fromkeys(re.findall(entry, _step(text, "claude review pass"), re.M), outcome)
+
+
+@pytest.mark.parametrize(
+    ("outcome", "queued", "stdout"),
+    [
+        (
+            "failure",
+            "",
+            "listing the PRs awaiting review failed, so the review queue is unknown;"
+            " skipping the claude pass\n",
+        ),
+        ("success", "", "no PR awaits review; skipping the claude pass\n"),
+        ("failure", "459 pricelog/openrouter-12345678\n", ""),
+    ],
+    ids=["failed-listing", "empty-queue", "listed-queue"],
+)
+def test_pass_skip_line_tells_a_failed_listing_from_an_empty_queue(
+    tmp_path: Path, outcome: str, queued: str, stdout: str
+):
+    # a failed listing leaves the queue file as empty as an empty queue does,
+    # so only the list step's outcome tells them apart: the skip line must
+    # never call an unknown queue empty. a listed PR runs the pass whatever the
+    # outcome: the dead-pass gate reads the same non-empty file as a due pass
+    text = AUTOPR_WF.read_text()
+    queue = tmp_path / "review-queue.txt"
+    queue.write_text(queued)
+    guards = tmp_path / "guards.sh"
+    guards.write_text(_pass_guards(text, queue))
+    proc = subprocess.run(
+        ["bash", "-e", str(guards)],
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", "CLAUDE_MODEL": "m", **_list_outcome_env(text, outcome)},
+    )
+    assert (proc.returncode, proc.stdout, proc.stderr) == (0, stdout, "")

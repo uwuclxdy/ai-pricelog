@@ -189,8 +189,6 @@ def seed_store(repo_root: Path, rows: list[dict]) -> None:
 
 
 def assert_default_branch_clean(repo_root: Path, tip: str = "init") -> None:
-    # the run marker is an untracked runtime artifact, not default-branch state
-    (repo_root / pipeline.MARKER_FILE).unlink(missing_ok=True)
     assert git(repo_root, "status", "--porcelain") == ""
     assert git(repo_root, "branch", "--show-current").strip() == "main"
     assert git(repo_root, "log", "--format=%s", "-1").strip() == tip
@@ -432,7 +430,6 @@ def test_seed_pr_open_failure_records_errors_per_model(tmp_path, fake_modules, r
         "seed pr failed for model-b",
     ]
     assert runner.pr_urls == []
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root)
 
 
@@ -1310,7 +1307,7 @@ def test_open_pr_list_fetched_once_per_run(tmp_path, fake_modules, repo_root):
 
     list_calls = [cmd for cmd, _cwd in runner.calls if cmd[0:3] == ["gh", "pr", "list"]]
     assert len(list_calls) == 1
-    assert "--limit" in list_calls[0] and "100" in list_calls[0]
+    assert "--limit" in list_calls[0] and "1000" in list_calls[0]
     assert report.providers["deepseek"].skipped_pending == ["deepseek-a"]
     assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-b"]
     assert_default_branch_clean(repo_root, tip="seed store")
@@ -1555,7 +1552,6 @@ def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
     assert all(row.get("removed") is not True for row in rows)
     # the sibling branch never touches another source's absence file
     assert branch_absence(repo_root, batch_branch("zai")) == {}
-    assert (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -1655,7 +1651,6 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
     assert branch_absence(repo_root, removal_branch) == {
         "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
     }
-    assert (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root, tip="merge deepseek pr")
 
 
@@ -1958,7 +1953,6 @@ def test_failed_batch_pr_keeps_counter_on_own_branch(tmp_path, fake_modules, rep
     assert report.providers["deepseek"].errors
     assert report.providers["zai"].errors
     assert runner.pr_urls == []
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
     assert_default_branch_clean(repo_root, tip="land absence state")
 
     # deepseek opens, zai fails: the raised counter rides deepseek's branch at 2
@@ -2098,7 +2092,6 @@ def test_openrouter_validation_failure_still_counts_present(
     assert report.providers["openrouter"].errors
     assert [model_id for model_id, _url in report.providers["openrouter"].prs] == []
     assert runner.pr_urls == []
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
 
 
 def test_dedup_twin_counts_present(tmp_path, fake_modules, repo_root):
@@ -2128,7 +2121,6 @@ def test_dedup_twin_counts_present(tmp_path, fake_modules, repo_root):
     pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     assert runner.pr_urls == []
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
 
 
 def test_absence_after_landed_removal_appends_nothing(tmp_path, fake_modules, repo_root):
@@ -2193,7 +2185,7 @@ def test_landed_removal_cleanup_drops_the_entry_at_two(tmp_path, fake_modules, r
 
 def test_absent_removed_model_does_not_churn_state(tmp_path, fake_modules, repo_root):
     # a landed removal ends absence tracking: later quiet runs recreate no
-    # counter, so the state stays equal and the CI marker stays untouched
+    # counter, so the state stays equal
     detect, scrape = fake_modules
     detect["deepseek"] = []
     scrape["deepseek"] = {}
@@ -2214,72 +2206,6 @@ def test_absent_removed_model_does_not_churn_state(tmp_path, fake_modules, repo_
     pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     assert runner.pr_urls == []
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
-
-
-def test_run_changed_marker_follows_row_prs(tmp_path, fake_modules, repo_root):
-    # a run that opens a row pr touches the marker; a quiet run clears it
-    detect, scrape = fake_modules
-    detect["deepseek"] = ["deepseek-chat"]
-    scrape["deepseek"] = {"deepseek-chat": pricing()}
-    cfg = make_cfg("deepseek")
-    legacy = store.build_row(
-        "deepseek",
-        "deepseek-legacy",
-        pricing(),
-        "2026-08-19",
-        "https://example.com/pricing",
-        VERSION,
-    )
-    seed_store(repo_root, [legacy])
-    runner = PipelineRunner()
-
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
-    pipeline.run(cfg, repo_root, runner, today=TODAY)
-    assert (repo_root / pipeline.MARKER_FILE).exists()
-
-    runner.open_prs = [
-        {
-            "title": runner.created[0][0],
-            "body": runner.created[0][1],
-            "headRefName": runner.created[0][2],
-        }
-    ]
-    detect["deepseek"] = ["deepseek-chat", "deepseek-legacy"]
-    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-legacy": pricing()}
-    pipeline.run(cfg, repo_root, runner, today="2026-08-27")
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
-
-
-def test_run_changed_marker_stays_off_on_state_only_change(
-    tmp_path, fake_modules, repo_root, monkeypatch
-):
-    # a state-only change with no pr opens nothing reviewable: no marker
-    detect, scrape = fake_modules
-    detect["deepseek"] = ["deepseek-legacy"]
-    scrape["deepseek"] = {"deepseek-legacy": pricing()}
-    cfg = make_cfg("deepseek")
-    legacy = store.build_row(
-        "deepseek",
-        "deepseek-legacy",
-        pricing(),
-        "2026-08-19",
-        "https://example.com/pricing",
-        VERSION,
-    )
-    seed_store(repo_root, [legacy])
-    change = announce_change()
-    monkeypatch.setattr(
-        pipeline.announce,
-        "fetch_channels",
-        lambda *a: announce.FetchResult((change,), announce_snapshot(), ()),
-    )
-    runner = PipelineRunner()
-
-    pipeline.run(cfg, repo_root, runner, today=TODAY)
-
-    assert runner.pr_urls == []  # unchanged prices open no pr
-    assert not (repo_root / pipeline.MARKER_FILE).exists()
 
 
 def commit_fx(repo_root: Path, rates: dict[str, dict[str, float]]) -> None:
@@ -2383,5 +2309,5 @@ def test_missing_fx_rate_fails_the_run_loudly(tmp_path, fake_modules, repo_root)
     with pytest.raises(store.FxError, match="EUR"):
         pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY)
 
-    # nothing was committed or branched, and the marker stays off
+    # nothing was committed or branched
     assert_default_branch_clean(repo_root)

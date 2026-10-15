@@ -1,12 +1,16 @@
 # the one scheduled workflow: hourly the watchdog runs (watch provider pages
 # and the openrouter api, append observed rows, open draft PRs), followed by a
-# claude code review pass when the run changed something, then a deterministic
-# merge step that merges the PRs the pass marked `automerge: yes`; weekly
-# (monday 05:17 utc) a live smoke probe checks the moonshot .md endpoints.
-# push/PR gates stay in ci.yml + publish.yml. GH_TOKEN = the cloudybot PAT
-# with repo scope (repo secret); falls back to GITHUB_TOKEN. the claude pass
-# reads ANTHROPIC_API_KEY and optional ANTHROPIC_BASE_URL / ANTHROPIC_MODEL
-# overrides from repo secrets.
+# claude code review pass that judges up to the 10 oldest PRs awaiting review
+# (the review queue, listed by the merge script), then a deterministic merge
+# step that merges the PRs the pass marked `automerge: yes`; weekly (monday
+# 05:17 utc) a live smoke probe checks the moonshot .md endpoints. push/PR
+# gates stay in ci.yml + publish.yml. GH_TOKEN must be the cloudybot PAT with
+# repo scope (repo secret): a GITHUB_TOKEN cannot answer `gh api user`, which
+# the list and merge steps read whenever an open non-seed pricelog PR's branch
+# still resolves, and the watchdog only on a runner with no git identity (through
+# pr.ensure_author). the claude pass reads ANTHROPIC_API_KEY from repo
+# secrets and the model/base URL from the repo variables ANTHROPIC_MODEL /
+# ANTHROPIC_BASE_URL.
 #
 # trigger model: this workflow is dispatch-only. the PRIMARY hourly trigger is
 # `gh workflow run autopr -f scheduled=true` fired by a systemd timer on the
@@ -72,27 +76,54 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: list PRs awaiting review
+        id: queue
+        # NOT continue-on-error: a failed listing reds the run, never a green
+        # run whose pass skipped an unknown queue. stdout is the machine list
+        # the prompt pastes in; the cat makes it visible in the run log. the
+        # queue is decoupled from this run's own output, so it lists even
+        # when the watchdog step failed
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: |
+          uv run ai-pricelog-merge-verified --awaiting-review 10 > /tmp/review-queue.txt
+          cat /tmp/review-queue.txt
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
       - name: claude review pass
         continue-on-error: true
-        # the pass itself gets 50 min: the whole job is capped at 80, and a
-        # pass that finished its work but hung (observed 2026-09-09: merged
-        # everything by min 45, then sat idle until the job cap cancelled it)
-        # must die early enough that the tripwire below still runs
+        if: ${{ !cancelled() }}
+        # the pass itself gets 50 min: a pass that finished its work but hung
+        # (observed 2026-09-09: merged everything by min 45, then sat idle
+        # until the job cap cancelled it) must die early enough that the
+        # tripwire below still runs. with the list and merge steps at their
+        # 10-min caps too, the capped steps take up to 70 of the job's 80 min,
+        # leaving ~10 for setup, the watchdog and the health step (measured
+        # 2026-10-14: over the last 40 runs the longest job took 553 s, the
+        # median 205 s)
         timeout-minutes: 50
         run: |
           # pipefail so pass_rc below is claude's status, never tee's
           set -o pipefail
-          [ -f .run-changed ] || { echo "run changed nothing; skipping the claude pass"; exit 0; }
+          # a failed listing leaves the queue file as empty as an empty queue
+          # does, so the list step's own outcome tells the two apart
+          [ "$QUEUE_OUTCOME" = success ] || [ -s /tmp/review-queue.txt ] || { echo "listing the PRs awaiting review failed, so the review queue is unknown; skipping the claude pass"; exit 0; }
+          [ -s /tmp/review-queue.txt ] || { echo "no PR awaits review; skipping the claude pass"; exit 0; }
+          [ -n "$CLAUDE_MODEL" ] || { echo "::error::the ANTHROPIC_MODEL repo variable is unset; the pass refuses to fall back to the CLI default model"; exit 1; }
           npm install -g @anthropic-ai/claude-code@2 >/dev/null
           {
             cat .github/claude-pass/prompt.md
+            echo
+            echo "## PRs awaiting review"
+            cat /tmp/review-queue.txt
             echo
             echo "## this run's pipeline log"
             cat /tmp/run.log
           } > /tmp/prompt.md
           export ANTHROPIC_API_KEY
+          export ANTHROPIC_MODEL="$CLAUDE_MODEL"
           [ -n "$CLAUDE_BASE_URL" ] && export ANTHROPIC_BASE_URL="$CLAUDE_BASE_URL"
-          [ -n "$CLAUDE_MODEL" ] && export ANTHROPIC_MODEL="$CLAUDE_MODEL"
           # stream-json emits one event per line (tee flushes per line), so
           # a killed pass still trails how far it got and the tripwire runs
           # on the events it emitted; plain -p buffers everything until the
@@ -118,18 +149,19 @@ jobs:
           # every healthy run too (a base-url model outside the client
           # catalog), so it is NOT a failure signature on its own
           if grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
-            echo "::warning::the claude pass failed to authenticate; rows shipped unverified. rotate ANTHROPIC_API_KEY and fix or clear ANTHROPIC_BASE_URL / ANTHROPIC_MODEL."
+            echo "::warning::the claude pass failed to authenticate; the queued PRs went unjudged. rotate ANTHROPIC_API_KEY and fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo variables."
           fi
-          # a cancelled or crashed pass is also silent shipping: the step
+          # a cancelled or crashed pass leaves the queue unjudged: the step
           # is continue-on-error, so the job reads green either way — the
           # fail-on-a-dead-review-pass step below reds it
           if [ "$pass_rc" -ne 0 ]; then
-            echo "::warning::the claude pass exited $pass_rc; rows shipped unverified. read the pass log in this run."
+            echo "::warning::the claude pass exited $pass_rc; the queued PRs stay queued for the next pass. read the pass log in this run."
           fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          CLAUDE_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          QUEUE_OUTCOME: ${{ steps.queue.outcome }}
           # GH_TOKEN holds the cloudybot PAT: every automation action (open
           # pr, comment, merge commit) acts as the bot, so a @-mention in a
           # needs-human comment notifies the owner (a self-mention never does)
@@ -142,20 +174,19 @@ jobs:
         # because the pass step is continue-on-error: the dispositions are
         # already posted when the pass dies, and the merge must still run.
         # the script reads every open pricelog PR's marker, so a yes-marked
-        # PR a failed merge step stranded merges on a later data-changing
-        # run's merge step. the pass leaves the checkout wherever it last
-        # worked (observed 2026-09-20: two runs red'd when the merge's own
-        # guard refused the pass's review branch), so the step fetches and
-        # re-establishes the base at its fresh remote tip before the script's
-        # guard reads it — the job's checkout-time refs are minutes old, and
-        # a base that moved mid-run reds by name instead of rejecting at the
-        # push (observed 2026-09-18). -f discards the pass's leftover edits,
-        # which are already pushed, and .run-changed is untracked, so it
-        # survives
+        # PR a failed merge step stranded merges on a later run's merge
+        # step, and prints nothing to merge when no open PR is marked. the
+        # pass leaves the checkout wherever it last worked (observed
+        # 2026-09-20: two runs red'd when the merge's own guard refused the
+        # pass's review branch), so the step fetches and re-establishes the
+        # base at its fresh remote tip before the script's guard reads it —
+        # the job's checkout-time refs are minutes old, and a base that
+        # moved mid-run reds by name instead of rejecting at the push
+        # (observed 2026-09-18). -f discards the pass's leftover edits,
+        # which are already pushed
         if: always()
         timeout-minutes: 10
         run: |
-          [ -f .run-changed ] || { echo "run changed nothing; no merge"; exit 0; }
           git fetch origin
           git checkout -f -B mommy origin/mommy
           # the rc marker mirrors the pass step's: the health step's deduped
@@ -170,18 +201,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: fail on a dead review pass
-        # a pass that dies on a data-changing run ships rows unverified and
-        # leaves the merge without dispositions: red, never a green with
-        # warnings (the class this step exists to close; measured
-        # 2026-09-18: 5 days of green runs piled up 33 unreviewed PRs). the
-        # merge step above already ran, so redding here can never orphan a
-        # merge. a killed pass never writes /tmp/pass.rc, which reads as
-        # dead here and in the health step.
+        # a pass that dies leaves the PRs it never judged unjudged: red,
+        # never a green with warnings (the class this step exists to close;
+        # measured 2026-09-18: 5 days of green runs piled up 33 unreviewed
+        # PRs). the merge step above already ran, so redding here can never
+        # orphan a merge. a killed pass never writes /tmp/pass.rc, which
+        # reads as dead here and in the health step. due only when the
+        # queue was non-empty
         if: always()
         run: |
-          [ -f .run-changed ] || exit 0
+          [ -s /tmp/review-queue.txt ] || exit 0
           if [ ! -f /tmp/pass.rc ] || [ "$(cat /tmp/pass.rc)" != "0" ]; then
-            echo "::error::the claude pass died on a run that changed data; rows shipped unverified. read the pass log in this run."
+            echo "::error::the claude pass died with PRs awaiting review; the queued PRs stay queued for the next pass. read the pass log in this run."
             exit 1
           fi
 
@@ -189,17 +220,17 @@ jobs:
         if: always()
         run: |
           args=(/tmp/run.log)
-          if [ -f .run-changed ]; then
+          if [ -s /tmp/review-queue.txt ]; then
             if [ ! -f /tmp/pass.rc ] || [ "$(cat /tmp/pass.rc)" != "0" ]; then
               args+=(--pass-dead)
             else
               args+=(--pass-alive)
             fi
-            if [ ! -f /tmp/merge.rc ] || [ "$(cat /tmp/merge.rc)" != "0" ]; then
-              args+=(--merge-dead)
-            else
-              args+=(--merge-alive)
-            fi
+          fi
+          if [ ! -f /tmp/merge.rc ] || [ "$(cat /tmp/merge.rc)" != "0" ]; then
+            args+=(--merge-dead)
+          else
+            args+=(--merge-alive)
           fi
           uv run ai-pricelog-health "${args[@]}"
         env:

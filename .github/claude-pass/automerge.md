@@ -26,7 +26,7 @@ openrouter reseller rates flip-flop: a row can record a transient the api revert
 1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history/<source>.ndjson`)
 2. the row itself records the transient state it saw
 
-a rate that moved again since the row leaves condition 1 unanswerable against today's api. a later run settles it: every run diffs the api against `origin/mommy`, so a newer branch carrying no row for that (source, model_id) proves the api was back at the prior stored value when it ran. that silence is the revert.
+a rate that moved again since the row (today's api matches neither the row nor the prior stored row) leaves condition 1 unanswerable: comment needs human. a newer branch's silence settles nothing: the pipeline diffs the api against the landed rows plus every open PR's rows and skips any model an open PR names, so no later run can carry a row for this (source, model_id) while this PR stays open.
 
 the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/mythomax-l2-13b (0.35/0.6 for one day), qwen/qwen3-235b-a22b-2507 (0.09/0.55), deepseek/deepseek-v4-pro-0813 (a uniform 1.69x step), deepseek/deepseek-v4-pro (1% reseller drift), and tencent/hy3's base-rate oscillation (0.132/0.0825 across runs; its window_rates carry the schedule either way). when a flip-flop row's correction does not arrive on the next run, the class flips from transient to misread: comment needs human and point at `openrouter.py`.
 
@@ -50,7 +50,7 @@ a confirmed deprecation or retirement of priced models (the channel prose names 
 
 ## the merge
 
-after every PR is judged and every comment posted, your part is done: you never run the merge. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after the pass — even a pass killed at its step timeout — which reads every open `pricelog/` PR's comments for the pass's marker and hands the eligible branches to `ai-pricelog-automerge` in PR-number order, oldest PR first, newest last; the step resets its checkout to the base branch first (the pass may leave it on a review branch); a yes-marked PR a failed merge step stranded stays eligible and merges on a later data-changing run's merge step. the script:
+after every PR is judged and every comment posted, your part is done: you never run the merge. the workflow's `merge verified PRs` step runs `ai-pricelog-merge-verified` after the pass — even a pass killed at its step timeout — which reads every open `pricelog/` PR's comments for the pass's marker and hands the eligible branches to `ai-pricelog-automerge` in PR-number order, oldest PR first, newest last; the step resets its checkout to the base branch first (the pass may leave it on a review branch); a yes-marked PR a failed merge step stranded stays eligible and merges on the next run's merge step (the step runs every run). the script:
 
 - fetches the base and the burst refs before any check reads them: the CI checkout's origin/* refs are minutes old and a branch a sibling run or a human pushed since the job's fetch is invisible to them (the 2026-09-22 `unknown revision` red)
 - refuses a checkout that is not the default branch at or ahead of its remote tip: every pricelog branch is a base descendant, so a merge started elsewhere would push as a fast-forward and ride that branch's own unverified commits into the default branch's history, and a checkout BEHIND the tip (a local `--no-push` run advances past it, never lags it) would merge over rows that already landed upstream — refused by name instead of by a push rejection
@@ -62,16 +62,16 @@ after every PR is judged and every comment posted, your part is done: you never 
 - `state/announce/`: each channel lands from the burst entry with the newest `fetched` date (a same-date tie goes to the newest branch, the base wins every tie), so a stale copy — a failed fetch keeping the base sha, or a branch cut before a later landed refresh — never wins; a channel the newest branch's index no longer lists is dropped. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
-github auto-marks each PR merged once its head lands in the default branch. the merge amends the refreshed README stats into its final merge commit, so the pushed head always satisfies the stats recompute test; the publish workflow owns the `dist` branch outright, and a `GITHUB_TOKEN` automerge push starts no workflow run, so dist catches up on the next PAT or human push.
+github auto-marks each PR merged once its head lands in the default branch. the merge amends the refreshed README stats into its final merge commit, so the pushed head always satisfies the stats recompute test; the publish workflow owns the `dist` branch outright. a `GITHUB_TOKEN` push starts no workflow run, so after a push lands the merge step dispatches the publish workflow itself; a failed dispatch warns in the run, and the next pushing merge dispatches again.
 
-when the script fails: the merge step reds the run, every PR stays open, and this run retries nothing — a yes-marked PR stays eligible, and the next data-changing run's merge step picks it up. the next run re-derives the rows.
+when the script fails: the merge step reds the run, every PR stays open, and the merge itself is never retried within the run — a yes-marked PR stays eligible, and the next run's merge step picks it up. the next run re-derives the rows.
 
 ## hard bans
 
 - never push the default branch except through `ai-pricelog-automerge` or the workflow's `merge verified PRs` step
 - never delete a branch ref by hand while its PR is open; a ref whose PR is closed may be deleted
 - never mark a seed PR, a code PR, or a PR with unverified rows `automerge: yes`
-- never comment on PRs the run did not open
+- never comment on a PR outside the `## PRs awaiting review` list
 - never edit rows on a branch except a row error you re-verified against the page (prompt.md step 5)
 
 ## quirks that change a judgment
