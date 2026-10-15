@@ -79,8 +79,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "ff176a54093308607e27943c3cf5c543fa867b2470162ba057b1f76ebbee406a",
-      "fetched": "2026-09-27"
+      "sha256": "a1520c268876e4305d48322450206102b7119c92ed0ece71c14ff0a445557467",
+      "fetched": "2026-09-28"
     }
   },
   "together": {
