@@ -26,7 +26,7 @@ openrouter reseller rates flip-flop: a row can record a transient the api revert
 1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history/<source>.ndjson`)
 2. the row itself records the transient state it saw
 
-a rate that moved again since the row (today's api matches neither the row nor the prior stored row) leaves condition 1 unanswerable: comment needs human. a newer branch's silence settles nothing: the pipeline diffs the api against the landed rows plus every open PR's rows and skips any model an open PR names, so no later run can carry a row for this (source, model_id) while this PR stays open.
+a rate that moved again since the row (today's api matches neither the row nor the prior stored row) leaves condition 1 unanswerable: comment needs human. a newer branch's silence settles nothing: the pipeline diffs the api against the landed rows plus every open PR's rows and skips any model an open PR names, so no later run can record a NEW row for this (source, model_id) while this PR stays open (a later branch still carries this PR's own lines).
 
 the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/mythomax-l2-13b (0.35/0.6 for one day), qwen/qwen3-235b-a22b-2507 (0.09/0.55), deepseek/deepseek-v4-pro-0813 (a uniform 1.69x step), deepseek/deepseek-v4-pro (1% reseller drift), and tencent/hy3's base-rate oscillation (0.132/0.0825 across runs; its window_rates carry the schedule either way). when a flip-flop row's correction does not arrive on the next run, the class flips from transient to misread: comment needs human and point at `openrouter.py`.
 
@@ -39,12 +39,14 @@ the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/m
 | other billing-rule classes | rate changes, tier changes, promo windows, free-tier flips: name the semantics and flag them for the human, who owns those calls |
 | unverifiable rows | the source page fetch fails (bot wall, 403) |
 | ambiguous announce semantics | the rubric answer is not clear-cut |
+| an older run's PR whose own rows already landed | every own row of the PR already sits in `git show origin/mommy:data/history/<source>.ndjson` through a newer sibling; merging it would revert that sibling's absence counters (see the merge) |
 
 ## billing rules the pass may write
 
 a confirmed deprecation or retirement of priced models (the channel prose names the models and the change in when their rates apply):
 
 - append ONE entry at the END of the `rules` array in `data/catalog/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
+- read every statement off the channel's snapshot on the newest branch that carries it (`git show origin/<branch>:state/announce/<source>/<slug>.md`) before writing it, never off an older PR's copy
 - in the SAME commit bump the count pin: `tests/test_billing_rules.py` `test_committed_billing_rules_pass_schema` asserts `len(rules) == N`. the rules and the pin land atomically, or the next CI run reds
 - edit the file on the PR branch, name the rule in your comment, then mark the PR `automerge: yes`
 
@@ -59,7 +61,11 @@ after every PR is judged and every comment posted, your part is done: you never 
 - refuses any appended price row whose `(source, model_id)` no catalog claims: neither HEAD's models.json nor any branch of the burst carries the claim (the pipeline seeds each new key on the branch whose PR carries the row, so a missing claim means the seed rides a needs-human sibling). the refusal names the branch and the row. a removal row is exempt: its claim landed with its first price row
 - every line of the branch's copy must read as one json object per line, and each line the union appends must pass the row contract (`data/schema/row.v4.json`); a refused line stops the merge naming the branch and its line in the branch's own copy (`origin/<branch>:<path>`)
 - per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`
-- `state/announce/`: each channel lands from the burst entry with the newest `fetched` date (a same-date tie goes to the newest branch, the base wins every tie), so a stale copy — a failed fetch keeping the base sha, or a branch cut before a later landed refresh — never wins; a channel the newest branch's index no longer lists is dropped. `state/absence/<source>.json`: each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
+- `state/announce/`: each channel lands from the burst entry with the newest `fetched` date (a same-date tie goes to the newest branch, the base wins every tie), so a stale copy — a failed fetch keeping the base sha, or a branch cut before a later landed refresh — never wins; a channel the newest branch's index no longer lists is dropped
+- `state/absence/<source>.json`: inside one burst, each file comes from the newest branch that carries it (a burst of one run carries one shared snapshot, so single-run behavior is unchanged)
+  - across bursts nothing compares runs: every absence file a branch changed and still carries overwrites HEAD's, so a branch merged after a newer-run sibling landed reverts that sibling's counters with every check green
+  - measured 2026-10-15 in a dry run: PRs 490-492 merged after 499 landed wrote their 03:00 openrouter file over 499's 07:00 one and lost 4 first-absence counters
+  - so an older-run PR whose own rows already landed through a newer sibling (they sit in `git show origin/mommy:data/history/<source>.ndjson`) is closed, never merged: the pass posts `automerge: no` with a needs-human comment naming that sibling, and the human closes it
 - verifies each branch head is an ancestor of the result (the auto-mark precondition), then pushes the default branch and deletes the branch refs
 
 github auto-marks each PR merged once its head lands in the default branch. the merge amends the refreshed README stats into its final merge commit, so the pushed head always satisfies the stats recompute test; the publish workflow owns the `dist` branch outright. a `GITHUB_TOKEN` push starts no workflow run, so after a push lands the merge step dispatches the publish workflow itself; a failed dispatch warns in the run, and the next pushing merge dispatches again.
