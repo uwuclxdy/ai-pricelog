@@ -6073,6 +6073,15 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-nano-banana-2.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-nano-banana-2.1"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemma-2-27b-it": {
       "curated": false,
       "sources": {
@@ -7377,6 +7386,15 @@
       "sources": {
         "openrouter": [
           "openai/gpt-6-sol:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.1-sol": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.1-sol"
         ]
       },
       "vendor": "openai"
