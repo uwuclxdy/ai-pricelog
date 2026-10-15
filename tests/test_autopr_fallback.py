@@ -24,7 +24,7 @@ def iso(age_seconds: int) -> str:
     return (datetime.now(UTC) - timedelta(seconds=age_seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def row(age_seconds: int | None, status: str = "completed") -> dict:
+def row(age_seconds: int | None, status: str) -> dict:
     run: dict = {"databaseId": 1, "status": status}
     if age_seconds is not None:
         run["startedAt"] = iso(age_seconds)
@@ -43,20 +43,23 @@ def run_check(runs: list[dict]) -> tuple[int, str]:
 
 
 @pytest.mark.parametrize(
-    ("runs", "expected"),
+    ("specs", "expected"),
     [
         ([], "dispatch"),  # no autopr run yet (fresh repo edge): dispatch
-        ([row(3000)], "skip"),
-        ([row(4000)], "dispatch"),
-        ([row(3000, "in_progress")], "skip"),
-        ([row(None, "queued")], "skip"),  # queued has no startedAt; status decides
-        ([row(None, "waiting")], "skip"),  # same: any non-completed status is active
-        ([row(None)], "dispatch"),  # completed but never started (cancelled): no work done
-        ([row(3000), row(4000)], "skip"),  # newest row decides
+        ([(3000, "completed")], "skip"),
+        ([(4000, "completed")], "dispatch"),
+        ([(3000, "in_progress")], "skip"),
+        ([(None, "queued")], "skip"),  # queued has no startedAt; status decides
+        ([(None, "waiting")], "skip"),  # same: any non-completed status is active
+        ([(None, "completed")], "dispatch"),  # completed but never started: no work done
+        ([(3000, "completed"), (4000, "completed")], "skip"),  # newest row decides
     ],
 )
-def test_fallback_verdict(runs: list[dict], expected: str) -> None:
-    rc, out = run_check(runs)
+def test_fallback_verdict(specs: list[tuple[int | None, str]], expected: str) -> None:
+    # rows are stamped here, at run time: a timestamp taken at collection ages
+    # by the time the test runs, and a run slower than 300 s pushed the
+    # 3000 s rows past the 3300 s window
+    rc, out = run_check([row(age, status) for age, status in specs])
     assert rc == 0
     assert out == expected
 
