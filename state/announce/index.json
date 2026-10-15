@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "9194a2e64ceb5b732c22e8f6fb3e7e0b767d06eb30ca35455210ff142ea756c2",
+      "sha256": "4277e437c791184e2068982fb836845f350ad9e6ac834743efc732690213ea15",
       "fetched": "2026-10-15"
     },
     "https://www.together.ai/blog/rss.xml": {
@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "55e0845f09f6845c545160039f8f3ef3b63533b042d6c1d9da776b9f72cd2fb6",
+      "sha256": "c2c36b7691a40c84a5abf789b5d2632d0dd5c2946702d42bd19598ccfc5b7549",
       "fetched": "2026-10-15"
     }
   },
