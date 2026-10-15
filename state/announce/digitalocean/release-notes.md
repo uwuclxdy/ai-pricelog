@@ -9,7 +9,17 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 7 October Managed databases are available in Memphis ( mem1 ) on AMDv5 plans only.
+October 2026 8 October When you upgrade an existing DigitalOcean Kubernetes (DOKS) cluster to version 1.37 or later, DOKS automatically enables the CoreDNS Cluster Proportional Autoscaler (CPA) plugin if CoreDNS is still running the default of two replicas.
+If you have manually changed the CoreDNS replica count, DOKS leaves it as is, and you can enable CPA yourself.
+CPA is already enabled by default on new clusters running Kubernetes 1.36 or later.
+For more information, see How to Configure CoreDNS Autoscaling .
+Starting with DOKS 1.37, GPU device plugins are no longer enabled by default on clusters with GPU nodes.
+Dynamic Resource Allocation (DRA) drivers are available as opt-in cluster plugins ( nvidia_gpu_dra_driver or amd_gpu_dra_driver ).
+Device plugins ( nvidia_gpu_device_plugin or amd_gpu_device_plugin ) remain available but must be enabled explicitly.
+Device plugins and DRA drivers are mutually exclusive.
+When you switch between them on an existing cluster, DOKS replaces the GPU worker nodes so each node starts with a clean state.
+For more information, see Supported GPUs .
+7 October Managed databases are available in Memphis ( mem1 ) on AMDv5 plans only.
 Storage-Optimized plans are now available for Kafka and OpenSearch clusters in mem1 only.
 See the regional availability matrix for current coverage by engine.
 The Cost Analysis tab of the Billing page now includes Serverless Inference Live Usage, which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
@@ -216,9 +226,6 @@ For installation and quickstart examples, see SDK and Client Libraries .
 The Gradient AI TypeScript SDK is deprecated.
 Use the official DigitalOcean TypeScript SDK (DoTs) or the DigitalOcean API directly.
 For installation and quickstart examples, see SDK and Client Libraries .
-10 July PostgreSQL Standard Edition clusters now support sslmode=verify-full for full TLS certificate verification.
-For setup, see How to Connect to PostgreSQL Database Clusters and Increase TLS Verification with sslmode .
-The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-5.6 Sol GPT-5.6 Terra GPT-5.6 Luna For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

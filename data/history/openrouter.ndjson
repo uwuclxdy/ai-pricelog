@@ -1409,6 +1409,7 @@
 {"schema":4,"source":"openrouter","model_id":"stealth/union-alpha","observed_at":"2026-09-18","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"stepfun/step-3.5-flash","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.3},"limits":{"context":262144},"provenance":{"name":"Step 3.5 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"stepfun/step-3.7-flash","observed_at":"2026-08-26","rates":{"input":0.2,"output":1.15,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Step 3.7 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"stepfun/step-5-preview","observed_at":"2026-10-08","rates":{"input":1.0,"output":2.7,"cache_read":0.05},"limits":{"context":1000000},"provenance":{"name":"Step 5 Preview"}}
 {"schema":4,"source":"openrouter","model_id":"tencent/hunyuan-a13b-instruct","observed_at":"2025-09-22","rates":{"input":0.03,"output":0.03},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"tencent/hunyuan-a13b-instruct","observed_at":"2025-12-28","rates":{"input":0.14,"output":0.57},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"tencent/hunyuan-a13b-instruct","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.57},"limits":{"context":131072},"provenance":{"name":"Hunyuan A13B Instruct"}}
