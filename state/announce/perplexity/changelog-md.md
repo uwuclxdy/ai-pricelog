@@ -2,7 +2,31 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6.1 Sol** The Agent API now supports `openai/gpt-6.1-sol`.
+</Tip> <Update label="October 2026" tags={["Decisions API", "Features"]}> **New: Decisions API** The Decisions API answers questions about text, JSON, or images with probabilities instead of generated text.
+Use `POST /v1/decisions` with `pplx-decider-v1-27b` for yes-or-no, choice, or scored answers that application code can act on directly.
+Input costs \$0.04 per million tokens.
+Output tokens are free, with no per-request fee.
+See the [Decisions API quickstart](/docs/decisions/quickstart).
+</Update> <Update label="October 2026" tags={["Agent API", "Files"]}> **Native document input** The Agent API now accepts PDF, DOC, DOCX, TXT, and RTF documents as `input_file` content.
+Send a document inline with `file_data` or provide a public HTTPS `file_url`.
+For inline documents, continue the conversation with `previous_response_id` without uploading the file again.
+See [Working with Files](/docs/agent-api/working-with-files).
+</Update> <Update label="October 2026" tags={["Agent API", "Tools"]}> **Image Search** The new `image_search` tool searches for images on the web and returns typed `image_search_results` with image and source-page URLs.
+Use result limits plus domain, format, and safe-search filters to control the results.
+Usage reports successful calls at \$2.50 per 1,000 invocations; failed calls have zero tool cost.
+See [Agent API Image Search](/docs/agent-api/tools/image-search).
+</Update> <Update label="October 2026" tags={["Agent API", "Cost Tracking", "Usage"]}> **Accurate sandbox extraction usage and costs** Agent API responses now include model token usage and cost for successful `pplx_sdk.llm.extract` calls made inside the `sandbox` tool.
+Per-model tokens appear in `usage.tool_calls_details.sandbox.token_usage`.
+The reported extraction cost appears in `usage.tool_calls_details.sandbox.cost_usd` and `usage.cost.tool_calls_cost_details.sandbox`, and contributes to `usage.cost.total_cost`.
+Sandbox extraction uses the existing [`openai/gpt-6-luna` pricing](/docs/agent-api/models), including cache creation, cache read, and reasoning-token dimensions.
+This corrects response-level usage and cost reporting; it does not change pricing or backfill historical responses.
+</Update> <Update label="October 2026" tags={["Agent API", "Presets"]}> **Low, medium, and high presets use Fast Search** The Agent API `low`, `medium`, and `high` presets now use Fast Search (`search_type: "fast"`) for `web_search`, matching the `fast` preset.
+`web_search` calls made under these presets drop from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
+The `xhigh` preset is unchanged and continues to use standard web search.
+Models, prompts, tool budgets, and step limits are unchanged.
+To keep standard web search under any preset, set `search_type: "web"` on the `web_search` tool.
+See [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
+</Update> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6.1 Sol** The Agent API now supports `openai/gpt-6.1-sol`.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="September 2026" tags={["Agent API", "Models"]}> **Claude Sonnet 5.5** The Agent API now supports `anthropic/claude-sonnet-5-5`.
 See the [Agent API Models reference](/docs/agent-api/models).
