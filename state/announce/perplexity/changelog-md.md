@@ -2,7 +2,11 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
+</Tip> <Update label="October 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **NVIDIA Nemotron 3.5 Super** The Agent API now supports `perplexity/nemotron-3.5-super-120b-a12b` at \$0.20 per million input tokens, \$0.04 per million cached input tokens, and \$0.50 per million output tokens.
+It has a 1,048,576-token context window, returns up to 131,072 output tokens, and accepts text input only.
+It replaces `perplexity/nemotron-3-ultra-550b-a55b`, which is no longer listed in the Agent API or Orchestrator API model docs.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Agent API", "Models"]}> **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
 Requests with more than 100k input tokens use higher rates.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="October 2026" tags={["Decisions API", "Models", "Pricing"]}> **Decisions API: pplx-decider-v1.1-27b replaces v1** `pplx-decider-v1.1-27b` replaces `pplx-decider-v1-27b` as the Decisions API model.
