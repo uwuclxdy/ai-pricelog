@@ -2,7 +2,15 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="October 2026" tags={["Decisions API", "Features"]}> **New: Decisions API** The Decisions API answers questions about text, JSON, or images with probabilities instead of generated text.
+</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
+Requests with more than 100k input tokens use higher rates.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Decisions API", "Models", "Pricing"]}> **Decisions API: pplx-decider-v1.1-27b replaces v1** `pplx-decider-v1.1-27b` replaces `pplx-decider-v1-27b` as the Decisions API model.
+Input now costs \$0.02 per million tokens, down from \$0.04.
+Use `pplx-decider-v1.1-27b` in new requests.
+Requests that still name `pplx-decider-v1-27b` continue to work and bill at the same \$0.02 rate.
+See [Pricing](/docs/getting-started/pricing) and the [Decisions API quickstart](/docs/decisions/quickstart).
+</Update> <Update label="October 2026" tags={["Decisions API", "Features"]}> **New: Decisions API** The Decisions API answers questions about text, JSON, or images with probabilities instead of generated text.
 Use `POST /v1/decisions` with `pplx-decider-v1-27b` for yes-or-no, choice, or scored answers that application code can act on directly.
 Input costs \$0.04 per million tokens.
 Output tokens are free, with no per-request fee.
@@ -32,7 +40,7 @@ See the [Agent API Models reference](/docs/agent-api/models).
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="September 2026" tags={["Agent API", "Presets", "Models"]}> **xhigh preset uses Claude Opus 5.5** The Agent API `xhigh` preset now uses Claude Opus 5.5: | Preset | Previous model | New model | | - | - | - | | `xhigh` | `openai/gpt-5.6-sol` | `anthropic/claude-opus-5-5` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
 </Update> <Update label="September 2026" tags={["Agent API", "Presets", "Models"]}> **Low, medium, and high presets use GPT-6** The Agent API `low`, `medium`, and `high` presets now use the GPT-6 model family: | Preset | Previous model | New model | | - | - | - | | `low` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `medium` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `high` | `openai/gpt-5.6-sol` | `openai/gpt-6-sol` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
-</Update> <Update label="September 2026" tags={["Agent API", "Router", "Models", "Deprecation"]}> **Upcoming retirement of older OpenAI models** On October 24, 2026 at 00:00 UTC, the Agent API and Router API will retire these model IDs: * `openai/gpt-5.4` * `openai/gpt-5.4-mini` * `openai/gpt-5.4-nano` * `openai/gpt-5.2` * `openai/gpt-5.1` * `openai/gpt-5` * `openai/gpt-5-mini` Update direct model selections and fallback chains before the cutoff.
+</Update> <Update label="September 2026" tags={["Agent API", "Orchestrator API", "Models", "Deprecation"]}> **Upcoming retirement of older OpenAI models** On October 24, 2026 at 00:00 UTC, the Agent API and Orchestrator API will retire these model IDs: * `openai/gpt-5.4` * `openai/gpt-5.4-mini` * `openai/gpt-5.4-nano` * `openai/gpt-5.2` * `openai/gpt-5.1` * `openai/gpt-5` * `openai/gpt-5-mini` Update direct model selections and fallback chains before the cutoff.
 The models remain available until then.
 After the cutoff, the retired IDs will no longer be accepted or returned by model-list endpoints.
 For new integrations, choose a current OpenAI model in the [Agent API Models reference](/docs/agent-api/models).
@@ -63,9 +71,9 @@ API keys continue to work for clients without OAuth support.
 </Update> <Update label="September 2026" tags={["Agent API", "Models"]}> **Gemini 3.8 Flash** The Agent API now supports `google/gemini-3.8-flash`.
 Promotional pricing through December 31, 2026 is \$0.75 per million uncached-input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
 See the [Agent API Models reference](/docs/agent-api/models).
-</Update> <Update label="September 2026" tags={["Agent API", "Router", "Models"]}> **GLM 5.3 Flash** The Agent API and Router API now support `perplexity/glm-5.3-flash` at \$0.15 per million uncached-input tokens, \$0.03 per million cached-input tokens, and \$0.50 per million output tokens.
+</Update> <Update label="September 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **GLM 5.3 Flash** The Agent API and Orchestrator API now support `perplexity/glm-5.3-flash` at \$0.15 per million uncached-input tokens, \$0.03 per million cached-input tokens, and \$0.50 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
-</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **GLM 5.3** The Agent API and Router API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
+</Update> <Update label="August 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **GLM 5.3** The Agent API and Orchestrator API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Presets"]}> **Prompt caching for presets** Agent API presets now use stable prompt cache keys automatically, allowing independent requests with the same preset to reuse the shared prompt prefix (system prompt and tool definitions).
 No request changes are required, and an explicit `prompt_cache_key` still overrides the preset default.
@@ -75,17 +83,17 @@ The [current preset values](/docs/agent-api/presets#current-preset-values) inclu
 Dynamic `fast` preset requests pick up the change automatically.
 If you use a [frozen configuration](/docs/agent-api/presets#current-preset-values), update the model and reasoning effort and set `service_tier` to `priority`.
 Priority processing uses 2× the model's standard token prices.
-</Update> <Update label="August 2026" tags={["Agent API", "Router", "Models"]}> **Gemini 3.7 Flash** Pricing for `google/gemini-3.7-flash` increased on August 27, 2026 to \$0.75 per million input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
+</Update> <Update label="August 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **Gemini 3.7 Flash** Pricing for `google/gemini-3.7-flash` increased on August 27, 2026 to \$0.75 per million input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **Grok 4.6** The Agent API now supports `xai/grok-4.6`, xAI's latest flagship reasoning and agentic model.
 See pricing in the [Agent API Models reference](/docs/agent-api/models).
-</Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **NVIDIA Nemotron 3 Ultra** The Agent API and Router API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
+</Update> <Update label="August 2026" tags={["Agent API", "Models"]}> **NVIDIA Nemotron 3 Ultra** The Agent API and Orchestrator API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
 See the [Agent API Models reference](/docs/agent-api/models) or the [Router model catalog](/docs/router/models).
 </Update> <Update label="July 2026" tags={["Agent API", "Models", "Pricing"]}> **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
 GPT-5.6 Terra now costs \$2 per million input tokens and \$12 per million output tokens.
 GPT-5.6 Sol now supports Fast mode at 2× standard token pricing; send `service_tier: "priority"` to use it.
-</Update> <Update label="July 2026" tags={["Router", "Features"]}> **New: Router API** Unified access to open-weight models hosted by Perplexity through a single endpoint — with your existing Perplexity API key.
-**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Router API →](/docs/router/quickstart) </Update> <Update label="July 2026" tags={["MCP"]}> **Remote MCP Server** The [Perplexity MCP Server](/docs/getting-started/integrations/mcp-server) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
+</Update> <Update label="July 2026" tags={["Orchestrator API", "Features"]}> **New: Orchestrator API** Unified access to open-weight models hosted by Perplexity through a single endpoint — with your existing Perplexity API key.
+**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](/docs/router/quickstart) </Update> <Update label="July 2026" tags={["MCP"]}> **Remote MCP Server** The [Perplexity MCP Server](/docs/getting-started/integrations/mcp-server) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
 Connect any MCP client that supports Streamable HTTP using your API key as a bearer token, with no local installation and nothing to update.
 Tools and behavior are identical to the local server, and usage is billed to your API key at standard API pricing.
 </Update> <Update label="July 2026" tags={["Agent API", "Presets"]}> **Low preset updated** The Agent API `low` preset now uses `openai/gpt-5.6-luna` with `minimal` reasoning effort and a 32,768-token maximum output.

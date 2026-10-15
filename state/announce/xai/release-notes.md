@@ -163,4 +163,4 @@ Python Docs: https://python.langchain.com/integrations/providers/xai/ Javascript
 Nov 4 API Public Beta We are happy to announce the immediate availability of our API, which gives developers programmatic access to our Grok series of foundation models.
 To get started, head to console.x.ai and sign up to create an account.
 We are excited to see what developers build using Grok.
-Last updated: October 2, 2026
+Last updated: October 8, 2026

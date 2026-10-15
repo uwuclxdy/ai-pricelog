@@ -5,6 +5,10 @@ engineering Logs and datasets Get started with logs Data logging and sharing Saf
 Try out LearnLM Troubleshooting Access for Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 3.8 Flash is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
+October 8, 2026 Deep Research Agent deep-research-pro-preview-12-2025 deprecation : The deep-research-pro-preview-12-2025 agent is deprecated and will be shut down on October 23, 2026 .
+Migrate your requests to one of the newer Deep Research agent versions: deep-research-preview-04-2026 : Designed for speed and efficiency, ideal to be streamed back to a client UI.
+deep-research-max-preview-04-2026 : Maximum comprehensiveness for automated context gathering and synthesis.
+To migrate, update the agent parameter in your interactions.create requests from deep-research-pro-preview-12-2025 to deep-research-preview-04-2026 (or deep-research-max-preview-04-2026 ).
 October 6, 2026 Gemini Nano Banana 2.1 generally available (GA) : Released Gemini Nano Banana 2.1 ( gemini-nano-banana-2.1 ), the latest high-efficiency image generation and conversational editing model.
 An update to Nano Banana 2 ( gemini-3.1-flash-image ), it maintains Flash-level speed and cost efficiency while delivering significant improvements in visual quality, prompt adherence, multi-turn character consistency, text rendering, and wide and panoramic aspect ratio generation ( 1:4 , 4:1 , 1:8 , 8:1 ) across 1K , 2K , and 4K resolutions.
 See the Image generation guide to get started.
@@ -362,5 +366,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-10-07 UTC.
+Last updated 2026-10-09 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
