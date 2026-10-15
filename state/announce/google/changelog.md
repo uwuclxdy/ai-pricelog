@@ -45,7 +45,7 @@ September 3, 2026 Lyria 3.5 generally available (GA) : Released the next generat
 The model supports text and image inputs and generates high-fidelity 44.1 kHz stereo audio.
 See the Music generation guide for details and code samples.
 September 2, 2026 Gemini 3.8 Flash generally available (GA) : Released gemini-3.8-flash , our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows.
-To get started, see the Gemini 3.8 Flash model page and the Latest model guide .
+To get started, see the Gemini 3.8 Flash model page and the Gemini 3.8 Flash guide .
 September 1, 2026 Agentic video understanding : Released agentic video understanding for Gemini 3.7 Flash, 3.6 Flash, and 3.5 Flash-Lite across the Interactions and GenerateContent APIs.
 The model dynamically navigates video timelines, requesting transcripts, frames, or audio tracks on demand.
 This approach uses up to 88% fewer tokens for long-form content compared to static processing.
@@ -70,9 +70,9 @@ For real-time streaming use cases, see Robotics with streaming .
 Deprecation announcement : The gemini-robotics-er-1.6-preview model will be shut down on August 31, 2026.
 July 21, 2026 Gemini 3.6 Flash and Gemini 3.5 Flash-Lite generally available (GA) : Released stable, production-ready versions of our latest 3.x Flash models: Gemini 3.6 Flash ( gemini-3.6-flash ): Features improved token efficiency and code/agentic planning capabilities at a lower price point than 3.5 Flash, resolving developer feedback around output verbosity.
 Gemini 3.5 Flash-Lite ( gemini-3.5-flash-lite ): Offers a low-latency, highly cost-effective subagent option designed for high-volume automation.
-To learn more, see the Latest Gemini model guide.
+To learn more, see the Gemini 3.6 Flash guide .
 Deprecated parameters : The sampling parameters temperature , top_p and top_k are now deprecated.
-See the Latest Gemini Model for details.
+See the Gemini 3.6 Flash guide for details.
 July 6, 2026 Developer logs support for the Interactions API: logs for supported Interactions API calls are now viewable in the AI Studio dashboard .
 June 30, 2026 Gemini Omni Flash in public preview : Released gemini-omni-flash-preview , a high-performance multimodal model designed for high-speed video generation and conversational video editing.
 Using the Interactions API , you can generate 3–10 second videos at 720p from text descriptions or animate still images, and then conversationally edit and refine the outputs.
@@ -374,5 +374,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-10-13 UTC.
+Last updated 2026-10-14 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
