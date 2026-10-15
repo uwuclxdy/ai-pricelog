@@ -112,7 +112,7 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "9eb4ec737457a1872584de1f23fe1498d642ec2cb49697e74e645f75f9b9db7b",
+      "sha256": "ad108180d693aa7433fefbf6d852bfd09f51c5bb4e925facf7e40f6721be2652",
       "fetched": "2026-09-30"
     }
   },
@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "45f4cb680ef681038d44257ecadaa2903f94ae8e266f3a4f663c4e00dd71ec9d",
+      "sha256": "750401e7b53fc512331cbd8055aab73a9609edefa71b3b26ea4a1e5883fc43a6",
       "fetched": "2026-09-30"
     }
   },
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "4b42b5422bd59bd13736f21478936c20981e058f916abda2c82bba1c94b802d2",
+      "sha256": "4867aa124a0ddbb89cbee7caaede7ab6236396ca7c7987c045d96c340a40d7f0",
       "fetched": "2026-09-30"
     }
   },

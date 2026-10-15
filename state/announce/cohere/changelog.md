@@ -7,8 +7,8 @@ Embed 5 delivers frontier retrieval quality on complex enterprise data, with maj
 Key features Two model variants available: embed-v5.0-pro : Optimized for the highest retrieval quality, particularly for offline indexing and quality-critical retrieval embed-v5.0-fast : Optimized for low latency and high throughput, particularly for interactive search, agent loops, and high-volume query traffic Shared embedding space : Pro and Fast share an embedding space, so a corpus indexed with one model can be queried with the other.
 We recommend indexing with Pro and querying with Fast.
 Multimodal inputs : Embed text, images, and mixed text-and-image inputs (e.g.
-PDF pages) in a single vector Multilingual support : Supports over 100 languages Extended context length : 128k token context window Flexible storage : Matryoshka embeddings in the following dimensions: [256, 512, 768, 1024, 1536, 2048] , with float , int8 , and binary output types Availability Embed 5 is available through the Embed API , as well as Microsoft Foundry and Amazon SageMaker.
-For single-tenant deployment, Embed 5 is also available in Model Vault .
+PDF pages) in a single vector Multilingual support : Supports over 100 languages Extended context length : 128k token context window Flexible storage : Matryoshka embeddings in the following dimensions: [256, 512, 768, 1024, 1536, 2048] , with float , int8 , and binary output types Availability Embed 5 is available through the Embed API , as well as Microsoft Foundry ( Pro , Fast ) and Amazon SageMaker ( Pro , Fast ).
+For single-tenant deployment, Embed 5 is also available in Cohere’s Model Vault .
 For more details, see the model documentation .
 Announcing Cohere's North Small Translate We’re pleased to announce the release of North Small Translate , an open-weights mixture-of-experts model purpose-built for machine translation across more than 50 languages.
 North Small Translate is designed to give researchers, developers, and enterprises flexible ways to evaluate and deploy machine translation while retaining control over their data and infrastructure.

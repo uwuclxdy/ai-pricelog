@@ -5,7 +5,12 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 29 September Isolated Worker Nodes for DigitalOcean Kubernetes (DOKS) are now in general availability .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 30 September Organization owners and admins can now view and adjust resource limits for every team in their organization from the new Resource limits tab of the organization dashboard.
+The tab shows per-resource usage and limits for each team, supports inline edits within each team’s tier maximum, and lets you request increases beyond the maximum on a team’s behalf.
+For more information, see How to Manage Resource Limits for Organization Teams .
+You can now set how long your DigitalOcean session remains active before you need to sign in again.
+On the My Account page , the Session duration setting accepts whole-number values from 1 hour to 30 days and applies to all browsers and devices where you’re signed in.
+29 September Isolated Worker Nodes for DigitalOcean Kubernetes (DOKS) are now in general availability .
 Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
 The Kubernetes API server stays publicly reachable so you can still manage the cluster.
