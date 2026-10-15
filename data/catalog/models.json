@@ -4879,6 +4879,15 @@
       },
       "vendor": "inclusionai"
     },
+    "novita/inclusionai/ling-3.0-flash-sante": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "inclusionai/ling-3.0-flash-sante"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "novita/inclusionai/ling-3.0-flash-vl": {
       "curated": false,
       "sources": {
