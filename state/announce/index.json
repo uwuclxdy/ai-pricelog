@@ -14,7 +14,7 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "504588f55d7be846ed49927ac838a9ceb83409ac7dd98efa9bbf367607cb75e5",
+      "sha256": "1ef6f0de6813c792cffbef9fa91b39a5bc89163db32576c5eddad1811e0c1602",
       "fetched": "2026-10-10"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
@@ -29,7 +29,7 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "edfa0ba5922e4182fb23077f0b26a22fb5c2eb6b29abc85192ea9c47b58219a9",
+      "sha256": "5e274e449b528134ae3f2903ada56ae13de318fa9e70bfd24a230d87d735a6f2",
       "fetched": "2026-10-10"
     }
   },
@@ -98,7 +98,7 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "b118b76f77fe4240117dcf0d5a7ce8acc24c089ac10fd73449cec5ebe4e132bf",
+      "sha256": "f3d3d51ba2551fce3230fc32508e81a44a9d6ee89a4db5b4c56833131fd88ed3",
       "fetched": "2026-10-10"
     }
   },
