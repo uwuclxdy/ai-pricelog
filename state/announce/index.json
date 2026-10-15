@@ -105,8 +105,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "5774ffc43fae80c2676b22655f37befe74be069175b655a1a73cfeceaeacbd88",
-      "fetched": "2026-09-24"
+      "sha256": "3455e0332263e15a91ed7589f5860949bc6492e7fa365062cbfbdb7971a5ad08",
+      "fetched": "2026-09-28"
     }
   },
   "cohere": {
@@ -124,8 +124,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "8194280db08563badebe14e7b053e4bf701eab84325eb301a44a5686d8cb4b2a",
-      "fetched": "2026-09-25"
+      "sha256": "296f737ce6b7a363cbba936efe0d1340527bd9260b1dae6d10f083ba36d4e5cb",
+      "fetched": "2026-09-28"
     }
   },
   "cloudflare": {
