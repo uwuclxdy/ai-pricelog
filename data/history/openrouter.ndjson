@@ -521,6 +521,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-09-25","rates":{"input":0.0675,"output":0.225,"cache_read":0.0375},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B  (free)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-14","rates":{"input":0.2,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:batch","observed_at":"2026-08-29","rates":{"input":0.39,"output":0.97},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:batch","observed_at":"2026-09-18","removed":true,"rates":{"input":0.39,"output":0.97},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B (free)"}}
