@@ -126,15 +126,6 @@
       },
       "vendor": "anthropic"
     },
-    "anthropic/claude-haiku-5-5": {
-      "curated": false,
-      "sources": {
-        "anthropic": [
-          "claude-haiku-5-5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
     "anthropic/claude-mythos-5": {
       "curated": false,
       "sources": {
@@ -185,15 +176,6 @@
       "sources": {
         "anthropic": [
           "claude-sonnet-4-5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
-    "anthropic/claude-sonnet-5-5": {
-      "curated": false,
-      "sources": {
-        "anthropic": [
-          "claude-sonnet-5-5"
         ]
       },
       "vendor": "anthropic"
@@ -440,6 +422,22 @@
       },
       "vendor": "anthropic"
     },
+    "claude-haiku-5-5": {
+      "curated": true,
+      "name": "Claude Haiku 5.5",
+      "sources": {
+        "anthropic": [
+          "claude-haiku-5-5"
+        ],
+        "digitalocean": [
+          "claude-haiku-5.5"
+        ],
+        "openrouter": [
+          "anthropic/claude-haiku-5.5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "claude-opus-4": {
       "curated": true,
       "name": "Claude Opus 4",
@@ -555,6 +553,9 @@
         "anthropic": [
           "claude-opus-5-5"
         ],
+        "digitalocean": [
+          "claude-opus-5.5"
+        ],
         "openrouter": [
           "anthropic/claude-opus-5.5"
         ]
@@ -627,6 +628,22 @@
         ],
         "openrouter": [
           "anthropic/claude-sonnet-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "claude-sonnet-5-5": {
+      "curated": true,
+      "name": "Claude Sonnet 5.5",
+      "sources": {
+        "anthropic": [
+          "claude-sonnet-5-5"
+        ],
+        "digitalocean": [
+          "claude-sonnet-5.5"
+        ],
+        "openrouter": [
+          "anthropic/claude-sonnet-5.5"
         ]
       },
       "vendor": "anthropic"
@@ -1957,15 +1974,6 @@
       },
       "vendor": "anthropic"
     },
-    "digitalocean/claude-haiku-5.5": {
-      "curated": false,
-      "sources": {
-        "digitalocean": [
-          "claude-haiku-5.5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
     "digitalocean/claude-opus-4.8-fast-mode": {
       "curated": false,
       "sources": {
@@ -1984,29 +1992,11 @@
       },
       "vendor": "anthropic"
     },
-    "digitalocean/claude-opus-5.5": {
-      "curated": false,
-      "sources": {
-        "digitalocean": [
-          "claude-opus-5.5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
     "digitalocean/claude-opus-5.5-fast-mode": {
       "curated": false,
       "sources": {
         "digitalocean": [
           "claude-opus-5.5-fast-mode"
-        ]
-      },
-      "vendor": "anthropic"
-    },
-    "digitalocean/claude-sonnet-5.5": {
-      "curated": false,
-      "sources": {
-        "digitalocean": [
-          "claude-sonnet-5.5"
         ]
       },
       "vendor": "anthropic"
@@ -5542,15 +5532,6 @@
       },
       "vendor": "anthropic"
     },
-    "openrouter/anthropic/claude-haiku-5.5": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "anthropic/claude-haiku-5.5"
-        ]
-      },
-      "vendor": "anthropic"
-    },
     "openrouter/anthropic/claude-haiku-5.5:batch": {
       "curated": false,
       "sources": {
@@ -5673,15 +5654,6 @@
       "sources": {
         "openrouter": [
           "anthropic/claude-sonnet-4.6:batch"
-        ]
-      },
-      "vendor": "anthropic"
-    },
-    "openrouter/anthropic/claude-sonnet-5.5": {
-      "curated": false,
-      "sources": {
-        "openrouter": [
-          "anthropic/claude-sonnet-5.5"
         ]
       },
       "vendor": "anthropic"
