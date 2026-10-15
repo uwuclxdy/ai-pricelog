@@ -5,7 +5,12 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 28 September Valkey 9 is now available for database clusters .
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates September 2026 29 September Isolated Worker Nodes for DigitalOcean Kubernetes (DOKS) are now in general availability .
+Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
+Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
+The Kubernetes API server stays publicly reachable so you can still manage the cluster.
+You can enable isolation only when you create a cluster running Kubernetes 1.36 or later.
+28 September Valkey 9 is now available for database clusters .
 New clusters use Valkey 9 by default.
 Valkey 8 remains available for new and existing clusters.
 For version support, see Valkey Limits .
