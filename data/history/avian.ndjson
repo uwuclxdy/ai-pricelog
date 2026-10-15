@@ -53,4 +53,5 @@
 {"schema":4,"source":"avian","model_id":"minimax-m2.5","observed_at":"2026-02-27","rates":{"input":0.3,"output":1.1},"provenance":{"url":"https://github.com/lobehub/lobehub/pull/12497/files"}}
 {"schema":4,"source":"avian","model_id":"minimax-m2.5","observed_at":"2026-05-04","rates":{"input":0.27,"output":1.08,"cache_read":0.15},"limits":{"context":131072},"provenance":{"url":"https://github.com/The-Best-Codes/ai-model-directory/blob/ee95521b/data/providers/avian/models/minimax-minimax-m2-5/index.toml"}}
 {"schema":4,"source":"avian","model_id":"minimax-m2.5","observed_at":"2026-08-26","rates":{"input":0.27,"output":1.08,"cache_read":0.15},"limits":{"context":196000},"provenance":{"url":"https://www.avian.io/pricing"}}
+{"schema":4,"source":"avian","model_id":"minimax-m2.5","observed_at":"2026-10-15","removed":true,"rates":{"input":0.27,"output":1.08,"cache_read":0.15},"limits":{"context":196000}}
 {"schema":4,"source":"avian","model_id":"minimax-m3","observed_at":"2026-10-15","rates":{"input":0.255,"output":1.02,"cache_read":0.051},"limits":{"context":512000},"provenance":{"url":"https://www.avian.io/pricing"}}
