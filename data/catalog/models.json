@@ -9331,6 +9331,15 @@
       },
       "vendor": "meta"
     },
+    "together/muse-spark-open": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "muse-spark-open"
+        ]
+      },
+      "vendor": "meta"
+    },
     "together/nvidia-nemotron-3-ultra": {
       "curated": false,
       "sources": {
