@@ -9,7 +9,10 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 6 October PostgreSQL Advanced Edition clusters now support 20 additional extensions beyond the pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions, including pg_trgm , pgcrypto , citext , and uuid-ossp .
+October 2026 7 October The Cost Analysis tab of the Billing page now includes Serverless Inference Live Usage, which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
+Data refreshes every 10 minutes and covers the last 30 days.
+For more information, see View Serverless Inference Live Usage .
+6 October PostgreSQL Advanced Edition clusters now support 20 additional extensions beyond the pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions, including pg_trgm , pgcrypto , citext , and uuid-ossp .
 You can enable them with CREATE EXTENSION .
 See Supported PostgreSQL Extensions .
 Harness Runtime Bring-Your-Own-Template (BYOT) registration now requires a recommended base template ( codex-base , opencode-base , claude-code-base , hermes-base , or langgraph-base ).
