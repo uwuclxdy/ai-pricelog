@@ -17,9 +17,15 @@ class FetchError(Exception):
 def fetch_text(url: str, headers: dict[str, str] | None = None) -> str:
     if urllib.parse.urlparse(url).scheme not in ("http", "https"):
         raise ValueError(f"url scheme must be http or https: {url!r}")
+    # offer post_handshake_auth (TLS extension 49) as urllib and curl do: www.ai21.com's
+    # Cloudflare challenge answered a GitHub runner 403 without it and 200 with it,
+    # 4/4 rounds each (2026-10-15)
+    ssl_context = httpx.create_ssl_context()
+    if ssl_context.post_handshake_auth is not None:
+        ssl_context.post_handshake_auth = True
     try:
         with httpx.Client(
-            transport=httpx.HTTPTransport(retries=3),
+            transport=httpx.HTTPTransport(retries=3, verify=ssl_context),
             timeout=30.0,
             follow_redirects=True,
             headers=headers,

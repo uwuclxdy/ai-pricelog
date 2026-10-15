@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import ssl
+from pathlib import Path
+
+import certifi
 import httpx
 import pytest
 from bs4 import BeautifulSoup
@@ -56,6 +60,80 @@ def test_fetch_text_does_not_retry_4xx(monkeypatch):
     with pytest.raises(web.FetchError, match="404"):
         web.fetch_text("https://example.com/x")
     assert client.calls == 1
+
+
+@pytest.mark.parametrize("ca_source", ["certifi", "SSL_CERT_FILE", "SSL_CERT_DIR"])
+def test_fetch_text_offers_post_handshake_auth_with_full_verification(
+    monkeypatch, tmp_path, ca_source
+):
+    # one known CA through certifi and SSL_CERT_FILE, and SSL_CERT_DIR handed to
+    # the context, so the transport's context is checked for each of httpx's
+    # trust sources, not only its flags
+    bundle = Path(certifi.where()).read_text()
+    begin = bundle.index("-----BEGIN CERTIFICATE-----")
+    end = bundle.index("-----END CERTIFICATE-----", begin) + len("-----END CERTIFICATE-----")
+    one_ca = tmp_path / "one-ca.pem"
+    one_ca.write_text(bundle[begin:end] + "\n")
+    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    monkeypatch.delenv("SSL_CERT_DIR", raising=False)
+    capath_loads = []
+    real_load = ssl.SSLContext.load_verify_locations
+
+    def recording_load(self, cafile=None, capath=None, cadata=None):
+        capath_loads.append((self, capath))
+        return real_load(self, cafile, capath, cadata)
+
+    monkeypatch.setattr(ssl.SSLContext, "load_verify_locations", recording_load)
+    if ca_source == "certifi":
+        monkeypatch.setattr(certifi, "where", lambda: str(one_ca))
+    elif ca_source == "SSL_CERT_FILE":
+        monkeypatch.setenv("SSL_CERT_FILE", str(one_ca))
+    else:
+        monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
+    contexts = []
+    real_transport = web.httpx.HTTPTransport
+
+    def recording_transport(*args, **kwargs):
+        contexts.append(kwargs.get("verify", args[0] if args else None))
+        return real_transport(*args, **kwargs)
+
+    monkeypatch.setattr(web.httpx, "HTTPTransport", recording_transport)
+    client = _SeqClient([(200, "ok body")])
+    monkeypatch.setattr(web.httpx, "Client", lambda **kwargs: client)
+    assert web.fetch_text("https://example.com/x") == "ok body"
+    assert len(contexts) == 1
+    context = contexts[0]
+    assert isinstance(context, ssl.SSLContext)
+    assert context.post_handshake_auth is True
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname is True
+    if ca_source == "SSL_CERT_DIR":
+        # a capath stays out of get_ca_certs until a handshake looks a CA up
+        # (measured 2026-10-15, CPython 3.12.15 / OpenSSL 3.5.9), so the
+        # directory is bound through the load call itself
+        assert context.get_ca_certs(binary_form=True) == []
+        assert [capath for ctx, capath in capath_loads if ctx is context] == [str(tmp_path)]
+    else:
+        one_ca_der = ssl.PEM_cert_to_DER_cert(bundle[begin:end])
+        assert context.get_ca_certs(binary_form=True) == [one_ca_der]
+
+
+def test_fetch_text_skips_post_handshake_auth_where_the_build_lacks_it(monkeypatch):
+    # a TLS build without post-handshake auth reads the attribute as None, the
+    # case the stdlib's own https context guards: the fetch still goes out
+    class NoPostHandshakeAuth(ssl.SSLContext):
+        @property
+        def post_handshake_auth(self):
+            return None
+
+    monkeypatch.setattr(
+        web.httpx,
+        "create_ssl_context",
+        lambda *args, **kwargs: NoPostHandshakeAuth(ssl.PROTOCOL_TLS_CLIENT),
+    )
+    client = _SeqClient([(200, "ok body")])
+    monkeypatch.setattr(web.httpx, "Client", lambda **kwargs: client)
+    assert web.fetch_text("https://example.com/x") == "ok body"
 
 
 def test_fetch_error_wraps_transport_errors(monkeypatch):
