@@ -4915,6 +4915,15 @@
       },
       "vendor": "inclusionai"
     },
+    "novita/inclusionai/ling-3.1-flash": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "inclusionai/ling-3.1-flash"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "novita/kwaipilot/kat-coder-pro": {
       "curated": false,
       "sources": {
@@ -4995,6 +5004,15 @@
         ]
       },
       "vendor": "sao10k"
+    },
+    "novita/stepfun/step-5-preview": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "stepfun/step-5-preview"
+        ]
+      },
+      "vendor": "stepfun"
     },
     "novita/tencent/hy4-preview": {
       "curated": false,
