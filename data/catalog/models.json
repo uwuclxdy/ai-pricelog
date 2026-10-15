@@ -6885,6 +6885,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/nemotron-3.5-super-vl:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-super-vl:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/switchyard": {
       "curated": false,
       "sources": {
