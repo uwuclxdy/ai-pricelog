@@ -20,12 +20,12 @@
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
       "sha256": "cfd907c398a6499d229e4472ce6978345196f7b5ff343b3dd42fe7ad39089d5e",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
       "sha256": "e6fe7c982c815fd0f03f75600824069c475dd5bcaf8fa2934c4a1bef3ba0f2bc",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
@@ -42,7 +42,7 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "f9365aaa854d609000e42b0fe66dacf9dac4f18ade423edb16c233de5117183f",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "minimax": {
@@ -61,7 +61,7 @@
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
       "sha256": "71e484429d164b71b626f7f14c0462596d96d2233bfc04b474b28838f9952f79",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "mistral": {
@@ -73,21 +73,21 @@
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
       "sha256": "f60273a13c00a3ecfad23d5d16bc83a302db21e25d286f42bc9e2d65601c3f3f",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "be33dabcafc95d9048d32c06e290e1d874b6956f9e28890e07cdbdb93c86fd5b",
-      "fetched": "2026-09-29"
+      "sha256": "88a911714103354725081dfc17ecd25bc307341d37ff0bc460b68ed245e62af5",
+      "fetched": "2026-09-30"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
       "sha256": "f761d955d815e7f345abe9b8e1035dcc7c51badf1ced7ee6f5bfc7566ed268a9",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -99,21 +99,21 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "ae3f52c62b07b047148ba9386ac8bdc273c42f5502fc16648d3029981e4315ac",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "3455e0332263e15a91ed7589f5860949bc6492e7fa365062cbfbdb7971a5ad08",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "4dd90e3af66174b2ae73a7c03d105a96d5f065f474b7e1375793a549a4d8e11a",
-      "fetched": "2026-09-26"
+      "sha256": "9eb4ec737457a1872584de1f23fe1498d642ec2cb49697e74e645f75f9b9db7b",
+      "fetched": "2026-09-30"
     }
   },
   "google": {
@@ -125,7 +125,7 @@
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
       "sha256": "45f4cb680ef681038d44257ecadaa2903f94ae8e266f3a4f663c4e00dd71ec9d",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "cloudflare": {
@@ -139,7 +139,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "b693f0e50657c46eac1a09f32adfdd2d635ef99f0f92472cda64879f78a65853",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "scaleway": {
@@ -151,7 +151,7 @@
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
       "sha256": "f02c8532b81c6bb5d38774259d618e6c7e8232dbde12e77ca81fc859efa04ff0",
-      "fetched": "2026-09-29"
+      "fetched": "2026-09-30"
     }
   },
   "databricks": {

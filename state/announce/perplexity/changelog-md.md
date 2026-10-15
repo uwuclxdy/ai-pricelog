@@ -2,7 +2,9 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **Claude Sonnet 5.5** The Agent API now supports `anthropic/claude-sonnet-5-5`.
+</Tip> <Update label="September 2026" tags={["Agent API", "Models"]}> **GPT-6.1 Sol** The Agent API now supports `openai/gpt-6.1-sol`.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="September 2026" tags={["Agent API", "Models"]}> **Claude Sonnet 5.5** The Agent API now supports `anthropic/claude-sonnet-5-5`.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="September 2026" tags={["Agent API", "Presets", "Models"]}> **xhigh preset uses Claude Opus 5.5** The Agent API `xhigh` preset now uses Claude Opus 5.5: | Preset | Previous model | New model | | - | - | - | | `xhigh` | `openai/gpt-5.6-sol` | `anthropic/claude-opus-5-5` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
 </Update> <Update label="September 2026" tags={["Agent API", "Presets", "Models"]}> **Low, medium, and high presets use GPT-6** The Agent API `low`, `medium`, and `high` presets now use the GPT-6 model family: | Preset | Previous model | New model | | - | - | - | | `low` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `medium` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `high` | `openai/gpt-5.6-sol` | `openai/gpt-6-sol` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
