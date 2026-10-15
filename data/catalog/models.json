@@ -4600,6 +4600,15 @@
       },
       "vendor": "mistral"
     },
+    "mistral/mistral-large-4-0": {
+      "curated": false,
+      "sources": {
+        "mistral": [
+          "mistral-large-4-0"
+        ]
+      },
+      "vendor": "mistral"
+    },
     "mistral/mistral-medium-3-25-05": {
       "curated": false,
       "sources": {

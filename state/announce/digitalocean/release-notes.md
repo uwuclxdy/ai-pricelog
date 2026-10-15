@@ -203,11 +203,6 @@ For setup, see How to Connect to PostgreSQL Database Clusters and Increase TLS V
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-5.6 Sol GPT-5.6 Terra GPT-5.6 Luna For more information, see the Available Models page .
 9 July Ubuntu 25.10 has reached end of life.
 Per our image deprecation policy , this image is available exclusively via the API for the next 30 days before we remove it from our platform.
-8 July DigitalOcean Kubernetes (DOKS) now supports automatic node remediation in public preview .
-DOKS can automatically replace worker nodes that stay unhealthy, based on Kubernetes node conditions and rules you define.
-The Data Plane Operator runs in your cluster, watches node conditions, and replaces a worker when a condition matches your rules for a configured duration.
-You can act on standard kubelet conditions, such as Ready , and on custom conditions you publish from your own health checks.
-You configure remediation by deploying the DataPlaneOperatorConfig and NodeRemediationConfig custom resources to your cluster.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
