@@ -11,8 +11,7 @@ In addition, usage on weekends will be deducted at off-peak rates all day.
 * Discontinued and new plans differ only in how usage is calculated.
 Other benefits will remain aligned.
 </Tip> ## Identify Your Current Plan Sign in and use the table below to identify your current plan and see how this update affects you.
-| Plan type used in this notice | How to identify it | | :------------------------------------- | :---------------------------------------------------------------------------------------- | | Legacy Plan V1 (individual plans only) | [My plan](https://z.ai/manage-apikey/coding-plan/personal/my-plan) shows "Legacy Plan V1" | | Legacy Plan V2 (individual plans only) | [My plan](https://z.ai/manage-apikey/coding-plan/personal/my-plan) shows "Legacy Plan V2" | | Team Plan | [My Plan](https://z.ai/manage-apikey/coding-plan/team/plans) shows “Team Edition” | | No active plan | Your plan has expired,
-or you have not subscribed | ## How This Update Affects You ### 1.
+| Plan type used in this notice | How to identify it | | :- | :- | | Legacy Plan V1 (individual plans only) | [My plan](https://z.ai/manage-apikey/coding-plan/personal/my-plan) shows "Legacy Plan V1" | | Legacy Plan V2 (individual plans only) | [My plan](https://z.ai/manage-apikey/coding-plan/personal/my-plan) shows "Legacy Plan V2" | | Team Plan | [My Plan](https://z.ai/manage-apikey/coding-plan/team/plans) shows “Team Edition” | | No active plan | Your plan has expired, or you have not subscribed | ## How This Update Affects You ### 1.
 If you have a legacy plan V1 * Your current price, benefits, usage limits, and calculation method stay unchanged until the end of the current billing cycle.
 * You cannot switch to the new credits-based plan before your current plan expires.
 After it expires, you can subscribe to a currently available plan.
@@ -49,7 +48,7 @@ If you met the eligibility requirements in the [Legacy Plan Migration Notice](/d
 You can check your quota consumption progress in [Usage Statistics](https://z.ai/manage-apikey/subscription).
 One prompt refers to one query.
 Each prompt is estimated to invoke the model 15–20 times.
-**The monthly available quota is converted based on API pricing, equivalent to approximately 15–30× the monthly subscription fee (weekly caps already factored in).** | Plan Type | 5-Hour Limit (Dynamically refreshed; quota resets 5 hours after consumption) | Weekly Limit (Activated upon subscription; resets every 7 days) | | --------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------- | | Lite Plan | Up to approx.
+**The monthly available quota is converted based on API pricing, equivalent to approximately 15–30× the monthly subscription fee (weekly caps already factored in).** | Plan Type | 5-Hour Limit (Dynamically refreshed; quota resets 5 hours after consumption) | Weekly Limit (Activated upon subscription; resets every 7 days) | | - | - | - | | Lite Plan | Up to approx.
 80 prompts | Up to approx.
 400 prompts | | Pro Plan | Up to approx.
 400 prompts | Up to approx.
