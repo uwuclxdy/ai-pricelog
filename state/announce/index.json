@@ -150,7 +150,7 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "bdf5bdf68e970c6c1ff1de4d6cb04613e7d04fcca1d0343bb443225405e17b46",
+      "sha256": "c2bdec368653c4512eb5641bc90951d2a8d95b7f614a3e7217771a6482c562cb",
       "fetched": "2026-10-02"
     }
   },
