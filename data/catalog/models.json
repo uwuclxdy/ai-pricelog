@@ -9033,6 +9033,24 @@
       },
       "vendor": null
     },
+    "scaleway/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "scaleway": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
+    "scaleway/glm-5.3": {
+      "curated": false,
+      "sources": {
+        "scaleway": [
+          "glm-5.3"
+        ]
+      },
+      "vendor": "zai"
+    },
     "scaleway/lightonocr-3-0.8b": {
       "curated": false,
       "sources": {
