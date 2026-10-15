@@ -832,6 +832,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-08-26","rates":{"input":0.085,"output":0.4},"limits":{"context":1000000},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-09-08","rates":{"input":0.085,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-09-14","rates":{"input":0.08,"output":0.45},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-08","rates":{"input":0.085,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"limits":{"context":512288},"provenance":{"name":"Nemotron 3 Ultra"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-29","rates":{"input":0.5,"output":2.2,"cache_read":0.1},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Ultra"}}
@@ -1262,6 +1263,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-08-31","rates":{"input":0.1,"output":1.1,"cache_read":0.07},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-09-09","rates":{"input":0.09,"output":1.1},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-09-24","rates":{"input":0.1,"output":1.1,"cache_read":0.07},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-10-08","rates":{"input":0.15,"output":1.5},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.2},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-vl-235b-a22b-instruct","observed_at":"2025-12-28","rates":{"input":0.2,"output":1.2},"limits":{"context":262144},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-vl-235b-a22b-instruct","observed_at":"2026-03-13","rates":{"input":0.25,"output":1.5},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=qwen/qwen3-vl-235b-a22b-instruct&shape=v4&range=all"}}
@@ -1295,6 +1297,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-08-29","rates":{"input":0.29,"output":2.4},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-09-10","rates":{"input":0.26,"output":2.08},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-08-26","rates":{"input":0.195,"output":1.56},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-10-08","rates":{"input":0.26,"output":2.6},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-08-26","rates":{"input":0.25,"output":1.25,"cache_read":0.25},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-09-04","rates":{"input":0.08,"output":0.75},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-09-07","rates":{"input":0.3125,"output":1.25,"cache_read":0.15625},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
