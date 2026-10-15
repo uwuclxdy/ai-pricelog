@@ -12,6 +12,11 @@ Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
 October 2026 12 October DigitalOcean Harness Runtime now supports OpenHands agents.
 Run the OpenHands Agent Server in an isolated sandbox, create agents from OpenHands Agent Canvas or the DigitalOcean API, and connect a model such as one from DigitalOcean Serverless Inference.
 To set up an agent, see How to Run an OpenHands Agent on DigitalOcean Harness Runtime .
+Inference Router has been redesigned as a single managed router.
+Send requests to the inference-router model name, optionally with a routing_preference of balanced , budget , or quality , and the router selects the best model for each request.
+Preset routers and the Create Router flow have been removed from the Control Panel.
+Existing custom routers and preset router slugs continue to serve requests.
+For more information, see Use Inference Router .
 Simulation is now available in public preview .
 Simulation tests agent behavior through generated, multi-turn conversations using scenario sets, user simulator models, judge models, and conversational metrics.
 9 October DigitalOcean MicroVMs are available in public preview in MKC1.
@@ -233,19 +238,7 @@ Released v1.164.0 of doctl , the official DigitalOcean CLI.
 This release adds commands for managing Secrets Manager secrets and Network File Storage access points.
 We have updated the following buildpack for App Platform: Node.js buildpack : We added the following Node.js versions and updated the buildpack to version 342 .
 Visit the Node.js buildpack to learn more about specifying a Node.js engine version.
-Node.js 24.15.0 15 July Managed databases are available in Kansas City ( mkc1 ) with limited plan availability.
-Premium AMD plans and General Purpose MongoDB clusters are not available in this region.
-See the regional availability matrix for current coverage by engine.
-The Gradient AI Go Library is deprecated.
-Use the official DigitalOcean Go SDK (Godo) or the DigitalOcean API directly.
-For installation and quickstart examples, see SDK and Client Libraries .
-The Gradient AI Python SDK is deprecated.
-Use the official DigitalOcean Python SDK (PyDo) or the DigitalOcean API directly.
-For installation and quickstart examples, see SDK and Client Libraries .
-The Gradient AI TypeScript SDK is deprecated.
-Use the official DigitalOcean TypeScript SDK (DoTs) or the DigitalOcean API directly.
-For installation and quickstart examples, see SDK and Client Libraries .
-In this article...
+Node.js 24.15.0 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
 Try using different keywords or simplifying your search terms.

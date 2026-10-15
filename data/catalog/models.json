@@ -7813,6 +7813,24 @@
       },
       "vendor": "sao10k"
     },
+    "openrouter/scaledown/extract": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "scaledown/extract"
+        ]
+      },
+      "vendor": "scaledown"
+    },
+    "openrouter/scaledown/summarize": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "scaledown/summarize"
+        ]
+      },
+      "vendor": "scaledown"
+    },
     "openrouter/stealth/ox-alpha": {
       "curated": false,
       "sources": {

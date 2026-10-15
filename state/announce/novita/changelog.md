@@ -10,4 +10,5 @@ Copy page Copy page As we release better and more powerful models, we routinely 
 We plan to take deepseek/deepseek-v4-flash offline at 16:00 UTC on October 9, 2026 .
 At that point, the model will officially be taken out of service, so please complete your migration to the recommended replacement model, deepseek/deepseek-v4.1-flash , before then.
 ​ Affected models Model ID Retirement time Replacement model Notes deepseek/deepseek-v4-flash Oct 9, 2026, 16:00 UTC deepseek/deepseek-v4.1-flash ​ Action required If your application uses the affected model, please migrate to deepseek/deepseek-v4.1-flash before the retirement time.
-Last modified on September 28, 2026 Sandbox Agent Skills Update Next ⌘ I Documentation home page discord github x Community Discord Support Resources Pricing Models Agent Skill Company Novita AI Console discord github x Powered by This documentation is built and hosted on Mintlify, a developer documentation platform
+Last modified on September 28, 2026 Sandbox Agent Skills Update Next ⌘ I Documentation home page discord github x Community Discord Support Resources Pricing Models Agent Skill Company Novita AI Console discord github x Powered by This documentation is built and hosted on Mintlify, a developer documentation platform Assistant Responses are generated using AI and may contain mistakes.
+Contact support

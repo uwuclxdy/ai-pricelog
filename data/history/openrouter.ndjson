@@ -1409,6 +1409,8 @@
 {"schema":4,"source":"openrouter","model_id":"sao10k/l3.1-euryale-70b","observed_at":"2026-08-26","rates":{"input":0.85,"output":0.85},"limits":{"context":131072},"provenance":{"name":"Llama 3.1 Euryale 70B v2.2"}}
 {"schema":4,"source":"openrouter","model_id":"sao10k/l3.3-euryale-70b","observed_at":"2025-09-22","rates":{"input":0.65,"output":0.75},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"sao10k/l3.3-euryale-70b","observed_at":"2026-08-26","rates":{"input":0.65,"output":0.75},"limits":{"context":131072},"provenance":{"name":"Llama 3.3 Euryale 70B"}}
+{"schema":4,"source":"openrouter","model_id":"scaledown/extract","observed_at":"2026-10-13","rates":{"input":0.04,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Extract"}}
+{"schema":4,"source":"openrouter","model_id":"scaledown/summarize","observed_at":"2026-10-13","rates":{"input":0.04,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Summarize"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-20","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"url":"https://tech.yahoo.com/ai/articles/mystery-ai-model-ox-alpha-121212892.html"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"name":"Ox Alpha"}}
 {"schema":4,"source":"openrouter","model_id":"stealth/ox-alpha","observed_at":"2026-08-29","removed":true}

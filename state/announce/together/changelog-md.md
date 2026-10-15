@@ -1,5 +1,20 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="October 2, 2026" tags={["New models", "Improvements"]}> ## New provisioned throughput models The following models are now available on [provisioned throughput](/docs/inference/provisioned-throughput): * `zai-org/GLM-5.3`.
+# Changelog <Update label="October 13, 2026" tags={["New releases"]}> ## Post-training Post-training lets you write your own training loop and run it against Together AI GPUs.
+Your code builds each batch and chooses the loss function and learning rate, while the GPUs you provision run the forward and backward passes, optimizer steps, and sampling.
+It bills per GPU-minute.
+Write a loop with the Python SDK (`together.post_training`, version 2.41.0 or later), or start from a recipe in the [post-training cookbook](/docs/post-training/cookbook).
+**What's included:** * **Three training methods:** [Supervised fine-tuning (SFT)](/docs/post-training/sft), [direct preference optimization (DPO)](/docs/post-training/dpo), and [reinforcement learning with group relative policy optimization (GRPO)](/docs/post-training/grpo).
+Each method trains a low-rank adapter (LoRA) or the full model weights.
+* **[Custom loss functions](/docs/post-training/custom-loss-functions):** Train with any objective you compute in PyTorch from the model's log-probabilities.
+* **[Multi-turn environments](/docs/post-training/multi-turn-environments):** Train tool-use agents with GRPO over whole episodes.
+* **[Several adapters on one base model](/docs/post-training/multi-lora):** Attach several LoRA sessions to one model resource, so a hyperparameter sweep costs one base model's GPU time.
+* **[Multi-LoRA deployment](/docs/post-training/multi-lora-deployment):** Attach trained adapters to one dedicated deployment of their base model, then name an adapter in each request to compare them.
+* **[Prepare for FP4 inference](/docs/post-training/prepare-for-fp4-inference):** Merge a LoRA adapter into GLM-5.3 or Kimi-K3 and quantize the result to FP4 for dedicated model inference.
+* **[Tinker compatibility](/docs/post-training/migrate-from-tinker):** Run a Tinker training script on post-training by changing its import line and, if needed, its base model.
+* **[CLI commands](/reference/cli/training):** Together CLI 2.41.0 adds `tg training` to list model resources, sessions, and checkpoints and to run FP4 preparation jobs.
+`tg beta endpoints deploy` adds `--attach-adapter` and `--merge` for deploying a trained adapter.
+See [Post-training](/docs/post-training/overview) for details.
+</Update> <Update label="October 2, 2026" tags={["New models", "Improvements"]}> ## New provisioned throughput models The following models are now available on [provisioned throughput](/docs/inference/provisioned-throughput): * `zai-org/GLM-5.3`.
 * `zai-org/GLM-5.3-Flash`.
 * `deepseek-ai/DeepSeek-V4.1-Flash`.
 ## Dynamic rate limits for serverless retired Serverless no longer applies dynamic rate limits that scale with your recent traffic.
