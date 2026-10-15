@@ -1655,6 +1655,15 @@
       },
       "vendor": "nvidia"
     },
+    "deepinfra/nvidia-nemotron-3.5-super-vl": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "nvidia-nemotron-3.5-super-vl"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "deepinfra/qwen2.5-72b-instruct": {
       "curated": false,
       "sources": {
