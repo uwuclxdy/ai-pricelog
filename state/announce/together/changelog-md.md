@@ -21,12 +21,23 @@ Earlier versions, including the 1.x SDK, use the model's maximum rank instead, w
 Upgrade to 2.36.0 or set `lora_r` yourself, especially if you [continue training](/docs/fine-tuning/lora-vs-full#continue-training-from-a-checkpoint) from a rank-64 adapter, where the rank has to match.
 In the console, the rank field now starts at the model's default rank (64 on most models) instead of 8.
 See [Supported models](/docs/fine-tuning/supported-models) for each model's default and maximum rank.
+## Longer fine-tuning context for Qwen 27B models `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.6-27B`, and `Qwen/Qwen3.5-27B` now support a 131,072-token context for SFT (up from 32,768) and 65,536 for DPO (up from 16,384), for both LoRA and full fine-tuning.
+Batch size limits have also changed: LoRA jobs on these models run at a batch size of 2, down from 16, and the maximum DPO batch size for full fine-tuning drops from 16 to 8.
+See [Supported models](/docs/fine-tuning/supported-models) for each model's limits.
+## Batch API files are now retained for 7 days The input file you upload for a batch job, along with the output and error files the job produces, are now retained for 7 days.
+After that the files are no longer accessible, so download your results before the window closes.
+Reusing an uploaded input file across batch jobs also works only within that window.
+See [Batch inference](/docs/inference/batch/overview#data-retention).
 </Update> <Update label="September 24, 2026" tags={["Improvements"]}> ## Deploy a fine-tuned model by its registry name Since Together CLI version `2.24.0`, `tg beta endpoints deploy` accepts a completed fine-tuning job's `model_object_name`, the qualified `<project_slug>/<model_name>` registry name, in place of its `model_object_id`.
 The CLI resolves the name to the same model, so you can deploy straight from the name shown in the [fine-tuning jobs dashboard](https://api.together.ai/jobs).
 The SDK and API take `model_object_id`.
 See [Deploy a fine-tuned model](/docs/fine-tuning/deployment).
 </Update> <Update label="September 23, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `together/Tev1-4B-experimental`: 32,768 context length.
 Pricing: \$0.042 input / free output (per 1M tokens).
+</Update> <Update label="September 22, 2026" tags={["Pricing"]}> ## Pricing update The following models have lower pricing, effective September 22, 2026.
+All usage from that date forward is billed at the new rates (per 1M tokens): * `Qwen/Qwen3.7-Max`: \$2.50 → \$1.50 (input), \$7.50 → \$4.50 (output).
+* `Qwen/Qwen3.8-Flash`: \$0.15 → \$0.09 (input), \$0.47 → \$0.282 (output).
+See [Serverless models](/docs/serverless/models) for the full pricing catalog.
 </Update> <Update label="September 16, 2026" tags={["New releases"]}> ## Automatic idle shutdown for dedicated deployments Deployments can now stop themselves when they go unused.
 Set an inactivity timeout with `--inactive-timeout` (the `inactiveTimeout` field in the management API), and if the deployment serves no inference requests for that many minutes, it scales to zero replicas, releasing its hardware and stopping billing.
 See [Automatic idle shutdown](/docs/dedicated-endpoints/scaling#automatic-idle-shutdown).
@@ -780,7 +791,7 @@ The platform-wide \$5 credit purchase is the only gate.
 DCI lets you containerize, deploy, and scale custom models on Together AI.
 * [Blog post](https://www.together.ai/blog/dedicated-container-inference).
 * [Documentation](/docs/dedicated-container-inference).
-* [Getting started](/docs/containers-quickstart#example-guides).
+* [Getting started](/docs/containers-quickstart#tutorials).
 </Update> <Update label="February 6, 2026" tags={["Deprecations"]}> ## Model deprecations The following models have been deprecated and are no longer available: * `togethercomputer/m2-bert-80M-32k-retrieval`.
 * `Salesforce/Llama-Rank-V1`.
 * `togethercomputer/Refuel-Llm-V2`.

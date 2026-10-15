@@ -14,6 +14,8 @@ Add $5 to $500 at a time or turn on auto-reload from the Billing page.
 Funds do not expire.
 You can also pay for eligible usage at a discount with a monthly plan, now in public preview .
 See Inference and Agents Balance and How to Pay for Harness Runtime .
+DigitalOcean Insights is now available in public preview , providing dashboards, metrics, logs, traces, and metric alerts for supported DigitalOcean resources and regions.
+For more information, see DigitalOcean Insights .
 September 2026 30 September You can no longer install extensions on PostgreSQL Advanced Edition clusters with CREATE EXTENSION .
 The pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions remain available.
 To request another extension, contact support .
@@ -45,6 +47,8 @@ A Droplet created before 2 October 2024, or one using a custom base image, needs
 Manage subnets and routes using the DigitalOcean API.
 The Control Panel does not support them yet.
 See How to Manage VPC Subnets and How to Manage Routes .
+DigitalOcean Insights is now enabled by default when you create a new DigitalOcean Managed Agents resource.
+Insights is in private preview .
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6 Sol GPT-6 Luna For more information, see the Available Models page .
 21 September Managed Agents is now available in public preview for all users.
@@ -58,10 +62,16 @@ This includes DigitalOcean-maintained tools such as Web Search, Web Fetch, Brows
 Teams can also extend the catalog with their own MCP servers and internal tools.
 17 September PostgreSQL Advanced Edition and MySQL Advanced Edition managed database clusters are now generally available .
 To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clusters or How to Create MySQL Database Clusters .
+16 September DigitalOcean Insights now supports exploring and querying metrics in private preview .
+You can explore, filter, compare, and save metrics to dashboards.
+For more information, see How to Explore and Query Metrics .
 14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
 10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
 See How to Create Regional Load Balancers and How to Manage Regional Load Balancers .
 Global load balancers do not support firewall rules, and DigitalOcean Kubernetes (DOKS)-managed load balancers continue to use Kubernetes service configuration.
+DigitalOcean Insights now supports tracing in private preview .
+You can search, filter, and inspect traces and spans for supported resources and regions.
+For more information, see How to View Traces .
 9 September DigitalOcean Kubernetes (DOKS) now supports Spot GPU node pools in public preview .
 You can run worker nodes on interruptible Spot GPU capacity for AMD Instinct MI350X and MI355X and NVIDIA B300 GPUs, at a lower, variable rate than on-demand GPU nodes.
 Spot GPU node pools work with the cluster autoscaler, and you can pair them with an on-demand GPU node pool as a configurable fallback.
@@ -142,6 +152,8 @@ New clusters use OpenSearch 2.19 by default.
 Kafka versions 3.9 and 4.1 are now available for database clusters .
 New clusters use Kafka 4.1 by default.
 For version support and Kafka 3.8 end of availability, see Kafka Limits .
+DigitalOcean Insights is now available in private preview with custom dashboards, metrics, logs, and metric alerts for supported resources and regions.
+For more information, see DigitalOcean Insights features .
 28 July DigitalOcean Kubernetes (DOKS) now includes an optional peer-to-peer OCI registry plugin in public preview .
 The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
