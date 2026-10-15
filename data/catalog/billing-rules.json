@@ -184,6 +184,57 @@
       "citation": [
         "https://docs.perplexity.ai/docs/resources/changelog.md"
       ]
+    },
+    {
+      "id": "novita-deepseek-v4-flash-retirement-2026-10-09",
+      "provider": "novita",
+      "effective": "2026-10-09",
+      "timezone": "UTC",
+      "statement": "Novita retires the deepseek/deepseek-v4-flash large language model at 16:00 UTC on 2026-10-09, taking it offline and out of service; migrate to the recommended replacement model, deepseek/deepseek-v4.1-flash, before the cutoff",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
+    },
+    {
+      "id": "mistral-zai-glm-5-2-retirement-2026-10-31",
+      "provider": "mistral",
+      "effective": "2026-10-31",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-09-29 entry deprecates Z.ai GLM 5.2 (zai-glm-5-2), which retires on 2026-10-31; use Z.ai GLM 5.3 (zai-glm-5-3) instead, at the same price. the page names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.mistral.ai/resources/changelogs"
+      ]
+    },
+    {
+      "id": "mistral-large-4-intro-2026-10-06",
+      "provider": "mistral",
+      "effective": "2026-10-06",
+      "timezone": "UTC",
+      "statement": "Mistral Large 4 (mistral-large-4) is available in Public Preview from 2026-10-06 (the changelog entry's date), with launch pricing of 50% off for 2 weeks. the changelog states no rates and no end date; the derived end is 2026-10-20, 2 weeks from the 2026-10-06 launch. the page names no timezone; UTC is the recorded frame. the index stores the in-force launch rates: the pricing page's Mistral Large 4 row links the model card mistral-large-4-0 (the changelog's mistral-large-4) and shows sale prices at half its struck-through original prices, and the index's 2026-10-06 mistral-large-4-0 row carries those sale prices",
+      "citation": [
+        "https://docs.mistral.ai/resources/changelogs",
+        "https://docs.mistral.ai/inference/pricing"
+      ]
+    },
+    {
+      "id": "google-gemini-3.7-flash-3.5-flash-deprecation-2026-10-08",
+      "provider": "google",
+      "effective": "2026-10-08",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-10-08 entry deprecates gemini-3.7-flash (replaced by gemini-3.8-flash) and gemini-3.5-flash (replaced by gemini-3.6-flash): neither is available to select in Google AI Studio any longer, and API requests to gemini-3.7-flash are automatically routed to gemini-3.8-flash, API requests to gemini-3.5-flash to gemini-3.6-flash; the entry says to update the model string from gemini-3.7-flash to gemini-3.8-flash and from gemini-3.5-flash to gemini-3.6-flash (or gemini-3.8-flash). it names no shutdown date for either model, no price for the routed requests and no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
+    },
+    {
+      "id": "google-gemini-3.1-flash-image-deprecation-2026-10-06",
+      "provider": "google",
+      "effective": "2026-10-06",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-10-06 entry deprecates gemini-3.1-flash-image; migrate to gemini-nano-banana-2.1. the entry first announced a 2026-10-29 shutdown (page updated 2026-10-06), then withdrew the date (page updated 2026-10-07): it now reads 'deprecated (no shutdown date announced)', so no shutdown date stands. the entry names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
     }
   ]
 }
