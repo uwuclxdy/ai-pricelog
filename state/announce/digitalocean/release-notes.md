@@ -14,7 +14,11 @@ MicroVMs are lightweight virtual machines that run a container image in its own 
 You can checkpoint a MicroVM to start new MicroVMs from a warmed-up state, and run commands or open a console in it with doctl or the API.
 For more information, see DigitalOcean MicroVMs .
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Haiku 5.5 For more information, see the Available Models page .
-8 October When you upgrade an existing DigitalOcean Kubernetes (DOKS) cluster to version 1.37 or later, DOKS automatically enables the CoreDNS Cluster Proportional Autoscaler (CPA) plugin if CoreDNS is still running the default of two replicas.
+8 October DigitalOcean Signals is now available in public preview for Harness Runtime agents and Serverless Inference.
+Signals detects behavioral signals in conversations, such as a user asking for a human, a failed tool call, or an execution loop, so you can find the conversations that went wrong without reading every transcript.
+Signals collects data only after you opt in.
+See Use Signals with Harness Runtime and Use Signals with Serverless Inference .
+When you upgrade an existing DigitalOcean Kubernetes (DOKS) cluster to version 1.37 or later, DOKS automatically enables the CoreDNS Cluster Proportional Autoscaler (CPA) plugin if CoreDNS is still running the default of two replicas.
 If you have manually changed the CoreDNS replica count, DOKS leaves it as is, and you can enable CPA yourself.
 CPA is already enabled by default on new clusters running Kubernetes 1.36 or later.
 For more information, see How to Configure CoreDNS Autoscaling .
