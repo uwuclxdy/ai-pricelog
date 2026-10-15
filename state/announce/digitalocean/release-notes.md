@@ -163,10 +163,6 @@ DOKS can automatically replace worker nodes that stay unhealthy, based on Kubern
 The Data Plane Operator runs in your cluster, watches node conditions, and replaces a worker when a condition matches your rules for a configured duration.
 You can act on standard kubelet conditions, such as Ready , and on custom conditions you publish from your own health checks.
 You configure remediation by deploying the DataPlaneOperatorConfig and NodeRemediationConfig custom resources to your cluster.
-2 July DigitalOcean Kubernetes (DOKS) now runs a node readiness controller in public preview .
-The controller watches node conditions and holds NoSchedule taints on nodes until required components, including GPU drivers on GPU nodes, report healthy, which prevents pods from scheduling onto nodes that are not yet ready.
-DOKS deploys and manages the controller automatically.
-For GPU node pools, you can also customize which GPU health metrics gate scheduling, without redeploying any components.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
