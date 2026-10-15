@@ -8361,6 +8361,15 @@
       },
       "vendor": "perplexity"
     },
+    "perplexity/nemotron-3.5-super-120b-a12b": {
+      "curated": false,
+      "sources": {
+        "perplexity": [
+          "nemotron-3.5-super-120b-a12b"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "perplexity/sonar-medium-online": {
       "curated": false,
       "sources": {
