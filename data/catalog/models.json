@@ -5164,6 +5164,15 @@
       },
       "vendor": "openai"
     },
+    "openai/gpt-6.1-sol": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-6.1-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openai/gpt-image-1": {
       "curated": false,
       "sources": {
