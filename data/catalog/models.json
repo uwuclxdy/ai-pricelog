@@ -6426,6 +6426,15 @@
       },
       "vendor": "meta"
     },
+    "openrouter/meta/muse-spark-open": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "meta/muse-spark-open"
+        ]
+      },
+      "vendor": "meta"
+    },
     "openrouter/meta/muse-wonder": {
       "curated": false,
       "sources": {
