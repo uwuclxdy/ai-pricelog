@@ -14,8 +14,15 @@ Add $5 to $500 at a time or turn on auto-reload from the Billing page.
 Funds do not expire.
 You can also pay for eligible usage at a discount with a monthly plan, now in public preview .
 See Inference and Agents Balance and How to Pay for Harness Runtime .
+The DigitalOcean API now supports querying Insights metrics and logs and managing alert rules and notification channels in public preview .
+For available operations and endpoint details, see the DigitalOcean Insights API Reference .
 DigitalOcean Insights is now available in public preview , providing dashboards, metrics, logs, traces, and metric alerts for supported DigitalOcean resources and regions.
 For more information, see DigitalOcean Insights .
+The Agent Development Kit (ADK), including the gradient-adk Python package and the gradient CLI, is deprecated.
+You cannot deploy any new agents with ADK.
+Agents already deployed with ADK continue to run normally and you are billed for model usage.
+If you are using a DigitalOcean-hosted model, you are charged for those model keys .
+Migration guidance and end-of-support timeline will be published in the future.
 September 2026 30 September You can no longer install extensions on PostgreSQL Advanced Edition clusters with CREATE EXTENSION .
 The pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions remain available.
 To request another extension, contact support .
@@ -23,7 +30,7 @@ See Supported PostgreSQL Extensions .
 Organization owners and admins can now view and adjust resource limits for every team in their organization from the new Resource limits tab of the organization dashboard.
 The tab shows per-resource usage and limits for each team, supports inline edits within each team’s tier maximum, and lets you request increases beyond the maximum on a team’s behalf.
 For more information, see How to Manage Resource Limits for Organization Teams .
-The following OpenAI model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : GPT-6.1 Sol For more information, see the Available Models page .
+The following OpenAI model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit: GPT-6.1 Sol For more information, see the Available Models page .
 You can now set how long your DigitalOcean session remains active before you need to sign in again.
 On the My Account page , the Session duration setting accepts whole-number values from 1 hour to 30 days and applies to all browsers and devices where you’re signed in.
 29 September Isolated Worker Nodes for DigitalOcean Kubernetes (DOKS) are now in general availability .
@@ -31,12 +38,18 @@ Every worker node in an isolated cluster runs without a public IPv4 address, so 
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
 The Kubernetes API server stays publicly reachable so you can still manage the cluster.
 You can enable isolation only when you create a cluster running Kubernetes 1.36 or later.
+v1.175.0 of doctl , the official DigitalOcean CLI, removes the doctl gradient command.
+The doctl gradient agent commands are deprecated with no CLI replacement.
+To manage agents, use the control panel or API .
+The doctl gradient knowledge-base commands are deprecated and will be removed in a future release.
+Use doctl knowledge-base instead.
+To list models, regions, and OpenAI keys, use the doctl serverless-inference commands.
 28 September Valkey 9 is now available for database clusters .
 New clusters use Valkey 9 by default.
 Valkey 8 remains available for new and existing clusters.
 For version support, see Valkey Limits .
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Claude Sonnet 5.5 For more information, see the Available Models page .
-25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit : Nemotron 3 Diarization For more information, see the Available Models page .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit: Claude Sonnet 5.5 For more information, see the Available Models page .
+25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit: Nemotron 3 Diarization For more information, see the Available Models page .
 23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
 22 September VPC subnets and routes are now in public preview .
 Subnets let you add IP ranges to an existing VPC network, and resources in a VPC’s subnets can reach each other.
@@ -49,7 +62,7 @@ The Control Panel does not support them yet.
 See How to Manage VPC Subnets and How to Manage Routes .
 DigitalOcean Insights is now enabled by default when you create a new DigitalOcean Managed Agents resource.
 Insights is in private preview .
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5.5 For more information, see the Available Models page .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Opus 5.5 For more information, see the Available Models page .
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6 Sol GPT-6 Luna For more information, see the Available Models page .
 21 September Managed Agents is now available in public preview for all users.
 Managed Agents is a set of services that gives every agent its own microVM execution environment and governed tool access so that developers can scale agentic work without having to build and maintain infrastructure themselves.
@@ -65,7 +78,7 @@ To create an Advanced Edition cluster, see How to Create PostgreSQL Database Clu
 16 September DigitalOcean Insights now supports exploring and querying metrics in private preview .
 You can explore, filter, compare, and save metrics to dashboards.
 For more information, see How to Explore and Query Metrics .
-14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
+14 September The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : DeepSeek V4.1 Flash For more information, see the Available Models page .
 10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
 See How to Create Regional Load Balancers and How to Manage Regional Load Balancers .
 Global load balancers do not support firewall rules, and DigitalOcean Kubernetes (DOKS)-managed load balancers continue to use Kubernetes service configuration.
@@ -78,7 +91,7 @@ Spot GPU node pools work with the cluster autoscaler, and you can pair them with
 For supported GPU shapes, regions, pricing, and behavior, see Spot GPU node pools .
 8 September The following models are deprecated from DigitalOcean Inference as of 8 September 2026: Kimi K2.5 GLM 5 GLM-5.1 Nemotron-3-Super-120B (Public Preview) Migrate Kimi K2.5 to Kimi K3 ( kimi-k3 ), GLM 5 and GLM-5.1 to GLM-5.3 ( glm-5.3 ), and Nemotron-3-Super-120B (Public Preview) to Nemotron 3 Ultra ( nemotron-3-ultra-550b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
-4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GPT-6 Astra For more information, see the Available Models page .
+4 September The following OpenAI model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GPT-6 Astra For more information, see the Available Models page .
 1 September DigitalOcean Kubernetes (DOKS) now supports Isolated Worker Nodes in public preview .
 Every worker node in an isolated cluster runs without a public IPv4 address, so nodes are removed from the public internet at the network level rather than only protected by a firewall.
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
@@ -88,9 +101,9 @@ The peer-to-peer OCI registry plugin for DigitalOcean Kubernetes (DOKS) is now i
 The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
 The plugin is disabled by default and is available on clusters running Kubernetes 1.36 or later.
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Fable 5.1 For more information, see the Available Models page .
-August 2026 28 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GLM-5.3 For more information, see the Available Models page .
-27 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : GLM-5.3 Flash For more information, see the Available Models page .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Fable 5.1 For more information, see the Available Models page .
+August 2026 28 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 For more information, see the Available Models page .
+27 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 Flash For more information, see the Available Models page .
 25 August v5 Droplet configurations are now available in the atl1 , ric1 , mkc1 , and mem1 datacenters.
 They run on 5th Generation AMD EPYC processors for higher per-core performance and let you size compute, memory, storage, and networking independently.
 Choose Shared for shared vCPUs or General Purpose for dedicated vCPUs.
@@ -109,11 +122,11 @@ You can opt out of prompt caching for supported models with X-Model-Affinity: no
 For more information, see Use Prompt Caching .
 18 August The following open-source models are deprecated from DigitalOcean Inference as of 18 August 2026: Llama 3.3 Instruct-70B DeepSeek R1 Distill Llama 70B Qwen3-32B Qwen3 Coder Flash Migrate Llama 3.3 Instruct-70B to Llama 4 Maverick 17B 128E Instruct ( llama-4-maverick ), DeepSeek R1 Distill Llama 70B to DeepSeek V4 Flash ( deepseek-4-flash ), and Qwen3-32B and Qwen3 Coder Flash to Qwen 3.5 397B A17B ( qwen3.5-397b-a17b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
-14 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4 Pro 0813 For more information, see the Available Models page .
+14 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : DeepSeek V4 Pro 0813 For more information, see the Available Models page .
 13 August DigitalOcean Kubernetes (DOKS) now supports Dynamic Resource Allocation (DRA) drivers for NVIDIA and AMD GPU node pools in public preview , starting with DOKS 1.36.3-do.0 .
 DRA is an opt-in alternative to the managed GPU device plugins.
 Workloads that already request GPUs with extended resources such as nvidia.com/gpu or amd.com/gpu continue to work without changes after switching to DRA.
-12 August The following Alibaba model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Qwen3.8-2.4T-A95B For more information, see the Available Models page .
+12 August The following Alibaba model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Qwen3.8-2.4T-A95B For more information, see the Available Models page .
 Cloud Security Posture Management (CSPM) paid plans support Managed Rules, which let you enable or disable CSPM rules for your entire team.
 To exclude specific resources while keeping a rule enabled for the rest of the team, suppress findings for those resources.
 For more information, see How to Manage Rules and How to Suppress Findings .
@@ -129,7 +142,7 @@ DigitalOcean Container Registry (DOCR) now provides mirror registries: DigitalOc
 You can pull nvidia/pytorch and rocm/pytorch images from a region-local mirror using standard Docker tooling, or use SOCI lazy loading to start containers in seconds while image layers stream on demand.
 DOCR also supports pushing your own SOCI-enabled images to your registry.
 For details, see How to Pull AI Images from DOCR Mirror Registries and How to Push SOCI-Enabled Images to Your Container Registry .
-6 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : DeepSeek V4 Flash 0731 For more information, see the Available Models page .
+6 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : DeepSeek V4 Flash 0731 For more information, see the Available Models page .
 DigitalOcean has patched “Safe RET” across our AMD Droplet fleet.
 We applied the fix at the infrastructure level, and no customer action is required.
 For more information, see AMD’s security bulletin, AMD-SB-7061 .
@@ -158,8 +171,8 @@ For more information, see DigitalOcean Insights features .
 The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
 The plugin is disabled by default and is available on new clusters running Kubernetes 1.36 or later.
-27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit , and agents : Kimi K3 For more information, see the Available Models page .
-24 July The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Opus 5 For more information, see the Available Models page .
+27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit, and agents : Kimi K3 For more information, see the Available Models page .
+24 July The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Opus 5 For more information, see the Available Models page .
 23 July The following OpenAI model is deprecated from DigitalOcean Inference as of 23 July 2026: GPT-5.1-Codex-Max Migrate to GPT-5.3-Codex ( openai-gpt-5.3-codex ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 We now support prompt caching for Gemma 4 for serverless inference.
