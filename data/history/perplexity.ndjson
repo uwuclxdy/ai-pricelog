@@ -11,11 +11,14 @@
 {"schema":4,"source":"perplexity","model_id":"sonar","observed_at":"2025-01-22","rates":{"input":1.0,"output":1.0},"provenance":{"url":"https://web.archive.org/web/20250122000752/https://docs.perplexity.ai/guides/pricing"}}
 {"schema":4,"source":"perplexity","model_id":"sonar","observed_at":"2026-09-29","rates":{"input":0.25,"output":2.5,"cache_read":0.0625},"provenance":{"url":"https://docs.perplexity.ai/docs/agent-api/models"}}
 {"schema":4,"source":"perplexity","model_id":"sonar-deep-research","observed_at":"2025-03-10","rates":{"input":2.0,"output":8.0},"provenance":{"url":"https://web.archive.org/web/20250310074932/https://docs.perplexity.ai/guides/pricing"}}
+{"schema":4,"source":"perplexity","model_id":"sonar-deep-research","observed_at":"2026-10-15","removed":true,"rates":{"input":2.0,"output":8.0}}
 {"schema":4,"source":"perplexity","model_id":"sonar-medium-online","observed_at":"2024-03-01","rates":{"input":0.0,"output":1.8},"provenance":{"url":"https://web.archive.org/web/20240301094711/https://docs.perplexity.ai/docs/pricing"}}
 {"schema":4,"source":"perplexity","model_id":"sonar-medium-online","observed_at":"2026-08-27","removed":true}
 {"schema":4,"source":"perplexity","model_id":"sonar-pro","observed_at":"2025-01-22","rates":{"input":3.0,"output":15.0},"provenance":{"url":"https://web.archive.org/web/20250122000752/https://docs.perplexity.ai/guides/pricing"}}
+{"schema":4,"source":"perplexity","model_id":"sonar-pro","observed_at":"2026-10-15","removed":true,"rates":{"input":3.0,"output":15.0}}
 {"schema":4,"source":"perplexity","model_id":"sonar-reasoning","observed_at":"2025-02-06","rates":{"input":1.0,"output":5.0},"provenance":{"url":"https://web.archive.org/web/20250206032157/https://docs.perplexity.ai/guides/pricing"}}
 {"schema":4,"source":"perplexity","model_id":"sonar-reasoning","observed_at":"2026-08-27","removed":true}
 {"schema":4,"source":"perplexity","model_id":"sonar-reasoning-pro","observed_at":"2025-02-06","rates":{"input":2.0,"output":8.0},"provenance":{"url":"https://web.archive.org/web/20250206032157/https://docs.perplexity.ai/guides/pricing"}}
+{"schema":4,"source":"perplexity","model_id":"sonar-reasoning-pro","observed_at":"2026-10-15","removed":true,"rates":{"input":2.0,"output":8.0}}
 {"schema":4,"source":"perplexity","model_id":"sonar-small-online","observed_at":"2024-03-01","rates":{"input":0.0,"output":0.28},"provenance":{"url":"https://web.archive.org/web/20240301094711/https://docs.perplexity.ai/docs/pricing"}}
 {"schema":4,"source":"perplexity","model_id":"sonar-small-online","observed_at":"2026-08-28","removed":true}
