@@ -72,8 +72,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "5857199f45b0e940af3de9e1226c699412f99b6fc411de0a535407ef2d6c0b37",
-      "fetched": "2026-10-14"
+      "sha256": "80cf13565c50beac391b32804724492983699b2c87039a11d603f3c9a6bddf04",
+      "fetched": "2026-10-15"
     }
   },
   "perplexity": {
@@ -86,8 +86,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "e6f944cf4e18d7cde52db5c80133a2b9d55a8ee54ebc2ef70679b96cda300d05",
-      "fetched": "2026-10-14"
+      "sha256": "9194a2e64ceb5b732c22e8f6fb3e7e0b767d06eb30ca35455210ff142ea756c2",
+      "fetched": "2026-10-15"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
