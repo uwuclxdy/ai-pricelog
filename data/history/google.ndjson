@@ -65,6 +65,7 @@
 {"schema":4,"source":"google","model_id":"gemini-embedding-001","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-embedding-001","observed_at":"2026-09-18","removed":true,"rates":{"input":0.15,"output":0.0}}
 {"schema":4,"source":"google","model_id":"gemini-embedding-2","observed_at":"2026-08-29","rates":{"input":0.2,"output":0.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
+{"schema":4,"source":"google","model_id":"gemini-nano-banana-2.1","observed_at":"2026-10-06","rates":{"input":1.5,"output":7.5},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-omni-1.1-flash","observed_at":"2026-08-29","rates":{"input":1.5,"output":9.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-omni-flash-preview","observed_at":"2026-08-29","rates":{"input":1.5,"output":9.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-robotics-er-1.5-preview","observed_at":"2025-12-06","rates":{"input":0.3,"output":2.5},"provenance":{"url":"https://arquivo.pt/wayback/20251206141435/https://ai.google.dev/gemini-api/docs/pricing"}}

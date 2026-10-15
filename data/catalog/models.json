@@ -3277,6 +3277,15 @@
       },
       "vendor": "google"
     },
+    "google/gemini-nano-banana-2.1": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-nano-banana-2.1"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-omni-1.1-flash": {
       "curated": false,
       "sources": {
