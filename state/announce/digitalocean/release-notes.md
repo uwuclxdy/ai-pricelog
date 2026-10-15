@@ -9,6 +9,11 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
+October 2026 1 October You can now prepay for Serverless Inference and Managed Agents with the Inference and Agents balance, which no other products draw from.
+Add $5 to $500 at a time or turn on auto-reload from the Billing page.
+Funds do not expire.
+You can also pay for eligible usage at a discount with a monthly plan, now in public preview .
+See Inference and Agents Balance and How to Pay for Harness Runtime .
 September 2026 30 September You can no longer install extensions on PostgreSQL Advanced Edition clusters with CREATE EXTENSION .
 The pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions remain available.
 To request another extension, contact support .
