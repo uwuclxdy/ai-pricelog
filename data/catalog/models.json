@@ -2370,6 +2370,15 @@
       },
       "vendor": "nvidia"
     },
+    "digitalocean/nvidia-nemotron-3.5-super-vl": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "nvidia-nemotron-3.5-super-vl"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "digitalocean/o3-fast-mode": {
       "curated": false,
       "sources": {
