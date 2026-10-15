@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 12 October DigitalOcean Harness Runtime now supports OpenHands agents.
+October 2026 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
+12 October DigitalOcean Harness Runtime now supports OpenHands agents.
 Run the OpenHands Agent Server in an isolated sandbox, create agents from OpenHands Agent Canvas or the DigitalOcean API, and connect a model such as one from DigitalOcean Serverless Inference.
 To set up an agent, see How to Run an OpenHands Agent on DigitalOcean Harness Runtime .
 Inference Router has been redesigned as a single managed router.

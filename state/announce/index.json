@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "55e0845f09f6845c545160039f8f3ef3b63533b042d6c1d9da776b9f72cd2fb6",
+      "sha256": "b6535414edf9f0672927c9df6f280c575ab018e58730872834407bd5cc2707ff",
       "fetched": "2026-10-15"
     }
   },
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "cc949ba15d17e356a9c3fa4f59ca5683120e1ab16dd82734193714b21fca560f",
-      "fetched": "2026-10-14"
+      "sha256": "ed95009c7a45a5e0434471a892cd03d5f1e82a9d86887fee89424b7144c3ce21",
+      "fetched": "2026-10-15"
     }
   },
   "scaleway": {
