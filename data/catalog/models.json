@@ -675,6 +675,15 @@
       },
       "vendor": "aisingapore"
     },
+    "cloudflare/@cf/daily-co/phonellm-mini-alpha-2": {
+      "curated": false,
+      "sources": {
+        "cloudflare": [
+          "@cf/daily-co/phonellm-mini-alpha-2"
+        ]
+      },
+      "vendor": "daily-co"
+    },
     "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b": {
       "curated": false,
       "sources": {
