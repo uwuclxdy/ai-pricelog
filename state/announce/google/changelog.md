@@ -8,6 +8,9 @@ Home Gemini API Docs Send feedback Release notes This page documents updates to 
 October 8, 2026 Gemini 3.7 Flash deprecation : gemini-3.7-flash is deprecated and has been replaced by gemini-3.8-flash .
 All requests to gemini-3.7-flash are automatically routed to gemini-3.8-flash .
 Update your model string to gemini-3.8-flash and review the Gemini 3.8 Flash guide .
+Gemini 3.5 Flash deprecation : gemini-3.5-flash is deprecated and has been replaced by gemini-3.6-flash .
+All requests to gemini-3.5-flash are automatically routed to gemini-3.6-flash .
+Update your model string to gemini-3.6-flash (or gemini-3.8-flash ) and review the Gemini 3.6 Flash guide .
 Deep Research Agent deep-research-pro-preview-12-2025 deprecation : The deep-research-pro-preview-12-2025 agent is deprecated and will be shut down on October 23, 2026 .
 Migrate your requests to one of the newer Deep Research agent versions: deep-research-preview-04-2026 : Designed for speed and efficiency, ideal to be streamed back to a client UI.
 deep-research-max-preview-04-2026 : Maximum comprehensiveness for automated context gathering and synthesis.
