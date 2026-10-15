@@ -126,6 +126,15 @@
       },
       "vendor": "anthropic"
     },
+    "anthropic/claude-haiku-5-5": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-haiku-5-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "anthropic/claude-mythos-5": {
       "curated": false,
       "sources": {
