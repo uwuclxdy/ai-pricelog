@@ -9,7 +9,12 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 9 October DigitalOcean MicroVMs are available in public preview in MKC1.
+October 2026 12 October DigitalOcean Harness Runtime now supports OpenHands agents.
+Run the OpenHands Agent Server in an isolated sandbox, create agents from OpenHands Agent Canvas or the DigitalOcean API, and connect a model such as one from DigitalOcean Serverless Inference.
+To set up an agent, see How to Run an OpenHands Agent on DigitalOcean Harness Runtime .
+Simulation is now available in public preview .
+Simulation tests agent behavior through generated, multi-turn conversations using scenario sets, user simulator models, judge models, and conversational metrics.
+9 October DigitalOcean MicroVMs are available in public preview in MKC1.
 MicroVMs are lightweight virtual machines that run a container image in its own kernel, pause automatically when idle, and resume on the next request with memory, files, and processes intact.
 You can checkpoint a MicroVM to start new MicroVMs from a warmed-up state, and run commands or open a console in it with doctl or the API.
 For more information, see DigitalOcean MicroVMs .
