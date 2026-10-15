@@ -1,5 +1,14 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="September 24, 2026" tags={["New releases", "Improvements"]}> ## TogetherLink beta TogetherLink runs coding agents such as Claude Code and Codex, plus the Claude and ChatGPT desktop apps, on models hosted by Together AI.
+# Changelog <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train LoRA adapters with a rank of up to 128 for the majority of models, up from 64.
+The default rank for these models stays at 64, so set `lora_r` to use a higher one.
+The [model limits](/reference/get-fine-tunes-models-limits) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
+Run [`tg fine-tuning model-limits <model>`](/reference/cli/finetune#model-limits) to see both values for a model.
+Version 2.36.0 of the Together CLI and Python SDK uses the default rank when you don't set `lora_r`.
+Earlier versions, including the 1.x SDK, use the model's maximum rank instead, which is now 128 on these models.
+Upgrade to 2.36.0 or set `lora_r` yourself, especially if you [continue training](/docs/fine-tuning/lora-vs-full#continue-training-from-a-checkpoint) from a rank-64 adapter, where the rank has to match.
+In the console, the rank field now starts at the model's default rank (64 on most models) instead of 8.
+See [Supported models](/docs/fine-tuning/supported-models) for each model's default and maximum rank.
+</Update> <Update label="September 24, 2026" tags={["New releases", "Improvements"]}> ## TogetherLink beta TogetherLink runs coding agents such as Claude Code and Codex, plus the Claude and ChatGPT desktop apps, on models hosted by Together AI.
 It's now in beta, with automatic model routing, cost tracking, and a headless mode.
 By default, sessions use the auto router, which sends straightforward requests to Together AI models and more difficult requests to Claude Opus.
 Your normal agent configuration is untouched: ```bash theme={null} # Install TogetherLink curl -fsSL https://link.together.ai/install | bash # Open the interactive launcher togetherlink # Or pin a session to one model togetherlink --main moonshotai/Kimi-K3 claude ``` See [TogetherLink](/docs/togetherlink) for more details.

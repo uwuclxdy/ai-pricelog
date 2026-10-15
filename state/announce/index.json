@@ -48,13 +48,13 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "fc6ad056901b0d8054655bb1b615cd3d89907a5497c05fee187e25e56094ddc1",
-      "fetched": "2026-09-03"
+      "sha256": "f9542763825bdfa6c751f38f7ec46e2fa5db65dd980772b78e30117579c79b92",
+      "fetched": "2026-09-30"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "892c617d1d8c8a2122ee38f460f021349dcf22d36ffbc9acd070f11d77a04261",
-      "fetched": "2026-09-03"
+      "sha256": "441d679737d3275ad5d6bafaeb7e75cb5cd6a1534e9e10e8c7fb8f5440fd8030",
+      "fetched": "2026-09-30"
     }
   },
   "xai": {
@@ -67,8 +67,8 @@
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "716dc61fe38fe038e082b6b5396df1e597131caffc4f8f463bf8cf7ca19fa996",
-      "fetched": "2026-09-03"
+      "sha256": "b4f9341a305c72686ababa814ce18afa28993b30a26f1a6072d172c6e60b297d",
+      "fetched": "2026-09-30"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "f761d955d815e7f345abe9b8e1035dcc7c51badf1ced7ee6f5bfc7566ed268a9",
+      "sha256": "26e67e9f7ebcf3459cb3c153ff0bf24e9015d110b3ef357ac497b328a3bca8f1",
       "fetched": "2026-09-30"
     },
     "https://www.together.ai/blog/rss.xml": {
