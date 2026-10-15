@@ -6687,6 +6687,24 @@
       },
       "vendor": "mistralai"
     },
+    "openrouter/moondream/moondream3-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "moondream/moondream3-preview"
+        ]
+      },
+      "vendor": "moondream"
+    },
+    "openrouter/moondream/moondream3.1-9b-a2b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "moondream/moondream3.1-9b-a2b"
+        ]
+      },
+      "vendor": "moondream"
+    },
     "openrouter/moonshotai/kimi-k2": {
       "curated": false,
       "sources": {
