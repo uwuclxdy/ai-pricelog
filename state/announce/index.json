@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "26e67e9f7ebcf3459cb3c153ff0bf24e9015d110b3ef357ac497b328a3bca8f1",
+      "sha256": "23ee4cd0675153e582fe256009d0ea86ef94555928fe0c900fed652229048f19",
       "fetched": "2026-09-30"
     },
     "https://www.together.ai/blog/rss.xml": {
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "4867aa124a0ddbb89cbee7caaede7ab6236396ca7c7987c045d96c340a40d7f0",
+      "sha256": "f4af17b2d96c0bd6aff217bf2d26662e8c59c1a1ffffdf2a47bf29a9c64bea16",
       "fetched": "2026-09-30"
     }
   },
