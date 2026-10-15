@@ -57,6 +57,7 @@
 {"schema":4,"source":"together","model_id":"muse-glimmer-30b","observed_at":"2026-08-26","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-28","removed":true}
+{"schema":4,"source":"together","model_id":"nvidia-nemotron-3.5-super-vl","observed_at":"2026-10-15","rates":{"input":0.15,"output":0.5,"cache_read":0.02},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2025-09-17","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://arquivo.pt/wayback/20250917033000id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2025-12-27","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://arquivo.pt/wayback/20251227224619id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2026-08-26","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://www.together.ai/pricing"}}

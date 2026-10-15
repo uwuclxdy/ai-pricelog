@@ -9332,6 +9332,15 @@
       },
       "vendor": "nvidia"
     },
+    "together/nvidia-nemotron-3.5-super-vl": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "nvidia-nemotron-3.5-super-vl"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "together/qwen2.5-7b-instruct-turbo": {
       "curated": false,
       "sources": {
