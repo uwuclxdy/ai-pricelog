@@ -98,8 +98,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "e2b8baa04fae38ceb481e651004d9b1a37041f64c74717cc8fa769c7ac41ae4c",
-      "fetched": "2026-09-24"
+      "sha256": "ae3f52c62b07b047148ba9386ac8bdc273c42f5502fc16648d3029981e4315ac",
+      "fetched": "2026-09-28"
     }
   },
   "fireworks": {
