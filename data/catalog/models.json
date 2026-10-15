@@ -360,6 +360,15 @@
       },
       "vendor": "moonshot"
     },
+    "baseten/nemotron-35-super-vl": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "nemotron-35-super-vl"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "baseten/nvidia-nemotron-ultra": {
       "curated": false,
       "sources": {
