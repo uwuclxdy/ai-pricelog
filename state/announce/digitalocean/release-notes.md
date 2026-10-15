@@ -162,19 +162,6 @@ You configure remediation by deploying the DataPlaneOperatorConfig and NodeRemed
 The controller watches node conditions and holds NoSchedule taints on nodes until required components, including GPU drivers on GPU nodes, report healthy, which prevents pods from scheduling onto nodes that are not yet ready.
 DOKS deploys and manages the controller automatically.
 For GPU node pools, you can also customize which GPU health metrics gate scheduling, without redeploying any components.
-1 July DigitalOcean Managed Weaviate is now in public preview and enabled for all users.
-Weaviate is a fully managed vector database for retrieval-augmented generation and semantic search workloads.
-Create clusters from the Vector Databases page , the /v2/vector-databases API , or doctl vector-databases .
-Select Weaviate as the engine and review the public preview disclaimer and legal terms in the create flow.
-For setup, limits, and pricing, see Managed Weaviate .
-Claude Fable 5 is available again on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents .
-For more information, see the Available Models page .
-Prompt caching for open-source models in serverless inference chat completions and responses API is now in public preview .
-Open-source models cache context automatically, so you do not need to set the cache_control or prompt_cache_retention parameters.
-Prompt caching is available for the following open-source models: DeepSeek V3.2 DeepSeek V4 Pro DeepSeek V4 Flash Kimi K2.5 Kimi K2.6 GLM 5 GLM-5.1 GLM-5.2 gpt-oss-120b MiMo V2.5 MiMo V2.5 Pro MiniMax M2.5 Qwen 3.5 Qwen3 Coder Flash For more information, see Use Prompt Caching .
-The Ubuntu 26.04 LTS ( ubuntu-26-04-x64 ) base image is now available in the control panel and via the API.
-Invoice and Billing Insights CSV files now include a tag_name column that lists the tags applied to each resource.
-Tag information is included only for resource usage on or after 1 July 2026.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
