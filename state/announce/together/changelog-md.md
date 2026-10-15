@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="October 13, 2026" tags={["New releases"]}> ## Post-training Post-training lets you write your own training loop and run it against Together AI GPUs.
+# Changelog <Update label="October 15, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `nvidia/NVIDIA-Nemotron-3.5-Super-VL`: 262,144 context length, NVFP4 quantization, image input, function calling, and structured outputs.
+Pricing: \$0.15 input / \$0.50 output / \$0.02 cached input (per 1M tokens).
+</Update> <Update label="October 13, 2026" tags={["New releases"]}> ## Post-training Post-training lets you write your own training loop and run it against Together AI GPUs.
 Your code builds each batch and chooses the loss function and learning rate, while the GPUs you provision run the forward and backward passes, optimizer steps, and sampling.
 It bills per GPU-minute.
 Write a loop with the Python SDK (`together.post_training`, version 2.41.0 or later), or start from a recipe in the [post-training cookbook](/docs/post-training/cookbook).

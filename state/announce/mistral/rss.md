@@ -1,4 +1,5 @@
-Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Introducing Mistral Large 4 https://mistral.ai/news/mistral-large-4/ https://mistral.ai/news/mistral-large-4/ Hallo, Deutschland!
+Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Introducing Timestral https://mistral.ai/news/timestral/ https://mistral.ai/news/timestral/ State-of-the-art probabilistic forecasting in four sizes (5M–209M params), CPU-efficient, zero-shot ready.
+Introducing Mistral Large 4 https://mistral.ai/news/mistral-large-4/ https://mistral.ai/news/mistral-large-4/ Hallo, Deutschland!
 https://mistral.ai/news/hallo-deutschland/ https://mistral.ai/news/hallo-deutschland/ Mistral opens a Munich hub for Physics AI and Industrial AI research, partnering with German industry.
 Mistral and Mozilla are bringing open, private and multilingual AI to your web browser https://mistral.ai/news/mistral-x-mozilla/ https://mistral.ai/news/mistral-x-mozilla/ Open, private and multilingual AI is coming to your web browser.
 Mistral and Mozilla team up to put powerful, trustworthy AI where you already browse.
