@@ -60,7 +60,7 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "f9bb83c263c3f7dfe8c0a591dadf55c62495128135ec234bf362b8655c41b578",
+      "sha256": "b1e07a6538dfb9974dc6757a166ccc5b3b9cb9ff6c8f7d4cd0cd0d7f87acfdb3",
       "fetched": "2026-10-09"
     }
   },
@@ -119,7 +119,7 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "3c8b93ac8100eeb29e02b8d11c49db3f6bde1f59e6b21fff8991742b3996953a",
+      "sha256": "32603e2ebd54df6bfc0a8165ca5d5a224f4370ac48b9860b1e6d780dcf7b6b0f",
       "fetched": "2026-10-09"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "4069427338399907178dfd8dcdc221ed39266b7f086c5a9d13a58729b5b4aa29",
+      "sha256": "7544ee2b94c5d362cbf96b5d497220f7d34818fcd38f6d7096e10188060a5985",
       "fetched": "2026-10-09"
     }
   },

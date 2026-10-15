@@ -13,6 +13,7 @@ October 2026 9 October DigitalOcean MicroVMs are available in public preview in 
 MicroVMs are lightweight virtual machines that run a container image in its own kernel, pause automatically when idle, and resume on the next request with memory, files, and processes intact.
 You can checkpoint a MicroVM to start new MicroVMs from a warmed-up state, and run commands or open a console in it with doctl or the API.
 For more information, see DigitalOcean MicroVMs .
+The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Haiku 5.5 For more information, see the Available Models page .
 8 October When you upgrade an existing DigitalOcean Kubernetes (DOKS) cluster to version 1.37 or later, DOKS automatically enables the CoreDNS Cluster Proportional Autoscaler (CPA) plugin if CoreDNS is still running the default of two replicas.
 If you have manually changed the CoreDNS replica count, DOKS leaves it as is, and you can enable CPA yourself.
 CPA is already enabled by default on new clusters running Kubernetes 1.36 or later.

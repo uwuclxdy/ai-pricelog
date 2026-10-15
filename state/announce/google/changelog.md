@@ -5,7 +5,10 @@ engineering Logs and datasets Get started with logs Data logging and sharing Saf
 Try out LearnLM Troubleshooting Access for Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 3.8 Flash is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
-October 8, 2026 Deep Research Agent deep-research-pro-preview-12-2025 deprecation : The deep-research-pro-preview-12-2025 agent is deprecated and will be shut down on October 23, 2026 .
+October 8, 2026 Gemini 3.7 Flash deprecation : gemini-3.7-flash is deprecated and has been replaced by gemini-3.8-flash .
+All requests to gemini-3.7-flash are automatically routed to gemini-3.8-flash .
+Update your model string to gemini-3.8-flash and review the Gemini 3.8 Flash guide .
+Deep Research Agent deep-research-pro-preview-12-2025 deprecation : The deep-research-pro-preview-12-2025 agent is deprecated and will be shut down on October 23, 2026 .
 Migrate your requests to one of the newer Deep Research agent versions: deep-research-preview-04-2026 : Designed for speed and efficiency, ideal to be streamed back to a client UI.
 deep-research-max-preview-04-2026 : Maximum comprehensiveness for automated context gathering and synthesis.
 To migrate, update the agent parameter in your interactions.create requests from deep-research-pro-preview-12-2025 to deep-research-preview-04-2026 (or deep-research-max-preview-04-2026 ).
