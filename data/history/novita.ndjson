@@ -17,13 +17,18 @@
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1","observed_at":"2025-08-21","rates":{"input":0.55,"output":1.66},"provenance":{"url":"https://blogs.novita.ai/deepseek-v3-1-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1","observed_at":"2025-09-11","rates":{"input":0.27,"output":1.0},"provenance":{"url":"https://usagepricing.com/blueprint/novita-ai"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1","observed_at":"2026-08-26","rates":{"input":0.27,"output":1.0,"cache_read":0.135},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1","observed_at":"2026-10-15","removed":true,"rates":{"input":0.27,"output":1.0,"cache_read":0.135},"limits":{"context":131072}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1-terminus","observed_at":"2025-09-22","rates":{"input":0.27,"output":1.0},"provenance":{"url":"https://blogs.novita.ai/deepseek-v3-1-terminus-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1-terminus","observed_at":"2026-08-26","rates":{"input":0.27,"output":1.0,"cache_read":0.135},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.1-terminus","observed_at":"2026-10-15","removed":true,"rates":{"input":0.27,"output":1.0,"cache_read":0.135},"limits":{"context":131072}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.2","observed_at":"2026-08-26","rates":{"input":0.269,"output":0.4,"cache_read":0.1345},"limits":{"context":163840},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.2","observed_at":"2026-10-15","removed":true,"rates":{"input":0.269,"output":0.4,"cache_read":0.1345},"limits":{"context":163840}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.2-exp","observed_at":"2025-10-03","rates":{"input":0.27,"output":0.41},"provenance":{"url":"https://usagepricing.com/blueprint/novita-ai"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.2-exp","observed_at":"2026-08-26","rates":{"input":0.27,"output":0.41},"limits":{"context":163840},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v3.2-exp","observed_at":"2026-10-15","removed":true,"rates":{"input":0.27,"output":0.41},"limits":{"context":163840}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-04-26","rates":{"input":0.14,"output":0.28,"cache_read":0.028},"provenance":{"url":"https://blogs.novita.ai/deepseek-v4-flash-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.28,"cache_read":0.028},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-10-15","removed":true,"rates":{"input":0.14,"output":0.28,"cache_read":0.028},"limits":{"context":1048576}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-26","rates":{"input":0.44,"output":1.32,"cache_read":0.028},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash-vision-exp","observed_at":"2026-08-31","rates":{"input":0.44,"output":1.32,"cache_read":0.028},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-v4-flash-vision-exp","observed_at":"2026-10-15","removed":true,"rates":{"input":0.44,"output":1.32,"cache_read":0.028},"limits":{"context":1048576}}
@@ -98,6 +103,7 @@
 {"schema":4,"source":"novita","model_id":"openai/gpt-oss-120b","observed_at":"2026-08-26","rates":{"input":0.05,"output":0.25},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"openai/gpt-oss-20b","observed_at":"2025-08-05","rates":{"input":0.05,"output":0.2},"provenance":{"url":"https://blogs.novita.ai/gpt-oss-on-novita-ai/"}}
 {"schema":4,"source":"novita","model_id":"openai/gpt-oss-20b","observed_at":"2026-08-26","rates":{"input":0.04,"output":0.15},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"openai/gpt-oss-20b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.04,"output":0.15},"limits":{"context":131072}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen-2.5-72b-instruct","observed_at":"2026-08-29","rates":{"input":0.38,"output":0.4},"limits":{"context":32000},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen-2.5-72b-instruct","observed_at":"2026-10-15","removed":true,"rates":{"input":0.38,"output":0.4},"limits":{"context":32000}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen-mt-plus","observed_at":"2026-08-26","rates":{"input":0.25,"output":0.75},"limits":{"context":16384},"provenance":{"url":"https://novita.ai/pricing"}}
@@ -121,6 +127,7 @@
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-coder-next","observed_at":"2026-10-15","removed":true,"rates":{"input":0.2,"output":1.5},"limits":{"context":262144}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2025-09-11","rates":{"input":0.15,"output":1.5},"provenance":{"url":"https://blogs.novita.ai/qwen3-next-80b-a3b-on-novita/"}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.5},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-10-15","removed":true,"rates":{"input":0.15,"output":1.5},"limits":{"context":131072}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2025-09-11","rates":{"input":0.15,"output":1.5},"provenance":{"url":"https://blogs.novita.ai/qwen3-next-80b-a3b-on-novita/"}}
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"novita","model_id":"qwen/qwen3-vl-235b-a22b-instruct","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.5},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
