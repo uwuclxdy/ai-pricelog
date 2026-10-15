@@ -170,28 +170,6 @@ Prompt caching is available for the following open-source models: DeepSeek V3.2 
 The Ubuntu 26.04 LTS ( ubuntu-26-04-x64 ) base image is now available in the control panel and via the API.
 Invoice and Billing Insights CSV files now include a tag_name column that lists the tags applied to each resource.
 Tag information is included only for resource usage on or after 1 July 2026.
-June 2026 30 June DigitalOcean Managed Valkey database clusters now support custom CNAME records, allowing clients to connect through your own hostname instead of the default *.db.ondigitalocean.com address.
-Custom CNAMEs are available through the API when creating clusters or when updating an existing cluster, and apply to the public network connection only.
-For more information, see Configure Custom CNAMEs for Valkey .
-Private Droplets are now generally available in all regions.
-Private Droplets have no public network interface and no public IP address, using VPC-only networking with automatic integration with VPC NAT gateway, VPC peering, and VPC private DNS.
-See the Private Droplets documentation for setup instructions and limitations.
-The following agent evaluation metrics are deprecated and should no longer be used: Tone Retrieved Chunk Usage Prompt Perplexity Use the currently supported metrics listed in Agent Evaluation Metrics instead.
-To monitor deployed agent behavior outside of evaluations, use Agent Metrics and Runtime Logs .
-The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit , and agents : Claude Sonnet 5 For more information, see the Available Models page .
-Agent evaluations support for the Agent Development Kit (ADK), previously in preview, is now removed.
-To evaluate agents, use agent evaluations via the DigitalOcean Control Panel for supported agent types.
-To monitor ADK agent behavior, use Agent Metrics and Runtime Logs .
-Insights, agent tracing, and conversation logs are deprecated for all agents, including agents created through the Control Panel, CLI, API, and Agent Development Kit (ADK).
-To monitor deployed agent behavior, use Agent Metrics and Runtime Logs instead.
-The Agent Evaluations MCP server tool has been renamed to Evaluations .
-Custom metrics are now available for DigitalOcean Evaluations .
-You can define your own metrics to evaluate model behavior against criteria specific to your use case.
-DigitalOcean Evaluations is now generally available.
-Use Evaluations to create test cases, run evaluation datasets, and measure model performance against selected metrics.
-Presets are now available for DigitalOcean Evaluations .
-You can save and reuse evaluation configurations, including the candidate model, system prompt, hyperparameters, judge model, and metrics.
-Model Evaluations is now renamed to DigitalOcean Evaluations .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
