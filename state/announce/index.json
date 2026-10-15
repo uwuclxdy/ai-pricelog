@@ -60,7 +60,7 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "71e484429d164b71b626f7f14c0462596d96d2233bfc04b474b28838f9952f79",
+      "sha256": "8d7204a501b691c2392e5a94c02bee4e2988893a880c09db4029727fbc02d7b1",
       "fetched": "2026-10-02"
     }
   },
@@ -105,7 +105,7 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "e427d36608827509a3a14c7821d24f3614a34393fa692e455322dd4f784f80b3",
+      "sha256": "14d21c50178a36b626f24c5ce47892dcfdf76d067ce946ad887819a44ac71914",
       "fetched": "2026-10-02"
     }
   },
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "33659abc46f5a1919deeaeb668145bb30f07934b523beaa123dadeaf870f2e50",
+      "sha256": "3ee122a834cac84751e7a9c5057d5c735ddbd1154a442bdaf6cd44df9abe7384",
       "fetched": "2026-10-02"
     }
   },

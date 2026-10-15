@@ -1,8 +1,12 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation Nexus API & SDK Reference CLI Reference Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy page ​
-2026-10-01 Training ​ Managed RFT is paused; try RL on the Training API Managed reinforcement fine-tuning (RFT) is paused.
+⌘ K Changelog On this page 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Copy page Copy
+page ​ 2026-10-02 Inference ​ Higher serverless rate limits for Small models We increased the adaptive rate-limit ceilings for Small serverless models and expanded the Small tier to cover models with less than 600B total parameters .
+The Small tier now has these ceilings: Total Prompt TPM: 108M Uncached Prompt TPM: 27M Generated TPM: 1.08M This applies to Small-tier serverless models such as GLM 5.3 Flash , DeepSeek V4.1 Flash , and OpenAI GPT OSS 120B .
+Medium and Large model ceilings are unchanged.
+See Serverless rate limits for the full tier table.
+​ 2026-10-01 Training ​ Managed RFT is paused; try RL on the Training API Managed reinforcement fine-tuning (RFT) is paused.
 Managed Training no longer accepts new RFT jobs from the Fireworks UI, firectl , or the REST API.
 Existing jobs stay visible in your dashboard, and models you already trained with managed RFT keep serving.
 Try RL on the Training API , where you write the rollout and training loop yourself and Fireworks runs the GPUs.
@@ -75,8 +79,8 @@ See Deployment Tags for commands, REST examples, validation rules, and migration
 It’s built for complex coding and long-horizon agents.
 See the training model catalog for current availability.
 ​ 2026-09-01 Inference ​ Serverless rate limit ceilings now scale by model size Serverless adaptive rate limit ceilings now vary by model size tier.
-Smaller models (< 400B parameters) get higher ceilings; medium models (400B – < 1.6T) get intermediate ceilings; large models (≥ 1.6T) keep the previous base ceilings.
-See Serverless rate limits for tier thresholds and ceiling values.
+Smaller models get higher ceilings, medium models get intermediate ceilings, and large models use lower ceilings.
+See Serverless rate limits for current tier thresholds and ceiling values.
 ​ 2026-08-30 Training ​ New Serverless Training models: DeepSeek V4 Flash 0731, Qwen 3.8 27B, and Muse Glimmer 30B The following models are now available for LoRA workloads on the shared Serverless Training pool: DeepSeek V4 Flash 0731 with up to 262K context Qwen 3.8 27B with up to 128K context Muse Glimmer 30B with up to 128K context See the Serverless Training guide for setup and the training model catalog for current availability.
 ​ 2026-08-27 Inference ​ Serverless deprecation: MiniMax M2.7, GPT OSS 20B, Kimi K2.6 Turbo/Fast, Kimi K2.7 Code Fast, DeepSeek V4 Pro The following models are deprecated from serverless effective August 27, 2026.
 ​ Recommended migrations MiniMax M2.7 — migrate to MiniMax M3 GPT OSS 20B — migrate to GPT OSS 120B or Qwen3 8B for lower-latency workloads Kimi K2.6 Turbo / Fast — migrate to Kimi K2.6 (standard mode) Kimi K2.7 Code Fast — migrate to Kimi K2.7 Code (standard mode) DeepSeek V4 Pro — migrate to DeepSeek V4 Pro (0813) ​ 2026-08-26 Training ​ Serverless Training deprecation: Qwen 3.5 9B and Qwen 3.6 27B Qwen 3.5 9B and Qwen 3.6 27B are deprecated from Serverless Training effective August 26, 2026.

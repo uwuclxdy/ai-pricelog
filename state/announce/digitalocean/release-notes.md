@@ -38,10 +38,11 @@ Every worker node in an isolated cluster runs without a public IPv4 address, so 
 Outbound traffic, including node provisioning and container image pulls, routes through a VPC NAT Gateway, and other resources in the same VPC reach the nodes over private addresses.
 The Kubernetes API server stays publicly reachable so you can still manage the cluster.
 You can enable isolation only when you create a cluster running Kubernetes 1.36 or later.
-v1.175.0 of doctl , the official DigitalOcean CLI, removes the doctl gradient command.
-The doctl gradient agent commands are deprecated with no CLI replacement.
+Released v1.175.0 of doctl , the official DigitalOcean CLI.
+This release deprecates the doctl gradient commands.
+doctl gradient agent commands have no CLI replacement.
 To manage agents, use the control panel or API .
-The doctl gradient knowledge-base commands are deprecated and will be removed in a future release.
+doctl gradient knowledge-base commands work but will be removed in a future release.
 Use doctl knowledge-base instead.
 To list models, regions, and OpenAI keys, use the doctl serverless-inference commands.
 28 September Valkey 9 is now available for database clusters .
