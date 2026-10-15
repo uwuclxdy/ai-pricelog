@@ -15,22 +15,22 @@
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
       "sha256": "504588f55d7be846ed49927ac838a9ceb83409ac7dd98efa9bbf367607cb75e5",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
       "sha256": "dbf18ad462d94d5109a76f3408a95951d630a6eb5c516128aaef9ab60fbdb8e2",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
       "sha256": "d4f846ad64eaf36c274fce82bc0ae05c48f5ab3b9a395dee4616ac61824c3197",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
       "sha256": "c5b4c5f73c6526324955a83954c94a0fd1386ea9b7caa9d4439ae3b1526a4780",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "moonshot": {
@@ -42,90 +42,90 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "f9365aaa854d609000e42b0fe66dacf9dac4f18ade423edb16c233de5117183f",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
       "sha256": "abe33120b938c3e4eaa03c1de08940c13bd339ff0e6428cc6102688ec43cced2",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
       "sha256": "441d679737d3275ad5d6bafaeb7e75cb5cd6a1534e9e10e8c7fb8f5440fd8030",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
       "sha256": "8d7204a501b691c2392e5a94c02bee4e2988893a880c09db4029727fbc02d7b1",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "b4f9341a305c72686ababa814ce18afa28993b30a26f1a6072d172c6e60b297d",
-      "fetched": "2026-10-06"
+      "sha256": "8ce8d95e9aec0b63d48c7205f9ea34296539960e30a3a6f037abec3e3b4f9a28",
+      "fetched": "2026-10-07"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
       "sha256": "916e4a1a949dd56180b1520538d048ba137a05a31c625b3e0d9193c180e8c21d",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "dc20b84ae1d76fe01c797ca6aee1cdbe94837afeaeaca516442d493ca38a114c",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "3cd25f0ecdfc706952906781f390599863bedacc392ac1c524938c520897f37e",
-      "fetched": "2026-10-06"
+      "sha256": "9dcaed849b9ff7801c3f4f202b2199f984a647447236b93900b092a66abc5d2f",
+      "fetched": "2026-10-07"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "75ea9609adad1d22877297352895761f300224fac0f5a7953073b35b22318c16",
-      "fetched": "2026-10-06"
+      "sha256": "75e4432b06f835ac077762af3e58a95b392452aee4b8073e601faee4b7fcb92d",
+      "fetched": "2026-10-07"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "ae3f52c62b07b047148ba9386ac8bdc273c42f5502fc16648d3029981e4315ac",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "14d21c50178a36b626f24c5ce47892dcfdf76d067ce946ad887819a44ac71914",
-      "fetched": "2026-10-06"
+      "fetched": "2026-10-07"
     }
   },
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "ad108180d693aa7433fefbf6d852bfd09f51c5bb4e925facf7e40f6721be2652",
-      "fetched": "2026-10-06"
+      "sha256": "4363231cdf2cbbae2734d362399b46d7323a3fd16174824ea5fb4dc2bf23d506",
+      "fetched": "2026-10-07"
     }
   },
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "069ec6fe65577ba282da11ec8ab026952709faaafc0c0369e8936083d8c401ea",
-      "fetched": "2026-10-06"
+      "sha256": "07ffde0a6b13856122f68c69ef0fe888a5dcbf1470034a7290233665b66a554a",
+      "fetched": "2026-10-07"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "750401e7b53fc512331cbd8055aab73a9609edefa71b3b26ea4a1e5883fc43a6",
-      "fetched": "2026-10-06"
+      "sha256": "6d9062613946757a4fc148c9bc89a03b6538f7d77e8c6047b590eb3eff389fb8",
+      "fetched": "2026-10-07"
     }
   },
   "cloudflare": {
@@ -138,8 +138,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "a43bf67d08bcdd1efd078eaa6da38680bf4c9a86b2b8722dbfa945ffbfb90262",
-      "fetched": "2026-10-06"
+      "sha256": "f10c63dba4c8767bad89ac40514015cb5ead0c0cfb78bca0bca0c5e3d5750deb",
+      "fetched": "2026-10-07"
     }
   },
   "scaleway": {
@@ -150,8 +150,8 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "a11bd39ca0f17e935fd4783de4f6d8178f503064962db4307b4aef73bd501a73",
-      "fetched": "2026-10-06"
+      "sha256": "e8bd4143e698309db561db001e70291189dfb8cfe291b9012cfba3aea2c9d35b",
+      "fetched": "2026-10-07"
     }
   },
   "databricks": {

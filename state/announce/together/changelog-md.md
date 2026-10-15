@@ -23,7 +23,7 @@ No local Docker is required.
 To maintain state, snapshot the filesystem on termination and start a new sandbox from it.
 This replaces the legacy hibernate and resume model.
 See [Code sandbox](/docs/together-code-sandbox) for the new workflow.
-</Update> <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train LoRA adapters with a rank of up to 128 for the majority of models, up from 64.
+</Update> <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train low-rank adapters (LoRA) with a rank of up to 128 for the majority of models, up from 64.
 The default rank for these models stays at 64, so set `lora_r` to use a higher one.
 The [model limits](/reference/get-fine-tunes-models-limits) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
 Run [`tg fine-tuning model-limits <model>`](/reference/cli/finetune#model-limits) to see both values for a model.

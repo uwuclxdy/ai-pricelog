@@ -9,7 +9,19 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 1 October You can now prepay for Serverless Inference and Managed Agents with the Inference and Agents balance, which no other products draw from.
+October 2026 6 October PostgreSQL Advanced Edition clusters now support 20 additional extensions beyond the pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions, including pg_trgm , pgcrypto , citext , and uuid-ossp .
+You can enable them with CREATE EXTENSION .
+See Supported PostgreSQL Extensions .
+Harness Runtime Bring-Your-Own-Template (BYOT) registration now requires a recommended base template ( codex-base , opencode-base , claude-code-base , hermes-base , or langgraph-base ).
+Recommended bases provide stronger isolation for custom templates than previously supported bases ( coding-codex , coding-opencode , coding-claude-code , coding-hermes , and langgraph ).
+The legacy bases remain available for existing custom templates and for rebuilds of those templates.
+Support for them in BYOT will be removed in a future release.
+Sessions that use the legacy base templates as adapter default templates continue to work as usual.
+For more information, see How to Use a Custom Sandbox Template (BYOT) .
+DigitalOcean Harness Runtime now supports CrewAI agents.
+Package a CrewAI repository, declare kickoff inputs, connect a model and Action Gateway tools, and deploy your crew in an isolated sandbox.
+For more information, see How to Run a CrewAI Agent on DigitalOcean Harness Runtime .
+1 October You can now prepay for Serverless Inference and Managed Agents with the Inference and Agents balance, which no other products draw from.
 Add $5 to $500 at a time or turn on auto-reload from the Billing page.
 Funds do not expire.
 You can also pay for eligible usage at a discount with a monthly plan, now in public preview .
@@ -201,8 +213,6 @@ For installation and quickstart examples, see SDK and Client Libraries .
 10 July PostgreSQL Standard Edition clusters now support sslmode=verify-full for full TLS certificate verification.
 For setup, see How to Connect to PostgreSQL Database Clusters and Increase TLS Verification with sslmode .
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-5.6 Sol GPT-5.6 Terra GPT-5.6 Luna For more information, see the Available Models page .
-9 July Ubuntu 25.10 has reached end of life.
-Per our image deprecation policy , this image is available exclusively via the API for the next 30 days before we remove it from our platform.
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.

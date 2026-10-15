@@ -1,8 +1,8 @@
 Release Notes | Cohere For AI agents: a documentation index is available at the root level at /llms.txt.
 Append /llms.txt to any URL for a page-level index, or .md for the markdown version of any page.
-docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI v2 API v2 API Guides and concepts API Reference Release Notes LLMU Cookbooks DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN System On this page September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026
-Retirement notice March 26, 2026 Technical details Getting started Availability December 11, 2025 Technical Details Example Query Release Notes Subscribe via RSS September 30, 2026 September 30, 2026 September 9, 2026 September 9, 2026 August 27, 2026 August 27, 2026 July 7, 2026 July 7, 2026 June 9, 2026 June 9, 2026 May 20, 2026 May 20, 2026 April 4, 2026 April 4, 2026 March 26, 2026 March 26, 2026 December 11, 2025 December 11, 2025 September 16, 2025 September 16, 2025 Older posts Next Built with Announcing Cohere's Embed 5 Models We’re pleased to announce the release of Embed 5 , Cohere’s
-most powerful embeddings family yet.
+docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI Skip to navigation This page is for version v2 API (default).
+For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical details Getting started Availability December 11, 2025 Technical Details Example Query
+Release Notes Subscribe via RSS September 30, 2026 September 30, 2026 Announcing Cohere's Embed 5 Models We’re pleased to announce the release of Embed 5 , Cohere’s most powerful embeddings family yet.
 Embed 5 delivers frontier retrieval quality on complex enterprise data, with major gains over Embed 4 on visually rich documents, financial filings, parsed PDFs, code, and multilingual retrieval.
 Key features Two model variants available: embed-v5.0-pro : Optimized for the highest retrieval quality, particularly for offline indexing and quality-critical retrieval embed-v5.0-fast : Optimized for low latency and high throughput, particularly for interactive search, agent loops, and high-volume query traffic Shared embedding space : Pro and Fast share an embedding space, so a corpus indexed with one model can be queried with the other.
 We recommend indexing with Pro and querying with Fast.
@@ -10,7 +10,7 @@ Multimodal inputs : Embed text, images, and mixed text-and-image inputs (e.g.
 PDF pages) in a single vector Multilingual support : Supports over 100 languages Extended context length : 128k token context window Flexible storage : Matryoshka embeddings in the following dimensions: [256, 512, 768, 1024, 1536, 2048] , with float , int8 , and binary output types Availability Embed 5 is available through the Embed API , as well as Microsoft Foundry ( Pro , Fast ) and Amazon SageMaker ( Pro , Fast ).
 For single-tenant deployment, Embed 5 is also available in Cohere’s Model Vault .
 For more details, see the model documentation .
-Announcing Cohere's North Small Translate We’re pleased to announce the release of North Small Translate , an open-weights mixture-of-experts model purpose-built for machine translation across more than 50 languages.
+September 9, 2026 September 9, 2026 Announcing Cohere's North Small Translate We’re pleased to announce the release of North Small Translate , an open-weights mixture-of-experts model purpose-built for machine translation across more than 50 languages.
 North Small Translate is designed to give researchers, developers, and enterprises flexible ways to evaluate and deploy machine translation while retaining control over their data and infrastructure.
 Key features Purpose-built translation : Optimized for machine translation across more than 50 languages and locale variants.
 Efficient MoE architecture : 218 billion total parameters with 25 billion active parameters.
@@ -18,26 +18,26 @@ Flexible deployment : Available through the free-tier Chat V2 API and as open we
 Private deployment : Suggested deployment hardware by quantization format: W4A16 : Two H100s or one B200 FP8 : Four H100s or two B200s BF16 : Eight H100s or four B200s Technical details Model name : north-small-translate-1-0 Context length : 16K License : Creative Commons Attribution-NonCommercial 4.0 Open-weights formats : W4A16, FP8, and BF16 Availability North Small Translate is available on the free tier through the Chat V2 API .
 Open weights are available in W4A16, FP8, and BF16 on Hugging Face for non-commercial use under the CC BY-NC 4.0 license.
 For supported languages, use cases, and an API example, see the model documentation .
-Meet Cohere Parse Today we are releasing Cohere Parse .
+August 27, 2026 August 27, 2026 Meet Cohere Parse Today we are releasing Cohere Parse .
 Parse (model ID: parse-v5.0 ) turns complex documents into clean, structured Markdown ready for downstream AI workflows.
 The 2.3B-parameter multimodal model extracts text in reading order, tables, lists, forms, images and captions, page boundaries, and visual element locations.
 Outputs include Markdown/HTML content, HTML-formatted tables, bounding boxes, and image descriptions — preserving both document structure and layout for easier rendering and processing.
 Key specs: 8K context window · ~4.6GB model size · Markdown output Availability Cohere Parse is available through the Parse API, as well as Microsoft Foundry and AWS SageMaker .
 For single-tenant deployment, Parse is also available in Model Vault .
 For more details, see the model documentation .
-Meet Cohere Transcribe Arabic Today we are releasing Cohere Transcribe Arabic .
+July 7, 2026 July 7, 2026 Meet Cohere Transcribe Arabic Today we are releasing Cohere Transcribe Arabic .
 This open-source speech-to-text model is a fine-tune of Cohere Transcribe using Arabic speech data.
 It lets Arabic speakers transcribe their voice with unmatched accuracy and support for regional dialects or speech patterns.
 It is currently the most accurate open-source Arabic ASR model available today and is optimized for production inference and throughput.
 Technical Details Model Name : cohere-transcribe-arabic-07-2026 Size : 2B Architecture : conformer-based encoder-decoder Languages supported : Arabic (all major dialects), English (including English spoken with an Arabic accent) License : Apache 2.0 Availability Cohere Transcribe Arabic is available through the V2 Audio Transcriptions API and as open weights on Hugging Face .
 For production use, Model Vault deployment is also supported.
 For more details, see the model documentation .
-Announcing Cohere's North Mini Code We’re pleased to announce the release of North Mini Code , Cohere’s first agentic coding model.
+June 9, 2026 June 9, 2026 Announcing Cohere's North Mini Code We’re pleased to announce the release of North Mini Code , Cohere’s first agentic coding model.
 It is a 30 billion total / 3 billion active parameter Mixture of Experts model trained specifically for agentic coding, with a small enough active footprint to run on local hardware.
 Technical Details Model Name : north-mini-code-1-0 Context Length : 256K input, 64K output License : Apache 2.0 Availability North Mini Code is available through the Chat V2 API and as open weights on Hugging Face.
 For production use, Model Vault deployment is also supported.
 For more details, see the model documentation .
-Announcing Cohere’s Command A+ We’re pleased to announce the release of Command A+ , the last model in the Command A family of models, combining support for vision inputs, reasoning capabilities, translation capabilities, and agentic tasks all within the same model.
+May 20, 2026 May 20, 2026 Announcing Cohere's Command A+ We’re pleased to announce the release of Command A+ , the last model in the Command A family of models, combining support for vision inputs, reasoning capabilities, translation capabilities, and agentic tasks all within the same model.
 It is also notably our first Mixture of Experts (MoE) model with 25 billion active parameters ands 218 billion total parameters.
 Key Features Agentic Applications : With notable performance increases in tool use and agentic tasks, Command A+ is the strongest agentic model in the Command family.
 Expanded Multilingual Support : With 48 languages supported, including all official EU languages, this more than doubles the support of languages from our prior models.
@@ -46,11 +46,11 @@ Technical Details Model Name : command-a-plus-05-2026 Context Length : 128K inpu
 License : Apache 2.0 Availability Command A+ ( command-a-plus-05-2026 ) is now available for all Cohere users through our standard API endpoints.
 For enterprise customers, private deployment options are available to ensure maximum security and control over your translation workflows.
 For more detailed information about Command A+, including technical specifications and implementation examples, visit our model documentation .
-Retirement of Embed v2.0 and Aya Expanse / Vision 8B Retirement notice Effective April 4, 2026, the following models are no longer available.
+April 4, 2026 April 4, 2026 Retirement of Embed v2.0 and Aya Expanse / Vision 8B Retirement notice Effective April 4, 2026, the following models are no longer available.
 Requests using these model IDs will fail.
 Retired models: embed-english-v2.0 embed-english-light-v2.0 embed-multilingual-v2.0 c4ai-aya-expanse-8b c4ai-aya-vision-8b We recommend these replacements: Embedding tasks embed-english-v3.0 embed-multilingual-v3.0 embed-v4.0 Chat tasks command-r7b-12-2024 command-a-03-2025 command-a-reasoning-08-2025 For the full announcement and lifecycle context, see the Deprecations page.
 For questions or assistance, contact support@cohere.com .
-Announcing the Cohere Transcribe model We’re pleased to announce the release of Cohere Transcribe , our first transcription model.
+March 26, 2026 March 26, 2026 Announcing the Cohere Transcribe model We’re pleased to announce the release of Cohere Transcribe , our first transcription model.
 Cohere Transcribe specializes in audio-in, text-out, automatic speech recognition (ASR).
 Technical details Model name : cohere-transcribe-03-2026 Input : Audio waveform Output : Text Languages covered : English, German, French, Italian, Spanish, Portuguese, Greek, Dutch, Polish, Vietnamese, Chinese, Arabic, Japanese, Korean.
 License : Apache 2.0 API endpoint : Audio Transcriptions API Getting started The model is available immediately through Cohere’s Audio Transcriptions API endpoint .
@@ -64,7 +64,7 @@ For production deployment without rate limits, provision a dedicated Model Vault
 This enables low-latency, private cloud inference without having to manage infrastructure.
 Pricing is calculated per hour-instance, with discounted plans for longer-term commitments.
 Contact our team to discuss your requirements.
-Cohere's Rerank v4.0 Model is Here!
+December 11, 2025 December 11, 2025 Cohere's Rerank v4.0 Model is Here!
 We’re pleased to announce the release of Rerank 4.0 our newest and most performant foundational model for ranking.
 Technical Details Two model variants available: rerank-v4.0-pro : Optimized for state-of-the-art quality and complex use-cases rerank-v4.0-fast : Optimized for low latency and high throughput use-cases Multilingual support : Re-rank both English and non-English documents Semi-structured data support : Re-rank JSON documents Extended context length : 32k token context window Example Query PYTHON import cohere co = cohere .
 ClientV2 () query = " What is the capital of the United States?
@@ -84,8 +84,8 @@ This makes it the political center of the United States of America.
 As of 2017, capital punishment is legal in 30 of the 50 states.
 The federal government (including the United States military) also uses capital punishment.
 " , ] results = co .
-rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) Announcing Major Command Deprecations As part of our ongoing commitment to delivering advanced AI solutions, we are deprecating the following models, features, and API endpoints: Deprecated Models: command-r-03-2024 (and the alias command-r ) command-r-plus-04-2024 (and the alias command-r-plus ) command-light command summarize (Refer to the migration guide for alternatives).
+rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) September 16, 2025 September 16, 2025 Announcing Major Command Deprecations As part of our ongoing commitment to delivering advanced AI solutions, we are deprecating the following models, features, and API endpoints: Deprecated Models: command-r-03-2024 (and the alias command-r ) command-r-plus-04-2024 (and the alias command-r-plus ) command-light command summarize (Refer to the migration guide for alternatives).
 For command model replacements, we recommend you use command-r-08-2024 , command-r-plus-08-2024 , or command-a-03-2025 (which is the strongest-performing model across domains) instead.
 Retired Fine-Tuning Capabilities: All fine-tuning options via dashboard and API for models including command-light , command , command-r , classify , and rerank are being retired.
 Previously fine-tuned models will no longer be accessible.
-Deprecated Features and API Endpoints: /v1/connectors (Managed connectors for RAG) /v1/chat parameters: connectors , search_queries_only /v1/generate (Legacy generative endpoint) /v1/summarize (Legacy summarization endpoint) /v1/classify Slack App integration Coral Web UI (chat.cohere.com and coral.cohere.com) For questions, reach out to support@cohere.com
+Deprecated Features and API Endpoints: /v1/connectors (Managed connectors for RAG) /v1/chat parameters: connectors , search_queries_only /v1/generate (Legacy generative endpoint) /v1/summarize (Legacy summarization endpoint) /v1/classify Slack App integration Coral Web UI (chat.cohere.com and coral.cohere.com) For questions, reach out to support@cohere.com Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API
