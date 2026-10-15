@@ -119,12 +119,12 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "7d319a52b29343691609579e6a5ae46be14839579e3f278392374c8944fe3afb",
+      "sha256": "cdaf1a047259b13799108ba68f2132f84bff35e6dc508c044c1e01eccfcc6ee5",
       "fetched": "2026-10-13"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "a106865e214f0c11089b95de9e315892fe92b739a47acc991977c9a1eb9bd7cb",
+      "sha256": "e9adf29c3048a90e907863a16dc032522706399b77613404a124e1f32b332443",
       "fetched": "2026-10-13"
     }
   },

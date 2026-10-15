@@ -3268,6 +3268,15 @@
       },
       "vendor": "google"
     },
+    "google/gemini-4-argon": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-4-argon"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-embedding-001": {
       "curated": false,
       "sources": {
