@@ -19,6 +19,11 @@ Device plugins ( nvidia_gpu_device_plugin or amd_gpu_device_plugin ) remain avai
 Device plugins and DRA drivers are mutually exclusive.
 When you switch between them on an existing cluster, DOKS replaces the GPU worker nodes so each node starts with a clean state.
 For more information, see Supported GPUs .
+Prompt caching for DigitalOcean-hosted models is now in general availability .
+All DigitalOcean-hosted models cache context automatically, with no code changes and no cache-write charge.
+Cache affinity routes requests with matching prefixes to the replica that holds the cache.
+You can isolate cached context within your account with the optional prompt_cache_key key, and view your cache hit rate in the control panel.
+For more information, see Use Prompt Caching .
 7 October Managed databases are available in Memphis ( mem1 ) on AMDv5 plans only.
 Storage-Optimized plans are now available for Kafka and OpenSearch clusters in mem1 only.
 See the regional availability matrix for current coverage by engine.

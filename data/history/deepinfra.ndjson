@@ -42,6 +42,7 @@
 {"schema":4,"source":"deepinfra","model_id":"meta-llama-3.1-70b-instruct-turbo","observed_at":"2026-08-29","rates":{"input":0.4,"output":0.4},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"meta-llama-3.1-8b-instruct-turbo","observed_at":"2026-08-29","rates":{"input":0.02,"output":0.04},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-nemo-instruct-2407","observed_at":"2026-08-29","rates":{"input":0.019,"output":0.03},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"mistral-nemo-instruct-2407","observed_at":"2026-10-08","rates":{"input":0.029,"output":0.03},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-small-24b-instruct-2501","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.08},"limits":{"context":32768},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-small-3.2-24b-instruct-2506","observed_at":"2026-08-29","rates":{"input":0.075,"output":0.2},"limits":{"context":128000},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mythomax-l2-13b","observed_at":"2026-08-29","rates":{"input":0.4,"output":0.4},"limits":{"context":4096},"provenance":{"url":"https://deepinfra.com/pricing"}}

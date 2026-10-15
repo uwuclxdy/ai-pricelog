@@ -86,7 +86,7 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "9dcaed849b9ff7801c3f4f202b2199f984a647447236b93900b092a66abc5d2f",
+      "sha256": "f360eeee515f46dee463c1a7c8170e70c1ef9b11ba7a3b5239c5dcb33a1efcb6",
       "fetched": "2026-10-08"
     },
     "https://www.together.ai/blog/rss.xml": {
@@ -124,7 +124,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "92a3c7fa6fa5694f743955361e8a515eacd5134df4753df629f18938c63cbd4e",
+      "sha256": "a106865e214f0c11089b95de9e315892fe92b739a47acc991977c9a1eb9bd7cb",
       "fetched": "2026-10-08"
     }
   },
@@ -138,7 +138,7 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "ac148f38af2200af2ac9ad7d5b4d88919f5a73a4a405db98a0027420f436995f",
+      "sha256": "90455334ac67f4fdfb73b22aa84d251e9b4a56ae2c768570003f9ccaf4a053e2",
       "fetched": "2026-10-08"
     }
   },
@@ -157,8 +157,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "6491de8b46bfe0b6db7659bf43d5facc14e9d60432ac4e7d50ee2802978db289",
-      "fetched": "2026-09-18"
+      "sha256": "07b9b7f3d3c3445a078faa7283699f29e93daf87cf23f11f6974695799e29bee",
+      "fetched": "2026-10-08"
     }
   }
 }

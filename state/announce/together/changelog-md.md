@@ -1,5 +1,14 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog <Update label="October 1, 2026" tags={["New releases"]}> ## Together Link beta Together Link runs six coding agents on models hosted by Together AI: Claude Code, Codex, OpenCode, and Pi Code in the terminal, plus Claude Desktop (including Cowork) and ChatGPT Desktop.
+# Changelog <Update label="October 2, 2026" tags={["New models", "Improvements"]}> ## New provisioned throughput models The following models are now available on [provisioned throughput](/docs/inference/provisioned-throughput): * `zai-org/GLM-5.3`.
+* `zai-org/GLM-5.3-Flash`.
+* `deepseek-ai/DeepSeek-V4.1-Flash`.
+## Dynamic rate limits for serverless retired Serverless no longer applies dynamic rate limits that scale with your recent traffic.
+Most users will no longer encounter rate limits, though requests can still be limited during periods of high demand.
+If you get a `429 Too Many Requests` response, reduce your request rate and spread out bursts.
+If you get a `503 Service Unavailable` response, wait briefly before retrying.
+Retry both with exponential backoff.
+See [Rate limits](/docs/serverless/rate-limits).
+</Update> <Update label="October 1, 2026" tags={["New releases", "New models"]}> ## Together Link beta Together Link runs six coding agents on models hosted by Together AI: Claude Code, Codex, OpenCode, and Pi Code in the terminal, plus Claude Desktop (including Cowork) and ChatGPT Desktop.
 Install it with one command, launch your agent through it, and your normal agent configuration stays untouched.
 It's now in beta on macOS and Linux.
 ```bash theme={null} # Install Together Link curl -fsSL https://link.together.ai/install | bash # Open the interactive launcher togetherlink # Or launch an agent directly, pinned to one model togetherlink --main moonshotai/Kimi-K3 claude ``` **What's included:** * **Six agents:** Launch Claude Code (`tclaude`), Codex (`tcodex`), OpenCode (`topencode`), or Pi Code (`tpi`) in your terminal, or switch Claude Desktop and ChatGPT Desktop to a reversible Together Link profile.
@@ -23,6 +32,8 @@ No local Docker is required.
 To maintain state, snapshot the filesystem on termination and start a new sandbox from it.
 This replaces the legacy hibernate and resume model.
 See [Code sandbox](/docs/together-code-sandbox) for the new workflow.
+## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](/docs/dedicated-endpoints/models): * `hexgrad/Kokoro-82M` (text-to-speech).
+* `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice` (text-to-speech).
 </Update> <Update label="September 29, 2026" tags={["Improvements"]}> ## Higher LoRA rank limit for fine-tuning You can now train low-rank adapters (LoRA) with a rank of up to 128 for the majority of models, up from 64.
 The default rank for these models stays at 64, so set `lora_r` to use a higher one.
 The [model limits](/reference/get-fine-tunes-models-limits) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
@@ -89,9 +100,7 @@ The same goes for a missing API key or command argument.
 See the [CLI reference](/reference/cli/getting-started).
 </Update> <Update label="September 8, 2026" tags={["New models"]}> ## New models available for fine-tuning You can now fine-tune the following models: * `zai-org/GLM-5.3`.
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
-</Update> <Update label="September 1, 2026" tags={["Pricing", "Deprecations"]}> ## Pricing update H100 80GB dedicated endpoint hardware is now \$3.99 per hour, down from \$5.49.
-See [Dedicated endpoint pricing](/docs/dedicated-endpoints/pricing).
-## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
+</Update> <Update label="September 1, 2026" tags={["Deprecations"]}> ## Model deprecations The following models are deprecated and will be removed from serverless on September 14, 2026: * `openai/gpt-oss-20b`.
 Recommended replacement: `Qwen/Qwen3.5-9B`.
 * `google/gemma-4-31B-it`.
 Recommended replacement: `zai-org/GLM-5.3-Flash`.
@@ -570,7 +579,7 @@ See the [GPU Clusters quickstart](/docs/gpu-clusters-quickstart) for the full cr
 See [Supported models](/docs/fine-tuning/supported-models) for the full list.
 ## Cost analytics units view Organization and project cost analytics now include a **Measure** control to switch between **Cost (\$)** and **Units**.
 Choose **Units** to chart daily billable quantities (for example, tokens) by product, line item, project, or API key instead of dollar spend.
-See [Usage limits & analytics](/docs/billing-usage-limits#cost-analytics) for details.
+See [Cost analytics](/docs/billing-cost-analytics) for details.
 </Update> <Update label="July 2, 2026" tags={["Improvements"]}> ## Bring your own model: Transformers v5 [BYOM fine-tuning](/docs/fine-tuning/byom) now supports Hugging Face models built with Transformers v5 or earlier.
 </Update> <Update label="July 1, 2026" tags={["New models"]}> ## New serverless models The following models are now available on [serverless](/docs/serverless/models): * `google/flash-image-3.1-lite` (Gemini 3.1 Flash-Lite Image).
 * `Qwen/Qwen3.6-35B-A3B-Lora`: 262,144 context length.
