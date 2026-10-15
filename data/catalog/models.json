@@ -198,6 +198,42 @@
       },
       "vendor": "deepseek"
     },
+    "avian/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
+    "avian/glm-5.3": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "glm-5.3"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "avian/glm-5.3-flash": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "glm-5.3-flash"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "avian/kimi-k3": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "kimi-k3"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "avian/mimo-v2.5-small": {
       "curated": false,
       "sources": {
@@ -224,6 +260,15 @@
         ]
       },
       "vendor": "xiaomi"
+    },
+    "avian/minimax-m3": {
+      "curated": false,
+      "sources": {
+        "avian": [
+          "minimax-m3"
+        ]
+      },
+      "vendor": "minimax"
     },
     "baseten/deepseek-v4": {
       "curated": false,
