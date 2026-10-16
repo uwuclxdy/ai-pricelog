@@ -8334,6 +8334,15 @@
       },
       "vendor": "x-ai"
     },
+    "openrouter/xingchen-agi/xing4.0-29b-a4b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "xingchen-agi/xing4.0-29b-a4b:free"
+        ]
+      },
+      "vendor": "xingchen-agi"
+    },
     "openrouter/z-ai/glm-5.2:batch": {
       "curated": false,
       "sources": {
