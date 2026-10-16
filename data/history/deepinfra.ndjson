@@ -60,6 +60,7 @@
 {"schema":4,"source":"deepinfra","model_id":"nvidia-nemotron-3.5-lightning","observed_at":"2026-08-29","rates":{"input":0.08,"output":0.2,"cache_read":0.04},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"nvidia-nemotron-3.5-lightning","observed_at":"2026-09-29","rates":{"input":0.06,"output":0.16,"cache_read":0.03},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"nvidia-nemotron-3.5-super-vl","observed_at":"2026-10-15","rates":{"input":0.2,"output":1.0,"cache_read":0.1},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"nvidia-nemotron-3.5-super-vl","observed_at":"2026-10-16","rates":{"input":0.1,"output":0.4,"cache_read":0.08},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"phi-4","observed_at":"2026-08-29","rates":{"input":0.07,"output":0.14},"limits":{"context":16384},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen2.5-72b-instruct","observed_at":"2026-08-29","rates":{"input":0.36,"output":0.4},"limits":{"context":32768},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3-14b","observed_at":"2026-08-29","rates":{"input":0.12,"output":0.24},"limits":{"context":40960},"provenance":{"url":"https://deepinfra.com/pricing"}}

@@ -2,13 +2,24 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="October 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **NVIDIA Nemotron 3.5 Super** The Agent API now supports `perplexity/nemotron-3.5-super-120b-a12b` at \$0.20 per million input tokens, \$0.04 per million cached input tokens, and \$0.50 per million output tokens.
+</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Gemini 4 Argon** The Agent API now supports `google/gemini-4-argon`.
+Introductory pricing through November 30, 2026 is \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens, including reasoning tokens.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **NVIDIA Nemotron 3.5 Super** The Agent API now supports `perplexity/nemotron-3.5-super-120b-a12b` at \$0.20 per million input tokens, \$0.04 per million cached input tokens, and \$0.50 per million output tokens.
 It has a 1,048,576-token context window, returns up to 131,072 output tokens, and accepts text input only.
 It replaces `perplexity/nemotron-3-ultra-550b-a55b`, which is no longer listed in the Agent API or Orchestrator API model docs.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="October 2026" tags={["Agent API", "Models"]}> **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
 Requests with more than 100k input tokens use higher rates.
 See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Decisions API", "Models", "Pricing"]}> **Decisions API: pplx-decider-v1.2 and pplx-decider-flash-v1.2** `pplx-decider-v1.2` replaces `pplx-decider-v1.1-27b` as the 27B decision model, at \$0.02 per million input tokens.
+`pplx-decider-flash-v1.2` is a new 4B decision model at \$0.01 per million input tokens.
+Both accept text and images and use the same request limits.
+Output tokens stay free.
+Use `pplx-decider-latest` or `pplx-decider-flash-latest` to follow the newest version of each model.
+`perplexity/pplx-decider-latest` and `perplexity/pplx-decider-flash-latest` are also accepted.
+Requests that name `pplx-decider-v1.1-27b` or `pplx-decider-v1-27b` continue to work and select `pplx-decider-v1.2`.
+See [When to use each](/docs/decisions/quickstart#when-to-use-each) and [Pricing](/docs/getting-started/pricing).
 </Update> <Update label="October 2026" tags={["Decisions API", "Models", "Pricing"]}> **Decisions API: pplx-decider-v1.1-27b replaces v1** `pplx-decider-v1.1-27b` replaces `pplx-decider-v1-27b` as the Decisions API model.
 Input now costs \$0.02 per million tokens, down from \$0.04.
 Use `pplx-decider-v1.1-27b` in new requests.
