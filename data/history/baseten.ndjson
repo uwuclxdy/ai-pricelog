@@ -1,3 +1,4 @@
+{"schema":4,"source":"baseten","model_id":"beam","observed_at":"2026-10-16","rates":{"input":1.3,"output":0.13,"cache_read":4.3},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v4","observed_at":"2026-08-29","rates":{"input":1.74,"output":3.48,"cache_read":0.145},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v4","observed_at":"2026-10-15","removed":true,"rates":{"input":1.74,"output":3.48,"cache_read":0.145}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-29","rates":{"input":0.13,"output":0.26,"cache_read":0.028},"provenance":{"url":"https://www.baseten.co/pricing"}}
@@ -22,5 +23,6 @@
 {"schema":4,"source":"baseten","model_id":"kimi-k27-code","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"kimi-k27-code","observed_at":"2026-09-22","removed":true,"rates":{"input":0.95,"output":4.0,"cache_read":0.16}}
 {"schema":4,"source":"baseten","model_id":"kimi-k3","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"provenance":{"url":"https://www.baseten.co/pricing"}}
+{"schema":4,"source":"baseten","model_id":"muse-spark-open","observed_at":"2026-10-16","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"nemotron-35-super-vl","observed_at":"2026-10-15","rates":{"input":0.2,"output":0.5,"cache_read":0.04},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"nvidia-nemotron-ultra","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.4,"cache_read":0.12},"provenance":{"url":"https://www.baseten.co/pricing"}}

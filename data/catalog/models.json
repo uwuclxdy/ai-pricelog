@@ -261,6 +261,15 @@
       },
       "vendor": "minimax"
     },
+    "baseten/beam": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "beam"
+        ]
+      },
+      "vendor": null
+    },
     "baseten/deepseek-v4": {
       "curated": false,
       "sources": {
@@ -359,6 +368,15 @@
         ]
       },
       "vendor": "moonshot"
+    },
+    "baseten/muse-spark-open": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "muse-spark-open"
+        ]
+      },
+      "vendor": "meta"
     },
     "baseten/nemotron-35-super-vl": {
       "curated": false,
