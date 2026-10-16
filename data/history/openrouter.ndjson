@@ -662,6 +662,7 @@
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-09-03","rates":{"input":0.1,"output":0.32},"limits":{"context":131072},"provenance":{"name":"Llama 3.3 70B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-10-04","rates":{"input":0.22,"output":0.5,"cache_read":0.11},"limits":{"context":131072},"provenance":{"name":"Llama 3.3 70B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-10-15","rates":{"input":0.59,"output":0.79,"cache_read":0.295},"limits":{"context":131072},"provenance":{"name":"Llama 3.3 70B Instruct"}}
+{"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-10-16","rates":{"input":0.1,"output":0.32},"limits":{"context":131072},"provenance":{"name":"Llama 3.3 70B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-maverick","observed_at":"2026-08-26","rates":{"input":0.2,"output":0.8},"limits":{"context":1048576},"provenance":{"name":"Llama 4 Maverick"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-maverick","observed_at":"2026-08-31","rates":{"input":0.2,"output":0.696},"limits":{"context":1048576},"provenance":{"name":"Llama 4 Maverick"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-maverick","observed_at":"2026-09-14","rates":{"input":0.1875,"output":0.6525},"limits":{"context":1048576},"provenance":{"name":"Llama 4 Maverick"}}
@@ -871,6 +872,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-16","rates":{"input":0.304,"output":11.588,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-16","rates":{"input":0.304,"output":11.936,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-16","rates":{"input":0.304,"output":12.294,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-16","rates":{"input":0.304,"output":11.936,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-22","rates":{"input":2.28,"output":11.4,"cache_read":0.228},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
