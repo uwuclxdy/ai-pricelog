@@ -672,6 +672,7 @@
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-scout","observed_at":"2026-08-26","rates":{"input":0.11,"output":0.34,"cache_read":0.055},"limits":{"context":1310720},"provenance":{"name":"Llama 4 Scout"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-scout","observed_at":"2026-09-01","rates":{"input":0.1,"output":0.3},"limits":{"context":1310720},"provenance":{"name":"Llama 4 Scout"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-scout","observed_at":"2026-10-12","rates":{"input":0.18,"output":0.59},"limits":{"context":1310720},"provenance":{"name":"Llama 4 Scout"}}
+{"schema":4,"source":"openrouter","model_id":"meta-llama/llama-4-scout","observed_at":"2026-10-16","rates":{"input":0.1,"output":0.3},"limits":{"context":1310720},"provenance":{"name":"Llama 4 Scout"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-guard-4-12b","observed_at":"2025-09-22","rates":{"input":0.18,"output":0.18},"limits":{"context":163840},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-guard-4-12b","observed_at":"2026-08-26","rates":{"input":0.18,"output":0.18},"limits":{"context":163840},"provenance":{"name":"Llama Guard 4 12B"}}
 {"schema":4,"source":"openrouter","model_id":"meta/muse-glimmer-30b","observed_at":"2026-08-26","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Muse Glimmer 30B"}}
