@@ -952,6 +952,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-lightning","observed_at":"2026-10-15","rates":{"input":0.07,"output":0.2,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Nemotron 3.5 Lightning"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-lightning:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Nemotron 3.5 Lightning (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-super-vl","observed_at":"2026-10-15","rates":{"input":0.15,"output":0.5,"cache_read":0.02},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3.5 Super VL"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-super-vl","observed_at":"2026-10-16","rates":{"input":0.1,"output":0.4,"cache_read":0.08},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3.5 Super VL"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-super-vl:free","observed_at":"2026-10-15","rates":{"input":0.0,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Nemotron 3.5 Super VL (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/switchyard","observed_at":"2026-10-02","limits":{"context":1000000},"provenance":{"name":"Switchyard"}}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-3.5-turbo","observed_at":"2023-03-01","rates":{"input":2.0,"output":2.0},"provenance":{"url":"https://openai.com/blog/introducing-chatgpt-and-whisper-apis"}}
