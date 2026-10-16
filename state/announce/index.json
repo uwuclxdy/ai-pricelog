@@ -7,8 +7,8 @@
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
-      "sha256": "39c5ca72867797ca004f0c0855dcd05d9bc6dcd83e233b7ad16a23b938d1eb11",
-      "fetched": "2026-09-24"
+      "sha256": "50ab9a29dc1c4f0f7f839ad7a0c050199ad02975fa6856ba6d7000ed7ffe76fd",
+      "fetched": "2026-10-16"
     }
   },
   "zai": {
@@ -29,8 +29,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "5e274e449b528134ae3f2903ada56ae13de318fa9e70bfd24a230d87d735a6f2",
-      "fetched": "2026-10-14"
+      "sha256": "20c7ba251948bc9a283becb51747867b2aa44439979451656b9eeee17538c932",
+      "fetched": "2026-10-16"
     }
   },
   "moonshot": {
