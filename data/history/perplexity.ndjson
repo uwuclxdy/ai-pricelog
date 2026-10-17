@@ -1,3 +1,4 @@
+{"schema":4,"source":"perplexity","model_id":"deepseek-v4-pro-0813","observed_at":"2026-10-17","rates":{"input":1.32,"output":3.96,"cache_read":0.044},"provenance":{"url":"https://docs.perplexity.ai/docs/agent-api/models"}}
 {"schema":4,"source":"perplexity","model_id":"llama-3.1-sonar-huge-128k-online","observed_at":"2024-08-19","rates":{"input":5.0,"output":5.0},"provenance":{"url":"https://web.archive.org/web/20240819235451/https://docs.perplexity.ai/docs/pricing"}}
 {"schema":4,"source":"perplexity","model_id":"llama-3.1-sonar-huge-128k-online","observed_at":"2026-08-27","removed":true}
 {"schema":4,"source":"perplexity","model_id":"llama-3.1-sonar-large-128k-chat","observed_at":"2024-08-19","rates":{"input":1.0,"output":1.0},"provenance":{"url":"https://web.archive.org/web/20240819235451/https://docs.perplexity.ai/docs/pricing"}}

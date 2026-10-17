@@ -8406,6 +8406,15 @@
       },
       "vendor": "z-ai"
     },
+    "perplexity/deepseek-v4-pro-0813": {
+      "curated": false,
+      "sources": {
+        "perplexity": [
+          "deepseek-v4-pro-0813"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "perplexity/llama-3.1-sonar-huge-128k-online": {
       "curated": false,
       "sources": {
