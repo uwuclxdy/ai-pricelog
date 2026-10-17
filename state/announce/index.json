@@ -2,13 +2,13 @@
   "deepseek": {
     "https://api-docs.deepseek.com/updates/": {
       "file": "state/announce/deepseek/updates.md",
-      "sha256": "4bdd5c9bcbe47a44a2ee65d28e0d23781ae39354079a017b6508ee48835e90a5",
+      "sha256": "823bd2fc4f3f0a5e3919b40dcf269ae78284d0f41eff10caf614c627d584f33e",
       "fetched": "2026-10-17"
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
-      "sha256": "50ab9a29dc1c4f0f7f839ad7a0c050199ad02975fa6856ba6d7000ed7ffe76fd",
-      "fetched": "2026-10-16"
+      "sha256": "727be7e5a5770ada119d498afed05645d74387ea8f5e7bb61c5564f30c47ff7d",
+      "fetched": "2026-10-17"
     }
   },
   "zai": {
@@ -79,8 +79,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "549e402ed60264ed82848469be29f37497c9316cf67b64c29049215efe711c09",
-      "fetched": "2026-10-16"
+      "sha256": "0490168ebf6a23a0e5bf125e32a2b30abc681db7395219ce53b8c9173bc1eece",
+      "fetched": "2026-10-17"
     }
   },
   "together": {

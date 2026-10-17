@@ -288,6 +288,15 @@
       },
       "vendor": "deepseek"
     },
+    "baseten/deepseek-v41-flash-1017": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "deepseek-v41-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "baseten/deepseek-v41-flash-fast": {
       "curated": false,
       "sources": {
