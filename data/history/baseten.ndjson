@@ -6,6 +6,7 @@
 {"schema":4,"source":"baseten","model_id":"deepseek-v4-pro-0813","observed_at":"2026-08-29","rates":{"input":1.32,"output":3.96,"cache_read":0.132},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash","observed_at":"2026-09-15","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash","observed_at":"2026-09-22","rates":{"input":0.3,"output":1.2,"cache_read":0.007},"provenance":{"url":"https://www.baseten.co/pricing"}}
+{"schema":4,"source":"baseten","model_id":"deepseek-v41-flash-1017","observed_at":"2026-10-17","rates":{"input":0.3,"output":1.2,"cache_read":0.007},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash-fast","observed_at":"2026-10-11","rates":{"input":0.6,"output":2.4,"cache_read":0.014},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"glm-4-7","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.2,"cache_read":0.12},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"glm-4-7","observed_at":"2026-09-22","removed":true,"rates":{"input":0.6,"output":2.2,"cache_read":0.12}}
