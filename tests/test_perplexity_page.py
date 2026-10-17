@@ -75,6 +75,19 @@ def test_detect_excludes_resold_rows(monkeypatch):
     assert detector.detect(cfg()) == ["sonar"]
 
 
+def test_detect_excludes_resold_deepseek_row(monkeypatch):
+    # deepseek owns deepseek-v4-pro-0813 and watched sources already price it
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: synthetic_soup(
+            ("perplexity/deepseek-v4-pro-0813", "1.32", "3.96", "0.044", "—", "—"),
+            ("perplexity/sonar", "0.25", "2.50", "0.0625", "—", "—"),
+        ),
+    )
+    assert detector.detect(cfg()) == ["sonar"]
+
+
 def test_detect_skips_unusable_model_cells(monkeypatch):
     # an empty model cell is not a model; a footnote suffix is not a stored
     # id; other-vendor rows (tiered long-context cells included) pass under

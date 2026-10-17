@@ -6,11 +6,12 @@ pricing table per served vendor, all sharing the header Model | Input
 on the folded Input/Output/Cache read trio (web.fold_heading). row ids are
 vendor-prefixed slugs (`perplexity/sonar`); only `perplexity/` rows are
 perplexity's own models, and the prefix strips to the stored spelling the
-store keys on (`perplexity/sonar` -> `sonar`). the catalog's other
-perplexity-hosted rows are resold models (zai / moonshot / nvidia own
-them) and are excluded here at the source, `_RESOLD_IDS`-style
-(detectors/dashscope_page.py), so they never become candidates and never
-need curation; other vendors' rows never become candidates either. cells
+store keys on (`perplexity/sonar` -> `sonar`). a perplexity-hosted row
+that another vendor owns and a watched source already prices is resold:
+`_RESOLD_IDS` lists it and it is excluded here at the source
+(detectors/dashscope_page.py precedent), so it never becomes a candidate
+and never needs curation; other vendors' rows never become candidates
+either. cells
 that do not normalize to a bare id (empty cells, footnote suffixes) and
 rows with tiered long-context cells (`2.00 (<=272k) 4.00 (>272k)`, other
 vendors) pass under the scan. a page with no pinned table or no
@@ -33,12 +34,13 @@ _FOLDED_CACHE_READ_HEADER = fold_heading(_CACHE_READ_HEADER)
 _VENDOR_PREFIX = "perplexity/"
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 
-# the catalog's other perplexity-hosted rows are resold: zai (glm), moonshot
-# (kimi), nvidia (nemotron) own them, and each is priced on watched sources
-# (zai, moonshot, deepinfra/openrouter), so a perplexity copy would shadow
-# the authoritative row (dashscope _RESOLD_IDS precedent)
+# zai owns glm, moonshot kimi, nvidia nemotron and deepseek
+# deepseek-v4-pro-0813, and a watched source prices each under its owner's
+# id, so a perplexity copy would shadow the authoritative row (dashscope
+# _RESOLD_IDS precedent)
 _RESOLD_IDS = frozenset(
     {
+        "deepseek-v4-pro-0813",
         "glm-5.3",
         "glm-5.3-flash",
         "kimi-k3",
