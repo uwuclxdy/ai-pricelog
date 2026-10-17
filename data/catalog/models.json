@@ -5964,6 +5964,15 @@
       },
       "vendor": "dots-studio"
     },
+    "openrouter/elorian/glimpse": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elorian/glimpse"
+        ]
+      },
+      "vendor": "elorian"
+    },
     "openrouter/fireworks/ember-1": {
       "curated": false,
       "sources": {
