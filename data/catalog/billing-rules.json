@@ -245,6 +245,38 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "perplexity-gemini-4-argon-promo-2026-10-16",
+      "provider": "perplexity",
+      "effective": "2026-10-16",
+      "timezone": "UTC",
+      "statement": "the perplexity Agent API supports google/gemini-4-argon at introductory pricing through 2026-11-30: $2.00 per million input tokens, $0.10 per million cached input tokens, and $10.00 per million output tokens, including reasoning tokens. the changelog names no post-promo rates; its label is month-granular, so 2026-10-16 is the first-observed date; UTC is the recorded frame. no store row lands: the perplexity detector keys only perplexity/-prefixed Agent API catalog rows, and google/gemini-4-argon is a google-prefixed row it never surfaces",
+      "citation": [
+        "https://docs.perplexity.ai/docs/resources/changelog.md"
+      ]
+    },
+    {
+      "id": "perplexity-agent-api-model-delisting-2026-10-17",
+      "provider": "perplexity",
+      "effective": "2026-10-17",
+      "timezone": "UTC",
+      "statement": "perplexity's Agent API no longer lists 16 models in its model docs, pricing calculator, or examples: anthropic/claude-opus-4-8, anthropic/claude-opus-4-7, anthropic/claude-opus-4-6, anthropic/claude-opus-4-5, anthropic/claude-sonnet-4-6, anthropic/claude-sonnet-4-5, anthropic/claude-haiku-4-5, google/gemini-3-flash-preview, google/gemini-3.1-pro-preview, google/gemini-3.1-flash-lite, google/gemini-3.5-flash, google/gemini-3.5-flash-lite, xai/grok-4.3, xai/grok-4.20-reasoning, xai/grok-4.20-non-reasoning, xai/grok-4.20-multi-agent; for new integrations it recommends anthropic/claude-opus-5-5, anthropic/claude-sonnet-5-5, anthropic/claude-haiku-5-5, google/gemini-4-argon, google/gemini-3.8-flash, xai/grok-4.7. the docs now also list openai/gpt-6-astra ($10.00 input / $50.00 output per 1M for prompts up to 272k input tokens, with flex and priority tiers) and perplexity/deepseek-v4-pro-0813 ($1.32 input / $0.044 cached input / $3.96 output per 1M, also available through the Orchestrator API). the entry names no cutoff date; the changelog is month-granular, so 2026-10-17 is the first-observed date. no perplexity store row is keyed by this rule: the delisted ids and openai/gpt-6-astra are other vendors' rows the detector never surfaces, and perplexity/deepseek-v4-pro-0813 is a resold deepseek model excluded at the detector",
+      "citation": [
+        "https://docs.perplexity.ai/docs/resources/changelog.md"
+      ]
+    },
+    {
+      "id": "deepseek-search-api-billing-2026-10-17",
+      "provider": "deepseek",
+      "effective": "2026-10-17",
+      "timezone": "Asia/Shanghai",
+      "statement": "deepseek's in-house search and fetch api endpoints opened to all api users on 2026-10-17 and bill $0.75 per 1,000 successful requests each, not by tokens or by the number of returned results; a request bills only when Search returns a non-empty results array or Fetch returns page content, and failed requests, empty results and timeouts are not billed; the server-side tool calls DeepSeek Harness, Claude Code and Codex make to them are free of charge until per-request billing starts at 00:00 Beijing time on November 1, 2026 (2026-10-31 16:00 UTC)",
+      "citation": [
+        "https://api-docs.deepseek.com/guides/search",
+        "https://api-docs.deepseek.com/news/news261017",
+        "https://api-docs.deepseek.com/updates/"
+      ]
     }
   ]
 }

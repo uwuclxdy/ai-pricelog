@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 24
+    assert len(rules) == 27
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -113,6 +113,26 @@ def test_committed_billing_rules_pass_schema():
     assert "billing method remaining unchanged" in deepseek_cont["statement"]
     assert "deepseek-v4-retirement-2026-09-10" in deepseek_cont["statement"]
     assert "https://api-docs.deepseek.com/updates/" in deepseek_cont["citation"]
+    argon = rules[24]
+    assert argon["id"] == "perplexity-gemini-4-argon-promo-2026-10-16"
+    assert argon["provider"] == "perplexity"
+    assert argon["effective"] == "2026-10-16"
+    assert "2026-11-30" in argon["statement"]
+    assert "https://docs.perplexity.ai/docs/resources/changelog.md" in argon["citation"]
+    ppx_delist = rules[25]
+    assert ppx_delist["id"] == "perplexity-agent-api-model-delisting-2026-10-17"
+    assert ppx_delist["provider"] == "perplexity"
+    assert ppx_delist["effective"] == "2026-10-17"
+    assert "xai/grok-4.20-multi-agent" in ppx_delist["statement"]
+    assert "https://docs.perplexity.ai/docs/resources/changelog.md" in ppx_delist["citation"]
+    ds_search = rules[26]
+    assert ds_search["id"] == "deepseek-search-api-billing-2026-10-17"
+    assert ds_search["provider"] == "deepseek"
+    assert ds_search["effective"] == "2026-10-17"
+    assert ds_search["timezone"] == "Asia/Shanghai"
+    assert "$0.75 per 1,000" in ds_search["statement"]
+    assert "November 1, 2026" in ds_search["statement"]
+    assert "https://api-docs.deepseek.com/guides/search" in ds_search["citation"]
 
 
 @pytest.mark.parametrize(
