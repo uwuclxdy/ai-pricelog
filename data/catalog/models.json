@@ -9493,6 +9493,15 @@
       },
       "vendor": null
     },
+    "together/reflection-beam": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "reflection-beam"
+        ]
+      },
+      "vendor": null
+    },
     "together/rnj-1-instruct": {
       "curated": false,
       "sources": {

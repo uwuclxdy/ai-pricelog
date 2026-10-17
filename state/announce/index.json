@@ -2,8 +2,8 @@
   "deepseek": {
     "https://api-docs.deepseek.com/updates/": {
       "file": "state/announce/deepseek/updates.md",
-      "sha256": "f44cdde2cec980432dc6b0da1ff298ae22cc352e81b9acd991c10bb738bb2ee3",
-      "fetched": "2026-09-24"
+      "sha256": "4bdd5c9bcbe47a44a2ee65d28e0d23781ae39354079a017b6508ee48835e90a5",
+      "fetched": "2026-10-17"
     },
     "https://api-docs.deepseek.com/sitemap.xml": {
       "file": "state/announce/deepseek/sitemap-xml.md",
