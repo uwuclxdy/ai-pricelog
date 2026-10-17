@@ -2,7 +2,11 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Gemini 4 Argon** The Agent API now supports `google/gemini-4-argon`.
+</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Older models removed from the model docs; GPT-6 Astra and DeepSeek V4 Pro added** The following models are no longer listed in the Agent API model docs, pricing calculator, or examples: * **Anthropic:** `anthropic/claude-opus-4-8`, `anthropic/claude-opus-4-7`, `anthropic/claude-opus-4-6`, `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-6`, `anthropic/claude-sonnet-4-5`, and `anthropic/claude-haiku-4-5` * **Google:** `google/gemini-3-flash-preview`, `google/gemini-3.1-pro-preview`, `google/gemini-3.1-flash-lite`,
+`google/gemini-3.5-flash`, and `google/gemini-3.5-flash-lite` * **xAI:** `xai/grok-4.3`, `xai/grok-4.20-reasoning`, `xai/grok-4.20-non-reasoning`, and `xai/grok-4.20-multi-agent` For new integrations, use `anthropic/claude-opus-5-5`, `anthropic/claude-sonnet-5-5`, `anthropic/claude-haiku-5-5`, `google/gemini-4-argon`, `google/gemini-3.8-flash`, or `xai/grok-4.7`.
+The model docs now also list `openai/gpt-6-astra` (\$10.00 per million input tokens and \$50.00 per million output tokens up to 272k input tokens, with `flex` and `priority` tiers) and `perplexity/deepseek-v4-pro-0813` (\$1.32 per million input tokens, \$0.044 per million cached input tokens, and \$3.96 per million output tokens), which is also available through the Orchestrator API.
+See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Agent API", "Models"]}> **Gemini 4 Argon** The Agent API now supports `google/gemini-4-argon`.
 Introductory pricing through November 30, 2026 is \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens, including reasoning tokens.
 See the [Agent API Models reference](/docs/agent-api/models).
 </Update> <Update label="October 2026" tags={["Agent API", "Orchestrator API", "Models"]}> **NVIDIA Nemotron 3.5 Super** The Agent API now supports `perplexity/nemotron-3.5-super-120b-a12b` at \$0.20 per million input tokens, \$0.04 per million cached input tokens, and \$0.50 per million output tokens.
