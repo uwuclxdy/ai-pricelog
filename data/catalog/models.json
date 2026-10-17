@@ -7875,6 +7875,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3.7-plus:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.7-plus:batch"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/qwen/qwen3.8-2.4t-a95b:batch": {
       "curated": false,
       "sources": {
