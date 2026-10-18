@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_text, fold_heading
+from ai_pricelog.web import FetchError, fetch_text, fold_heading, markdown_lines
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 _HEADING_PATTERN = re.compile(r"^#{1,6}\s+(.*)")
@@ -29,7 +29,7 @@ def detect(cfg: ProviderCfg) -> list[str]:
     heading = ""
     header: list[str] | None = None
     header_seen = False
-    for line in fetch_text(cfg.detector_url).splitlines():
+    for line in markdown_lines(fetch_text(cfg.detector_url)):
         heading_match = _HEADING_PATTERN.match(line)
         if heading_match:
             heading = heading_match.group(1).strip().lower()

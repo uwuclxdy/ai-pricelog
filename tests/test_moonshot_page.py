@@ -66,6 +66,17 @@ def test_detect_models(monkeypatch):
     assert "moonshot-v1-8k" not in ids
 
 
+def test_detect_keeps_rows_after_a_line_separator_in_a_cell(monkeypatch):
+    # str.splitlines() cut the row at U+2028 and reset the table, so every
+    # later row left detection and its absence counter ran
+    page = (FIXTURES / "models.md").read_text()
+    anchor = "Kimi's dedicated coding model."
+    assert page.count(anchor) == 1
+    torn = page.replace(anchor, "Kimi's dedicated\u2028coding model.")
+    monkeypatch.setattr(detector, "fetch_text", lambda url: torn)
+    assert detector.detect(cfg()) == EXPECTED_IDS
+
+
 def test_detect_malformed_page_raises(monkeypatch):
     monkeypatch.setattr(detector, "fetch_text", lambda url: "# no tables here\n")
     with pytest.raises(FetchError, match="Model Name"):

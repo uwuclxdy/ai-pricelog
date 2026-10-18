@@ -175,3 +175,33 @@ def test_extract_tables_skips_nested_tables():
 def test_extract_tables_joins_cell_text():
     soup = BeautifulSoup("<table><tr><td>a<b>b</b> c</td></tr></table>", "html.parser")
     assert web.extract_tables(soup) == [[["a b c"]]]
+
+
+def test_markdown_table_keeps_a_line_separator_inside_a_cell():
+    # str.splitlines() also cuts on U+2028, tearing one row into two
+    text = "| a | b |\n|---|---|\n| x\u2028y | z |\n"
+    assert web.extract_markdown_tables(text) == [[["a", "b"], ["---", "---"], ["x\u2028y", "z"]]]
+
+
+def test_markdown_table_drops_a_line_separator_at_a_row_edge():
+    text = "| a | b |\u2028\n|---|---|\n| x | y |\u2028\n"
+    assert web.extract_markdown_tables(text) == [[["a", "b"], ["---", "---"], ["x", "y"]]]
+
+
+@pytest.mark.parametrize("newline", ["\r\n", "\r"], ids=["crlf", "bare-cr"])
+def test_markdown_table_reads_commonmark_line_endings(newline):
+    text = newline.join(["| a | b |", "|---|---|", "| x | y |", ""])
+    assert web.extract_markdown_tables(text) == [[["a", "b"], ["---", "---"], ["x", "y"]]]
+
+
+def test_markdown_table_keeps_empty_edge_cells():
+    # `||` opens or closes a row with an empty cell; stripping every edge pipe drops it
+    text = "| | a | b |\n|---|---|---|\n|| x | y |\n| x | y ||\n"
+    assert web.extract_markdown_tables(text) == [
+        [["", "a", "b"], ["---", "---", "---"], ["", "x", "y"], ["x", "y", ""]]
+    ]
+
+
+def test_markdown_table_reads_rows_without_outer_pipes():
+    text = "a | b\n--- | ---\nx | y\n"
+    assert web.extract_markdown_tables(text) == [[["a", "b"], ["---", "---"], ["x", "y"]]]

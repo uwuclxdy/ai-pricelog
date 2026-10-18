@@ -52,11 +52,23 @@ def fold_heading(text: str) -> str:
     return " ".join(text.casefold().replace("&", " and ").split())
 
 
+_MARKDOWN_LINE_END = re.compile(r"\r\n?|\n")
+
+
+def markdown_lines(text: str) -> list[str]:
+    """split a markdown page on CommonMark line endings only.
+
+    str.splitlines() also cuts on U+2028, U+0085 and other separators a cell
+    can carry, tearing one table row into two.
+    """
+    return _MARKDOWN_LINE_END.split(text)
+
+
 def extract_markdown_tables(text: str) -> list[list[list[str]]]:
     """split markdown pipe tables into row lists: header, separator, data rows."""
     blocks: list[list[str]] = []
     block: list[str] = []
-    for line in text.splitlines():
+    for line in markdown_lines(text):
         if "|" in line:
             block.append(line)
         elif block:
@@ -66,7 +78,11 @@ def extract_markdown_tables(text: str) -> list[list[list[str]]]:
         blocks.append(block)
     tables: list[list[list[str]]] = []
     for lines in blocks:
-        rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in lines]
+        # one edge pipe per side: `|| x |` opens with an empty cell
+        rows = [
+            [cell.strip() for cell in line.strip().removeprefix("|").removesuffix("|").split("|")]
+            for line in lines
+        ]
         if len(rows) >= 2 and all(re.fullmatch(r":?-+:?", cell) for cell in rows[1]):
             tables.append(rows)
     return tables
