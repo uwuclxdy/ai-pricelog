@@ -10,6 +10,7 @@ from ai_pricelog.pricing import Pricing
 from ai_pricelog.store import (
     SHARD_DIR,
     FxError,
+    appended_lines,
     build_removal_row,
     build_row,
     changed,
@@ -175,6 +176,15 @@ def test_union_dedupes_carried_removal_copy():
         {"source": "a", "model_id": "o", "observed_at": "t2", "removed": True},
     ]
     assert union(base, extra) == base + [extra[1]]
+
+
+def test_appended_lines_holds_only_new_exact_lines():
+    # the exact-line partition the merge and the pending hold share: a branch
+    # line whose bytes head holds drops, and a duplicate branch line appends
+    # once
+    head = ["a", "b"]
+    branch = ["b", "a", "c", "c"]
+    assert appended_lines(head, branch) == ["c"]
 
 
 def test_last_returns_latest_row_per_source_and_model():

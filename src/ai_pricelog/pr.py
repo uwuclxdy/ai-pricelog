@@ -38,6 +38,14 @@ class PrError(Exception):
         self.stdout = stdout
 
 
+class PendingScanError(Exception):
+    """A run with open pricelog PRs could not read their branch rows.
+
+    The pipeline catches this and opens no PR that run, so a model whose
+    pending row it could not read is never duplicated; the next run retries.
+    """
+
+
 _GH_READ_SUBCOMMANDS = (("pr", "list"), ("pr", "view"), ("repo", "view"))
 # gh api flags that never turn a GET into a write; a value flag consumes the
 # token after it. every other `-` token is denied by default, so a body flag,
@@ -492,15 +500,20 @@ def open_pull_requests(runner: PrRunner, cwd: Path) -> list[OpenPr]:
     return prs
 
 
-def pending_pr(model_id: str, open_prs: Sequence[OpenPr]) -> bool:
-    """Whether an open PR in THIS repo names model_id in its title or body.
+class PendingScan(list[dict[str, object]]):
+    """The valid pending rows (the list) plus the keys their branches hold.
 
-    Case-insensitive substring match over the run's one pr list. The pipeline
-    checks it before scraping, so a closed-unmerged PR re-candidates the model
-    on the next run while an open one settles it.
+    The union takes the list: a row the contract refuses never shapes this
+    run's branches. ``held_keys`` is the (source, model_id) keys of the exact
+    lines each open branch shard would append over HEAD's shard text, so a
+    hand-edited row on an open PR still holds its model while the PR is open.
     """
-    needle = model_id.lower()
-    return any(needle in entry.title.lower() or needle in entry.body.lower() for entry in open_prs)
+
+    def __init__(
+        self, rows: list[dict[str, object]], held_keys: frozenset[tuple[str, str]]
+    ) -> None:
+        super().__init__(rows)
+        self.held_keys = held_keys
 
 
 def seed_pending(open_prs: Sequence[OpenPr]) -> bool:
@@ -528,13 +541,37 @@ def open_pr(base: str, branch: str, spec: PrSpec, runner: PrRunner, cwd: Path) -
     ).strip()
 
 
+def _landed_shard_lines(repo_root: Path, path: str) -> list[str]:
+    """The working-tree shard text for a branch shard path; a missing shard reads as empty.
+
+    This reads repo_root/path, not HEAD:path. `run` reaches fetch_pending_rows
+    before it writes the tree, so the working-tree copy is still the landed
+    text at that point; the pending hold compares the branch shard against it.
+    """
+    try:
+        return (repo_root / path).read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return []
+
+
+def _is_shard_path(shard_dir: str, path: str) -> bool:
+    """Whether an ls-tree entry is one .ndjson shard directly under shard_dir.
+
+    Mirrors store.load_shards's landed-side rule (a `.ndjson` file directly in
+    the directory), so a README, a subdirectory or any other entry reads as
+    not-a-shard rather than as an unreadable shard.
+    """
+    prefix = shard_dir + "/"
+    return path.startswith(prefix) and "/" not in path[len(prefix) :] and path.endswith(".ndjson")
+
+
 def fetch_pending_rows(
     runner: PrRunner,
     repo_root: Path,
     shard_dir: str,
     open_prs: Sequence[OpenPr],
     keys: validate.SchemaKeys,
-) -> list[dict[str, object]]:
+) -> PendingScan:
     """The rows on open PRs' pricelog branches of origin, under refs/remotes/pending.
 
     Every open PR branch carries one shard per source it changed; its rows
@@ -544,31 +581,52 @@ def fetch_pending_rows(
     keeps its head ref out of open_prs and contributes no rows, so a rejected
     pr's rows drop out of the union and its model re-candidates on the next
     run. Each row must pass validate_row: the pass is authorized to hand-edit
-    a branch row, so a shape the contract refuses drops out here (logged;
-    automerge rejects it before the store) instead of shaping this run's
-    branches. The fetch is forced and pruned: pending branches are
-    force-pushed, and refs of branches deleted upstream must not linger. A
-    run without an origin remote (local dev) or a branch without the shard
-    directory just yields no pending rows.
+    a branch row, so a shape the contract refuses drops out of the union
+    (logged; automerge rejects it before the store) instead of shaping this
+    run's branches. ``held_keys`` holds the (source, model_id) keys of the
+    exact lines each open branch shard would append over HEAD's shard text
+    (the merge's own partition), so a hand-edited row still holds its model
+    while the PR is open.
+
+    With at least one open pricelog PR (the seed included), any failure to
+    read the branches — the fetch, the ref listing, an open PR's missing ref,
+    or a branch's ls-tree/show/parse — raises PendingScanError so the run
+    opens no PR and the next run retries; without one, a failed fetch or
+    listing just yields no pending rows.
     """
+    open_branch = any(entry.head_ref.startswith("pricelog/") for entry in open_prs)
     try:
         runner.run(
             ["git", "fetch", "origin", "+refs/heads/pricelog/*:refs/remotes/pending/*", "--prune"],
             cwd=repo_root,
         )
     except PrError as exc:
+        if open_branch:
+            raise PendingScanError(f"pending branch fetch failed: {exc}") from exc
         log.info("pending branch fetch failed; continuing with no pending rows: %s", exc)
-        return []
+        return PendingScan([], frozenset())
     try:
         refs = runner.run(
             ["git", "for-each-ref", "refs/remotes/pending", "--format=%(refname)"],
             cwd=repo_root,
         ).splitlines()
     except PrError as exc:
+        if open_branch:
+            raise PendingScanError(f"pending ref listing failed: {exc}") from exc
         log.info("pending ref listing failed; continuing with no pending rows: %s", exc)
-        return []
+        return PendingScan([], frozenset())
     open_heads = {entry.head_ref for entry in open_prs}
+    fetched_heads = {f"pricelog/{ref.removeprefix('refs/remotes/pending/')}" for ref in refs}
+    missing = sorted(
+        head for head in open_heads if head.startswith("pricelog/") and head not in fetched_heads
+    )
+    if missing:
+        raise PendingScanError(
+            f"pending branch ref missing for open pr: {missing};"
+            " fix: fetch the branch or close the pr"
+        )
     rows: list[dict[str, object]] = []
+    held_keys: set[tuple[str, str]] = set()
     for ref in refs:
         if f"pricelog/{ref.removeprefix('refs/remotes/pending/')}" not in open_heads:
             log.debug("pending ref %s has no open pr; skipping", ref)
@@ -578,21 +636,34 @@ def fetch_pending_rows(
                 ["git", "ls-tree", "--name-only", ref, f"{shard_dir}/"], cwd=repo_root
             ).splitlines()
         except PrError as exc:
-            log.info("pending branch %s has no %s; skipping: %s", ref, shard_dir, exc)
-            continue
+            raise PendingScanError(f"pending branch {ref} unreadable: {exc}") from exc
         for path in paths:
             if not path:
+                continue
+            if not _is_shard_path(shard_dir, path):
+                log.debug("pending branch %s entry %s is not a shard; skipping", ref, path)
                 continue
             try:
                 text = runner.run(["git", "show", f"{ref}:{path}"], cwd=repo_root)
             except PrError as exc:
-                log.info("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
-                continue
+                raise PendingScanError(
+                    f"pending branch {ref} shard {path} unreadable: {exc}"
+                ) from exc
             try:
                 branch_rows = store.parse(text, f"{ref}:{path}")
             except ValueError as exc:
-                log.warning("pending branch %s shard %s unreadable; skipping: %s", ref, path, exc)
-                continue
+                raise PendingScanError(
+                    f"pending branch {ref} shard {path} unparseable: {exc}"
+                ) from exc
+            branch_lines = text.splitlines()
+            appended = set(store.appended_lines(_landed_shard_lines(repo_root, path), branch_lines))
+            for line, row in zip(branch_lines, branch_rows, strict=True):
+                if line not in appended:
+                    continue
+                source = row.get("source")
+                model_id = row.get("model_id")
+                if isinstance(source, str) and isinstance(model_id, str):
+                    held_keys.add((source, model_id))
             for row in branch_rows:
                 try:
                     validate.validate_row(row, keys)
@@ -606,7 +677,7 @@ def fetch_pending_rows(
                     )
                     continue
                 rows.append(row)
-    return rows
+    return PendingScan(rows, frozenset(held_keys))
 
 
 def ensure_author(slot: Path, runner: PrRunner) -> None:

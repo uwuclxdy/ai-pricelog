@@ -477,20 +477,6 @@ def test_open_pull_requests_uses_limit_and_json_fields():
     assert "--repo" not in cmd
 
 
-def test_pending_pr_title_match_is_case_insensitive():
-    open_prs = [pr.OpenPr("Add DEEPSEEK-CHAT pricing for DeepSeek", "", "pricelog/x-12345678")]
-    assert pr.pending_pr("deepseek-chat", open_prs) is True
-
-
-def test_pending_pr_body_match():
-    open_prs = [pr.OpenPr("t", "records deepseek-chat rows", "")]
-    assert pr.pending_pr("deepseek-chat", open_prs) is True
-
-
-def test_pending_pr_empty_list_is_false():
-    assert pr.pending_pr("deepseek-chat", []) is False
-
-
 def test_seed_pending_matches_head_ref():
     open_prs = [pr.OpenPr("Seed price history", "", "pricelog/seed")]
     assert pr.seed_pending(open_prs) is True
@@ -504,12 +490,12 @@ def test_open_pull_requests_rejects_invalid_json():
         pr.open_pull_requests(fake, Path("."))
 
 
-def test_fetch_pending_rows_no_remote_returns_empty():
+def test_fetch_pending_rows_no_remote_returns_empty(tmp_path):
     fake = FakeRunner().on("git fetch", failure=pr.PrError("no such remote: origin"))
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", [], SCHEMA_KEYS) == []
+    assert pr.fetch_pending_rows(fake, tmp_path, "data/history", [], SCHEMA_KEYS) == []
 
 
-def test_fetch_pending_rows_reads_branch_shards():
+def test_fetch_pending_rows_reads_branch_shards(tmp_path):
     lines = json.dumps(pending_row("x")) + "\n" + json.dumps(pending_row("y")) + "\n"
     fake = (
         FakeRunner()
@@ -519,12 +505,12 @@ def test_fetch_pending_rows_reads_branch_shards():
         .on("git show", output=lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [
+    assert pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS) == [
         json.loads(line) for line in lines.splitlines()
     ]
 
 
-def test_fetch_pending_rows_skips_branch_without_shards():
+def test_fetch_pending_rows_skips_branch_without_shards(tmp_path):
     fake = (
         FakeRunner()
         .on("git fetch")
@@ -532,10 +518,10 @@ def test_fetch_pending_rows_skips_branch_without_shards():
         .on("git ls-tree", output="")
     )
     open_prs = [pr.OpenPr("Add bad pricing", "", "pricelog/bad")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == []
+    assert pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS) == []
 
 
-def test_fetch_pending_rows_skips_branches_without_open_pr():
+def test_fetch_pending_rows_skips_branches_without_open_pr(tmp_path):
     # a closed pr keeps its branch on origin; its head ref is no longer in
     # the open-pr list, so its rows must not ride any future pr branch
     open_lines = json.dumps(pending_row("x")) + "\n"
@@ -552,14 +538,14 @@ def test_fetch_pending_rows_skips_branches_without_open_pr():
         .on("git show refs/remotes/pending/closed", output=closed_lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/open-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [
+    assert pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS) == [
         json.loads(open_lines)
     ]
 
 
-def test_fetch_pending_rows_fetch_is_forced_and_pruned():
+def test_fetch_pending_rows_fetch_is_forced_and_pruned(tmp_path):
     fake = FakeRunner().on("git fetch").on("git for-each-ref", output="")
-    pr.fetch_pending_rows(fake, Path("."), "data/history", [], SCHEMA_KEYS)
+    pr.fetch_pending_rows(fake, tmp_path, "data/history", [], SCHEMA_KEYS)
     (cmd, _cwd) = fake.calls[0]
     assert cmd == [
         "git",
@@ -570,7 +556,7 @@ def test_fetch_pending_rows_fetch_is_forced_and_pruned():
     ]
 
 
-def test_fetch_pending_rows_drops_a_row_the_contract_forbids():
+def test_fetch_pending_rows_drops_a_row_the_contract_forbids(tmp_path):
     # the pass is authorized to hand-edit a branch row, so a pending row can
     # break the row contract: it drops out of the union (logged, so the model
     # re-candidates) instead of shaping this run's branches
@@ -586,7 +572,7 @@ def test_fetch_pending_rows_drops_a_row_the_contract_forbids():
         .on("git show", output=lines)
     )
     open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
-    assert pr.fetch_pending_rows(fake, Path("."), "data/history", open_prs, SCHEMA_KEYS) == [good]
+    assert pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS) == [good]
 
 
 def test_open_pr_uses_spec_title_and_body():

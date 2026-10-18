@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -138,11 +138,17 @@ def run(
 
     open_prs = pr.open_pull_requests(runner, repo_root)
     if seed and pr.seed_pending(open_prs):
-        log.info("store empty at load and the seed pr is still open; skipping the run")
+        log.info(health.HOLD_SEED_PR)
         return report
 
     landed_rows = rows
-    rows = store.union(rows, pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs, keys))
+    try:
+        pending = pr.fetch_pending_rows(runner, repo_root, HISTORY_DIR, open_prs, keys)
+    except pr.PendingScanError as exc:
+        log.warning("%s: %s", health.HOLD_PENDING_SCAN, exc)
+        return report
+    rows = store.union(rows, pending)
+    held_keys = pending.held_keys
 
     snapshot = announce.load_snapshot(repo_root)
     fetch = announce.fetch_channels(cfg, snapshot, today)
@@ -217,7 +223,7 @@ def run(
             rows,
             plan,
             provider_report,
-            open_prs,
+            held_keys,
             today,
             resolve,
             keys,
@@ -230,7 +236,7 @@ def run(
             rows,
             plan,
             provider_report,
-            open_prs,
+            held_keys,
             today,
             resolve,
             keys,
@@ -243,14 +249,20 @@ def run(
             landed_rows,
             fresh_absence,
             removal_groups,
-            open_prs,
+            held_keys,
             today,
             keys,
             provider_report.errors,
         )
 
     _openrouter_rows(
-        rows, landed_rows, plan, report, open_prs, today, fresh_absence, removal_groups, keys
+        rows, landed_rows, plan, report, held_keys, today, fresh_absence, removal_groups, keys
+    )
+
+    log.info(
+        "%s %s",
+        health.CHECKED_PROVIDERS,
+        " ".join([pcfg.key for pcfg in cfg.providers] + ["openrouter"]),
     )
 
     fresh_absence_full = fresh_absence
@@ -397,6 +409,16 @@ def run(
     return report
 
 
+def _spellings(model_id: str, dedup_keys: Any) -> list[str]:
+    """Every spelling the store lookup considers for a page id.
+
+    The page id plus the scraper's dedup spellings. `_stored_spelling` and
+    `_spelling_held` both walk this list, so a deduped spelling maps and holds
+    through the same set, never the page id alone.
+    """
+    return [model_id] + list(dedup_keys(model_id) if dedup_keys is not None else [])
+
+
 def _stored_spelling(
     rows: list[dict[str, object]],
     source: str,
@@ -409,11 +431,29 @@ def _stored_spelling(
     map back to its stored spelling instead of re-candidating under the page
     spelling.
     """
-    spellings = [model_id] + list(dedup_keys(model_id) if dedup_keys is not None else [])
     return next(
-        (spelling for spelling in spellings if store.newest(rows, source, spelling) is not None),
+        (
+            spelling
+            for spelling in _spellings(model_id, dedup_keys)
+            if store.newest(rows, source, spelling) is not None
+        ),
         None,
     )
+
+
+def _spelling_held(
+    held_keys: frozenset[tuple[str, str]],
+    source: str,
+    model_id: str,
+    dedup_keys: Any,
+) -> bool:
+    """Whether an open PR's branch holds any spelling the store lookup considers.
+
+    The held set keys on the branch row's own model_id, so a page id whose
+    dedup spelling is the held one must be matched through the same spelling
+    list ``_stored_spelling`` builds, never the page id alone.
+    """
+    return any((source, spelling) in held_keys for spelling in _spellings(model_id, dedup_keys))
 
 
 def _add_candidates(
@@ -424,7 +464,7 @@ def _add_candidates(
     rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     provider_report: ProviderReport,
-    open_prs: Sequence[pr.OpenPr],
+    held_keys: frozenset[tuple[str, str]],
     today: str,
     resolve: Callable[[str, str], tuple[float, str] | None],
     keys: validate.SchemaKeys,
@@ -432,16 +472,17 @@ def _add_candidates(
     """First rows for ids the store has never seen under any spelling.
 
     Store membership (the page id or a dedup spelling, pending branches
-    included) settles an id silently; an open draft PR naming it skips it,
-    so a closed-unmerged PR re-candidates it next run. an id without a store
-    row keeps re-candidating until its first row lands (decision 8,
-    skip-and-retry).
+    included) settles an id silently. a contract-failing pending row never
+    enters the union, so its key reaches the held check here: an open PR's
+    branch holding any of the id's spellings skips it, and a closed-unmerged
+    PR re-candidates it next run. an id without a store row keeps
+    re-candidating until its first row lands (decision 8, skip-and-retry).
     """
     candidates: list[str] = []
     for model_id in dict.fromkeys(detected):
         if _stored_spelling(rows, pcfg.key, model_id, dedup_keys) is not None:
             continue
-        if pr.pending_pr(model_id, open_prs):
+        if _spelling_held(held_keys, pcfg.key, model_id, dedup_keys):
             provider_report.skipped_pending.append(model_id)
             continue
         candidates.append(model_id)
@@ -481,7 +522,7 @@ def _refresh_drift(
     rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     provider_report: ProviderReport,
-    open_prs: Sequence[pr.OpenPr],
+    held_keys: frozenset[tuple[str, str]],
     today: str,
     resolve: Callable[[str, str], tuple[float, str] | None],
     keys: validate.SchemaKeys,
@@ -499,7 +540,7 @@ def _refresh_drift(
         stored = _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
         if stored is None or (pcfg.key, stored) in plan:
             continue  # nothing stored yet, or the row is fresh from this run
-        if pr.pending_pr(stored, open_prs):
+        if (pcfg.key, stored) in held_keys:
             log.info("refresh for %s skipped: pending pr", stored)
             provider_report.skipped_pending.append(stored)
             continue
@@ -541,7 +582,7 @@ def _openrouter_rows(
     landed_rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     report: RunReport,
-    open_prs: Sequence[pr.OpenPr],
+    held_keys: frozenset[tuple[str, str]],
     today: str,
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
@@ -583,7 +624,7 @@ def _openrouter_rows(
             row, last_row
         ):
             continue
-        if pr.pending_pr(model_id, open_prs):
+        if ("openrouter", model_id) in held_keys:
             or_report.skipped_pending.append(model_id)
             continue
         or_report.candidates.append(model_id)
@@ -603,7 +644,7 @@ def _openrouter_rows(
         landed_rows,
         state,
         removal_groups,
-        open_prs,
+        held_keys,
         today,
         keys,
         or_report.errors,
@@ -618,7 +659,7 @@ def _track_provider_absence(
     landed_rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
-    open_prs: Sequence[pr.OpenPr],
+    held_keys: frozenset[tuple[str, str]],
     today: str,
     keys: validate.SchemaKeys,
     errors: list[str],
@@ -655,7 +696,7 @@ def _track_provider_absence(
         landed_rows,
         state,
         removal_groups,
-        open_prs,
+        held_keys,
         today,
         keys,
         errors,
@@ -672,7 +713,7 @@ def _track_absence(
     landed_rows: list[dict[str, object]],
     state: dict[str, dict[str, dict[str, object]]],
     removal_groups: list[_PrGroup],
-    open_prs: Sequence[pr.OpenPr],
+    held_keys: frozenset[tuple[str, str]],
     today: str,
     keys: validate.SchemaKeys,
     errors: list[str],
@@ -709,7 +750,7 @@ def _track_absence(
         model_id
         for model_id in stored_ids
         if model_id not in present_ids
-        and not pr.pending_pr(model_id, open_prs)
+        and (source, model_id) not in held_keys
         and store.newest(rows, source, model_id).get("removed") is not True
     }
     for model_id in sorted(absent_ids):

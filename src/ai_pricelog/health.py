@@ -7,8 +7,11 @@ github issue per provider that failed hard in two consecutive runs (the
 @-mention is what reaches the owner). hard = the detector or a scrape
 raised, so the provider is blind or its rows are rejected; soft = detect,
 parse and row-build skips and validation rejects (additive drift, the
-provider stays alive). a provider that passed this run closes its own
-`provider broken: <key>` issue (recovery). the pass state flags sync the
+provider stays alive). a provider the run's `providers checked:` line names,
+with no hard failure logged for it, closes its own `provider broken: <key>`
+issue (recovery); a held or seed-skipped run, or a run that crashed before
+its providers, logs no checked line, so it closes and opens no provider
+issue (its hold still logs a `::warning::`). the pass state flags sync the
 `review pass dead` ping issue: opened when the pass died with PRs
 awaiting review, closed on a later clean pass. the merge state flags
 sync the `merge step failed` ping the same way: opened when the merge
@@ -36,6 +39,17 @@ MERGE_DEAD_TITLE = "merge step failed"
 # live (absence suppression) and this module parses it from the run log, so
 # the contract has one owner
 DETECT_SKIP = re.compile(r"detect skip for (\S+):")
+
+# the message prefix of the one line pipeline.run logs once its provider loop
+# and openrouter pass finish, naming every provider key the run attempted; this
+# module parses it, so the checked-set contract has one owner
+CHECKED_PROVIDERS = "providers checked:"
+
+# the lines a run that ran no provider logs; the pipeline writes them through
+# these constants and this module parses them, so a held run's warning names
+# the reason (the DETECT_SKIP precedent)
+HOLD_PENDING_SCAN = "pending scan failed; opening no pr this run"
+HOLD_SEED_PR = "store empty at load and the seed pr is still open; skipping the run"
 
 # (pattern, class, fixed provider key or None when the pattern carries the key)
 _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
@@ -65,6 +79,34 @@ def parse_log(lines: Iterable[str]) -> dict[str, dict[str, list[str]]]:
             issues.setdefault(key, {"hard": [], "soft": []})[cls].append(line.strip())
             break
     return issues
+
+
+def hold_reason(lines: Iterable[str]) -> str | None:
+    """The reason this run's log shows no provider ran, or None when one did.
+
+    A held run (the pending hold or the empty-store seed skip) is not provider
+    evidence, so its `::warning::` names the reason instead of the issue list.
+    """
+    for line in lines:
+        if HOLD_PENDING_SCAN in line:
+            return HOLD_PENDING_SCAN
+        if HOLD_SEED_PR in line:
+            return HOLD_SEED_PR
+    return None
+
+
+def checked_providers(lines: Iterable[str]) -> frozenset[str]:
+    """The provider keys the run's checked line names, or empty when it has none.
+
+    pipeline.run logs one `providers checked:` line once its provider loop and
+    openrouter pass finish; a held, seed-skipped or crashed run logs none, so
+    its checked set is empty and close_recovered closes nothing.
+    """
+    for line in lines:
+        _, prefix, rest = line.partition(CHECKED_PROVIDERS)
+        if prefix:
+            return frozenset(rest.split())
+    return frozenset()
 
 
 def warning(now: dict[str, dict[str, list[str]]]) -> str | None:
@@ -160,10 +202,12 @@ def _open_issue_rows() -> list[tuple[int, str]] | None:
         return None
 
 
-def close_recovered(now: dict[str, dict[str, list[str]]]) -> list[str]:
-    """close open provider-broken issues whose provider passed this run.
+def close_recovered(now: dict[str, dict[str, list[str]]], checked: frozenset[str]) -> list[str]:
+    """close open provider-broken issues whose provider this run checked and passed.
 
-    an issue closes only when this run saw no hard failure for its key; a
+    an issue closes only when the run's checked line names its key and the run
+    logged no hard failure for it; a provider the run never checked (a held,
+    crashed or seed-skipped run checks none) says nothing about recovery, and a
     provider that flaps re-opens on the next two-consecutive streak.
     """
     rows = _open_issue_rows()
@@ -174,6 +218,8 @@ def close_recovered(now: dict[str, dict[str, list[str]]]) -> list[str]:
         if not title.startswith(ISSUE_PREFIX):
             continue
         key = title[len(ISSUE_PREFIX) :]
+        if key not in checked:
+            continue
         if now.get(key, {}).get("hard"):
             continue
         _gh(
@@ -298,10 +344,16 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(_usage(), file=sys.stderr)
             return 2
-    now = parse_log(Path(args[0]).read_text(encoding="utf-8").splitlines())
-    annotation = warning(now)
-    if annotation is not None:
-        print(annotation)
+    lines = Path(args[0]).read_text(encoding="utf-8").splitlines()
+    now = parse_log(lines)
+    checked = checked_providers(lines)
+    held = hold_reason(lines)
+    if held is not None:
+        print(f"::warning::{escape_command_data(held)}")
+    else:
+        annotation = warning(now)
+        if annotation is not None:
+            print(annotation)
     repo = os.environ.get("GITHUB_REPOSITORY")
     run_id = os.environ.get("GITHUB_RUN_ID")
     if repo and run_id:
@@ -312,7 +364,7 @@ def main(argv: list[str] | None = None) -> int:
         merge_action = sync_merge_dead_issue(merge_state, run_url)
         if merge_action is not None:
             print(f"::warning::{merge_action} issue {MERGE_DEAD_TITLE}")
-        for title in close_recovered(now):
+        for title in close_recovered(now, checked):
             print(f"::warning::closed issue {escape_command_data(title)}")
         previous = previous_run(repo, run_id)
         if previous is not None:

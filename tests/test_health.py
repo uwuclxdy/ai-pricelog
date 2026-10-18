@@ -110,11 +110,14 @@ def test_close_recovered_closes_only_passed_providers(monkeypatch):
     rows = (
         '[{"number": 1, "title": "provider broken: ai21"},'
         ' {"number": 2, "title": "provider broken: digitalocean"},'
-        ' {"number": 3, "title": "review pass dead"}]'
+        ' {"number": 3, "title": "review pass dead"},'
+        ' {"number": 4, "title": "provider broken: zai"}]'
     )
     monkeypatch.setattr(health, "_gh", lambda args: calls.append(args) or rows)
     now = {"digitalocean": {"hard": ["a"], "soft": []}}
-    assert health.close_recovered(now) == ["provider broken: ai21"]
+    # zai never ran this run, so its issue says nothing about recovery
+    checked = frozenset({"ai21", "digitalocean"})
+    assert health.close_recovered(now, checked) == ["provider broken: ai21"]
     assert calls == [
         ["issue", "list", "--state", "open", "--json", "number,title"],
         [
@@ -129,7 +132,83 @@ def test_close_recovered_closes_only_passed_providers(monkeypatch):
 
 def test_close_recovered_skips_broken_issue_list_failure(monkeypatch):
     monkeypatch.setattr(health, "_gh", lambda args: "not json")
-    assert health.close_recovered({}) == []
+    assert health.close_recovered({}, frozenset({"ai21"})) == []
+
+
+def test_checked_providers_reads_the_run_line():
+    lines = [
+        "INFO:ai_pricelog.pipeline:opened pr for zai: https://x/1",
+        f"INFO:ai_pricelog.pipeline:{health.CHECKED_PROVIDERS} ai21 openrouter zai",
+    ]
+    assert health.checked_providers(lines) == frozenset({"ai21", "openrouter", "zai"})
+    assert health.checked_providers(["ERROR:root:boom"]) == frozenset()
+
+
+def test_main_crashed_run_changes_no_provider_issue(monkeypatch, tmp_path, capsys):
+    # a run that died before its providers ran logs no checked line, so it
+    # proves no recovery: the open issue stays open
+    log_path = tmp_path / "run.log"
+    log_path.write_text("error: gh pr list returned invalid json: Expecting value\n")
+    calls: list[list[str]] = []
+
+    def gh(args: list[str]) -> str:
+        calls.append(args)
+        if args[:2] == ["issue", "list"]:
+            return json.dumps([{"number": 7, "title": "provider broken: deepseek"}])
+        return ""
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "47")
+    assert health.main([str(log_path)]) == 0
+    assert not [call for call in calls if call[:2] == ["issue", "close"]]
+
+
+def test_hold_reason_detects_the_pending_hold():
+    lines = [
+        "WARNING:ai_pricelog.pipeline:pending scan failed; opening no pr this run:"
+        " pending branch fetch failed: fetch failed"
+    ]
+    assert health.hold_reason(lines) == health.HOLD_PENDING_SCAN
+
+
+def test_hold_reason_detects_the_seed_skip():
+    lines = [
+        "INFO:ai_pricelog.pipeline:store empty at load and the seed pr is still open;"
+        " skipping the run"
+    ]
+    assert health.hold_reason(lines) == health.HOLD_SEED_PR
+
+
+def test_hold_reason_none_when_providers_ran():
+    assert health.hold_reason(["INFO:ai_pricelog.pipeline:opened pr for deepseek: url"]) is None
+
+
+def test_main_seed_hold_warns_and_closes_no_provider_issue(monkeypatch, tmp_path, capsys):
+    # the seed skip ran no provider either, so a provider-broken issue must
+    # stay open: the ::warning:: names the hold and close/open never run
+    log_path = tmp_path / "run.log"
+    log_path.write_text(health.HOLD_SEED_PR + "\n", encoding="utf-8")
+    gh_calls: list[list[str]] = []
+
+    def gh(args: list[str]) -> str:
+        gh_calls.append(args)
+        if args[:2] == ["issue", "list"]:
+            return json.dumps([{"number": 7, "title": "provider broken: deepseek"}])
+        return ""
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "46")
+    capsys.readouterr()
+
+    assert health.main([str(log_path)]) == 0
+
+    assert not [call for call in gh_calls if call[:2] == ["issue", "close"]]
+    out = capsys.readouterr().out
+    assert any(line.startswith("::warning::") for line in out.splitlines())
 
 
 def test_sync_pass_dead_issue_opens_once(monkeypatch):
@@ -311,8 +390,10 @@ def test_main_escapes_a_closed_issue_title_in_its_warning(monkeypatch, tmp_path,
     # the title comes back from `gh issue list` as a human typed it, so the
     # workflow command escapes its `%`, CR and LF like any other data
     log_path = tmp_path / "run.log"
-    log_path.write_text("", encoding="utf-8")
-    title = "provider broken: x%y\r\nz\nw"
+    log_path.write_text(
+        f"INFO:ai_pricelog.pipeline:{health.CHECKED_PROVIDERS} x%y\n", encoding="utf-8"
+    )
+    title = "provider broken: x%y"
 
     def gh(args: list[str]) -> str:
         if args[0] == "api":
@@ -325,9 +406,12 @@ def test_main_escapes_a_closed_issue_title_in_its_warning(monkeypatch, tmp_path,
     monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "44")
     assert health.main([str(log_path)]) == 0
-    assert capsys.readouterr().out == (
-        "::warning::closed issue provider broken: x%25y%0D%0Az%0Aw\n"
-    )
+    assert capsys.readouterr().out == "::warning::closed issue provider broken: x%25y\n"
+
+
+def test_escape_command_data_escapes_percent_cr_and_lf():
+    # an issue title comes back from `gh issue list` as a human typed it
+    assert health.escape_command_data("x%y\r\nz\nw") == "x%25y%0D%0Az%0Aw"
 
 
 def test_main_escapes_an_opened_issue_title_in_its_warning(monkeypatch, tmp_path, capsys):

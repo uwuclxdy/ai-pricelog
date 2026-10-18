@@ -132,6 +132,22 @@ def union(rows: list[dict[str, object]], extra: list[dict[str, object]]) -> list
     return merged
 
 
+def appended_lines(head: list[str], branch: list[str]) -> list[str]:
+    """The branch lines HEAD does not hold, in branch order, first occurrence only.
+
+    The merge's exact-line union and the pipeline's pending hold both read this
+    one partition: a key-based dedupe drops a same-day update row, so "not on
+    the landed store" is decided on the serialized line, never on the row key.
+    """
+    seen = set(head)
+    appended: list[str] = []
+    for line in branch:
+        if line not in seen:
+            seen.add(line)
+            appended.append(line)
+    return appended
+
+
 def last(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str, object] | None:
     """The last priced row for the key: removal rows never feed price diffs."""
     for row in reversed(rows):

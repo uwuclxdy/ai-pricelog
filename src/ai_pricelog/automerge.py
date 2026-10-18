@@ -155,7 +155,7 @@ def _validate_appended(
 ) -> None:
     """Every line the partition appends must pass validate_row before it lands.
 
-    The partition arrives from _appended_lines, the one implementation the
+    The partition arrives from store.appended_lines, the one implementation the
     union and this validation both read, so a dedupe change there cannot leave
     the validated set diverging from the appended set. _aligned_branch_rows
     reads the branch's own copy, so a json error names the branch line the fix
@@ -622,15 +622,11 @@ def _union_models(head_text: str, branch_text: str) -> str:
     )
 
 
-def _appended_lines(head: list[str], branch: list[str]) -> list[str]:
-    """The branch lines HEAD does not hold, in branch order, first occurrence only."""
-    seen = set(head)
-    appended: list[str] = []
-    for line in branch:
-        if line not in seen:
-            seen.add(line)
-            appended.append(line)
-    return appended
+# the one exact-line partition the pending scan and this merge share, owned by
+# store (automerge imports pr, so pr cannot import automerge). tests patch this
+# module attribute, so it stays a name the call sites resolve, never a direct
+# call.
+_appended_lines = store.appended_lines
 
 
 def _is_pipeline_path(path: str) -> bool:

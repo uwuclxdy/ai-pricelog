@@ -263,23 +263,569 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert len(runner.pr_urls) == 1
 
 
+def push_pending_branch(repo_root: Path, branch: str, source: str, rows: list[dict]) -> None:
+    """Push an open sibling PR's branch carrying `rows` as its `source` shard."""
+    git(repo_root, "switch", "-C", branch)
+    store.save_shard(rows, repo_root / "data" / "history", source)
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", f"sibling {source} update")
+    git(repo_root, "push", "origin", branch)
+    git(repo_root, "switch", "main")
+
+
+def or_model(model_id: str, input_mtok: float, output_mtok: float) -> openrouter.OpenrouterModel:
+    return openrouter.OpenrouterModel(
+        id=model_id,
+        name=model_id,
+        input_mtok=input_mtok,
+        output_mtok=output_mtok,
+        cache_read_mtok=None,
+        pricing={"prompt": str(input_mtok / 1e6), "completion": str(output_mtok / 1e6)},
+    )
+
+
+def deepseek_legacy() -> dict:
+    return store.build_row(
+        "deepseek",
+        "deepseek-legacy",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://example.com/pricing",
+        VERSION,
+    )
+
+
+def deepseek_chat_pending() -> dict:
+    return store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+        VERSION,
+    )
+
+
 def test_pending_pr_skip_fires_before_scrape(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {}  # any scrape call would raise AssertionError
     cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, deepseek_chat_pending()])
     runner = PipelineRunner(
-        open_prs=[{"title": "Add DEEPSEEK-CHAT pricing for DeepSeek", "body": ""}]
+        open_prs=[
+            {"title": "Update Deepseek price history", "body": "", "headRefName": pending_branch}
+        ]
     )
 
-    report = pipeline.run(cfg, repo_root, runner)
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     provider_report = report.providers["deepseek"]
     assert provider_report.skipped_pending == ["deepseek-chat"]
     assert provider_report.candidates == []
     assert provider_report.errors == []
     assert runner.pr_urls == []
-    assert_default_branch_clean(repo_root)
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_pending_scan_holds_the_full_id_on_the_branch_source_only(
+    tmp_path, fake_modules, repo_root, or_models
+):
+    # an open openrouter pr carrying `x/foo-bar` holds exactly (openrouter,
+    # x/foo-bar). its body names the id, so a substring scan over pr text also
+    # held openrouter `x/foo`, zai `foo`, and froze zai `foo-b`'s absence counter
+    detect, scrape = fake_modules
+    detect["zai"] = ["foo"]  # zai `foo-b` is gone from the page
+    scrape["zai"] = {"foo": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("zai")
+    zai_rows = [
+        store.build_row(
+            "zai",
+            model_id,
+            Pricing(0.2e-6, 0.4e-6, "chat"),
+            "2026-08-19",
+            "https://example.com/pricing",
+            VERSION,
+        )
+        for model_id in ("foo", "foo-b")
+    ]
+    or_ids = ("x/foo", "x/foo-bar", "x/foo-bar-baz")
+    or_landed = [openrouter.build_row(or_model(i, 0.1, 0.2), "2026-08-19", VERSION) for i in or_ids]
+    assert all(row is not None for row in or_landed)
+    seed_store(repo_root, [*zai_rows, *or_landed])
+    or_pending = openrouter.build_row(or_model("x/foo-bar", 0.15, 0.3), "2026-08-25", VERSION)
+    assert or_pending is not None
+    pending_branch = pr.branch_name("openrouter@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "openrouter", [*or_landed, or_pending])
+    or_models.extend(or_model(i, 0.27, 1.1) for i in or_ids)
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Update OpenRouter price history (1 row)",
+                "body": "| openrouter | `x/foo-bar` | 2026-08-25 | 0.15 | — | — | 0.3 |\n",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    or_report = report.providers["openrouter"]
+    assert or_report.candidates == ["x/foo", "x/foo-bar-baz"]
+    assert or_report.skipped_pending == ["x/foo-bar"]
+    zai_report = report.providers["zai"]
+    assert zai_report.skipped_pending == []
+    assert [model_id for model_id, _url in zai_report.prs] == ["foo"]
+    assert branch_absence(repo_root, batch_branch("zai")) == {
+        "zai": {"foo-b": {"absent_runs": 1, "since": TODAY}}
+    }
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_pending_scan_ignores_pr_text_without_a_branch_row(tmp_path, fake_modules, repo_root):
+    # an open pr whose title and body name deepseek-chat while its branch
+    # carries no deepseek-chat row holds nothing: the branch is what lands
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    other = store.build_row(
+        "deepseek",
+        "deepseek-other",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+        VERSION,
+    )
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, other])
+    runner = PipelineRunner(
+        open_prs=[
+            {
+                "title": "Add deepseek-chat pricing for Deepseek",
+                "body": "| deepseek | `deepseek-chat` | 2026-08-25 |",
+                "headRefName": pending_branch,
+            }
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert report.providers["deepseek"].skipped_pending == []
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-chat"]
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_unfetchable_pending_branches_open_no_pr(tmp_path, fake_modules, repo_root):
+    # the held set comes from the open branches; a run that cannot fetch them
+    # cannot tell which models are held, so it opens nothing and the next run
+    # retries (cloudy's pick, 2026-10-18)
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, deepseek_chat_pending()])
+    runner = PipelineRunner(
+        open_prs=[
+            {"title": "Update Deepseek price history", "body": "", "headRefName": pending_branch}
+        ],
+        failures={
+            "+refs/heads/pricelog/*:refs/remotes/pending/*": pr.PrError("fetch failed: network")
+        },
+    )
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert runner.pr_urls == []
+    pushed = git(repo_root, "ls-remote", "--heads", "origin", "pricelog/*").splitlines()
+    assert [line.split("\t")[1] for line in pushed] == [f"refs/heads/{pending_branch}"]
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_same_day_update_row_on_an_open_branch_holds_its_model(tmp_path, fake_modules, repo_root):
+    # a same-day row landed, then a later same-day update rides an open pr: the
+    # update shares the landed row's (source, model_id, observed_at) key, so a
+    # key-based "not landed" test misses it and every run reopens the drift
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    landed = store.build_row(
+        "deepseek", "deepseek-chat", pricing(), TODAY, "https://example.com/pricing", VERSION
+    )
+    seed_store(repo_root, [landed])
+    update = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        pricing(3.0e-7, 1.2e-6),
+        TODAY,
+        "https://example.com/pricing",
+        VERSION,
+    )
+    pending_branch = pr.branch_name(f"deepseek@{TODAY}-010000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [landed, update])
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="020000")
+
+    assert report.providers["deepseek"].skipped_pending == ["deepseek-chat"]
+    assert runner.pr_urls == []
+
+
+def test_held_rows_key_on_their_own_source(tmp_path, fake_modules, repo_root, or_models):
+    # an open openrouter branch carries rows for ids `foo`, `bar` and `baz`,
+    # spelled exactly as zai's own stored and new ids: none of them holds zai.
+    # its `baz` row breaks the row contract, so it reaches the first-seen check
+    # only through the held set, never through the union
+    detect, scrape = fake_modules
+    detect["zai"] = ["foo", "baz"]  # zai `bar` is gone from the page
+    scrape["zai"] = {"foo": pricing(3.0e-7, 1.2e-6), "baz": pricing()}
+    cfg = make_cfg("zai")
+    zai_rows = [
+        store.build_row(
+            "zai",
+            model_id,
+            Pricing(0.2e-6, 0.4e-6, "chat"),
+            "2026-08-19",
+            "https://example.com/pricing",
+            VERSION,
+        )
+        for model_id in ("foo", "bar")
+    ]
+    seed_store(repo_root, zai_rows)
+    or_rows = [
+        openrouter.build_row(or_model(model_id, 0.15, 0.3), "2026-08-25", VERSION)
+        for model_id in ("foo", "bar", "baz")
+    ]
+    assert all(row is not None for row in or_rows)
+    or_rows[2]["surprise"] = "a hand edit the row contract refuses"
+    pending_branch = pr.branch_name("openrouter@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "openrouter", or_rows)
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    zai_report = report.providers["zai"]
+    assert zai_report.skipped_pending == []
+    assert sorted(model_id for model_id, _url in zai_report.prs) == ["baz", "foo"]
+    assert branch_absence(repo_root, batch_branch("zai")) == {
+        "zai": {"bar": {"absent_runs": 1, "since": TODAY}}
+    }
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "for-each-ref refs/remotes/pending",
+        "show refs/remotes/pending/",
+    ],
+    ids=["ref-listing", "shard-read"],
+)
+def test_unreadable_pending_branch_rows_open_no_pr(tmp_path, fake_modules, repo_root, failure):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, deepseek_chat_pending()])
+    runner = PipelineRunner(
+        open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}],
+        failures={failure: pr.PrError("read failed")},
+    )
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert runner.pr_urls == []
+
+
+def test_unparseable_pending_shard_opens_no_pr(tmp_path, fake_modules, repo_root):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    seed_store(repo_root, [deepseek_legacy()])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    git(repo_root, "switch", "-C", pending_branch)
+    (repo_root / "data" / "history" / "deepseek.ndjson").write_text("{not json\n")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "torn shard")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert runner.pr_urls == []
+
+
+@pytest.mark.parametrize(
+    "head_ref", ["pricelog/seed", "pricelog/deepseek-gone-12345678"], ids=["seed", "missing-ref"]
+)
+def test_open_pricelog_pr_without_readable_rows_opens_no_pr(
+    tmp_path, fake_modules, repo_root, head_ref
+):
+    # the seed pr's rows hold models too, and an open pricelog pr whose branch
+    # never arrives cannot say what it holds: either way the run holds
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    seed_store(repo_root, [deepseek_legacy()])
+    failures = (
+        {"+refs/heads/pricelog/*:refs/remotes/pending/*": pr.PrError("fetch failed")}
+        if head_ref == "pricelog/seed"
+        else {}
+    )
+    runner = PipelineRunner(
+        open_prs=[{"title": "t", "body": "", "headRefName": head_ref}], failures=failures
+    )
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert runner.pr_urls == []
+
+
+def _health_main_on(tmp_path, caplog, monkeypatch, issues: list[str]) -> list[list[str]]:
+    """Run the health step over this test's captured run log; return its gh calls."""
+    log_path = tmp_path / "health-run.log"
+    log_path.write_text("\n".join(_logged_lines(caplog)) + "\n", encoding="utf-8")
+    calls: list[list[str]] = []
+
+    def gh(args: list[str]) -> str:
+        calls.append(args)
+        if args[:2] == ["issue", "list"]:
+            return json.dumps(
+                [{"number": n, "title": f"provider broken: {key}"} for n, key in enumerate(issues)]
+            )
+        return ""
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "48")
+    assert health.main([str(log_path)]) == 0
+    return calls
+
+
+def test_health_closes_only_issues_of_providers_the_run_checked(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    seed_store(repo_root, [deepseek_legacy()])
+    caplog.set_level(logging.INFO)
+    pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    calls = _health_main_on(tmp_path, caplog, monkeypatch, ["deepseek", "zai", "openrouter"])
+
+    closed = [call[2] for call in calls if call[:2] == ["issue", "close"]]
+    # deepseek and the openrouter pass ran clean; zai is not in this run's config
+    assert closed == ["0", "2"]
+
+
+def test_run_crashing_before_its_checked_line_closes_no_issue(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    # a crash anywhere before the provider loop and the openrouter pass finish
+    # leaves no checked line, so no provider's issue reads as recovered
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    seed_store(repo_root, [deepseek_legacy()])
+
+    def crash(*args, **kwargs):
+        raise RuntimeError("openrouter pass crashed")
+
+    monkeypatch.setattr(pipeline, "_openrouter_rows", crash)
+    caplog.set_level(logging.INFO)
+    with pytest.raises(RuntimeError, match="openrouter pass crashed"):
+        pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    calls = _health_main_on(tmp_path, caplog, monkeypatch, ["deepseek"])
+
+    assert not [call for call in calls if call[:2] == ["issue", "close"]]
+
+
+def test_seed_hold_warns_and_closes_no_provider_issue(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch, capsys
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {}
+    runner = PipelineRunner(
+        open_prs=[{"title": "Seed price history", "body": "", "headRefName": "pricelog/seed"}]
+    )
+    caplog.set_level(logging.INFO)
+    pipeline.run(make_cfg("deepseek"), repo_root, runner)
+    capsys.readouterr()
+
+    calls = _health_main_on(tmp_path, caplog, monkeypatch, ["deepseek"])
+
+    assert not [call for call in calls if call[:2] == ["issue", "close"]]
+    assert any(line.startswith("::warning::") for line in capsys.readouterr().out.splitlines())
+
+
+def test_held_dedup_spelling_holds_the_page_id(tmp_path, fake_modules, repo_root, monkeypatch):
+    # the page renamed `foo` to `foo-v2`; an open branch carries a `foo` row
+    # the row contract refuses, so only the held set can settle the page id,
+    # through the same spelling list the store lookup uses
+    detect, scrape = fake_modules
+    detect["zai"] = ["foo-v2"]
+    scrape["zai"] = {}  # any scrape call would raise AssertionError
+    scraper_module = sys.modules["ai_pricelog.scrapers.fake_scr"]
+    monkeypatch.setattr(
+        scraper_module,
+        "dedup_keys",
+        lambda model_id: ["foo"] if model_id == "foo-v2" else [],
+        raising=False,
+    )
+    legacy = store.build_row(
+        "zai", "zai-legacy", pricing(), "2026-08-19", "https://example.com/pricing", VERSION
+    )
+    seed_store(repo_root, [legacy])
+    detect["zai"] = ["foo-v2", "zai-legacy"]
+    scrape["zai"] = {"zai-legacy": pricing()}
+    refused = store.build_row(
+        "zai", "foo", pricing(), "2026-08-25", "https://example.com/pricing", VERSION
+    )
+    refused["surprise"] = "a hand edit the row contract refuses"
+    pending_branch = pr.branch_name("zai@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "zai", [legacy, refused])
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+
+    report = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
+
+    assert report.providers["zai"].skipped_pending == ["foo-v2"]
+    assert report.providers["zai"].candidates == []
+    assert runner.pr_urls == []
+
+
+def test_non_shard_file_under_history_on_a_branch_is_not_a_read_failure(
+    tmp_path, fake_modules, repo_root
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    git(repo_root, "switch", "-C", pending_branch)
+    (repo_root / "data" / "history" / "README.md").write_text("shards live here\n")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "a note beside the shards")
+    git(repo_root, "push", "origin", pending_branch)
+    git(repo_root, "switch", "main")
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+
+    report = pipeline.run(make_cfg("deepseek"), repo_root, runner, today=TODAY, now="000000")
+
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-chat"]
+
+
+def test_held_run_warns_and_closes_no_provider_issue(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch, capsys
+):
+    # a held run ran no provider, so its log says nothing about provider
+    # health: the health step flags the hold and leaves every issue as it is
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, deepseek_chat_pending()])
+    runner = PipelineRunner(
+        open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}],
+        failures={"+refs/heads/pricelog/*:refs/remotes/pending/*": pr.PrError("fetch failed")},
+    )
+    caplog.set_level(logging.INFO)
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+    log_path = tmp_path / "run.log"
+    log_path.write_text("\n".join(_logged_lines(caplog)) + "\n", encoding="utf-8")
+    gh_calls: list[list[str]] = []
+
+    def gh(args: list[str]) -> str:
+        gh_calls.append(args)
+        if args[:2] == ["issue", "list"]:
+            return json.dumps([{"number": 7, "title": "provider broken: deepseek"}])
+        return ""
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: None)
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "46")
+    capsys.readouterr()
+
+    assert health.main([str(log_path)]) == 0
+
+    assert not [call for call in gh_calls if call[:2] == ["issue", "close"]]
+    out = capsys.readouterr().out
+    assert any(line.startswith("::warning::") for line in out.splitlines())
+
+
+def test_unreadable_pending_branch_ls_tree_opens_no_pr(tmp_path, fake_modules, repo_root):
+    # a read failure past the fetch (the open branch's ls-tree) is the same
+    # class: the held set is unknowable, so nothing opens and the next run
+    # retries
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing()}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, deepseek_chat_pending()])
+    runner = PipelineRunner(
+        open_prs=[
+            {"title": "Update Deepseek price history", "body": "", "headRefName": pending_branch}
+        ],
+        failures={"git ls-tree": pr.PrError("ls-tree failed")},
+    )
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    assert runner.pr_urls == []
+    assert_default_branch_clean(repo_root, tip="seed store")
+
+
+def test_pending_scan_contract_failing_row_still_holds_its_key(tmp_path, fake_modules, repo_root):
+    # a hand-edited branch row that fails validate_row still holds its model:
+    # the PR is open and carries it, so the run must not re-candidate it and
+    # open a duplicate
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    failing = deepseek_chat_pending()
+    failing["surprise"] = "hand edit"
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, failing])
+    runner = PipelineRunner(
+        open_prs=[
+            {"title": "Update Deepseek price history", "body": "", "headRefName": pending_branch}
+        ]
+    )
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    provider_report = report.providers["deepseek"]
+    assert provider_report.skipped_pending == ["deepseek-chat"]
+    assert [model_id for model_id, _url in provider_report.prs] == ["deepseek-new"]
+    assert_default_branch_clean(repo_root, tip="seed store")
 
 
 def test_missing_pricing_skips_and_retries(tmp_path, fake_modules, repo_root):
@@ -1338,7 +1884,8 @@ def test_pending_branch_row_settles_drift_the_pr_text_never_names(
     report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert report.providers["deepseek"].prs == []
-    assert report.providers["deepseek"].skipped_pending == []
+    # the branch row itself holds the model, whatever the pr text says
+    assert report.providers["deepseek"].skipped_pending == ["deepseek-chat"]
     assert runner.pr_urls == []
     assert_default_branch_clean(repo_root, tip="seed store")
 
@@ -1419,12 +1966,22 @@ def test_open_pr_list_fetched_once_per_run(tmp_path, fake_modules, repo_root):
         VERSION,
     )
     seed_store(repo_root, [legacy])
+    pending = store.build_row(
+        "deepseek",
+        "deepseek-a",
+        pricing(),
+        "2026-08-25",
+        "https://example.com/pricing",
+        VERSION,
+    )
+    pending_branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "deepseek", [legacy, pending])
     runner = PipelineRunner(
         open_prs=[
             {
-                "title": "Add DEEPSEEK-A pricing for Deepseek",
+                "title": "Update Deepseek price history (1 row)",
                 "body": "",
-                "headRefName": "pricelog/deepseek-a-12345678",
+                "headRefName": pending_branch,
             }
         ]
     )

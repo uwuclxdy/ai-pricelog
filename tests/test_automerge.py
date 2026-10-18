@@ -166,12 +166,6 @@ def shard_lines(repo: Path, source: str = "deepseek") -> list[str]:
     return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
 
 
-def test_appended_lines_hold_only_new_exact_lines():
-    head = ["a", "b"]
-    branch = ["b", "a", "c", "c"]
-    assert automerge._appended_lines(head, branch) == ["c"]
-
-
 def test_merge_lands_union(tmp_path):
     repo, bare = build_repo(tmp_path)
     r1 = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
