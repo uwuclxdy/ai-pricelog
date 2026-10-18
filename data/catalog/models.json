@@ -2482,6 +2482,15 @@
       },
       "vendor": "deepseek"
     },
+    "fireworks/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "fireworks/deepseek-v4.1-flash-us": {
       "curated": true,
       "name": "DeepSeek V4.1 Flash (US)",
