@@ -9,6 +9,11 @@
       "file": "state/announce/deepseek/sitemap-xml.md",
       "sha256": "727be7e5a5770ada119d498afed05645d74387ea8f5e7bb61c5564f30c47ff7d",
       "fetched": "2026-10-17"
+    },
+    "https://api-docs.deepseek.com/guides/search": {
+      "file": "state/announce/deepseek/search.md",
+      "sha256": "d94972e491bc3c873043df31a291cb43a80292dad35becf8fed13f67e7baa63f",
+      "fetched": "2026-10-18"
     }
   },
   "zai": {
@@ -105,8 +110,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "0b3dc0fc70480c8d3a1f796c03bcd70ab7006c73352b3678701824c430b85654",
-      "fetched": "2026-10-16"
+      "sha256": "d2b0b4ac2241a483b62fc5aef0332e0f1fec7ca4cc092e2986c504bb5eb16187",
+      "fetched": "2026-10-18"
     }
   },
   "cohere": {
