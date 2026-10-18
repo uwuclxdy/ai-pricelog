@@ -359,6 +359,9 @@ def run(
         target.rows.extend(group.rows)
 
     for group in batches.values():
+        source_absence = fresh_absence_full.get(group.source, {})
+        # a committed `{}` file differs from "no file": the branch deletes it
+        source_absence_changed = (source_absence or None) != absence_state.get(group.source)
         spec = pr.PrSpec(
             source=group.source,
             provider=group.provider,
@@ -366,7 +369,7 @@ def run(
             rows=tuple(group.rows),
             run_url=run_url,
             announce=fetch.changes,
-            absence_update=absence_diff,
+            absence_update=source_absence_changed,
             batch_key=f"{group.source}@{today}-{stamp}",
             hints=batch_hints(group),
         )
@@ -380,7 +383,7 @@ def run(
             _commit_message(spec),
             runner,
             announce_updates,
-            {group.source: fresh_absence_full.get(group.source, {})} if absence_diff else None,
+            {group.source: source_absence} if source_absence_changed else None,
             group_catalog(group),
         )
         if url is None:

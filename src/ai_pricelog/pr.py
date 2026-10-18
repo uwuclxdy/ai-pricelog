@@ -259,8 +259,9 @@ class PrSpec:
                 "",
                 "## absence state",
                 "",
-                "`state/absence/<source>.json` updated on this branch; the diff names which "
-                "stored models this run counted absent.",
+                "`state/absence/<source>.json` changed on this branch; diff it against the base "
+                "to see which counters this run raised or cleared (a deleted file: every counter "
+                "cleared).",
             ]
         if self.hints:
             lines += [

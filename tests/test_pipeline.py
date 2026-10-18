@@ -1681,6 +1681,53 @@ def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
+def test_absence_section_only_on_the_pr_whose_source_counters_changed(
+    tmp_path, fake_modules, repo_root
+):
+    # deepseek's counter moves and zai's does not: only the deepseek body may
+    # point the reviewer at a state/absence diff, since the zai branch has none
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    detect["zai"] = ["zai-chat"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    scrape["zai"] = {"zai-chat": pricing()}
+    cfg = make_cfg("deepseek", "zai")
+    seed_store(repo_root, [deepseek_prior()])
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    bodies = {head: body for _title, body, head in runner.created}
+    assert set(bodies) == {batch_branch("deepseek"), batch_branch("zai")}
+    assert "## absence state" in bodies[batch_branch("deepseek")]
+    assert "## absence state" not in bodies[batch_branch("zai")]
+    assert branch_absence(repo_root, batch_branch("zai")) == {}
+
+
+def test_absence_section_names_a_cleared_counter(tmp_path, fake_modules, repo_root):
+    # a counter that clears deletes the source's absence file on the branch;
+    # that deletion is a state/absence diff the body must still point at
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    seed_store(repo_root, [deepseek_prior()])
+    seed_absence(
+        repo_root, {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-25"}}}
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    bodies = {head: body for _title, body, head in runner.created}
+    assert (
+        "## absence state\n\n`state/absence/<source>.json` changed on this branch; diff it"
+        " against the base to see which counters this run raised or cleared (a deleted file:"
+        " every counter cleared).\n"
+    ) in bodies[batch_branch("deepseek")]
+    assert branch_absence(repo_root, batch_branch("deepseek")) == {}
+
+
 def test_detect_skips_freeze_absence_counters(tmp_path, fake_modules, repo_root):
     # a detect that skipped rows has an incomplete id set: a renamed or merged
     # display row skips as unmapped drift, and the stored ids it used to cover
@@ -1730,7 +1777,34 @@ def test_detect_skips_freeze_absence_counters(tmp_path, fake_modules, repo_root)
             "deepseek-kept": {"absent_runs": 1, "since": TODAY},
         }
     }
+    # the counters exist but did not move: the branch has no absence diff to name
+    assert "## absence state" not in runner.created[0][1]
     assert_default_branch_clean(repo_root, tip="land absence state")
+
+
+def test_stale_empty_absence_file_is_deleted_on_the_source_branch(
+    tmp_path, fake_modules, repo_root
+):
+    # a hand-edited or badly merged `{}` file holds no counter; the source's
+    # next branch deletes it, as save_absence never leaves one behind
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    seed_store(repo_root, [deepseek_prior()])
+    stale = repo_root / absence.ABSENCE_DIR / "deepseek.json"
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_text("{}\n")
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "stale absence file")
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+
+    branch = batch_branch("deepseek")
+    paths = git(repo_root, "ls-tree", "-r", "--name-only", branch, "state/absence/").splitlines()
+    assert paths == []
+    assert "## absence state" in runner.created[0][1]
 
 
 def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, repo_root):
