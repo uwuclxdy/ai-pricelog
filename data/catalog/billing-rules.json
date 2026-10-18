@@ -109,7 +109,7 @@
       "provider": "perplexity",
       "effective": "2026-09-09",
       "timezone": "UTC",
-      "statement": "the perplexity Agent API supports google/gemini-3.8-flash at promotional pricing through 2026-12-31: $0.75 per million uncached-input tokens, $0.075 per million cached-input tokens, and $3.75 per million output and reasoning tokens (the pricing page's Agent API table shows the same rates). the changelog names no post-promo rates; UTC is the recorded frame. no store row lands: the perplexity detector watches the sonar Token Pricing table only, and the model sits in the Agent API table",
+      "statement": "the perplexity Agent API supports google/gemini-3.8-flash at promotional pricing through 2026-12-31: $0.75 per million uncached-input tokens, $0.075 per million cached-input tokens, and $3.75 per million output and reasoning tokens (the pricing page's Agent API table shows the same rates). the changelog names no post-promo rates; UTC is the recorded frame. no store row lands: the perplexity detector keys only perplexity/-prefixed Agent API catalog rows, and google/gemini-3.8-flash is a google-prefixed row it never surfaces",
       "citation": [
         "https://docs.perplexity.ai/docs/resources/changelog.md",
         "https://docs.perplexity.ai/guides/pricing"
@@ -170,7 +170,7 @@
       "provider": "xai",
       "effective": "2026-09-21",
       "timezone": "UTC",
-      "statement": "grok-4.7 launches on the xAI API with a 500k context window: $2 / $0.50 / $6 per 1M tokens (input / cached input / output) below 200k prompt tokens, and $4 / $1 / $12 at or above. grok-4.7-fast, the same model at twice the token rates, is available only through Cursor and Grok Build, not on the public xAI API. the release note names no timezone for the launch; the index stores the in-force launch rates",
+      "statement": "grok-4.7 launches on the xAI API with a 500k context window: $2 / $0.50 / $6 per 1M tokens (input / cached input / output) below 200k prompt tokens, and $4 / $1 / $12 at or above. grok-4.7-fast, the same model at twice the standard token rates (1.5x for long-context requests), is available only through Cursor and Grok Build, not on the public xAI API. the release note names no timezone for the launch; the index stores the in-force launch rates",
       "citation": [
         "https://docs.x.ai/developers/release-notes"
       ]
@@ -180,7 +180,7 @@
       "provider": "perplexity",
       "effective": "2026-10-24",
       "timezone": "UTC",
-      "statement": "Perplexity's Agent API and Router API retire openai/gpt-5.4, openai/gpt-5.4-mini, openai/gpt-5.4-nano, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-5 and openai/gpt-5-mini on 2026-10-24 at 00:00 UTC: the models stay available until then, and after the cutoff the retired IDs are no longer accepted or returned by model-list endpoints. the entry names no per-model migration, only the Agent API Models reference for new integrations. the perplexity detector watches the sonar Token Pricing table only and these IDs sit in the Agent API models table, so no perplexity store row is keyed by this rule; the index stores the same IDs as openrouter rows, whose listings are unaffected",
+      "statement": "Perplexity's Agent API and Orchestrator API retire openai/gpt-5.4, openai/gpt-5.4-mini, openai/gpt-5.4-nano, openai/gpt-5.2, openai/gpt-5.1, openai/gpt-5 and openai/gpt-5-mini on 2026-10-24 at 00:00 UTC: the models stay available until then, and after the cutoff the retired IDs are no longer accepted or returned by model-list endpoints. the entry names no per-model migration, only the Agent API Models reference for new integrations. the perplexity detector keys only perplexity/-prefixed Agent API catalog rows and these IDs are openai-prefixed, so no perplexity store row is keyed by this rule; the index stores the same IDs as openrouter rows, whose listings are unaffected",
       "citation": [
         "https://docs.perplexity.ai/docs/resources/changelog.md"
       ]

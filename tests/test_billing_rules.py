@@ -98,7 +98,16 @@ def test_committed_billing_rules_pass_schema():
     assert promo_ppx["provider"] == "perplexity"
     assert promo_ppx["effective"] == "2026-09-09"
     assert "2026-12-31" in promo_ppx["statement"]
+    assert "keys only perplexity/-prefixed Agent API catalog rows" in promo_ppx["statement"]
     assert "https://docs.perplexity.ai/docs/resources/changelog.md" in promo_ppx["citation"]
+    grok_intro = rules[16]
+    assert grok_intro["id"] == "xai-grok-4.7-intro-2026-09-21"
+    fast_rates = "twice the standard token rates (1.5x for long-context requests)"
+    assert fast_rates in grok_intro["statement"]
+    openai_retire = rules[17]
+    assert openai_retire["id"] == "perplexity-openai-model-retirement-2026-10-24"
+    assert openai_retire["statement"].startswith("Perplexity's Agent API and Orchestrator API")
+    assert "keys only perplexity/-prefixed Agent API catalog rows" in openai_retire["statement"]
     deepseek_v4 = rules[11]
     assert deepseek_v4["id"] == "deepseek-v4-retirement-2026-09-10"
     assert deepseek_v4["provider"] == "deepseek"
