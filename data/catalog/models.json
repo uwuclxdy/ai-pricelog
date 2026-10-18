@@ -8307,6 +8307,15 @@
       },
       "vendor": "unbiased"
     },
+    "openrouter/unbiased/pareto-26.10": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "unbiased/pareto-26.10"
+        ]
+      },
+      "vendor": "unbiased"
+    },
     "openrouter/unbiased/pareto-26.10-preview": {
       "curated": false,
       "sources": {
