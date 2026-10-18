@@ -11,13 +11,12 @@ tiered long-context cells (`2.00 (<=272k) 4.00 (>272k)`) pass under the
 scan un-parsed.
 
 None = the id maps to no watched row, or its input/output cell carries no
-number. FetchError = the fetch failed, the page has no pinned table, or
-the matched row is shorter than its header.
+number. FetchError = the fetch failed, the page has no pinned table, the
+matched row is shorter than its header, or a cell carries an unreadable
+amount.
 """
 
 from __future__ import annotations
-
-import re
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.perplexity_page import (
@@ -28,11 +27,14 @@ from ai_pricelog.detectors.perplexity_page import (
     _stored_id,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, extract_tables, fetch_soup, fold_heading
-
-# the header carries the $; cells are bare per-1M numbers, and a leading $
-# stays tolerated
-_AMOUNT_PATTERN = re.compile(r"^\$?([\d,]+(?:\.\d+)?)$")
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    extract_tables,
+    fetch_soup,
+    fold_heading,
+    unreadable_rate_error,
+)
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -55,11 +57,13 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         # so a fold-equal header spelling scrapes instead of crashing on the
         # raw index
         folded = [fold_heading(cell) for cell in header]
-        input_cost = _amount(row[folded.index(_FOLDED_INPUT_HEADER)])
-        output_cost = _amount(row[folded.index(_FOLDED_OUTPUT_HEADER)])
+        input_cost = _amount(row[folded.index(_FOLDED_INPUT_HEADER)], model_id, cfg.scraper_url)
+        output_cost = _amount(row[folded.index(_FOLDED_OUTPUT_HEADER)], model_id, cfg.scraper_url)
         if input_cost is None or output_cost is None:
             return None
-        cache_read = _amount(row[folded.index(_FOLDED_CACHE_READ_HEADER)])
+        cache_read = _amount(
+            row[folded.index(_FOLDED_CACHE_READ_HEADER)], model_id, cfg.scraper_url
+        )
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
@@ -69,6 +73,16 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     return None
 
 
-def _amount(text: str) -> float | None:
-    match = _AMOUNT_PATTERN.fullmatch(text.strip())
-    return float(match.group(1).replace(",", "")) if match else None
+def _amount(cell: str, model_id: str, url: str) -> float | None:
+    """the cell's per-1M amount; the header carries the $ and cells are bare
+    numbers, but a leading "$" stays tolerated. only a cell that is exactly
+    one amount returns a value."""
+    amounts, malformed = amount_scan(cell)
+    if malformed:
+        raise unreadable_rate_error(cell, model_id, url)
+    if len(amounts) != 1:
+        return None
+    amount = amounts[0]
+    if cell.strip() not in (amount, "$" + amount):
+        return None
+    return float(amount.replace(",", ""))

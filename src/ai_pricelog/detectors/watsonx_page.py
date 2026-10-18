@@ -9,10 +9,11 @@ row-label cell is the model name, sometimes suffixed "New". ids are the
 names slugged: lowercase, the "New" suffix stripped, runs of
 non-alphanumerics -> dashes, charset-checked against the stored-id pattern.
 rows whose pay-as-you-go cell carries no USD amount ("Not available") are
-skipped: there is nothing to price. a row shorter than its table's header
-is additive drift: detection skips it with a warning (plan #22). a page
-with no per-model token table or no usable ids is a parse failure
-(FetchError).
+skipped: there is nothing to price. a row whose cell carries a malformed USD
+amount (a comma-decimal) is skipped with the counter-freezing detect-skip
+warning. a row shorter than its table's header is additive drift: detection
+skips it with a warning (plan #22). a page with no per-model token table or
+no usable ids is a parse failure (FetchError).
 """
 
 from __future__ import annotations
@@ -23,11 +24,10 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 log = logging.getLogger(__name__)
 
-_AMOUNT_RE = re.compile(r"USD ([\d,]+(?:\.\d+)?)")
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _NEW_SUFFIX_RE = re.compile(r"\s+New$")
 _NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
@@ -50,10 +50,20 @@ def detect(cfg: ProviderCfg) -> list[str]:
             except FetchError as exc:
                 log.warning("detect skip for %s: %s", cfg.key, exc)
                 continue
-            if not _AMOUNT_RE.search(cells[price_col]):
-                continue
             normalized = _normalize_id(cells[0])
-            if _ID_PATTERN.fullmatch(normalized) and normalized not in seen:
+            if not _ID_PATTERN.fullmatch(normalized):
+                continue
+            amounts, malformed = amount_scan(cells[price_col], before="USD ")
+            if malformed:
+                log.warning(
+                    "detect skip for %s: %s",
+                    cfg.key,
+                    unreadable_rate_error(cells[price_col], normalized, cfg.detector_url),
+                )
+                continue
+            if not amounts:
+                continue
+            if normalized not in seen:
                 seen.add(normalized)
                 ids.append(normalized)
     if not ids:

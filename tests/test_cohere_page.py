@@ -444,3 +444,65 @@ def test_page_parsed_once_per_url(monkeypatch):
     assert cohere_scraper.scrape(cfg, "command") is not None
     assert sorted(cohere_page.detect(cfg)) == sorted(EXPECTED_IDS)
     assert fetches["count"] == 1
+
+
+def test_detect_vault_row_malformed_amount_names_the_malformed_reason(monkeypatch, caplog):
+    # a comma-decimal rate cell is a malformed amount, and the skip warning
+    # names that reason, not the generic non-dollar reason
+    serve_html(
+        monkeypatch,
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p>Model</p></div>"
+        "<div><p>Performance Tier</p></div>"
+        "<div><p>Hourly rate per instance</p></div>"
+        "<div><p>Monthly rate per instance</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Embed 4</strong></p></div>"
+        "<div><p>Small</p></div>"
+        "<div><p>$4,00</p></div>"
+        "<div><p>$2,500</p></div>"
+        "</div>"
+        '<div class="grid justify-start [grid-template-columns:repeat(4,minmax(150px,1fr))]">'
+        "<div><p><strong>Rerank 4 Pro</strong></p></div>"
+        "<div><p>Large</p></div>"
+        "<div><p>$10.00</p></div>"
+        "<div><p>$6,500</p></div>"
+        "</div>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["rerank-4-pro-large"]
+    assert "carries a malformed amount" in caplog.text
+
+
+def test_detect_prose_spaced_slash_comma_decimal_skips_with_a_warning(monkeypatch, caplog):
+    # a comma-decimal amount with whitespace around the "/1M" still matches
+    # the sentence and detect-skips, never drops the model silently
+    serve_html(
+        monkeypatch,
+        "<ul>"
+        "<li>Command pricing is $1,00 / 1M tokens for input and $2.00/1M tokens for output</li>"
+        "<li>Command R pricing is $2.00/1M tokens for input and $4.00/1M tokens for output</li>"
+        "</ul>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["command-r"]
+    assert "detect skip for cohere" in caplog.text
+    assert "malformed prose rate" in caplog.text
+
+
+def test_detect_prose_per_image_rate_is_not_per_token(monkeypatch, caplog):
+    # an amount with prose between the "$" and "/1M" is a per-image rate,
+    # never a per-token one
+    serve_html(
+        monkeypatch,
+        "<ul>"
+        "<li>Command pricing is $1.00 per image/1M tokens for input and $2.00/1M tokens"
+        " for output</li>"
+        "<li>Command R pricing is $2.00/1M tokens for input and $4.00/1M tokens for output</li>"
+        "</ul>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert cohere_page.detect(make_cfg()) == ["command-r"]
+    assert "detect skip for cohere" in caplog.text
+    assert "malformed prose rate" in caplog.text

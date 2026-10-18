@@ -13,9 +13,10 @@ first ($2.00, prompts <= 200k tokens $4.00, prompts > 200k tokens), and
 cache cells list the read rate before the storage price. dollars per 1M
 tokens -> divided by 1e6. a first amount directly followed by "per " is a
 per-image/per-unit rate, not a per-token one (2.5 Flash Image output reads
-$0.039 per image) -> the model has no usable output rate. cells without a
-dollar amount (Free of charge, Not available) and sections without an output
-row (embedding models) are unpriced -> None. sections without an output row
+$0.039 per image) -> the model has no usable output rate. a cell carrying a
+malformed "$" amount (a comma-decimal, a glued digit) raises FetchError
+naming the model and cell. cells without a dollar amount (Free of charge,
+Not available) are unpriced -> None. sections without an output row
 (embedding models) price with output 0: embeddings bill input tokens only
 (the litellm convention); their input label is "Input price" or "Text input
 price". max_tokens_in comes from a "1M token context window" mention in the
@@ -43,9 +44,8 @@ from ai_pricelog.detectors.google_page import (
     _slugs,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
-_AMOUNT_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
 _CONTEXT_WINDOW_RE = re.compile(r"(\d[\d,]*)\s*([KkMm])\s+token context window")
 
 _GA_IMAGE_IDS = {
@@ -112,16 +112,21 @@ def _cell_value(rows: dict[str, str], prefix: str) -> str | None:
     return next((value for label, value in rows.items() if label.startswith(prefix)), None)
 
 
-def _per_token(cell: str | None) -> float | None:
+def _per_token(cell: str | None, model_id: str, url: str) -> float | None:
     if cell is None:
         return None
-    match = _AMOUNT_RE.search(cell)
-    if match is None:
+    readable, malformed = amount_scan(cell, before="$")
+    if malformed:
+        raise unreadable_rate_error(cell, model_id, url)
+    if not readable:
         return None
-    tail = cell[match.end() :].lstrip()
-    if tail.startswith("per "):
+    first = readable[0]
+    # `index` finds the exact "$<amount>" run, so a stray "$" earlier in the
+    # cell cannot skew where the first amount ends
+    end = cell.index("$" + first) + 1 + len(first)
+    if cell[end:].lstrip().startswith("per "):
         return None  # a per-image/per-unit rate, not a per-token one
-    return float(match.group(1).replace(",", ""))
+    return float(first.replace(",", ""))
 
 
 def _context_window(h2: Tag) -> int:
@@ -143,17 +148,17 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     if h2 is None:
         return None
     rows = _rows(_standard_table(h2, model_id, cfg.scraper_url), model_id, cfg.scraper_url)
-    input_cost = _per_token(_cell_value(rows, "Input price"))
+    input_cost = _per_token(_cell_value(rows, "Input price"), model_id, cfg.scraper_url)
     if input_cost is None:
-        input_cost = _per_token(_cell_value(rows, "Text input price"))
+        input_cost = _per_token(_cell_value(rows, "Text input price"), model_id, cfg.scraper_url)
     if input_cost is None:
         return None
-    output_cost = _per_token(_cell_value(rows, "Output price"))
+    output_cost = _per_token(_cell_value(rows, "Output price"), model_id, cfg.scraper_url)
     if output_cost is None and not any(label.startswith("Output price") for label in rows):
         output_cost = 0.0
     if output_cost is None:
         return None
-    cache_read = _per_token(rows.get("Context caching price"))
+    cache_read = _per_token(rows.get("Context caching price"), model_id, cfg.scraper_url)
     return Pricing(
         input_cost_per_token=input_cost / 1e6,
         output_cost_per_token=output_cost / 1e6,

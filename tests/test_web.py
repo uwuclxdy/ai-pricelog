@@ -205,3 +205,164 @@ def test_markdown_table_keeps_empty_edge_cells():
 def test_markdown_table_reads_rows_without_outer_pipes():
     text = "a | b\n--- | ---\nx | y\n"
     assert web.extract_markdown_tables(text) == [[["a", "b"], ["---", "---"], ["x", "y"]]]
+
+
+def test_amount_scan_reads_a_thousands_group():
+    assert web.amount_scan("$1,000.14", before="$") == (["1,000.14"], False)
+
+
+def test_amount_scan_rejects_a_comma_decimal():
+    assert web.amount_scan("$0,14", before="$") == ([], True)
+
+
+def test_amount_scan_rejects_a_trailing_glued_digit():
+    assert web.amount_scan("$1,5000", before="$") == ([], True)
+
+
+def test_amount_scan_reads_two_amounts():
+    assert web.amount_scan("$0.30 $0.06 (cached)", before="$") == (["0.30", "0.06"], False)
+
+
+def test_amount_scan_dollar_prefix():
+    assert web.amount_scan("$0.14", before="$") == (["0.14"], False)
+    assert web.amount_scan("$0,14", before="$") == ([], True)
+
+
+def test_amount_scan_dollar_suffix():
+    assert web.amount_scan("0.60 USD", after=" USD") == (["0.60"], False)
+    assert web.amount_scan("0,60 USD", after=" USD") == ([], True)
+
+
+def test_amount_scan_usd_prefix():
+    assert web.amount_scan("USD 0.0636", before="USD ") == (["0.0636"], False)
+    assert web.amount_scan("USD 0,0636", before="USD ") == ([], True)
+
+
+def test_amount_scan_bare_number():
+    assert web.amount_scan("0.25") == (["0.25"], False)
+    assert web.amount_scan("0,25") == ([], True)
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # punctuation around a readable amount is prose, not a malformed amount,
+        # whichever side the currency marker sits on
+        ("2.00, 4.00", {}, (["2.00", "4.00"], False)),
+        ("0.25.", {}, (["0.25"], False)),
+        ("December 31, 2026.", {}, (["31", "2026"], False)),
+        ("$2.00, prompts", {"before": "$"}, (["2.00"], False)),
+        ("0.60 USD, cached", {"after": " USD"}, (["0.60"], False)),
+        # after a currency marker, a comma before a digit continues the number:
+        # a spaced comma-decimal is unreadable, never its whole-number part
+        ("$0, 30", {"before": "$"}, ([], True)),
+        ("$5, 5", {"before": "$"}, ([], True)),
+        # a leading dot is part of the number, never stripped into a bigger one
+        (".60 USD", {"after": " USD"}, ([], True)),
+        # digits are ASCII only, on every path
+        ("\uff10.25", {}, ([], True)),
+        ("$\uff10.25", {"before": "$"}, ([], True)),
+    ],
+)
+def test_amount_scan_token_edges(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected
+
+
+def test_amount_scan_takes_one_marker_side():
+    with pytest.raises(ValueError, match="at most one"):
+        web.amount_scan("$1 USD", before="$", after=" USD")
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # a continuation written with a non-ASCII space or digit still continues
+        # the number, so the leading digits never read alone
+        ("$0,\u00a030", {"before": "$"}, ([], True)),
+        ("$0,\u200930", {"before": "$"}, ([], True)),
+        ("$0.\uff13\uff10", {"before": "$"}, ([], True)),
+        ("$1\uff15", {"before": "$"}, ([], True)),
+        ("USD 0.\uff13", {"before": "USD "}, ([], True)),
+        # a suffix marker not right after the number reads nothing for that
+        # marker, never "malformed"
+        ("0.60 USD (billed in USD)", {"after": " USD"}, (["0.60"], False)),
+        # the spaced comma-decimal rule holds on the suffix side too
+        ("0, 60 USD", {"after": " USD"}, ([], True)),
+    ],
+)
+def test_amount_scan_unicode_and_suffix_edges(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # a spaced comma continues a number only where it could be a decimal
+        # comma: neither side of it carries a "."
+        ("$0.30, 1M context", {"before": "$"}, (["0.30"], False)),
+        ("USD 0.06, 1M tokens", {"before": "USD "}, (["0.06"], False)),
+        ("0.30, 0.60 USD", {"after": " USD"}, (["0.60"], False)),
+        ("Tier 1, 0.60 USD", {"after": " USD"}, (["0.60"], False)),
+        # a suffix marker with no number right before it contributes nothing,
+        # whatever sits earlier in the cell
+        ("0.60 USD (tiers 1, 2 in USD)", {"after": " USD"}, (["0.60"], False)),
+        ("1, 5 tokens for USD", {"after": " USD"}, ([], False)),
+    ],
+)
+def test_amount_scan_spaced_comma_reach(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # a sentence period is no decimal dot: only a "." between two digits
+        # makes the comma a list separator
+        ("$0, 30.", {"before": "$"}, ([], True)),
+        ("Price $0, 30. Then", {"before": "$"}, ([], True)),
+        ("$5, 5.", {"before": "$"}, ([], True)),
+        ("USD 0, 5.", {"before": "USD "}, ([], True)),
+        # a run already holding a thousands comma is no decimal-comma whole part
+        ("$1,000, 5", {"before": "$"}, (["1,000"], False)),
+        ("1,000, 60 USD", {"after": " USD"}, (["60"], False)),
+    ],
+)
+def test_amount_scan_spaced_comma_dot_and_thousands(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # a leading-dot run is no decimal number: ".5, 60" stays a comma-decimal
+        (".5, 60 USD", {"after": " USD"}, ([], True)),
+        ("Ver.0, 60 USD", {"after": " USD"}, ([], True)),
+        # a non-ASCII separator between digits continues the number, so its
+        # leading digits never read alone
+        ("$0\uff0e30", {"before": "$"}, ([], True)),
+        ("$1\uff0c000", {"before": "$"}, ([], True)),
+        ("$0\u066b30", {"before": "$"}, ([], True)),
+        ("$0\u00b730", {"before": "$"}, ([], True)),
+        ("0\uff0e30 USD", {"after": " USD"}, ([], True)),
+        ("0\uff0e30", {}, ([], True)),
+        # a separate non-ASCII token after a readable amount still reads
+        ("$0.30 \uff15", {"before": "$"}, (["0.30"], False)),
+    ],
+)
+def test_amount_scan_non_ascii_separators(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs", "expected"),
+    [
+        # a non-ASCII space still separates two numbers
+        ("$0.30\u00a05", {"before": "$"}, (["0.30"], False)),
+        ("$0.30\u20095", {"before": "$"}, (["0.30"], False)),
+        # a non-ASCII character after something other than a digit starts a number
+        ("x\u20130.60 USD", {"after": " USD"}, (["0.60"], False)),
+        ("\u20ac0.30 2", {}, (["0.30", "2"], False)),
+    ],
+)
+def test_amount_scan_non_ascii_separator_reach(text, kwargs, expected):
+    assert web.amount_scan(text, **kwargs) == expected

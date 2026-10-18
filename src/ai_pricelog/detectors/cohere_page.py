@@ -35,10 +35,11 @@ of scope.
 
 ids come back in page order: model cards, model vault rows, then faq
 prose. a card without a modelName, a card whose pricings carry no input
-rate, and a vault row outside the four-cell shape or carrying non-dollar
-rates are additive drift: detection skips them with a warning (plan #22),
-and the vault header pins after folding case, whitespace, and &/and. a
-page with none of the shapes is a parse failure (FetchError).
+rate, a vault row outside the four-cell shape or carrying non-dollar or
+malformed rate cells, and a prose sentence with a malformed rate are
+additive drift: detection skips them with a warning (plan #22), and the
+vault header pins after folding case, whitespace, and &/and. a page with
+none of the shapes is a parse failure (FetchError).
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ from dataclasses import dataclass
 from functools import cache
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, fold_heading
 
 log = logging.getLogger(__name__)
 
@@ -67,10 +68,9 @@ _TABLE_HEADER = [
 ]
 _FOLDED_TABLE_HEADER = tuple(fold_heading(cell) for cell in _TABLE_HEADER)
 _PROSE_RE = re.compile(
-    r"^(?P<name>.+?) pricing is \$(?P<input>\d+(?:\.\d+)?)/1M tokens for input"
-    r" and \$(?P<output>\d+(?:\.\d+)?)/1M tokens for output$"
+    r"^(?P<name>.+?) pricing is (?P<input>\$[^/]+)\s*/\s*1M tokens for input"
+    r" and (?P<output>\$[^/]+)\s*/\s*1M tokens for output$"
 )
-_AMOUNT_RE = re.compile(r"^\$([\d,]+(?:\.\d+)?)$")
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 
 
@@ -93,9 +93,16 @@ def _grid_cells(div) -> list[str]:
     return [cell.get_text(" ", strip=True) for cell in div.find_all("div", recursive=False)]
 
 
-def _dollars(text: str) -> float | None:
-    match = _AMOUNT_RE.fullmatch(text)
-    return float(match.group(1).replace(",", "")) if match else None
+def _dollars(text: str) -> tuple[float | None, bool]:
+    """(amount, malformed) of a vault rate cell like "$4.00"; amount is None
+    when the cell is not exactly one dollar amount, malformed True when the
+    cell is amount-shaped but the grammar cannot read it."""
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        return None, True
+    if len(amounts) != 1 or text.strip() != "$" + amounts[0]:
+        return None, False
+    return float(amounts[0].replace(",", "")), False
 
 
 def _card_price(value: str) -> float | None:
@@ -177,7 +184,11 @@ def _model_vault_rows(soup, url: str, key: str) -> list[_Model]:
         try:
             if len(cells) != 4:
                 raise FetchError(f"malformed model vault row on {url}: {cells!r}")
-            if _dollars(cells[2]) is None or _dollars(cells[3]) is None:
+            hourly, hourly_malformed = _dollars(cells[2])
+            monthly, monthly_malformed = _dollars(cells[3])
+            if hourly_malformed or monthly_malformed:
+                raise FetchError(f"model vault row on {url} carries a malformed amount: {cells!r}")
+            if hourly is None or monthly is None:
                 raise FetchError(
                     f"model vault row on {url} carries non-dollar rate cells: {cells!r}"
                 )
@@ -190,26 +201,39 @@ def _model_vault_rows(soup, url: str, key: str) -> list[_Model]:
     return rows
 
 
-def _prose_models(soup) -> list[_Model]:
+def _prose_models(soup, url: str, key: str) -> list[_Model]:
     """faq prose rate sentences, per-token dollars, page order."""
     models: list[_Model] = []
     for block in soup.find_all(["li", "p"]):
         if block.find(["li", "p"]) is not None:
             continue  # nested list: only leaf blocks carry one sentence
-        match = _PROSE_RE.fullmatch(block.get_text(" ", strip=True))
+        text = block.get_text(" ", strip=True)
+        match = _PROSE_RE.fullmatch(text)
         if match is None:
             continue
         model_id = _slug(match.group("name"))
         if not _ID_PATTERN.fullmatch(model_id):
             continue
+        try:
+            input_cost = _prose_amount(match.group("input"), text, url)
+            output_cost = _prose_amount(match.group("output"), text, url)
+        except FetchError as exc:
+            log.warning("detect skip for %s: %s", key, exc)
+            continue
         models.append(
-            _Model(
-                id=model_id,
-                input_cost_per_token=float(match.group("input")) / 1e6,
-                output_cost_per_token=float(match.group("output")) / 1e6,
-            )
+            _Model(id=model_id, input_cost_per_token=input_cost, output_cost_per_token=output_cost)
         )
     return models
+
+
+def _prose_amount(amount: str, sentence: str, url: str) -> float:
+    """per-token dollars of one prose amount, or FetchError naming the sentence."""
+    readable, malformed = amount_scan(amount, before="$")
+    if malformed or len(readable) != 1:
+        raise FetchError(f"malformed prose rate on {url}: {sentence!r}")
+    if amount.strip() not in (readable[0], "$" + readable[0]):
+        raise FetchError(f"malformed prose rate on {url}: {sentence!r}")
+    return float(readable[0].replace(",", "")) / 1e6
 
 
 @cache
@@ -218,7 +242,7 @@ def _page(url: str, key: str) -> tuple[_Model, ...]:
     soup = fetch_soup(url)
     cards = _model_cards(soup, url, key)
     vault = _model_vault_rows(soup, url, key)
-    prose = _prose_models(soup)
+    prose = _prose_models(soup, url, key)
     return tuple(cards + vault + prose)
 
 

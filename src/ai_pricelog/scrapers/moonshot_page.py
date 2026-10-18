@@ -25,7 +25,8 @@ the Pricing url names the page the rate was read from (the resolved chat
 page, never the index); build_row stamps it as the row's url.
 
 None = no row for the model. FetchError = the fetch failed, the index
-resolves no (or an ambiguous) chat page, or the page's DocTable does not parse.
+resolves no (or an ambiguous) chat page, the page's DocTable does not parse,
+or a price cell carries an unreadable amount.
 """
 
 from __future__ import annotations
@@ -37,12 +38,11 @@ from urllib.parse import urljoin, urlsplit
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_text
+from ai_pricelog.web import FetchError, amount_scan, fetch_text, unreadable_rate_error
 
 _LINK_PATTERN = re.compile(r"^\s*-\s*\[([^\]]+)\]\(([^)]+)\)")
 _FRAGMENT_PATTERN = re.compile(r'<>\{"([^"]*)"\}([^<]*)</>')
 _BARE_KEY_PATTERN = re.compile(r'(?<![A-Za-z0-9_"])([A-Za-z_][A-Za-z0-9_]*)(\s*):')
-_PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
 _CONTEXT_PATTERN = re.compile(r"\d[\d,]*")
 
 
@@ -190,13 +190,21 @@ def _pricing(
             continue
         if str(row[model_col]).strip().lower() != model_id.lower():
             continue
-        input_cost = _dollars(str(row[input_col]))
-        output_cost = _dollars(str(row[output_col]))
+        input_cost = _dollars(str(row[input_col]), model_id, page_url)
+        output_cost = _dollars(str(row[output_col]), model_id, page_url)
         if input_cost is None or output_cost is None:
             return None
-        cache_cost = _dollars(str(row[cache_col])) if cache_col is not None else None
-        write_cost = _dollars(str(row[write_col])) if write_col is not None else None
-        write_1h_cost = _dollars(str(row[write_1h_col])) if write_1h_col is not None else None
+        cache_cost = (
+            _dollars(str(row[cache_col]), model_id, page_url) if cache_col is not None else None
+        )
+        write_cost = (
+            _dollars(str(row[write_col]), model_id, page_url) if write_col is not None else None
+        )
+        write_1h_cost = (
+            _dollars(str(row[write_1h_col]), model_id, page_url)
+            if write_1h_col is not None
+            else None
+        )
         max_tokens_in = _token_count(str(row[context_col])) if context_col is not None else 0
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
@@ -220,9 +228,11 @@ def _column_index(titles: list[str], name: str) -> int | None:
     return None
 
 
-def _dollars(text: str) -> float | None:
-    match = _PRICE_PATTERN.search(text)
-    return float(match.group(1)) if match else None
+def _dollars(text: str, model_id: str, url: str) -> float | None:
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    return float(amounts[0].replace(",", "")) if amounts else None
 
 
 def _token_count(cell: str) -> int:

@@ -304,3 +304,37 @@ def test_detect_missing_table_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="no per-token model table"):
         detector.detect(cfg())
+
+
+def test_detect_skips_a_row_with_an_out_of_charset_id(monkeypatch):
+    # a name cell that normalizes to no stored-id chars is not an id; the
+    # other rows still seed
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<c4d-pricing-table>"
+            "<c4d-pricing-table-head><c4d-pricing-table-header-row>"
+            "<c4d-pricing-table-header-cell>Model Name</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Model Provider</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-header-cell>Pay as you go</c4d-pricing-table-header-cell>"
+            "</c4d-pricing-table-header-row></c4d-pricing-table-head>"
+            "<c4d-pricing-table-body>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>!!!</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>IBM</c4d-pricing-table-cell>"
+            "<c4d-pricing-table-cell>USD 0.0636 per 1M tokens input USD 0.265 per 1M"
+            " tokens output</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "<c4d-pricing-table-row>"
+            "<c4d-pricing-table-header-cell>Granite 4H Small</c4d-pricing-table-header-cell>"
+            "<c4d-pricing-table-cell>IBM</c4d-pricing-table-cell>"
+            "<c4d-pricing-table-cell>USD 0.0636 per 1M tokens input USD 0.265 per 1M"
+            " tokens output</c4d-pricing-table-cell>"
+            "</c4d-pricing-table-row>"
+            "</c4d-pricing-table-body>"
+            "</c4d-pricing-table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["granite-4h-small"]

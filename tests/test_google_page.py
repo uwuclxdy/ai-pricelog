@@ -279,3 +279,23 @@ def test_scrape_equals_pricing_shape(live_page):
         max_tokens_in=0,
         cache_read_cost_per_token=0.15 / 1e6,
     )
+
+
+def test_scrape_stray_dollar_before_the_amount_returns_none(monkeypatch):
+    # `index("$" + amount)` pins the amount's own "$", so a stray "$" earlier
+    # in the cell cannot shift where the amount ends and read a per-image
+    # rate as a per-token one
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: synthetic_soup(
+            "<h2 id='gemini-x'><em><code>gemini-x</code></em></h2>"
+            "<table class='pricing-table'>"
+            "<tr><th></th><th>Free Tier</th><th>Paid Tier, per 1M tokens in USD</th></tr>"
+            "<tr><td>Input price</td><td>Free of charge</td><td>$0.10</td></tr>"
+            "<tr><td>Output price</td><td>Free of charge</td>"
+            "<td>$ (promo) $0.039 per image</td></tr>"
+            "</table>"
+        ),
+    )
+    assert scraper.scrape(cfg(), "gemini-x") is None

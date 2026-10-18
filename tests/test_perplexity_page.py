@@ -262,3 +262,11 @@ def test_scrape_tiered_cell_returns_none(monkeypatch):
         ),
     )
     assert scraper.scrape(cfg(), "sonar") is None
+
+
+def test_scrape_malformed_cell_quotes_the_raw_cell_bytes():
+    # the error message quotes the cell exactly as the page carries it, so
+    # surrounding whitespace is preserved, not stripped away
+    with pytest.raises(FetchError) as excinfo:
+        scraper._amount("  0,25  ", "sonar", PAGE_URL)
+    assert str(excinfo.value) == ("unreadable rate '  0,25  ' for sonar on " + PAGE_URL)

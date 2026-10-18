@@ -19,13 +19,12 @@ from __future__ import annotations
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.watsonx_page import (
-    _AMOUNT_RE,
     _comp_rows,
     _normalize_id,
     _per_model_comps,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -40,7 +39,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 continue
             if len(cells) < len(headers):
                 raise FetchError(f"malformed pricing row on {cfg.scraper_url}")
-            amounts = _AMOUNT_RE.findall(cells[price_col])
+            amounts, malformed = amount_scan(cells[price_col], before="USD ")
+            if malformed:
+                raise unreadable_rate_error(cells[price_col], model_id, cfg.scraper_url)
             if not amounts:
                 return None
             if len(amounts) > 2:

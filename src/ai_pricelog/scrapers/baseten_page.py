@@ -12,22 +12,18 @@ a malformed name cell (odd desktop renders, odd links, out-of-charset
 slugs) are additive drift detection already reported.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
-page has no Model APIs table, or a matched cell carries an unexpected amount
-count.
+page has no Model APIs table, a matched cell carries an unreadable amount,
+or a matched cell carries an unexpected amount count.
 """
 
 from __future__ import annotations
-
-import re
 
 from bs4 import Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.baseten_page import _desktop, _model_id, _model_rows
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
-
-_AMOUNT_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -57,7 +53,10 @@ def _pricing(cells: list[Tag], model_id: str, url: str) -> Pricing:
 
 def _dollars(cell: Tag, column: str, model_id: str, url: str) -> float:
     """per-token dollars of a column cell; an odd amount count -> FetchError."""
-    amounts = _AMOUNT_RE.findall(cell.get_text(" ", strip=True))
+    text = cell.get_text(" ", strip=True)
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
     if len(amounts) != 1:
         raise FetchError(
             f"malformed {column} cell for {model_id} on {url}: {len(amounts)} amounts, want 1"
@@ -67,9 +66,11 @@ def _dollars(cell: Tag, column: str, model_id: str, url: str) -> float:
 
 def _cache_read(cell: Tag, model_id: str, url: str) -> float | None:
     text = cell.get_text(" ", strip=True)
-    amounts = _AMOUNT_RE.findall(text)
+    amounts, malformed = amount_scan(text, before="$")
     if text == "-" and not amounts:
         return None
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
     if len(amounts) != 1:
         raise FetchError(
             f"malformed cache input cell for {model_id} on {url}: "

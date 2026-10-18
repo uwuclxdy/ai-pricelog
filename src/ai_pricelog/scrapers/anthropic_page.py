@@ -47,7 +47,6 @@ raises for the requested model fails.
 from __future__ import annotations
 
 import logging
-import re
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.anthropic_page import (
@@ -61,11 +60,16 @@ from ai_pricelog.detectors.anthropic_page import (
     split_name,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text, fold_heading
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    extract_markdown_tables,
+    fetch_text,
+    fold_heading,
+    unreadable_rate_error,
+)
 
 log = logging.getLogger(__name__)
-
-_AMOUNT_RE = re.compile(r"\$((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)(?![\d,.])", re.ASCII)
 
 _FAST_HEADER = ["Model", "Input", "Output"]
 _FAST_FOLDED_HEADER = [fold_heading(cell) for cell in _FAST_HEADER]
@@ -79,18 +83,9 @@ def _amount(cell: str, model_id: str, url: str) -> float:
     readable amount, or one readable amount beside a malformed amount (an
     amount-shaped "$" the amount grammar cannot read) is a page-shape
     break."""
-    readable: list[str] = []
-    malformed = False
-    for i in range(len(cell)):
-        if cell[i] != "$":
-            continue
-        match = _AMOUNT_RE.match(cell, i)
-        if match is not None:
-            readable.append(match.group(1))
-        elif re.match(r"\$\s*[.,]?\d", cell[i:]):
-            malformed = True
+    readable, malformed = amount_scan(cell, before="$")
     if len(readable) != 1 or malformed:
-        raise FetchError(f"unreadable rate {cell!r} for {model_id} on {url}")
+        raise unreadable_rate_error(cell, model_id, url)
     return float(readable[0].replace(",", ""))
 
 

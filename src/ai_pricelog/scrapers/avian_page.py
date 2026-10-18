@@ -7,10 +7,10 @@ context from the card meta -> max_tokens_in ("262K context · ..." -> 262000;
 K = 1000, M = 1000000: the page abbreviates and the exact token count is not
 shown, the human verifier reconciles it). mode is chat; no peak fields.
 
-None = the model id is not on the page, or its Input/Output cells are
-missing or unparseable (a row without usable rates is never a candidate).
-zero rates scrape as 0.0 (free is a price). FetchError = the fetch failed
-or the page has no pricing grid.
+None = the model id is not on the page, or its Input/Output cells carry no
+amount (a row without usable rates is never a candidate). zero rates scrape
+as 0.0 (free is a price). FetchError = the fetch failed, the page has no
+pricing grid, or a cell carries an unreadable amount.
 
 no dedup_keys hook: the page models (deepseek, minimax, glm, kimi, mimo
 cards) map to none of the stored avian ids (four stale Meta-Llama
@@ -24,17 +24,18 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.avian_page import _cards, _slug
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import fetch_soup
+from ai_pricelog.web import amount_scan, fetch_soup, unreadable_rate_error
 
-_PRICE_PATTERN = re.compile(r"\$([\d,]+(?:\.\d+)?)")
 _CONTEXT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([KM])\s*context")
 
 _CONTEXT_FACTORS = {"K": 1_000, "M": 1_000_000}
 
 
-def _dollars(text: str) -> float | None:
-    match = _PRICE_PATTERN.search(text)
-    return float(match.group(1).replace(",", "")) if match else None
+def _dollars(text: str, model_id: str, url: str) -> float | None:
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    return float(amounts[0].replace(",", "")) if amounts else None
 
 
 def _context_tokens(meta: str) -> int:
@@ -44,12 +45,12 @@ def _context_tokens(meta: str) -> int:
     return int(float(match.group(1)) * _CONTEXT_FACTORS[match.group(2)])
 
 
-def _rate(prices: dict[str, str], name: str) -> float | None:
+def _rate(prices: dict[str, str], name: str, model_id: str, url: str) -> float | None:
     """per-token dollars for one price block, or None when unusable."""
     text = prices.get(name)
     if text is None:
         return None
-    amount = _dollars(text)
+    amount = _dollars(text, model_id, url)
     if amount is None or amount < 0:
         return None
     return amount / 1e6
@@ -60,8 +61,8 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     for card in _cards(fetch_soup(cfg.scraper_url), cfg.scraper_url):
         if _slug(card.label) != _slug(model_id):
             continue
-        input_cost = _rate(card.prices, "Input")
-        output_cost = _rate(card.prices, "Output")
+        input_cost = _rate(card.prices, "Input", model_id, cfg.scraper_url)
+        output_cost = _rate(card.prices, "Output", model_id, cfg.scraper_url)
         if input_cost is None or output_cost is None:
             return None
         return Pricing(
@@ -69,6 +70,6 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             output_cost_per_token=output_cost,
             mode="chat",
             max_tokens_in=_context_tokens(card.meta),
-            cache_read_cost_per_token=_rate(card.prices, "Cache"),
+            cache_read_cost_per_token=_rate(card.prices, "Cache", model_id, cfg.scraper_url),
         )
     return None

@@ -27,11 +27,11 @@ from ai_pricelog.detectors.publicai_page import (
     _model_id,
     _models_table,
     _normalize_id,
-    _pricing_amounts,
+    _pricing_cell,
     _table_rows,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, unreadable_rate_error
 
 _CONTEXT_RE = re.compile(r"^(\d+)K$", re.IGNORECASE)
 
@@ -46,7 +46,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             continue  # additive drift; detection already skips the short row
         if _model_id(cells) != target:
             continue
-        amounts = _pricing_amounts(cells[2])
+        amounts, malformed = _pricing_cell(cells[2])
+        if malformed:
+            raise unreadable_rate_error(
+                cells[2].get_text(" ", strip=True), model_id, cfg.scraper_url
+            )
         if len(amounts) != 2:
             raise FetchError(
                 f"malformed pricing cell for {model_id} on {cfg.scraper_url}: "

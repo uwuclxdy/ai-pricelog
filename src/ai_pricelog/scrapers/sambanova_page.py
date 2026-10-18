@@ -14,14 +14,10 @@ page has no pricing table, or a matched cell carries no readable amount.
 
 from __future__ import annotations
 
-import re
-
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.sambanova_page import _normalize_id, _pricing_table
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
-
-_AMOUNT_RE = re.compile(r"([\d,]+(?:\.\d+)?) USD")
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -34,8 +30,8 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 f"malformed pricing row for {model_id} on {cfg.scraper_url}: "
                 f"{len(row)} cells, want 4"
             )
-        input_cost = _dollars(row[2])
-        output_cost = _dollars(row[3])
+        input_cost = _dollars(row[2], model_id, cfg.scraper_url)
+        output_cost = _dollars(row[3], model_id, cfg.scraper_url)
         if input_cost is None or output_cost is None:
             raise FetchError(
                 f"malformed pricing row for {model_id} on {cfg.scraper_url}: "
@@ -53,7 +49,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
 def _cached_dollars(cell: str, model_id: str, url: str) -> float | None:
     if cell == "N/A":
         return None
-    amount = _dollars(cell)
+    amount = _dollars(cell, model_id, url)
     if amount is None:
         raise FetchError(
             f"malformed pricing row for {model_id} on {url}: unreadable cached-input cell {cell!r}"
@@ -61,6 +57,8 @@ def _cached_dollars(cell: str, model_id: str, url: str) -> float | None:
     return amount / 1e6
 
 
-def _dollars(text: str) -> float | None:
-    match = _AMOUNT_RE.search(text)
-    return float(match.group(1).replace(",", "")) if match else None
+def _dollars(text: str, model_id: str, url: str) -> float | None:
+    amounts, malformed = amount_scan(text, after=" USD")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    return float(amounts[0].replace(",", "")) if amounts else None

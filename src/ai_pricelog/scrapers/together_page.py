@@ -5,8 +5,8 @@ output, the cached amount sitting inside the input cell after the standard
 amount ("$0.30 $0.06 (cached)"): first $ amount -> input_cost, second ->
 cache_read, both USD per 1M tokens -> /1e6. the page carries no context
 windows in these tables, so the max_tokens fields stay 0. a row without dollar
-amounts -> None; $0.00 prices as 0.0, since first-party rows may carry it
-as a real price.
+amounts -> None; a cell carrying a malformed "$" amount raises FetchError;
+$0.00 prices as 0.0, since first-party rows may carry it as a real price.
 
 dedup_keys maps the page spellings to their together api strings
 (measured 2026-08-24): the page spells "Llama 3.3 70B" (href
@@ -22,8 +22,6 @@ them.
 
 from __future__ import annotations
 
-import re
-
 from bs4 import Tag
 
 from ai_pricelog.config import ProviderCfg
@@ -34,9 +32,7 @@ from ai_pricelog.detectors.together_page import (
     _table_rows,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
-
-_AMOUNT_RE = re.compile(r"\$([\d,]+(?:\.\d+)?)")
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 _DEDUP_KEYS = {
     "llama-3.3-70b": ("meta-llama/Llama-3.3-70B-Instruct-Turbo",),
@@ -49,9 +45,12 @@ def dedup_keys(model_id: str) -> tuple[str, ...]:
     return _DEDUP_KEYS.get(_normalize_id(model_id), ())
 
 
-def _amounts(cell: Tag) -> list[float]:
+def _amounts(cell: Tag, model_id: str, url: str) -> list[float]:
     text = cell.get_text(" ", strip=True)
-    return [float(amount.replace(",", "")) for amount in _AMOUNT_RE.findall(text)]
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    return [float(amount.replace(",", "")) for amount in amounts]
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -67,8 +66,8 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 continue
             if len(cells) != 3:
                 raise FetchError(f"malformed pricing row for {model_id} on {cfg.scraper_url}")
-            input_amounts = _amounts(cells[1])
-            output_amounts = _amounts(cells[2])
+            input_amounts = _amounts(cells[1], model_id, cfg.scraper_url)
+            output_amounts = _amounts(cells[2], model_id, cfg.scraper_url)
             if not input_amounts or not output_amounts:
                 return None
             input_cost, output_cost = input_amounts[0], output_amounts[0]
