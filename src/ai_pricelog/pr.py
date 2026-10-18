@@ -537,8 +537,9 @@ def fetch_pending_rows(
     """The rows on open PRs' pricelog branches of origin, under refs/remotes/pending.
 
     Every open PR branch carries one shard per source it changed; its rows
-    unique over the local store are what a new PR branch must union in, so
-    sibling PRs stop rewriting the same files. A branch whose pr was closed
+    unique over the local store union into the run's in-memory row set, so a
+    sibling's pending row still settles its model in the skip/drift/absence
+    checks without riding this run's branch. A branch whose pr was closed
     keeps its head ref out of open_prs and contributes no rows, so a rejected
     pr's rows drop out of the union and its model re-candidates on the next
     run. Each row must pass validate_row: the pass is authorized to hand-edit

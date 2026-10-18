@@ -3,9 +3,10 @@
 Watches the provider pages through the detector/scraper pairs, plus the
 OpenRouter models API. A run groups its new rows into one draft pr per
 source (removal rows included), with no cap: every pr branch carries the
-landed store (the load-time rows plus the open prs' pending branches' rows)
-plus only the rows its own pr covers, on a `pricelog/<slug>-<sha8>` batch
-branch (never the default branch). Rows for models whose pr cannot open stay
+landed store (the load-time rows) plus only the rows its own pr covers, on a
+`pricelog/<slug>-<sha8>` batch branch (never the default branch). Open
+sibling prs' rows feed the run's skip, drift and absence checks but never
+ride another pr's branch. Rows for models whose pr cannot open stay
 out of every branch: the human review of each draft pr is the only guard
 against a misread price, so a row lands only under its own pr or the seed,
 and a skipped model re-candidates against the landed store on the next run.
@@ -326,7 +327,7 @@ def run(
             base_sha,
             original_branch,
             spec,
-            rows + run_rows,
+            landed_rows + run_rows,
             "feat: seed price history",
             runner,
             announce_updates,
@@ -375,7 +376,7 @@ def run(
             base_sha,
             original_branch,
             spec,
-            rows + group.rows,
+            landed_rows + group.rows,
             _commit_message(spec),
             runner,
             announce_updates,
