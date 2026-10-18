@@ -40,8 +40,10 @@ as a merged PR. the step passes only branches the pass marked
   channel's fetch (and carries the base's stale entry) never reverts the
   fresh prose an earlier branch of the burst landed; the newest branch's
   index owns the url set, so a url that left the config is deleted. a
-  source's absence file lands on that source's branch and the merge takes
-  each file from the newest branch that carries it
+  source's absence file lands on that source's branch: each changed copy
+  lands unless HEAD's copy comes from a newer run (the two run stamps are
+  compared on every merge), so a held older-run PR never reverts newer
+  absence counters
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -53,6 +55,7 @@ import json
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ai_pricelog import models, pr, publish, store, validate
@@ -313,8 +316,44 @@ def _merge_announce(
             path.rmdir()
 
 
+def _run_stamp(runner: pr.PrRunner, repo_root: Path, rev: str, path: str) -> int | None:
+    """The run stamp of ``rev``'s copy of a state file, or None when no commit touches it.
+
+    The stamp is the author date (unix seconds) of the commit that wrote the
+    bytes ``rev`` carries. The branch name's ``YYYY-MM-DD-HHMMSS`` stamps the
+    run's start and the pipeline commits a few minutes later (measured
+    163-304 s), so the commit date is not the name's instant — but runs are
+    serialized, so the author-date order of two runs' commits is their run
+    order. The author date survives a later amend/rebase/cherry-pick while the
+    committer date moves. ``git log -- <path>`` uses the default history
+    simplification, which prunes a commit TREESAME to a parent — a merge that
+    kept one side's bytes — so the first result is the non-merge commit that
+    last wrote the path, including the deletion commit when ``rev`` no longer
+    has the file; ``--no-merges`` additionally excludes a merge outright, so a
+    non-TREESAME merge can never read as the writer. Reading both sides the
+    same way gives the comparison one stamp source and one type.
+    """
+    text = runner.run(
+        ["git", "log", "-1", "--no-merges", "--format=%at", rev, "--", path],
+        cwd=repo_root,
+    ).strip()
+    return int(text) if text else None
+
+
+def _head_has_path(runner: pr.PrRunner, repo_root: Path, path: str) -> bool:
+    """Whether HEAD's tree carries ``path``; false when HEAD deleted it."""
+    return bool(
+        runner.run(["git", "ls-tree", "--name-only", "HEAD", "--", path], cwd=repo_root).strip()
+    )
+
+
+def _stamp_iso(stamp: int) -> str:
+    """A run stamp as UTC ``YYYY-MM-DDTHH:MM:SSZ``, for the keep note."""
+    return datetime.fromtimestamp(stamp, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _merge_absence(runner: pr.PrRunner, repo_root: Path, branch: str) -> None:
-    """Lay the branch's CHANGED absence files over the worktree, newest wins.
+    """Lay the branch's CHANGED absence files over the worktree, newest run wins.
 
     Each source's ``state/absence/<source>.json`` lands on that source's own
     branch, so files this branch did not change stay as an earlier branch (or
@@ -323,24 +362,47 @@ def _merge_absence(runner: pr.PrRunner, repo_root: Path, branch: str) -> None:
     file, and writing those back reverts the landed counters (observed
     2026-09-13: PR 196's digitalocean bump reverted by five later siblings).
     Git reports add/add conflicts on the files its run did change (cross-run
-    counters diverge), and this write resolves them with the branch's copy:
-    merge order is oldest first, so the newest changer's file is the last
-    write. A file whose entries cleared is deleted by save_absence and is
-    absent from the branch tree, so it is not written here either; HEAD's
-    stale copy keeps tracking until the next run rewrites it — the same
-    skip-and-retry the pipeline itself uses for state.
+    counters diverge), and this write resolves each with the winning copy.
+    Every changed path — a carried copy or a deletion, a cleared source's
+    file is deleted by save_absence — lands unless HEAD's copy comes from a
+    newer run: the two run stamps are compared on every merge, and a branch
+    whose change is older than the run that last landed the path keeps HEAD's
+    copy (printed) instead of reverting it (measured 2026-10-15 in a dry run:
+    PRs 490-492 wrote their 03:00 openrouter file over 499's 07:00 one).
     """
     changed = {
         path
         for path in _branch_diff_paths(runner, repo_root, branch)
         if path.startswith(ABSENCE_DIR + "/")
     }
-    for path in _branch_tree_paths(runner, repo_root, branch, ABSENCE_DIR):
-        if path not in changed:
+    carried = set(_branch_tree_paths(runner, repo_root, branch, ABSENCE_DIR))
+    # git removes the directory when it merges a deletion cleanly and the file
+    # was the last one under it; recreate it before either write-back below
+    (repo_root / ABSENCE_DIR).mkdir(parents=True, exist_ok=True)
+    for path in sorted(changed):
+        head_stamp = _run_stamp(runner, repo_root, "HEAD", path)
+        branch_stamp = _run_stamp(runner, repo_root, f"origin/{branch}", path)
+        if head_stamp is not None and branch_stamp is not None and head_stamp > branch_stamp:
+            print(
+                f"kept HEAD's {path} over {branch}: HEAD's copy is from a newer run"
+                f" ({_stamp_iso(head_stamp)} > {_stamp_iso(branch_stamp)})"
+            )
+            if _head_has_path(runner, repo_root, path):
+                # resolve the in-flight merge's worktree copy (conflict markers
+                # or a cleanly merged mix) back to HEAD's bytes
+                (repo_root / path).write_text(_head_text(runner, repo_root, path), encoding="utf-8")
+            else:
+                # HEAD deleted the path; keep the absence so the stage records it
+                (repo_root / path).unlink(missing_ok=True)
             continue
-        (repo_root / path).write_text(
-            _branch_text(runner, repo_root, branch, path), encoding="utf-8"
-        )
+        if path in carried:
+            (repo_root / path).write_text(
+                _branch_text(runner, repo_root, branch, path), encoding="utf-8"
+            )
+        else:
+            # the branch cleared the source, so its tree lacks the file; record
+            # the deletion so the stage removes it
+            (repo_root / path).unlink(missing_ok=True)
 
 
 def _branch_diff_paths(runner: pr.PrRunner, repo_root: Path, branch: str) -> list[str]:
@@ -714,10 +776,12 @@ def merge_branches(
     """Union-merge each branch onto HEAD, then push and delete the refs.
 
     `branches` is the merge order: oldest PR first, newest last (each announce
-    channel lands from the burst entry with the newest fetched date, each
-    absence file from the newest branch that carries it). every branch
-    pre-flights the churn bounds (waived with a logged count under `human`)
-    and the catalog-claim check (never waived) before the first merge commit.
+    channel lands from the burst entry with the newest fetched date, and each
+    absence file a branch changed lands unless HEAD's copy comes from a newer
+    run, so a held older-run branch never reverts newer counters). every
+    branch pre-flights the churn bounds (waived with a logged count under
+    `human`) and the catalog-claim check (never waived) before the first merge
+    commit.
     a failure anywhere leaves the refs in place and raises; nothing is pushed.
     """
     if not branches:

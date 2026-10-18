@@ -880,6 +880,268 @@ def test_burst_keeps_a_landed_absence_bump_a_later_stale_tree_carries(tmp_path):
     assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-10"}}
 
 
+def _branch_at(
+    monkeypatch, repo: Path, when: str, name: str, committed: str | None = None, **kwargs
+) -> None:
+    # the pipeline commits a branch at its run's instant, the stamp its name
+    # carries; `committed` stands in for a later amend or rebase of that commit
+    monkeypatch.setenv("GIT_AUTHOR_DATE", when)
+    monkeypatch.setenv("GIT_COMMITTER_DATE", committed or when)
+    make_branch(repo, name, **kwargs)
+    monkeypatch.delenv("GIT_AUTHOR_DATE")
+    monkeypatch.delenv("GIT_COMMITTER_DATE")
+
+
+def test_later_burst_keeps_a_newer_run_absence_file_over_an_older_run_copy(
+    tmp_path, monkeypatch, capsys
+):
+    # an older run's PR held for review merges in a later burst than a newer
+    # run's PR for the same source: its stale absence copy must not revert
+    # the newer counters, while its rows still land
+    repo, _bare = build_repo(tmp_path)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-12"}}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-12"}}},
+    )
+
+    automerge.merge_branches([newer], repo, pr.PrRunner(), "main", push=False)
+    capsys.readouterr()
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-12"}}
+    models_landed = sorted({json.loads(line)["model_id"] for line in shard_lines(repo)})
+    assert models_landed == ["deepseek-chat", "deepseek-v4-pro"]
+    assert git(repo, "status", "--porcelain") == ""
+    # the keep reaches the ci log: merge_verified calls merge_branches directly
+    assert (
+        "kept HEAD's state/absence/deepseek.json over"
+        " pricelog/deepseek-2026-09-12-090000-aaaaaaaa: HEAD's copy is from a newer run"
+        " (2026-09-12T10:00:00Z > 2026-09-12T09:00:00Z)"
+    ) in capsys.readouterr().out.splitlines()
+
+
+def test_later_burst_keeps_a_newer_run_deletion_over_an_older_run_copy(tmp_path, monkeypatch):
+    # the newer run cleared every entry, so its branch deleted the file; the
+    # held older run's copy must not bring it back, and never as an empty file
+    repo, _bare = build_repo(tmp_path)
+    absence.save_absence({"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-11"}}}, repo)
+    git(repo, "add", "--", "state/absence")
+    git(repo, "commit", "-m", "absence counter 1", "--date", "2026-09-11T09:00:00+00:00")
+    git(repo, "push", "origin", "main")
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-11"}}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {}},
+    )
+
+    automerge.merge_branches([newer], repo, pr.PrRunner(), "main", push=False)
+    assert not (repo / "state" / "absence" / "deepseek.json").exists()
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+
+    assert not (repo / "state" / "absence" / "deepseek.json").exists()
+    assert git(repo, "ls-tree", "--name-only", "HEAD", "--", "state/absence/deepseek.json") == ""
+    models_landed = sorted({json.loads(line)["model_id"] for line in shard_lines(repo)})
+    assert models_landed == ["deepseek-chat", "deepseek-v4-pro"]
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def _base_absence(repo: Path) -> None:
+    absence.save_absence({"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-11"}}}, repo)
+    git(repo, "add", "--", "state/absence")
+    git(repo, "commit", "-m", "absence counter 1", "--date", "2026-09-11T09:00:00+00:00")
+    git(repo, "push", "origin", "main")
+
+
+def test_burst_lands_a_newer_run_deletion_over_an_older_run_copy(tmp_path, monkeypatch):
+    # one burst, oldest first: the older run bumps the counter, the newer run
+    # saw the model again and cleared the file; the newer clear must win
+    repo, _bare = build_repo(tmp_path)
+    _base_absence(repo)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-11"}}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {}},
+    )
+
+    automerge.merge_branches([older, newer], repo, pr.PrRunner(), "main", push=False)
+
+    assert not (repo / "state" / "absence" / "deepseek.json").exists()
+    assert git(repo, "ls-tree", "--name-only", "HEAD", "--", "state/absence/deepseek.json") == ""
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_later_burst_keeps_a_newer_run_copy_over_an_older_run_deletion(tmp_path, monkeypatch):
+    # the older run cleared the file, the newer run bumped it and landed
+    # first; the held older deletion must not erase the newer counters
+    repo, _bare = build_repo(tmp_path)
+    _base_absence(repo)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-11"}}},
+    )
+
+    automerge.merge_branches([newer], repo, pr.PrRunner(), "main", push=False)
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-11"}}
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_later_burst_keeps_the_last_absence_file_over_a_cleanly_merged_older_deletion(
+    tmp_path, monkeypatch
+):
+    # HEAD's newer run wrote back the base's exact bytes, so git merges the
+    # older branch's deletion cleanly and removes the now-empty state/absence
+    # directory; the newer copy must still be kept
+    repo, _bare = build_repo(tmp_path)
+    _base_absence(repo)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {}},
+    )
+    base_entries = {"gone": {"absent_runs": 1, "since": "2026-09-11"}}
+    for when, entries in (
+        ("2026-09-12T10:00:00+00:00", {"gone": {"absent_runs": 2, "since": "2026-09-11"}}),
+        ("2026-09-12T10:30:00+00:00", base_entries),
+    ):
+        monkeypatch.setenv("GIT_AUTHOR_DATE", when)
+        monkeypatch.setenv("GIT_COMMITTER_DATE", when)
+        absence.save_absence({"deepseek": entries}, repo)
+        git(repo, "add", "--", "state/absence")
+        git(repo, "commit", "-m", f"absence at {when}")
+    monkeypatch.delenv("GIT_AUTHOR_DATE")
+    monkeypatch.delenv("GIT_COMMITTER_DATE")
+    git(repo, "push", "origin", "main")
+
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == base_entries
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_later_burst_stamps_a_rewritten_older_branch_by_its_run(tmp_path, monkeypatch):
+    # an amend or rebase moves the older branch's committer date past the
+    # newer run; its copy still dates from its own run and must not win
+    repo, _bare = build_repo(tmp_path)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        committed="2026-09-12T11:00:00+00:00",
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-12"}}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-12"}}},
+    )
+
+    automerge.merge_branches([newer], repo, pr.PrRunner(), "main", push=False)
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-12"}}
+
+
+def test_later_burst_lands_a_newer_run_absence_file_over_an_older_landed_copy(
+    tmp_path, monkeypatch
+):
+    repo, _bare = build_repo(tmp_path)
+    older = "pricelog/deepseek-2026-09-12-090000-aaaaaaaa"
+    newer = "pricelog/deepseek-2026-09-12-100000-bbbbbbbb"
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T09:00:00+00:00",
+        older,
+        rows=[make_row("deepseek", "deepseek-v4-pro", "2026-09-12", 0.44)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 1, "since": "2026-09-12"}}},
+    )
+    _branch_at(
+        monkeypatch,
+        repo,
+        "2026-09-12T10:00:00+00:00",
+        newer,
+        rows=[make_row("deepseek", "deepseek-chat", "2026-09-12", 0.27)],
+        absence_data={"deepseek": {"gone": {"absent_runs": 2, "since": "2026-09-12"}}},
+    )
+
+    automerge.merge_branches([older], repo, pr.PrRunner(), "main", push=False)
+    automerge.merge_branches([newer], repo, pr.PrRunner(), "main", push=False)
+
+    landed = json.loads((repo / "state" / "absence" / "deepseek.json").read_text("utf-8"))
+    assert landed == {"gone": {"absent_runs": 2, "since": "2026-09-12"}}
+
+
 def test_cross_run_burst_keeps_a_landed_channel_change(tmp_path):
     # the 09-11 shape (PRs 180-184): the evening branch landed fresh channel
     # prose; the next morning's run failed the same channel's fetch, so its
