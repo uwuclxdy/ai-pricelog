@@ -22,6 +22,7 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing/"
 announce_urls = [
   "https://api-docs.deepseek.com/updates/",
   "https://api-docs.deepseek.com/sitemap.xml",
+  "https://api-docs.deepseek.com/guides/search",
 ]
 
 [zai]

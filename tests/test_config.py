@@ -245,3 +245,11 @@ def test_generate_providers_kind_is_binary_and_vendor_tracks_kind():
         else:
             assert "vendor" not in entry
     assert providers["openrouter"] == config.OPENROUTER
+
+
+def test_deepseek_watches_the_search_fee_guide():
+    # the search/fetch per-request fee lives only on this guide page
+    deepseek = next(
+        p for p in config.load_providers(ROOT / "providers.toml") if p.key == "deepseek"
+    )
+    assert "https://api-docs.deepseek.com/guides/search" in deepseek.announce_urls
