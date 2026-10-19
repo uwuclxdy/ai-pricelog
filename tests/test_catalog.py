@@ -73,3 +73,30 @@ def test_curated_entries_carry_a_vendor_key():
     for entry in catalog.values():
         if entry["curated"] is True:
             assert "vendor" in entry
+
+
+def test_claude_4x_twins_are_merged_into_one_curated_entry():
+    catalog = _catalog()
+    # four Claude 4.x models each sat under two curated entries — a hyphen id
+    # claiming anthropic + deepinfra, and a dotted one claiming digitalocean +
+    # openrouter — so the README count and the site listed each model twice.
+    # the merge folds each pair into the hyphen canonical with the display name
+    twins = {
+        "claude-haiku-4-5": ("Claude Haiku 4.5", "claude-haiku-4.5"),
+        "claude-opus-4-7": ("Claude Opus 4.7", "claude-opus-4.7"),
+        "claude-opus-4-8": ("Claude Opus 4.8", "claude-opus-4.8"),
+        "claude-sonnet-4-6": ("Claude Sonnet 4.6", "claude-sonnet-4.6"),
+    }
+    for canonical, (name, dotted) in twins.items():
+        entry = catalog[canonical]
+        assert entry["name"] == name
+        # the hyphen canonical keeps anthropic + deepinfra under the hyphen id
+        # and gains the twin's digitalocean + openrouter sources under the
+        # dotted id — a swap of one source's spelling would merge uncaught
+        assert entry["sources"] == {
+            "anthropic": [canonical],
+            "deepinfra": [canonical],
+            "digitalocean": [dotted],
+            "openrouter": [f"anthropic/{dotted}"],
+        }
+        assert dotted not in catalog
