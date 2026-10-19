@@ -58,7 +58,7 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
       "fetched": "2026-10-19"
     }
   },
@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "0490168ebf6a23a0e5bf125e32a2b30abc681db7395219ce53b8c9173bc1eece",
-      "fetched": "2026-10-17"
+      "sha256": "2c9ee59edd5671cbbd145534a3162f8238da59d6dfb91d407134c4da34caf4a4",
+      "fetched": "2026-10-19"
     }
   },
   "together": {
@@ -129,7 +129,7 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "06baffa12c3d1dfdafc224ea744ab92bbd435c7719029e7f451ebaf8ef3cdecd",
+      "sha256": "eb9fe1321713fb733eabc51f496117acc248f8fed9b5cf26e11d8b66b35285e3",
       "fetched": "2026-10-19"
     }
   },
