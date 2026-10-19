@@ -7,7 +7,12 @@ github issue per provider that failed hard in two consecutive runs (the
 @-mention is what reaches the owner). hard = the detector or a scrape
 raised, so the provider is blind or its rows are rejected; soft = detect,
 parse and row-build skips and validation rejects (additive drift, the
-provider stays alive). a provider the run's `providers checked:` line names,
+provider stays alive). every reader (the issue rules, the checked set, the
+hold marker) matches only at a log line's message start — after the
+optional `gh run view --log` prefix and basicConfig's `LEVEL:logger:`
+prefix — so page text that lands inside a logged name (a detect-skip or
+traceback line's tail) never reads as the run's own line. a provider the
+run's `providers checked:` line names,
 with no hard failure logged for it, closes its own `provider broken: <key>`
 issue (recovery); a held or seed-skipped run, or a run that crashed before
 its providers, logs no checked line, so it closes and opens no provider
@@ -63,16 +68,40 @@ _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"entry \S+ failed row build for (\S+):"), "soft", None),
     (re.compile(r"parse skip for (\S+):"), "soft", None),
     (re.compile(r"refresh for \S+ skipped in (\S+):"), "soft", None),
+    # the page-written name sits between "fast-mode name " and the phrase, so
+    # the key is read from the message's own tail (the url is the last token)
+    (
+        re.compile(r"fast-mode name .* names no model in the pricing table for (\S+) on \S+$"),
+        "soft",
+        None,
+    ),
     (DETECT_SKIP, "soft", None),
 )
+
+# a run-log line's prefixes, left to right: the optional `gh run view --log`
+# field triple (`<job>\t<step>\t<timestamp> `), then basicConfig's
+# `LEVEL:logger:` prefix. everything after is the message the health readers
+# match, anchored at its start; a traceback line carries no LEVEL:logger:
+# prefix and matches nothing.
+_LOG_LINE_PREFIX = re.compile(r"^(?:[^\t\n]*\t[^\t\n]*\t\S+ )?[A-Z]+:[\w.]+:")
+
+
+def _message(line: str) -> str | None:
+    """the log message after the run-log prefixes, or None when the line has
+    no LEVEL:logger: prefix (a traceback line)."""
+    match = _LOG_LINE_PREFIX.match(line)
+    return line[match.end() :] if match is not None else None
 
 
 def parse_log(lines: Iterable[str]) -> dict[str, dict[str, list[str]]]:
     """per provider -> {"hard": [...], "soft": [...]} of matched log lines."""
     issues: dict[str, dict[str, list[str]]] = {}
     for line in lines:
+        message = _message(line)
+        if message is None:
+            continue
         for pattern, cls, fixed in _RULES:
-            match = pattern.search(line)
+            match = pattern.match(message)
             if match is None:
                 continue
             key = fixed if fixed is not None else match.group(1)
@@ -88,9 +117,12 @@ def hold_reason(lines: Iterable[str]) -> str | None:
     evidence, so its `::warning::` names the reason instead of the issue list.
     """
     for line in lines:
-        if HOLD_PENDING_SCAN in line:
+        message = _message(line)
+        if message is None:
+            continue
+        if message.startswith(HOLD_PENDING_SCAN):
             return HOLD_PENDING_SCAN
-        if HOLD_SEED_PR in line:
+        if message.startswith(HOLD_SEED_PR):
             return HOLD_SEED_PR
     return None
 
@@ -103,9 +135,9 @@ def checked_providers(lines: Iterable[str]) -> frozenset[str]:
     its checked set is empty and close_recovered closes nothing.
     """
     for line in lines:
-        _, prefix, rest = line.partition(CHECKED_PROVIDERS)
-        if prefix:
-            return frozenset(rest.split())
+        message = _message(line)
+        if message is not None and message.startswith(CHECKED_PROVIDERS):
+            return frozenset(message[len(CHECKED_PROVIDERS) :].split())
     return frozenset()
 
 

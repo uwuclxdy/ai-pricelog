@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import re
+import sys
 import time
 import unicodedata
 import urllib.parse
@@ -103,6 +104,30 @@ _OTHER_DOLLAR_RE = re.compile(r"[＄﹩]\s*[.,]?\d|\d\s*[$＄﹩](?!\s*[.,]?\d)"
 # is a second amount the raw-text reader never saw ("&#36;10", "&#36 10")
 _ENTITY_RE = re.compile(r"&(?:#[0-9]+;?|#[xX][0-9a-fA-F]+;?|[^\t\n\f <&#;]{1,32};?)")
 
+# Python's int-string conversion limit (sys.get_int_max_str_digits(), 4300)
+# makes html.unescape raise ValueError on a decimal character reference whose
+# digit run is longer (measured: `&#` + 5000 nines + `;`, the zero-padded
+# `&#000…065;` and the unterminated form all raise; a hex ref does not).
+# unescape rewrites such a ref to its short same-value form first: a value
+# past U+10FFFF collapses to `&#1114112;` (html.unescape reads that as U+FFFD,
+# the read a short out-of-range ref already gives), a zero-padded one keeps
+# its significant digits (leading zeros carry no value).
+_HUGE_DECIMAL_REF_RE = re.compile(rf"&#([0-9]{{{sys.get_int_max_str_digits() + 1},}})(;?)")
+
+
+def _huge_decimal_ref(match: re.Match[str]) -> str:
+    """the short same-value form of a decimal ref too long for int()."""
+    significant = match.group(1).lstrip("0") or "0"
+    if len(significant) > 7:
+        significant = "1114112"  # U+10FFFF + 1: out of range, reads as U+FFFD
+    return "&#" + significant + match.group(2)
+
+
+def unescape(text: str) -> str:
+    """`text` with HTML entities decoded exactly like html.unescape, without
+    int()'s digit-run limit raising on a long decimal character reference."""
+    return html.unescape(_HUGE_DECIMAL_REF_RE.sub(_huge_decimal_ref, text))
+
 
 _DECIMAL_DOT_RE = re.compile(r"\d\.\d")
 
@@ -122,14 +147,14 @@ def _decoded_dollar_before_digit(text: str) -> bool:
     """an entity that html.unescape folds into "$" and that sits before a
     digit: the second amount the raw-text reader never saw."""
     for match in _ENTITY_RE.finditer(text):
-        if html.unescape(match.group(0)) == "$" and _MALFORMED_AFTER_RE.match(text, match.end()):
+        if unescape(match.group(0)) == "$" and _MALFORMED_AFTER_RE.match(text, match.end()):
             return True
     return False
 
 
 def _other_dollar_malformed(text: str) -> bool:
     """a dollar spelling beside a digit that is not the reader's own marker."""
-    unescaped = html.unescape(text)
+    unescaped = unescape(text)
     return _OTHER_DOLLAR_RE.search(unescaped) is not None or _decoded_dollar_before_digit(text)
 
 

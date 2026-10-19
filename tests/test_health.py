@@ -189,7 +189,7 @@ def test_main_seed_hold_warns_and_closes_no_provider_issue(monkeypatch, tmp_path
     # the seed skip ran no provider either, so a provider-broken issue must
     # stay open: the ::warning:: names the hold and close/open never run
     log_path = tmp_path / "run.log"
-    log_path.write_text(health.HOLD_SEED_PR + "\n", encoding="utf-8")
+    log_path.write_text(f"INFO:ai_pricelog.pipeline:{health.HOLD_SEED_PR}\n", encoding="utf-8")
     gh_calls: list[list[str]] = []
 
     def gh(args: list[str]) -> str:

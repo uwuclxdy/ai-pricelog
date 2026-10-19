@@ -7,9 +7,10 @@ tier, Cache Hits & Refreshes -> cache read, Output -> output, each /1e6.
 a rate cell must carry exactly one dollar amount (ASCII digits, commas
 only in proper three-digit groups, an optional decimal part, and nothing
 numeric glued after it); no readable amount, more than one readable
-amount, or one readable amount beside a malformed amount is a page-shape
-break (FetchError, never ValueError). the page carries no context window,
-so the max_tokens fields stay 0 (the entry builder omits them).
+amount, one readable amount beside a malformed amount, or one past a sane
+length is a page-shape break (FetchError, never ValueError). the page
+carries no context window, so the max_tokens fields stay 0 (the entry
+builder omits them).
 
 a prompt-length tier (Claude Haiku 5.5) prices one model in two
 model-table rows, read by the detector's `split_name`; they fold into one
@@ -28,16 +29,20 @@ never batch. a model cell may join two names with " / " (the row covers
 both), and a row applying to the requested id attaches the rates as a
 window_rates entry keyed on the request mode. the fast table absent is
 additive drift: the base Pricing still ships, with no entries and a
-warning; a fast-table row naming no model-table row is drift too, skipped
-with a warning, never raised, while a fast-table row with an empty name
-names no model, so it raises every scrape.
+warning. a fast-table row whose every name yields no model id (an empty
+slug) raises every scrape, naming the row; a fast name whose stem holds a
+non-ASCII non-space character, or whose slug is empty or names no
+model-table row, is drift, skipped with a per-name warning that carries
+the provider key so the health step classes it, while the row still
+applies to its matching names.
 
 a failing model-table row raises only the scrape of the model its name's
 leading shape names. a row with an empty name or a letterless stem (its
 tier paren dropped) raises every scrape, unless the tier it carries pairs
 with exactly one model's tier row, in which case that one model's tier
-check raises its pair error. a fast row whose name carries a prompt-length
-tier raises for that model, as does more than one fast row for one model.
+check counts the nameless row and raises its pair error. a fast row whose
+name carries a prompt-length tier raises for that model, as does more
+than one fast row for one model.
 
 None = no model-table row names the requested model id. FetchError = the
 fetch failed, the page carries no model pricing table, or a row that
@@ -50,11 +55,14 @@ import logging
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.anthropic_page import (
+    _SANE_TOKEN_LENGTH,
     TABLE_HEADER,
+    _fast_name_non_ascii,
     _letterless,
     _name_id,
     _name_tier,
     _own_model_id,
+    _RowError,
     check_row,
     model_table,
     split_name,
@@ -80,11 +88,11 @@ _FAST_MODE = "fast"
 
 def _amount(cell: str, model_id: str, url: str) -> float:
     """the cell's single dollar amount; no readable amount, more than one
-    readable amount, or one readable amount beside a malformed amount (an
-    amount-shaped "$" the amount grammar cannot read) is a page-shape
-    break."""
+    readable amount, one readable amount beside a malformed amount (an
+    amount-shaped "$" the amount grammar cannot read), or an amount past a
+    sane length is a page-shape break."""
     readable, malformed = amount_scan(cell, before="$")
-    if len(readable) != 1 or malformed:
+    if len(readable) != 1 or malformed or len(readable[0]) > _SANE_TOKEN_LENGTH:
         raise unreadable_rate_error(cell, model_id, url)
     return float(readable[0].replace(",", ""))
 
@@ -103,15 +111,17 @@ def _fast_table(text: str) -> list[list[str]] | None:
 
 
 def _fast_window_rates(
-    text: str, model_id: str, url: str, main_ids: set[str]
+    text: str, model_id: str, url: str, main_ids: set[str], key: str
 ) -> tuple[dict[str, object], ...]:
     """the model's fast-mode window_rates entries, () when none apply.
 
     `main_ids` is every id the model table carries, so a fast-table row
-    naming an unknown model is told from a row for other known models:
-    the former is drift to skip with a warning, the latter simply does
-    not apply here. a row whose name carries a prompt-length tier raises
-    for the model(s) its name names.
+    naming an unknown model is told from a row for other known models: a
+    row whose every name yields no model id at all raises every scrape,
+    while a name whose stem holds a non-ASCII non-space character, or
+    whose slug is empty or names no model-table row, is drift, skipped
+    with a per-name warning. a row whose name carries a prompt-length tier
+    raises for the model(s) its name names.
     """
     table = _fast_table(text)
     if table is None:
@@ -120,24 +130,31 @@ def _fast_window_rates(
     entries: list[dict[str, object]] = []
     applied: list[str] = []
     for row in table[2:]:
-        if not row[0]:
-            raise FetchError(f"row outside the fast-mode shape on {url}: {row!r}")
         names = [name.strip() for name in row[0].split(_FAST_NAME_SPLIT)]
-        ids = [_name_id(name) for name in names]
+        slugs = [_name_id(name) for name in names]
+        if not any(slugs):
+            raise FetchError(
+                f"fast-mode row {row!r} on {url} names no model, so it fails every"
+                " model's scrape; fix: give the row a model name or teach the anthropic"
+                " scraper this fast-table layout"
+            )
+        non_ascii = [_fast_name_non_ascii(name) for name in names]
+        ids = ["" if bad else slug for slug, bad in zip(slugs, non_ascii, strict=True)]
+        known = [slug in main_ids for slug in ids]
         applies = model_id in ids
+        for name, is_known in zip(names, known, strict=True):
+            if not is_known:
+                log.warning(
+                    "fast-mode name %r names no model in the pricing table for %s on %s",
+                    name,
+                    key,
+                    url,
+                )
         if len(row) != len(_FAST_HEADER):
             if applies:
                 raise FetchError(f"row outside the fast-mode shape on {url}: {row!r}")
-            if not any(model in main_ids for model in ids):
-                log.warning(
-                    "fast-mode row %r names no model in the pricing table on %s", row[0], url
-                )
             continue
         if not applies:
-            if not any(model in main_ids for model in ids):
-                log.warning(
-                    "fast-mode row %r names no model in the pricing table on %s", row[0], url
-                )
             continue
         for name in names:
             if _name_tier(name) is not None:
@@ -221,9 +238,11 @@ def _tiered_rows(rows: list[list[str]], url: str) -> dict[tuple[str, int], set[s
     return by_tier
 
 
-def _paired_tier_model(name: str, tiered: dict[tuple[str, int], set[str]]) -> str | None:
-    """the single model whose tier row pairs with this letterless row's tier,
-    or None when none or several do or its tier is unreadable; pairing is the
+def _paired_tier_model(
+    name: str, tiered: dict[tuple[str, int], set[str]]
+) -> tuple[str, tuple[str, int]] | None:
+    """the single (model id, tier) a letterless tier row pairs with, or None
+    when none or several do or its tier is unreadable; pairing is the
     complementary kind at the same threshold."""
     try:
         tier = _name_tier(name)
@@ -234,7 +253,9 @@ def _paired_tier_model(name: str, tiered: dict[tuple[str, int], set[str]]) -> st
     kind, threshold = tier
     paired_kind = "over" if kind == "up to" else "up to"
     siblings = tiered.get((paired_kind, threshold), ())
-    return next(iter(siblings)) if len(siblings) == 1 else None
+    if len(siblings) != 1:
+        return None
+    return next(iter(siblings)), tier
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -244,7 +265,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     tiered_rows = _tiered_rows(rows, url)
     # main_ids (which the fast table reads against) holds every row that parses
     main_ids: set[str] = set()
-    tiered: list[tuple[tuple[str, int], list[str]]] = []
+    tiered: list[tuple[tuple[str, int], list[str], bool]] = []
     plain: list[list[str]] = []
     for row in rows:
         try:
@@ -254,13 +275,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             if not row or not row[0]:
                 raise FetchError(f"row outside the pricing shape on {url}: {row!r}") from None
             if _letterless(row[0]):
-                if (
-                    len(row) == len(TABLE_HEADER)
-                    and _paired_tier_model(row[0], tiered_rows) is not None
-                ):
-                    continue
+                if len(row) == len(TABLE_HEADER):
+                    paired = _paired_tier_model(row[0], tiered_rows)
+                    if paired is not None:
+                        paired_id, paired_tier = paired
+                        if paired_id == model_id:
+                            tiered.append((paired_tier, row, False))
+                        continue
                 raise FetchError(f"row outside the pricing shape on {url}: {row!r}") from None
-            own_id = getattr(exc, "model_id", None)
+            own_id = exc.model_id if isinstance(exc, _RowError) else None
             if own_id is None:
                 own_id = _own_model_id(row[0])
             if own_id == model_id:
@@ -272,7 +295,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         if tier is None:
             plain.append(row)
         else:
-            tiered.append((tier, row))
+            tiered.append((tier, row, True))
     if not tiered and not plain:
         return None
     if not tiered:
@@ -282,13 +305,18 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 f"{[row[0] for row in plain]!r}; fix: teach the anthropic "
                 "scraper which row prices the model"
             )
-        return _pricing(plain[0], model_id, url, _fast_window_rates(text, model_id, url, main_ids))
-    up_to = [(tier, row) for tier, row in tiered if tier[0] == "up to"]
-    over = [(tier, row) for tier, row in tiered if tier[0] == "over"]
-    if not (len(up_to) == 1 and len(over) == 1 and up_to[0][0][1] == over[0][0][1] and not plain):
+        return _pricing(
+            plain[0], model_id, url, _fast_window_rates(text, model_id, url, main_ids, cfg.key)
+        )
+    up_to = [(tier, row) for tier, row, named in tiered if named and tier[0] == "up to"]
+    over = [(tier, row) for tier, row, named in tiered if named and tier[0] == "over"]
+    nameless = [row for _tier, row, named in tiered if not named]
+    if nameless or not (
+        len(up_to) == 1 and len(over) == 1 and up_to[0][0][1] == over[0][0][1] and not plain
+    ):
         raise FetchError(
             f"prompt-length tier rows for {model_id!r} on {url} are not one "
-            f"'up to N' + 'over N' pair: found {[row[0] for _, row in tiered]!r} "
+            f"'up to N' + 'over N' pair: found {[row[0] for _, row, _ in tiered]!r} "
             f"beside {len(plain)} untiered row(s); fix: teach the anthropic scraper "
             f"the page's tier layout"
         )
@@ -300,5 +328,5 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         model_id,
         url,
         (_tier_entry(over_row, threshold, model_id, url),)
-        + _fast_window_rates(text, model_id, url, main_ids),
+        + _fast_window_rates(text, model_id, url, main_ids, cfg.key),
     )

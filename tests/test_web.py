@@ -215,6 +215,33 @@ def test_amount_scan_rejects_a_comma_decimal():
     assert web.amount_scan("$0,14", before="$") == ([], True)
 
 
+def test_unescape_leaves_a_non_ascii_digit_ref_as_html_unescape_does():
+    # html.unescape reads a character reference's digits as ASCII [0-9] only:
+    # a run of Arabic-Indic digits is no reference, and an ASCII run stops at
+    # the first non-ASCII digit
+    arabic = "&#" + "٩" * 4301 + ";"
+    assert web.unescape(arabic) == arabic
+    assert web.unescape("&#" + "9" * 5000 + "٩;") == "�٩;"
+
+
+@pytest.mark.parametrize(
+    "huge_ref",
+    ["&#" + "9" * 5000 + ";", "&#" + "0" * 5000 + "65;", "&#" + "9" * 5000],
+    ids=["decimal-ref", "zero-padded-decimal-ref", "unterminated-decimal-ref"],
+)
+def test_amount_scan_reads_a_huge_decimal_ref_like_any_out_of_range_one(huge_ref):
+    # past 4,300 digits html.unescape's int() raises ValueError, which no
+    # FetchError handler catches; a ref beyond U+10FFFF already decodes to
+    # U+FFFD, so the huge one reads the same as a short out-of-range one
+    # (the zero-padded "65" is "A", a letter either way)
+    short_ref = "&#65;" if huge_ref.endswith("65;") else "&#1114112;"
+    if not huge_ref.endswith(";"):
+        short_ref = short_ref.removesuffix(";")
+    for text in (f"$0.30 {huge_ref}", f"{huge_ref}$0.30"):
+        expected = web.amount_scan(text.replace(huge_ref, short_ref), before="$")
+        assert web.amount_scan(text, before="$") == expected
+
+
 def test_amount_scan_rejects_a_hyphen_range_like_an_en_dash_range():
     assert web.amount_scan("$1–2 / MTok", before="$")[1] is True
     assert web.amount_scan("$1-2 / MTok", before="$") == ([], True)

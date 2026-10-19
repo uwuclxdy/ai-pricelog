@@ -666,7 +666,9 @@ def test_detect_section_row_warns_without_freezing_counters(
     lines = _warning_lines(caplog)
     assert not any(health.DETECT_SKIP.search(line) for line in lines)
     assert lines == [f"parse skip for databricks: section row 'Embedding models' on {PAGE_URL}"]
-    assert health.parse_log(lines) == {"databricks": {"hard": [], "soft": lines}}
+    # the run log carries basicConfig's LEVEL:logger: prefix the health step anchors on
+    run_log = [f"WARNING:{detector.__name__}:{line}" for line in lines]
+    assert health.parse_log(run_log) == {"databricks": {"hard": [], "soft": run_log}}
 
 
 def _lone_standard_with(monkeypatch: pytest.MonkeyPatch, odd_row: str) -> None:

@@ -8,11 +8,15 @@ table covers Claude Opus 5.5 on its own row.
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import time
+import traceback
 from pathlib import Path
 
 import pytest
 
+from ai_pricelog import health
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import anthropic_page as detector
 from ai_pricelog.pricing import Pricing
@@ -530,6 +534,13 @@ def test_scrape_unreadable_rate_raises(monkeypatch: pytest.MonkeyPatch):
         scraper.scrape(cfg(), "claude-opus-5-fast")
 
 
+def _fast_name_warning(name: str) -> str:
+    """the scrape-time line a fast-table name naming no model logs."""
+    return (
+        f"fast-mode name {name!r} names no model in the pricing table for anthropic on {PAGE_URL}"
+    )
+
+
 # the fast-mode table as the page carries it: header, separator, the Opus
 # 5.5 row, then the one row whose cell joins two covered names
 _FAST_TABLE = (
@@ -607,24 +618,36 @@ def test_fast_table_row_outside_shape_blames_its_own_model(monkeypatch: pytest.M
     )
 
 
-def test_fast_table_row_with_no_name_raises_for_every_model(monkeypatch: pytest.MonkeyPatch):
-    # a fast-table row that names no model cannot be told apart from the
-    # requested model's own row, so every scrape raises
-    broken = _FAST_TABLE + "|  | $1 / MTok | $2 / MTok |\n"
+def _nameless_fast_row_error(row: list[str]) -> str:
+    return (
+        f"fast-mode row {row!r} on {PAGE_URL} names no model, so it fails every"
+        " model's scrape; fix: give the row a model name or teach the anthropic"
+        " scraper this fast-table layout"
+    )
+
+
+@pytest.mark.parametrize(
+    "name", ["", "—", "([note](https://x))"], ids=["empty", "dash", "annotation-only"]
+)
+def test_fast_table_row_with_no_name_raises_for_every_model(
+    monkeypatch: pytest.MonkeyPatch, name: str
+):
+    # a fast-table row whose name yields no model id cannot be told apart from
+    # the requested model's own row, so every scrape raises, saying why
+    broken = _FAST_TABLE + f"| {name} | $1 / MTok | $2 / MTok |\n"
     fixture = FIXTURE.read_text().replace(_FAST_TABLE, broken)
     feed(monkeypatch, fixture)
     with pytest.raises(FetchError) as exc:
         scraper.scrape(cfg(), "claude-sonnet-5")
-    assert str(exc.value) == (
-        f"row outside the fast-mode shape on {PAGE_URL}: ['', '$1 / MTok', '$2 / MTok']"
-    )
+    assert str(exc.value) == _nameless_fast_row_error([name, "$1 / MTok", "$2 / MTok"])
 
 
 def test_fast_table_row_with_one_unknown_name_still_applies(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ):
     # the row covers both names it joins, so one match applies it even when
-    # the other name sits in no model-table row
+    # the other name sits in no model-table row; that name still warns, once
+    # (cloudy, 2026-10-19: every unknown fast name warns)
     drifted = _FAST_TABLE.replace(
         "Claude Opus 5 / Claude Opus 4.8", "Claude Opus 5 / Claude Cybertruck"
     )
@@ -634,7 +657,7 @@ def test_fast_table_row_with_one_unknown_name_still_applies(
         pricing = scraper.scrape(cfg(), "claude-opus-5")
     assert pricing is not None
     assert pricing.window_rates == ({"mode": "fast", "input_mtok": 10.0, "output_mtok": 50.0},)
-    assert "names no model" not in caplog.text
+    assert caplog.messages == [_fast_name_warning("Claude Cybertruck")]
 
 
 def test_fast_table_row_naming_no_known_model_skips(
@@ -1280,9 +1303,7 @@ def test_short_fast_row_naming_no_model_warns(
         pricing = scraper.scrape(cfg(), "claude-opus-5")
     assert pricing is not None
     assert pricing.window_rates == ({"mode": "fast", "input_mtok": 10.0, "output_mtok": 50.0},)
-    assert caplog.messages == [
-        f"fast-mode row 'Claude Opus 9' names no model in the pricing table on {PAGE_URL}"
-    ]
+    assert caplog.messages == [_fast_name_warning("Claude Opus 9")]
 
 
 def test_name_without_a_leading_shape_fails_no_scrape(
@@ -1399,25 +1420,22 @@ def test_emphasis_or_invisible_mark_after_both_tier_rows_folds(
 @pytest.mark.parametrize(
     "joint",
     [
-        "Claude Opus 5* / Claude Opus 4.8",
-        "Claude Opus 5 / Claude Opus 4.8†",
+        "Claude Opus 5! / Claude Opus 4.8",
         f"Claude{_ZWSP}Opus 5 / Claude Opus 4.8",
         f"Claude Opus 5 / Claude{_ZWSP}Opus 4.8",
-        "Claude_Opus 5 / Claude Opus 4.8",
         "Claude Opus 5 / Claude Opus 4_8",
     ],
     ids=[
-        "asterisk-on-first",
-        "dagger-on-second",
+        "bang-on-first",
         "zwsp-for-space-on-first",
         "zwsp-for-space-on-second",
-        "underscore-for-space",
         "underscore-in-version",
     ],
 )
 def test_fast_names_match_as_their_slug_reads(monkeypatch: pytest.MonkeyPatch, joint: str):
     # a fast-table name matches a model-table id through its slug, never the
-    # model-table name guard: a glyph on one name fails no model's scrape
+    # model-table name guard: "Claude Opus 5!" fails that guard, yet its slug
+    # still names claude-opus-5
     noted = _FAST_TABLE.replace("Claude Opus 5 / Claude Opus 4.8", joint)
     fixture = FIXTURE.read_text()
     assert noted != _FAST_TABLE and _FAST_TABLE in fixture
@@ -1831,3 +1849,735 @@ def test_tier_wording_error_prints_the_paren_as_the_page_writes_it(
     with pytest.raises(FetchError) as exc:
         scraper.scrape(cfg(), "claude-haiku-5-5")
     assert str(exc.value) == _wording_error(paren, name)
+
+
+_SONNET_4_5_ROW = "| Claude Sonnet 4.5 "
+
+
+def _qualifier_error(paren: str, name: str) -> str:
+    return (
+        f"unread model qualifier {paren!r} in {name!r}: the paren names a model"
+        " variant, not a prompt-length tier; fix: teach the anthropic detector the"
+        " model this qualifier names"
+    )
+
+
+@pytest.mark.parametrize("paren", ["(1M token context)", "(prompt caching)"])
+def test_model_qualifier_paren_names_itself_a_model_qualifier(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, paren: str
+):
+    # a qualifier naming a model variant is no tier wording, and
+    # its fix is to teach the detector the model, never the tier parse
+    name = f"Claude Sonnet 4.5 {paren}"
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(_SONNET_4_5_ROW, f"| {name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == _without("claude-sonnet-4-5")
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {_qualifier_error(paren, name)}"]
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-sonnet-4-5")
+    assert str(exc.value) == _qualifier_error(paren, name)
+
+
+def test_link_annotation_drop_is_linear():
+    # "([" x 8000 took 6.0 s per parse when the scan was quadratic
+    name = "([" * 8000
+    start = time.perf_counter()
+    with pytest.raises(FetchError):
+        detector.split_name(name, PAGE_URL)
+    assert time.perf_counter() - start < 1.0
+
+
+@pytest.mark.parametrize(
+    ("page_name", "model_id"),
+    [
+        ("Claude Op*us 5", "claude-opus-5"),
+        ("Claude Son_net 4.5", "claude-sonnet-4-5"),
+        ("Claude Hai`ku 4.5", "claude-haiku-4-5"),
+    ],
+    ids=["asterisk-in-word", "underscore-in-word", "backtick-in-word"],
+)
+def test_mark_between_two_letters_joins_them(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, page_name: str, model_id: str
+):
+    # a mark inside a word used to split it and mint a fake id
+    # ("claude-op-us-5") while the real model's absence counter ran
+    plain = page_name.replace("*", "").replace("_", "").replace("`", "")
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(f"| {plain} ", f"| {page_name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == []
+    assert scraper.scrape(cfg(), model_id) is not None
+
+
+def _fast_scrapes(monkeypatch: pytest.MonkeyPatch, joint: str) -> None:
+    noted = _FAST_TABLE.replace("Claude Opus 5 / Claude Opus 4.8", joint)
+    fixture = FIXTURE.read_text()
+    assert noted != _FAST_TABLE and _FAST_TABLE in fixture
+    feed(monkeypatch, fixture.replace(_FAST_TABLE, noted))
+
+
+def _fast_entries(model_id: str) -> tuple[dict[str, object], ...]:
+    pricing = scraper.scrape(cfg(), model_id)
+    assert pricing is not None, model_id
+    return pricing.window_rates
+
+
+def _run_log(caplog: pytest.LogCaptureFixture) -> list[str]:
+    # the lines `ai-pricelog 2>&1 | tee /tmp/run.log` writes and the health
+    # step reads back with splitlines(): basicConfig's format, each
+    # exception record followed by its traceback
+    formatter = logging.Formatter(logging.BASIC_FORMAT)
+    return "\n".join(formatter.format(record) for record in caplog.records).splitlines()
+
+
+def _names_no_model_warned(caplog: pytest.LogCaptureFixture, name: str) -> bool:
+    return _fast_name_warning(name) in caplog.messages
+
+
+def test_fast_name_joined_by_an_underscore_names_no_model(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a mark between two letters joins them in the fast table too (cloudy,
+    # 2026-10-19): "Claude_Opus" is one word, so that name names no model and warns
+    _fast_scrapes(monkeypatch, "Claude_Opus 5 / Claude Opus 4.8")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == ()
+        assert _fast_entries("claude-opus-4-8") == (_FAST_ENTRY,)
+    assert _names_no_model_warned(caplog, "Claude_Opus 5")
+
+
+@pytest.mark.parametrize(
+    ("joint", "odd_name"),
+    [
+        ("Claude Opus 5 / Claude Opus 4.８", "Claude Opus 4.８"),
+        ("Claude Opus 5 / Claude Opus 4.8†", "Claude Opus 4.8†"),
+    ],
+    ids=["fullwidth-digit", "dagger"],
+)
+def test_fast_name_with_a_non_ascii_character_names_no_model(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, joint: str, odd_name: str
+):
+    # "4.８" slugged onto claude-opus-4 and stole a fast price;
+    # any non-ASCII non-space character in a fast name's stem names no model
+    # (cloudy, 2026-10-19), so the dagger spelling warns too
+    _fast_scrapes(monkeypatch, joint)
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == (_FAST_ENTRY,)
+        assert _fast_entries("claude-opus-4-8") == ()
+        assert _fast_entries("claude-opus-4") == ()
+    assert _names_no_model_warned(caplog, odd_name)
+
+
+def test_fast_row_warns_for_each_name_that_matches_nothing(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # one matching name used to silence the warning for the other
+    _fast_scrapes(monkeypatch, "Claude Opus 5 / Claude Opus 4.8 (legacy)")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == (_FAST_ENTRY,)
+    assert _names_no_model_warned(caplog, "Claude Opus 4.8 (legacy)")
+
+
+def test_fast_mode_drop_line_reaches_a_health_annotation(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # the scrape-time "names no model" line matched no health rule,
+    # so the dropped fast entry reached no ::warning:: and no issue body
+    _fast_scrapes(monkeypatch, "Claude Cybertruck / Claude Semi")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == ()
+    lines = [line for line in _run_log(caplog) if "names no model" in line]
+    assert lines
+    assert health.parse_log(lines) == {"anthropic": {"hard": [], "soft": lines}}
+
+
+def test_tier_wording_error_quotes_the_page_paren_past_a_trailing_mark(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a mark after the paren used to print the mapped paren
+    paren = "(for prompts *above* 100,000 tokens)"
+    name = f"Claude Haiku 5.5 {paren}*"
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(_OVER_NAME, name, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {_wording_error(paren, name)}"]
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == _wording_error(paren, name)
+
+
+def test_nameless_tier_row_beside_a_complete_pair_raises_the_pair_error(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # a nameless over-row beside Haiku 5.5's complete named
+    # pair was skipped, so one of two conflicting over-tier rate sets priced
+    # the model silently
+    nameless = "(for prompts over 100,000 tokens)"
+    extra = (
+        f"| {nameless} | $0.60 / MTok | $0.75 / MTok | $1.20 / MTok | $0.06 / MTok | $3 / MTok |\n"
+    )
+    fixture = FIXTURE.read_text()
+    over_line = next(line for line in fixture.splitlines() if line.startswith(f"| {_OVER_NAME}"))
+    marked = fixture.replace(over_line + "\n", over_line + "\n" + extra, 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == (
+        f"prompt-length tier rows for 'claude-haiku-5-5' on {PAGE_URL} are not one "
+        f"'up to N' + 'over N' pair: found {[_UP_TO_NAME, _OVER_NAME, nameless]!r} beside 0 "
+        "untiered row(s); fix: teach the anthropic scraper the page's tier layout"
+    )
+    assert scraper.scrape(cfg(), "claude-opus-5") is not None
+
+
+@pytest.mark.parametrize(
+    "char",
+    ["‎", "‏", "­", "⁡", "⁦", "‪", "͏", "؜", "᠎"],
+    ids=["lrm", "rlm", "shy", "fa", "lri", "lre", "cgj", "alm", "mvs"],
+)
+def test_format_character_before_a_name_keeps_the_model(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, char: str
+):
+    # these used to drop the model out of detection
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace("| Claude Opus 5 ", f"| {char}Claude Opus 5 ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == []
+
+
+def test_soft_hyphen_inside_a_word_joins_it(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(_SONNET_4_5_ROW, "| Claude Son­net 4.5 ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == []
+
+
+def test_zero_width_space_between_words_stays_a_space(monkeypatch: pytest.MonkeyPatch):
+    # the five invisible characters keep reading as a space (one may stand in
+    # for the space between words)
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace("| Claude Opus 5 ", f"| Claude{_ZWSP}Opus 5 ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    assert detector.detect(cfg()) == EXPECTED_IDS
+
+
+def test_soft_hyphen_between_version_digits_mints_no_glued_version(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # "Claude Opus 4_5" once minted claude-opus-45
+    name = "Claude Opus 4­5"
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace("| Claude Opus 4.5 ", f"| {name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        ids = detector.detect(cfg())
+    assert "claude-opus-45" not in ids
+    assert ids == _without("claude-opus-4-5")
+    assert len(_skip_lines(caplog)) == 1
+
+
+def test_tier_error_prints_its_message_once_in_a_traceback(monkeypatch: pytest.MonkeyPatch):
+    # the chained FetchError printed the same message twice
+    name = "Claude Haiku 5.5 (for prompts beyond 100,000 tokens)"
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(_OVER_NAME, name, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    message = str(exc.value)
+    assert "".join(traceback.format_exception(exc.value)).count(message) == 1
+
+
+@pytest.mark.parametrize(
+    ("page_name", "plain", "model_id"),
+    [
+        ("Claude Op­­us 5", "Claude Opus 5", "claude-opus-5"),
+        ("Claude Op*­us 5", "Claude Opus 5", "claude-opus-5"),
+        ("Claude Op­͏us 5", "Claude Opus 5", "claude-opus-5"),
+        ("Claude Op‎‎us 5", "Claude Opus 5", "claude-opus-5"),
+        ("Claude Op**us 5", "Claude Opus 5", "claude-opus-5"),
+        ("Claude Son__net 4.5", "Claude Sonnet 4.5", "claude-sonnet-4-5"),
+        ("Claude Son``net 4.5", "Claude Sonnet 4.5", "claude-sonnet-4-5"),
+        ("Claude Op**us** 5", "Claude Opus 5", "claude-opus-5"),
+    ],
+    ids=[
+        "two-soft-hyphens",
+        "asterisk-then-soft-hyphen",
+        "soft-hyphen-then-cgj",
+        "two-lrm",
+        "double-asterisk",
+        "double-underscore",
+        "double-backtick",
+        "bold-tail-of-a-word",
+    ],
+)
+def test_run_of_marks_between_two_letters_joins_them(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    page_name: str,
+    plain: str,
+    model_id: str,
+):
+    # a run of two or more marks inside a word split it into
+    # a fake id (claude-op-us-5) with no warning; the run joins like one mark
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(f"| {plain} ", f"| {page_name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == []
+    assert scraper.scrape(cfg(), model_id) is not None
+
+
+@pytest.mark.parametrize(
+    ("paren", "qualifier"),
+    [
+        ("(1M tokens context)", True),
+        ("(1M context tokens)", True),
+        ("(prompts cached)", True),
+        ("(for prompt over 200K token)", False),
+        ("(prompt over 100k)", False),
+    ],
+    ids=["tokens-context", "context-tokens", "prompts-cached", "singular-over", "prompt-over"],
+)
+def test_comparison_word_tells_a_tier_wording_from_a_model_qualifier(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, paren: str, qualifier: bool
+):
+    # a paren holding a comparison (up to, over, above, under, below, beyond,
+    # more/less than, exceed, < > ≤ ≥) is a drifted tier wording; any other
+    # prompt/token paren is a model qualifier (cloudy, 2026-10-19)
+    name = f"Claude Sonnet 4.5 {paren}"
+    expected = _qualifier_error(paren, name) if qualifier else _wording_error(paren, name)
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(_SONNET_4_5_ROW, f"| {name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == _without("claude-sonnet-4-5")
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {expected}"]
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-sonnet-4-5")
+    assert str(exc.value) == expected
+
+
+@pytest.mark.parametrize(
+    "tail",
+    # a bare trailing raw NBSP never reaches the parse (the markdown table
+    # reader strips cell whitespace), so the raw NBSP sits before a mark
+    [" *", " ([n](https://x))", "&nbsp;", "&#42;", " *"],
+    ids=[
+        "space-then-mark",
+        "trailing-annotation",
+        "nbsp-entity",
+        "mark-entity",
+        "raw-nbsp-then-mark",
+    ],
+)
+def test_tier_wording_error_quotes_the_page_paren_whatever_follows(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, tail: str
+):
+    # whitespace, an entity or an annotation after the paren
+    # still made the message print the mapped paren
+    paren = "(for prompts *above* 100,000 tokens)"
+    name = f"Claude Haiku 5.5 {paren}{tail}"
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(_OVER_NAME, name, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == _wording_error(paren, name)
+
+
+def test_unshaped_unknown_fast_name_beside_a_known_one_warns(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # "Opus 4.8" (no "Claude") dropped opus-4-8's fast price
+    # with no warning
+    _fast_scrapes(monkeypatch, "Claude Opus 5 / Opus 4.8")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == (_FAST_ENTRY,)
+        assert _fast_entries("claude-opus-4-8") == ()
+    assert _names_no_model_warned(caplog, "Opus 4.8")
+
+
+def test_short_fast_row_warns_per_unknown_name_beside_a_known_one(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a short row warned only when no name matched, with a
+    # keyless line no health rule classed
+    drifted = _FAST_TABLE + "| Claude Sonnet 5 / Claude Opus 4.８ | $1 / MTok |\n"
+    fixture = FIXTURE.read_text()
+    feed(monkeypatch, fixture.replace(_FAST_TABLE, drifted))
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == (_FAST_ENTRY,)
+    assert _names_no_model_warned(caplog, "Claude Opus 4.８")
+    lines = [line for line in _run_log(caplog) if "names no model" in line]
+    assert health.parse_log(lines) == {"anthropic": {"hard": [], "soft": lines}}
+
+
+def test_soft_hyphen_between_fast_version_digits_reads_like_an_underscore(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # invisible characters follow the join/space rule first, so "4­8" reads
+    # as "4 8", like the ruled "4_8" (cloudy, 2026-10-19)
+    _fast_scrapes(monkeypatch, "Claude Opus 5 / Claude Opus 4­8")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-4-8") == (_FAST_ENTRY,)
+    assert caplog.messages == []
+
+
+@pytest.mark.parametrize(
+    ("row_name", "paren", "qualifier"),
+    [
+        (_OVER_NAME, "(for prompts *above* 100,000 tokens)", False),
+        (_SONNET_4_5_ROW, "(1M token context)", True),
+    ],
+    ids=["tier-wording", "qualifier"],
+)
+def test_thick_space_entity_after_a_paren_fails_only_its_row(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    row_name: str,
+    paren: str,
+    qualifier: bool,
+):
+    # "&ThickSpace;" decodes to two characters and crashed every
+    # anthropic detect and scrape with a TypeError
+    base = "Claude Haiku 5.5" if row_name == _OVER_NAME else "Claude Sonnet 4.5"
+    name = f"{base} {paren}&ThickSpace;"
+    fixture = FIXTURE.read_text()
+    old = row_name if row_name == _OVER_NAME else row_name.removeprefix("| ").rstrip()
+    marked = fixture.replace(old, name, 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    expected = _qualifier_error(paren, name) if qualifier else _wording_error(paren, name)
+    with caplog.at_level(logging.WARNING):
+        ids = detector.detect(cfg())
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {expected}"]
+    assert "claude-opus-5" in ids
+    assert scraper.scrape(cfg(), "claude-opus-5") is not None
+
+
+@pytest.mark.parametrize(
+    "paren",
+    [
+        "(for prompts &gt; 100,000 tokens)",
+        "(for prompts &#62; 100,000 tokens)",
+        "(for prompts &ge; 100,000 tokens)",
+        "(for prompts &lt;= 100,000 tokens)",
+        "(for prompts ab*ove 100,000 tokens)",
+        "(for prompts ab**ove 100,000 tokens)",
+        "(for prompts un*der 100,000 tokens)",
+        "(for prompts *more* than 100,000 tokens)",
+        "(for prompts more *than* 100,000 tokens)",
+        "(for prompts up&nbsp;to 100,000 tokens total)",
+        "(for prompts up​to 100,000 tokens total)",
+        "(for prompts > 100,000 tokens)",
+        "(for prompts ≥ 100,000 tokens)",
+        "(for prompts below 100,000 tokens)",
+        "(for prompts less than 100,000 tokens)",
+    ],
+)
+def test_comparison_read_after_entities_and_marks_is_a_tier_wording(
+    monkeypatch: pytest.MonkeyPatch, paren: str
+):
+    # the comparison test ran on the page bytes, so an entity
+    # or a mark inside the comparison word gave the qualifier message
+    name = f"Claude Haiku 5.5 {paren}"
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(_OVER_NAME, name, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == _wording_error(paren, name)
+
+
+@pytest.mark.parametrize("paren", ["(1M token <em>context</em>)", "(prompt caching<br>)"])
+def test_markup_angle_brackets_are_no_comparison(monkeypatch: pytest.MonkeyPatch, paren: str):
+    # a tag's "<" or ">" is markup, not a
+    # comparison, so the paren stays a model qualifier
+    name = f"Claude Sonnet 4.5 {paren}"
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace(_SONNET_4_5_ROW, f"| {name} ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-sonnet-4-5")
+    assert str(exc.value) == _qualifier_error(paren, name)
+
+
+def test_trailing_entity_strip_is_linear():
+    # a quadratic strip took 2.1 s per parse at 16000 trailing entities; 64000
+    # keeps it red on a runner several times faster (27.7 s quadratic vs
+    # 0.16 s linear)
+    name = "Claude Haiku 5.5 (for prompts above 100,000 tokens)" + "&#42;" * 64000
+    start = time.perf_counter()
+    with pytest.raises(FetchError):
+        detector.split_name(name, PAGE_URL)
+    assert time.perf_counter() - start < 1.0
+
+
+@pytest.mark.parametrize(
+    "paren",
+    [
+        "(for prompts *above* 100,000 tokens&#41;",
+        "(for prompts (*above*) 100,000 tokens&#41;",
+    ],
+    ids=["entity-close", "inner-paren-before-entity-close"],
+)
+def test_tier_wording_error_quotes_a_paren_closed_by_an_entity(
+    monkeypatch: pytest.MonkeyPatch, paren: str
+):
+    # a close paren spelled "&#41;" printed the mapped paren;
+    # the quote runs from the outer "(", past an inner pair
+    name = f"Claude Haiku 5.5 {paren}"
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(_OVER_NAME, name, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == _wording_error(paren, name)
+
+
+@pytest.mark.parametrize(
+    "second_name",
+    [
+        "Claude Opus 9 names no model in the pricing table for openai",
+        "Claude Opus 9 names no model in the pricing table for openai on x",
+    ],
+    ids=["phrase", "phrase-with-url-tail"],
+)
+def test_fast_name_holding_the_health_phrase_keeps_the_anthropic_key(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, second_name: str
+):
+    # the page-controlled name sits before "for <key>", so a name holding the
+    # phrase picked the health key; with an "on <url>" tail the key must still
+    # be the line's own last "for <key> on <url>"
+    _fast_scrapes(monkeypatch, f"Claude Opus 5 / {second_name}")
+    with caplog.at_level(logging.WARNING):
+        assert _fast_entries("claude-opus-5") == (_FAST_ENTRY,)
+    lines = [line for line in _run_log(caplog) if "names no model" in line]
+    assert lines
+    assert health.parse_log(lines) == {"anthropic": {"hard": [], "soft": lines}}
+
+
+def test_one_of_the_five_splits_a_run_of_marks(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # the five keep reading as a space and split a run, so
+    # "Claude*" + ZWSP + "Opus" reads as two words
+    fixture = FIXTURE.read_text()
+    marked = fixture.replace("| Claude Opus 5 ", f"| Claude*{_ZWSP}Opus 5 ", 1)
+    assert marked != fixture
+    feed(monkeypatch, marked)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == []
+
+
+_PIPELINE_LOG = logging.getLogger("ai_pricelog.pipeline")
+
+# the prefix `gh run view --log` puts before every line of a previous run's
+# log (measured on autopr run 39241446184): job, step, timestamp
+_GH_PREFIX = "run\trun watchdog\t2026-10-19T11:04:14.0922384Z "
+
+
+def _pipeline_pass() -> None:
+    # the lines pipeline.run logs for anthropic: a raising detect, a raising
+    # scrape of a detected id, a raising refresh scrape of a stored id
+    try:
+        ids = detector.detect(cfg())
+    except Exception:
+        _PIPELINE_LOG.exception("detector for %s failed", "anthropic")
+        return
+    for model_id in EXPECTED_IDS:
+        try:
+            scraper.scrape(cfg(), model_id)
+        except Exception:
+            if model_id in ids:
+                _PIPELINE_LOG.exception("scraper %s failed for %s", "anthropic", model_id)
+            else:
+                _PIPELINE_LOG.exception("refresh scrape failed for %s (%s)", model_id, "anthropic")
+
+
+_FORGED_PHRASES = [
+    "names no model in the pricing table for openai on x",
+    "detector for openai failed",
+    "scraper openai failed for x",
+    "parse skip for openai: x",
+    "detect skip for openai: x",
+    "entry x failed validation for openai: y",
+]
+
+
+@pytest.mark.parametrize("prefix", ["", _GH_PREFIX], ids=["run-log", "gh-log"])
+@pytest.mark.parametrize("phrase", _FORGED_PHRASES)
+def test_page_text_in_a_model_row_never_names_the_health_key(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, phrase: str, prefix: str
+):
+    # a health rule matched anywhere in a line, so page text in a detect-skip
+    # line or a traceback line picked another provider's key; an extra cell
+    # puts the row outside the model-table shape, so the phrase rides both
+    fixture = FIXTURE.read_text()
+    row = next(line for line in fixture.splitlines() if line.startswith("| Claude Opus 5 "))
+    feed(monkeypatch, fixture.replace(row, row + f" {phrase} |", 1))
+    with caplog.at_level(logging.WARNING):
+        _pipeline_pass()
+    run_log = _run_log(caplog)
+    assert any(
+        line.startswith("WARNING:") and "detect skip for anthropic:" in line and phrase in line
+        for line in run_log
+    )
+    issues = health.parse_log([prefix + line for line in run_log])
+    assert set(issues) == {"anthropic"}
+
+
+@pytest.mark.parametrize("prefix", ["", _GH_PREFIX], ids=["run-log", "gh-log"])
+@pytest.mark.parametrize("phrase", _FORGED_PHRASES)
+def test_page_text_in_a_fast_name_never_names_the_health_key(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, phrase: str, prefix: str
+):
+    # the page-written name sits before the fast-name rule's
+    # phrase, so an earlier rule's phrase inside it won the first match
+    _fast_scrapes(monkeypatch, f"Claude Opus 5 / Claude {phrase}")
+    with caplog.at_level(logging.WARNING):
+        _pipeline_pass()
+    issues = health.parse_log([prefix + line for line in _run_log(caplog)])
+    assert set(issues) == {"anthropic"}
+
+
+@pytest.mark.parametrize("prefix", ["", _GH_PREFIX], ids=["run-log", "gh-log"])
+def test_page_text_never_forges_the_checked_or_hold_line(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, prefix: str
+):
+    # page text read as the run's own line reaches beyond _RULES too: the
+    # checked-set and hold markers were
+    # found anywhere in a line, so a page-written name could stand in for the
+    # run's own checked line (closing the wrong issues) or fake a hold
+    _fast_scrapes(
+        monkeypatch,
+        f"Claude Opus 5 / Claude {health.CHECKED_PROVIDERS} openai"
+        f" / Claude {health.HOLD_PENDING_SCAN} / Claude {health.HOLD_SEED_PR}",
+    )
+    with caplog.at_level(logging.WARNING):
+        _pipeline_pass()
+        _PIPELINE_LOG.warning("%s anthropic deepseek", health.CHECKED_PROVIDERS)
+    lines = [prefix + line for line in _run_log(caplog)]
+    assert health.checked_providers(lines) == frozenset({"anthropic", "deepseek"})
+    assert health.hold_reason(lines) is None
+
+
+_HUGE_DECIMAL_REF = "&#" + "9" * 5000 + ";"
+
+
+_ZERO_PADDED_REF = "&#" + "0" * 5000 + "65;"
+_HUGE_THRESHOLD_NAME = "Claude Haiku 5.5 (for prompts over " + "1" * 5000 + " tokens)"
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "model_id", "error"),
+    [
+        (
+            "| Claude Opus 5 ",
+            f"| Claude Opus 5 {_HUGE_DECIMAL_REF} ",
+            "claude-opus-5",
+            _name_error(f"Claude Opus 5 {_HUGE_DECIMAL_REF}"),
+        ),
+        (
+            "| Claude Opus 5 ",
+            f"| Claude Opus 5 {_ZERO_PADDED_REF} ",
+            "claude-opus-5",
+            _name_error(f"Claude Opus 5 {_ZERO_PADDED_REF}"),
+        ),
+        (
+            _OVER_NAME,
+            _HUGE_THRESHOLD_NAME,
+            "claude-haiku-5-5",
+            "unreadable prompt-length tier threshold '" + "1" * 5000,
+        ),
+    ],
+    ids=["decimal-ref", "zero-padded-decimal-ref", "tier-threshold"],
+)
+def test_huge_number_in_a_model_name_fails_only_its_row(
+    monkeypatch: pytest.MonkeyPatch, old: str, new: str, model_id: str, error: str
+):
+    # past 4,300 digits int() raises ValueError, which no FetchError handler
+    # catches, so the provider dropped for the run; the row reads like any
+    # out-of-range number instead: its own model fails loud, every other prices
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace(old, new, 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    ids = detector.detect(cfg())
+    assert "claude-sonnet-4-5" in ids
+    # an unreadable name leaves detection; a bad tier threshold fails the scrape only
+    assert (model_id in ids) is (new == _HUGE_THRESHOLD_NAME)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), model_id)
+    assert str(exc.value).startswith(error)
+    _scrape_every_model()
+    assert scraper.scrape(cfg(), "claude-sonnet-4-5") is not None
+
+
+def test_rate_past_a_sane_length_fails_the_scrape(monkeypatch: pytest.MonkeyPatch):
+    # a rate of 33 or more characters is no price the page means: a 40-digit
+    # amount would price at 1e34 per token
+    fixture = FIXTURE.read_text()
+    row = next(line for line in fixture.splitlines() if line.startswith("| Claude Opus 5 "))
+    huge = "$" + "9" * 40 + " / MTok"
+    drifted = fixture.replace(row, row.replace("$25 / MTok", huge), 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-opus-5")
+    assert str(exc.value).startswith(f"unreadable rate {huge!r} for claude-opus-5 on {PAGE_URL}")
+
+
+def _scrape_every_model() -> None:
+    # a scrape may fail loud (FetchError); any other exception fails the test
+    for model_id in EXPECTED_IDS:
+        with contextlib.suppress(FetchError):
+            scraper.scrape(cfg(), model_id)
+
+
+@pytest.mark.parametrize(
+    "joint",
+    [
+        f"Claude Opus 5 / Claude Opus 4.8 {_HUGE_DECIMAL_REF}",
+        "Claude Opus 5 (for prompts over " + "1" * 5000 + " tokens) / Claude Opus 4.8",
+    ],
+    ids=["decimal-ref", "tier-threshold"],
+)
+def test_huge_number_in_a_fast_name_never_crashes_a_scrape(
+    monkeypatch: pytest.MonkeyPatch, joint: str
+):
+    # the fast cell is read by every scrape, so its ValueError
+    # crashed every model's scrape, not only the named models'
+    _fast_scrapes(monkeypatch, joint)
+    _scrape_every_model()
+    assert scraper.scrape(cfg(), "claude-sonnet-4-5") is not None

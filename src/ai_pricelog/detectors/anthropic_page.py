@@ -16,13 +16,24 @@ one `split_name` parse reads every model-table name; fast-table names
 match model-table ids through their slug, never the shape check. sup
 footnote markup, every `([text](url))` link annotation (balanced parens
 inside the text and the url) and a trailing paren group carrying a link
-drop, HTML entities (`&nbsp;` is a space) unescape, and markdown emphasis and
-code marks (`*`, `_`, `` ` ``) and the invisible format characters
-U+200B, U+200C, U+200D, U+2060 and U+FEFF read as a space wherever they
-sit, so they never glue the tokens they sit between. a trailing link-less
-paren mentioning prompts or tokens then splits off as a prompt-length
-tier qualifier, dropped off the id and read (FetchError when its wording
-or threshold is unreadable). the remaining name must have a model name's
+drop, and HTML entities (`&nbsp;` is a space) unescape. markdown emphasis
+and code marks (`*`, `_`, `` ` ``), every Unicode format (Cf) character
+and U+034F: a maximal run of them between two ASCII letters joins the
+letters (the run drops), and a run touching a non-letter on either side
+reads as one space, except U+200B, U+200C, U+200D, U+2060 and U+FEFF, which
+always read as a space and split a run. a trailing link-less paren
+mentioning prompts or tokens then splits off as a prompt-length tier
+qualifier, dropped off the id and read (FetchError when its wording or
+threshold is unreadable); such a paren holding a comparison (up to, over,
+above, under, below, beyond, more/less than, exceed..., <, >, ≤, ≥, read
+after entities and marks; an HTML tag's < and > are markup, not a
+comparison) is a drifted tier wording and raises the wording error, and
+any other prompt/token paren names a model variant and raises the
+qualifier error, still blamed on the stem's model. the tier-wording
+message quotes the paren as the page writes it, whatever follows it
+(whitespace, marks, entities, or a link annotation) and however its
+close is spelled (an entity close included).
+the remaining name must have a model name's
 shape — "Claude", one or more words of ASCII letters, a version, then
 optionally "(Fast)" — and a name without it raises FetchError carrying
 the id its leading shape names (no id when no leading shape is present,
@@ -35,12 +46,12 @@ Opus 4.1" -> claude-opus-4-1).
 
 from __future__ import annotations
 
-import html
 import logging
 import re
+import unicodedata
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text, fold_heading
+from ai_pricelog.web import FetchError, extract_markdown_tables, fetch_text, fold_heading, unescape
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +71,19 @@ _TIER_RE = re.compile(
     re.IGNORECASE,
 )
 _THRESHOLD_RE = re.compile(r"^(?:\d{1,3}(?:,\d{3})+|\d+)[kK]?$", re.ASCII)
+# a page-written token past this length is no threshold or rate the page means
+_SANE_TOKEN_LENGTH = 32
 _PROMPT_OR_TOKEN_RE = re.compile(r"\b(?:prompts?|tokens?)\b", re.IGNORECASE)
+# a tier wording holds a comparison (a threshold the price crosses); any
+# other prompt/token paren names a model variant, not a price tier
+_COMPARISON_RE = re.compile(
+    r"\bup\s+to\b|\bover\b|\babove\b|\bunder\b|\bbelow\b|\bbeyond\b"
+    r"|\bmore\s+than\b|\bless\s+than\b|\bexceed\w*|[<>≤≥]",
+    re.IGNORECASE,
+)
+# an HTML tag's < and > are markup, not a comparison: drop tags before the
+# comparison search, so "(1M token <em>context</em>)" reads as no comparison
+_TAG_RE = re.compile(r"<[a-zA-Z/][^<>]*>")
 # the name shape the guard accepts: "Claude", one or more words of ASCII
 # letters, a version, then optionally "(Fast)". one pattern serves both
 # checks: `fullmatch` pins the whole stem, `match` reads the same front as
@@ -78,11 +101,13 @@ _SHAPE_RE = re.compile(
     r"(?![^\w(\[]*\d)(?:\s*(?a:\(Fast\)))?",
     re.IGNORECASE,
 )
-# markdown emphasis and code marks plus the invisible format characters
-# read as a space wherever they sit, once annotations and sup markup are
-# gone and entities are unescaped, so they never glue the tokens they sit
-# between.
-_MARK_SPACE = str.maketrans("*_`\u200b\u200c\u200d\u2060\ufeff", " " * 8)
+# the five invisible characters that always read as a space (one may stand
+# in for the space between words)
+_FIVE_SPACE = frozenset("\u200b\u200c\u200d\u2060\ufeff")
+# markdown emphasis and code marks plus U+034F join two ASCII letters they
+# sit between and read as a space elsewhere; every other Cf character
+# follows the same rule
+_JOIN_MARKS = frozenset("*_`\u034f")
 _ASCII_LETTER_RE = re.compile(r"[a-zA-Z]")
 
 
@@ -96,49 +121,80 @@ class _RowError(FetchError):
         self.model_id = model_id
 
 
-def _annotation_end(name: str, start: int) -> int | None:
-    """index just past the `)` closing the link annotation at `start`, or None.
-
-    `start` points at the `(` of a `([text](url))` annotation; balanced
-    parens are allowed inside the text and the url.
-    """
-    if name[start : start + 2] != "([":
-        return None
-    i = start + 2
-    depth = 1
-    while i < len(name) and depth:
-        if name[i] == "[":
-            depth += 1
-        elif name[i] == "]":
-            depth -= 1
-        i += 1
-    if depth or i >= len(name) or name[i] != "(":
-        return None
-    i += 1
-    depth = 1
-    while i < len(name) and depth:
-        if name[i] == "(":
-            depth += 1
-        elif name[i] == ")":
-            depth -= 1
-        i += 1
-    if depth or i >= len(name) or name[i] != ")":
-        return None
-    return i + 1
+def _match_table(name: str, open_ch: str, close_ch: str) -> dict[int, int]:
+    """open-index -> the matching close-index for each `open_ch`/`close_ch`
+    pair, matched LIFO (the annotation scan's own pairing)."""
+    stack: list[int] = []
+    matches: dict[int, int] = {}
+    for i, ch in enumerate(name):
+        if ch == open_ch:
+            stack.append(i)
+        elif ch == close_ch and stack:
+            matches[stack.pop()] = i
+    return matches
 
 
 def _drop_link_annotations(name: str) -> str:
     """the name with every `([text](url))` link annotation dropped, wherever
-    each sits (balanced parens allowed inside the text and the url)."""
+    each sits (balanced parens allowed inside the text and the url); the
+    bracket and paren match tables keep the scan linear."""
+    brackets = _match_table(name, "[", "]")
+    parens = _match_table(name, "(", ")")
     out: list[str] = []
     i = 0
     while i < len(name):
-        if name[i] == "(":
-            end = _annotation_end(name, i)
-            if end is not None:
-                i = end
-                continue
-        out.append(name[i])
+        if name[i : i + 2] != "([":
+            out.append(name[i])
+            i += 1
+            continue
+        close_bracket = brackets.get(i + 1)
+        if (
+            close_bracket is None
+            or close_bracket + 1 >= len(name)
+            or name[close_bracket + 1] != "("
+        ):
+            out.append(name[i])
+            i += 1
+            continue
+        close_paren = parens.get(close_bracket + 1)
+        if close_paren is None or close_paren + 1 >= len(name) or name[close_paren + 1] != ")":
+            out.append(name[i])
+            i += 1
+            continue
+        i = close_paren + 2
+    return "".join(out)
+
+
+def _is_mark(ch: str) -> bool:
+    """whether `ch` reads as a space or joins two letters (a markdown mark,
+    a Cf character or U+034F)."""
+    return ch in _JOIN_MARKS or unicodedata.category(ch) == "Cf"
+
+
+def _mark_space(name: str) -> str:
+    """the name with a maximal run of markdown marks, Cf characters and
+    U+034F dropped where it sits between two ASCII letters (the run joins
+    them) and read as one space elsewhere; the five U+200B, U+200C, U+200D,
+    U+2060 and U+FEFF always read as a space and split a run."""
+    out: list[str] = []
+    i = 0
+    while i < len(name):
+        ch = name[i]
+        if ch in _FIVE_SPACE:
+            out.append(" ")
+            i += 1
+            continue
+        if _is_mark(ch):
+            end = i + 1
+            while end < len(name) and name[end] not in _FIVE_SPACE and _is_mark(name[end]):
+                end += 1
+            prev = name[i - 1] if i else ""
+            nxt = name[end] if end < len(name) else ""
+            if not _ASCII_LETTER_RE.fullmatch(prev) or not _ASCII_LETTER_RE.fullmatch(nxt):
+                out.append(" ")
+            i = end
+            continue
+        out.append(ch)
         i += 1
     return "".join(out)
 
@@ -161,11 +217,11 @@ def _drop_trailing_link_groups(base: str) -> str:
 def _prepared(name: str) -> str:
     """the name with sup markup and every link annotation dropped, HTML
     entities unescaped, markdown marks and invisible format characters
-    read as a space, every trailing paren group carrying a link dropped,
-    and both ends trimmed."""
+    read as a space (or joined between two letters), every trailing paren
+    group carrying a link dropped, and both ends trimmed."""
     base = _drop_sup(_drop_link_annotations(name))
-    base = html.unescape(base)
-    base = base.translate(_MARK_SPACE).strip()
+    base = unescape(base)
+    base = _mark_space(base).strip()
     return _drop_trailing_link_groups(base)
 
 
@@ -197,18 +253,64 @@ def _trailing_tier_paren(base: str) -> str | None:
     return None
 
 
+def _trailing_entity_start(name: str, end: int) -> int | None:
+    """the index of the `&` starting the entity whose `;` sits at `end - 1`,
+    or None when the trailing `;` starts no entity."""
+    i = end - 2
+    while i >= 0 and ((name[i].isascii() and name[i].isalnum()) or name[i] == "#"):
+        i -= 1
+    return i if i >= 0 and name[i] == "&" else None
+
+
+def _trailing_entity_paren(name: str, close_start: int) -> str | None:
+    """the trailing paren group whose close is the entity at `close_start`,
+    from the matching `(` through the entity's end, or None when its parens
+    do not balance."""
+    depth = 0
+    for i in range(close_start - 1, -1, -1):
+        if name[i] == ")":
+            depth += 1
+        elif name[i] == "(":
+            if depth == 0:
+                return name[i:]
+            depth -= 1
+    return None
+
+
 def _page_tier_paren(name: str) -> str | None:
     """the trailing tier paren as the page writes it (sup markup and link
-    annotations dropped, entities and marks intact), or None."""
+    annotations dropped, entities and marks intact inside the paren,
+    trailing whitespace, marks and space-or-mark entities after the
+    closing paren stripped, a close spelled as an entity kept), or None."""
     dropped = _drop_trailing_link_groups(_drop_sup(_drop_link_annotations(name)))
+    end = len(dropped)
+    while end > 0:
+        ch = dropped[end - 1]
+        if _is_mark(ch) or ch.isspace():
+            end -= 1
+            continue
+        if ch == ";":
+            start = _trailing_entity_start(dropped, end)
+            if start is not None:
+                decoded = unescape(dropped[start:end])
+                if decoded and all(_is_mark(c) or c.isspace() for c in decoded):
+                    end = start
+                    continue
+        break
+    dropped = dropped[:end]
+    if dropped.endswith(";"):
+        start = _trailing_entity_start(dropped, len(dropped))
+        if start is not None and unescape(dropped[start:]) == ")":
+            return _trailing_entity_paren(dropped, start)
     return _trailing_tier_paren(dropped)
 
 
 def _threshold(token: str, name: str) -> int:
     """the tier threshold token as an int: ASCII digits, bare or with
     thousands commas in proper three-digit groups, and an optional trailing
-    K/k suffix for thousands; anything else is a page-shape break."""
-    if _THRESHOLD_RE.match(token) is None:
+    K/k suffix for thousands; anything else, a token past a sane length
+    included, is a page-shape break."""
+    if len(token) > _SANE_TOKEN_LENGTH or _THRESHOLD_RE.match(token) is None:
         raise FetchError(
             f"unreadable prompt-length tier threshold {token!r} in {name!r}; "
             "fix: teach the anthropic tier parse this spelling"
@@ -227,6 +329,12 @@ def _read_tier(paren: str, name: str) -> tuple[str, int]:
     match = _TIER_RE.fullmatch(paren)
     if match is None:
         page_paren = _page_tier_paren(name) or paren
+        if _COMPARISON_RE.search(_TAG_RE.sub("", paren)) is None:
+            raise FetchError(
+                f"unread model qualifier {page_paren!r} in {name!r}: the paren names a"
+                " model variant, not a prompt-length tier; fix: teach the anthropic"
+                " detector the model this qualifier names"
+            )
         raise FetchError(
             f"unreadable prompt-length tier wording {page_paren!r} in {name!r}; "
             "fix: teach the anthropic tier parse this spelling"
@@ -258,7 +366,7 @@ def _own_model_id(name: str) -> str | None:
     return _shape_id(_prepared(name))
 
 
-def _name_shape_error(name: str, url: str, own_id: str | None) -> FetchError:
+def _name_shape_error(name: str, url: str, own_id: str | None) -> _RowError:
     return _RowError(
         f"unreadable model name {name!r} on {url}; "
         "fix: teach the anthropic name parse this spelling",
@@ -269,9 +377,9 @@ def _name_shape_error(name: str, url: str, own_id: str | None) -> FetchError:
 def _name_id(name: str) -> str:
     """the model id a display name's slug names, without reading its tier:
     sup, link annotations, trailing link-carrying groups and entities
-    drop, marks and invisible characters read as a space, then a trailing
-    tier paren drops; everything else stays. never raises and never
-    shape-checks."""
+    drop, marks and invisible characters read as a space or join two
+    letters, then a trailing tier paren drops; everything else stays.
+    never raises and never shape-checks."""
     stem, _paren = _stem_and_tier(name)
     return _slug_base(stem)
 
@@ -286,7 +394,7 @@ def _name_tier(name: str) -> tuple[str, int] | None:
     try:
         return _read_tier(paren, name)
     except FetchError as exc:
-        raise _RowError(str(exc), _slug_base(stem)) from exc
+        raise _RowError(str(exc), _slug_base(stem)) from None
 
 
 def _letterless(name: str) -> bool:
@@ -294,6 +402,13 @@ def _letterless(name: str) -> bool:
     letter, so the row names no model any more than an empty cell does."""
     stem, _paren = _stem_and_tier(name)
     return _ASCII_LETTER_RE.search(stem) is None
+
+
+def _fast_name_non_ascii(name: str) -> bool:
+    """whether a fast-table name's stem holds a non-ASCII non-space
+    character, so it names no model."""
+    stem, _paren = _stem_and_tier(name)
+    return any(not ch.isascii() and not ch.isspace() for ch in stem)
 
 
 def split_name(name: str, url: str) -> tuple[str, tuple[str, int] | None]:
@@ -308,7 +423,7 @@ def split_name(name: str, url: str) -> tuple[str, tuple[str, int] | None]:
     try:
         tier = _read_tier(paren, name)
     except FetchError as exc:
-        raise _RowError(str(exc), slug) from exc
+        raise _RowError(str(exc), slug) from None
     return slug, tier
 
 
