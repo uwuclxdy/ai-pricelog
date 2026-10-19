@@ -267,8 +267,8 @@ def markdown_lines(text: str) -> list[str]:
     return _MARKDOWN_LINE_END.split(text)
 
 
-def extract_markdown_tables(text: str) -> list[list[list[str]]]:
-    """split markdown pipe tables into row lists: header, separator, data rows."""
+def markdown_pipe_blocks(text: str) -> list[list[str]]:
+    """consecutive pipe lines, one list per markdown table block."""
     blocks: list[list[str]] = []
     block: list[str] = []
     for line in markdown_lines(text):
@@ -279,8 +279,13 @@ def extract_markdown_tables(text: str) -> list[list[list[str]]]:
             block = []
     if block:
         blocks.append(block)
+    return blocks
+
+
+def extract_markdown_tables(text: str) -> list[list[list[str]]]:
+    """split markdown pipe tables into row lists: header, separator, data rows."""
     tables: list[list[list[str]]] = []
-    for lines in blocks:
+    for lines in markdown_pipe_blocks(text):
         # one edge pipe per side: `|| x |` opens with an empty cell
         rows = [
             [cell.strip() for cell in line.strip().removeprefix("|").removesuffix("|").split("|")]

@@ -551,3 +551,11 @@ def test_amount_scan_non_ascii_separators(text, kwargs, expected):
 )
 def test_amount_scan_non_ascii_separator_reach(text, kwargs, expected):
     assert web.amount_scan(text, **kwargs) == expected
+
+
+def test_markdown_pipe_blocks_groups_consecutive_pipe_lines():
+    text = "intro\n| a | b |\n|---|---|\n| x | y |\n\nplain\n  | c |\r\n| d |\n"
+    assert web.markdown_pipe_blocks(text) == [
+        ["| a | b |", "|---|---|", "| x | y |"],
+        ["  | c |", "| d |"],
+    ]
