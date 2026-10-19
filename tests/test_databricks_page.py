@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from ai_pricelog import health
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import databricks_page as detector
 from ai_pricelog.scrapers import databricks_page as scraper
@@ -444,13 +445,12 @@ _PRIORITY_ROWS = row("Kimi K3 ⌖", "60.000", "300.000", "6.000") + row(
     "priority_table",
     [
         f"<table class='table'><tbody>{_PRIORITY_HEADER}{_PRIORITY_ROWS}</tbody></table>",
-        f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>{_PRIORITY_ROWS}</table>",
         table(
             _PRIORITY_HEADER.replace("<th", "<td").replace("</th>", "</td>"),
             row("Kimi K3 ⌖", "60.000", "300.000", "6.000"),
         ),
     ],
-    ids=["header-rows-in-tbody", "no-tbody", "td-header-cells"],
+    ids=["header-rows-in-tbody", "td-header-cells"],
 )
 def test_detect_priority_table_off_the_structural_pin_raises(
     monkeypatch: pytest.MonkeyPatch, priority_table: str
@@ -546,6 +546,23 @@ def test_detect_priority_table_with_a_moved_tier_span_raises(
     assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
 
 
+@pytest.mark.parametrize(
+    "priority",
+    [
+        f"<table class='table'><thead>{_PRIORITY_HEADER}{_PRIORITY_BODY}</thead></table>",
+        f"<table class='table'><thead>{_PRIORITY_HEADER}{_PRIORITY_BODY}</table>",
+    ],
+    ids=["model-rows-in-thead", "model-rows-in-unclosed-thead"],
+)
+def test_detect_priority_table_with_model_rows_in_its_thead_raises(
+    monkeypatch: pytest.MonkeyPatch, priority: str
+):
+    # a table's thead rows count for the off-pin check too: model rows there
+    # name known models, so the off-pin table raises instead of vanishing with
+    # every "-priority" id
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
+
+
 def test_detect_priority_table_nested_in_a_layout_table_raises(monkeypatch: pytest.MonkeyPatch):
     wrapped = (
         "<table><thead><tr><th>Priority pricing</th></tr></thead><tbody><tr><td>"
@@ -623,7 +640,15 @@ def test_detect_three_cell_standard_only_row_is_no_evidence(monkeypatch: pytest.
     assert _detect_error(monkeypatch, tables) == _NO_STANDARD_ONLY
 
 
-def test_detect_section_row_in_a_lone_standard_table_reads(monkeypatch: pytest.MonkeyPatch):
+def _warning_lines(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+def test_detect_section_row_warns_without_freezing_counters(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a one-cell section row names no model: it warns on the soft parse-skip
+    # line, never the detect-skip line that freezes the absence counters
     bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
     _detect_serve(
         monkeypatch,
@@ -636,16 +661,239 @@ def test_detect_section_row_in_a_lone_standard_table_reads(monkeypatch: pytest.M
             )
         ],
     )
-    assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    lines = _warning_lines(caplog)
+    assert not any(health.DETECT_SKIP.search(line) for line in lines)
+    assert lines == [f"parse skip for databricks: section row 'Embedding models' on {PAGE_URL}"]
+    assert health.parse_log(lines) == {"databricks": {"hard": [], "soft": lines}}
+
+
+def _lone_standard_with(monkeypatch: pytest.MonkeyPatch, odd_row: str) -> None:
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    _detect_serve(
+        monkeypatch,
+        [
+            table(
+                bare,
+                odd_row,
+                row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+                row("GTE", "1.857", "-", "-"),
+            )
+        ],
+    )
+
+
+def test_detect_one_cell_row_naming_a_model_still_freezes(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a collapsed row that names a mapped model is a broken model row, not a
+    # section label: the id set is incomplete, so the counters freeze
+    _lone_standard_with(monkeypatch, "<tr><td colspan='4'>BGE Large</td></tr>")
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"detect skip for databricks: row outside the pricing shape on {PAGE_URL}: 'BGE Large'"
+    ]
+
+
+@pytest.mark.parametrize(
+    "odd_row",
+    [
+        "<tr><td colspan='4'>BGE Large (new)</td></tr>",
+        "<tr><td colspan='4'>BGE\xa0Large</td></tr>",
+        "<tr><td colspan='4'><div>BGE Large ⌖</div><div>1.429</div>"
+        "<div>-</div><div>-</div></td></tr>",
+        "<tr><td colspan='4'><table><tbody>"
+        + row("BGE Large", "9.999", "-", "-")
+        + "</tbody></table></td></tr>",
+        "<tr><td colspan='4'>Foundation 9B 2.143</td></tr>",
+        "<tr><td colspan='4'>BGE Large</td></tr>",
+        "<tr><td colspan='4'>BGE  Large</td></tr>",
+        "<tr><td colspan='4'>BGE\n    Large</td></tr>",
+        "<tr><td colspan='4'>BGE LARGE</td></tr>",
+        "<tr><td colspan='4'><table><tbody>"
+        + row("BGE Large (new)", "9.999", "-", "-")
+        + "</tbody></table></td></tr>",
+        "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>BGE Large</td></tr>"
+        "</tbody></table></td></tr>",
+        "<tr><td colspan='4'><table><thead><tr><th>BGE Large</th></tr></thead>"
+        "<tbody><tr><td>note</td></tr></tbody></table></td></tr>",
+        "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>-</td></tr>"
+        "</tbody></table></td></tr>",
+        "<tr><td colspan='4'>see footnote 4</td></tr>",
+        "<tr><td colspan='4'>Generation 2 embedding models</td></tr>",
+        "<tr><td>Embedding</td><td>models</td></tr>",
+        "<tr><td>BGE-Large</td><td>Contact us</td><td>-</td><td>-</td></tr>",
+        "<tr><td>BGE-Large</td><td>1,429</td><td>-</td><td>-</td></tr>",
+        "<tr><td>Embedding models</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>",
+        "<tr><td colspan='4'>BGE-Large 1 - -</td></tr>",
+        "<tr><td colspan='4'><b>BG</b>E Large</td></tr>",
+        "<tr><td colspan='4'>BGE-Large $1.43 / - / -</td></tr>",
+        "<tr><td colspan='4'>GTE family</td></tr>",
+        "<tr><td>Llama⁴ Maverick</td><td></td><td></td><td></td></tr>",
+        "<tr><td colspan='4'>Llama⁴ Maverick</td></tr>",
+        "<tr><td colspan='4'>BGE-Large ①</td></tr>",
+        "<tr>BGE Large 1.429 - -</tr>",
+        "<tr><table><tbody>" + row("BGE Large", "1.429", "-", "-") + "</tbody></table></tr>",
+        "<tr><td></td>BGE Large 1.429<td></td><td></td><td></td></tr>",
+        "<tr><td>Embedding models</td><span><td>BGE Large</td><td>1.429</td></span></tr>",
+        "<tr><td colspan='4'>BGE-Large</td></tr>",
+        "<tr><td colspan='4'>BGE_Large</td></tr>",
+        "<tr><td colspan='4'>B<b>GE</b> <i>Lar</i>ge</td></tr>",
+        "<tr><td colspan='4'><img src='bge.png' alt='model'></td></tr>",
+        "<tr><td colspan='4'>Embedding models<table><tbody><tr><td>BGE-Large</td>"
+        "<td>contact sales</td></tr></tbody></table></td></tr>",
+        "<tr><td colspan='4'>BGE-Large contact sales</td></tr>",
+        "<tr><td colspan='4'>BGE&amp;Large</td></tr>",
+        "<tr><td colspan='4'>New: BGE-Large</td></tr>",
+        "<tr><td colspan='4'>BGE-Large (preview)</td></tr>",
+        "<tr><td colspan='4'>BGE_Large embedding</td></tr>",
+        "<tr><td colspan='4'>B.G.E. Large models</td></tr>",
+        "<tr><td>Embedding models</td>BGE-Large</tr>",
+        "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>BGE Large 1.429</tr>",
+        "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>BGE-Large</tr>",
+        "<tr><td colspan='4'><svg role='img' aria-label='BGE Large'><use href='#bge'></use>"
+        "</svg></td></tr>",
+        "<tr><td colspan='4'><picture><source srcset='bge.webp'></picture></td></tr>",
+        "<tr><td colspan='4'><object data='bge.svg'></object></td></tr>",
+        "<tr><td colspan='4'><input type='image' alt='BGE Large'></td></tr>",
+        "<tr><td colspan='4'><span class='icon-bge' title='BGE Large'></span></td></tr>",
+        "<tr><td>Embedding models</td>BGE Large 1.429</tr>",
+        "<tr><td colspan='4'><img src='bge-large.png'></td></tr>",
+        "<tr><td colspan='4'><svg><use href='#bge-large'></use></svg></td></tr>",
+        "<tr><td colspan='4'><embed src='bge-large.svg'></td></tr>",
+        "<tr><td colspan='4'><canvas></canvas></td></tr>",
+        "<tr><td colspan='4'><iframe src='bge-large.html'></iframe></td></tr>",
+        "<tr><td colspan='4'><video src='bge-large.mp4'></video></td></tr>",
+    ],
+    ids=[
+        "renamed-model",
+        "nbsp-model",
+        "collapsed-model-row",
+        "nested-model-row",
+        "rate-shaped",
+        "thin-space-model",
+        "double-space-model",
+        "newline-model",
+        "uppercase-model",
+        "nested-renamed-model-row",
+        "nested-rate-then-model",
+        "nested-thead-model",
+        "nested-rates-only",
+        "label-with-an-integer",
+        "label-with-a-generation-number",
+        "two-cell-label",
+        "renamed-row-with-a-text-input",
+        "renamed-row-with-a-comma-decimal",
+        "label-with-filler-cells",
+        "collapsed-row-with-integer-rates",
+        "name-split-by-inline-markup",
+        "collapsed-row-with-dollar-rates",
+        "label-naming-a-display-word",
+        "superscript-digit-with-blank-rates",
+        "superscript-digit-collapsed",
+        "circled-digit",
+        "text-in-a-cell-less-row",
+        "nested-table-directly-under-the-row",
+        "text-between-blank-cells",
+        "model-cells-under-a-wrapper-beside-a-label",
+        "hyphenated-display",
+        "underscored-display",
+        "display-split-by-markup",
+        "image-only-cell",
+        "label-holding-a-nested-table",
+        "display-inside-other-text",
+        "display-joined-by-an-entity-ampersand",
+        "display-after-a-prefix",
+        "display-before-a-paren",
+        "underscored-display-in-text",
+        "dotted-display-letters",
+        "bare-display-text-beside-a-label-cell",
+        "header-row-with-bare-model-text",
+        "header-row-with-a-bare-display",
+        "svg-named-model",
+        "picture-element",
+        "object-element",
+        "image-input",
+        "titled-icon",
+        "label-cell-with-bare-model-text",
+        "bare-image",
+        "bare-svg",
+        "embed-element",
+        "canvas-element",
+        "iframe-element",
+        "video-element",
+    ],
+)
+def test_detect_one_cell_row_that_may_be_a_model_row_freezes(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, odd_row: str
+):
+    # anything that is not plainly a label may be a broken model row and keeps
+    # the counter-freezing detect skip (cloudy, 2026-10-19: a wrong soft call
+    # delists a live model, a wrong freeze only pauses delistings): a mapped
+    # display (as a word or letter by letter), any digit, a nested table, a
+    # graphic or a name attribute, a header row with extra text, or more than
+    # one non-empty cell
+    _lone_standard_with(monkeypatch, odd_row)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    lines = _warning_lines(caplog)
+    assert any(health.DETECT_SKIP.search(line) for line in lines)
+    assert not any(line.startswith("parse skip for databricks:") for line in lines)
+
+
+@pytest.mark.parametrize(
+    ("odd_row", "label"),
+    [
+        ("<tr></tr>", ""),
+        ("<tr><td></td><td></td><td></td><td></td></tr>", ""),
+        ("<tr><td>Embedding models</td><td></td><td></td><td></td></tr>", "Embedding models"),
+        (
+            "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td></tr>",
+            "Model Input Output Cache read",
+        ),
+        ("<tr><td colspan='4'>GTEx models</td></tr>", "GTEx models"),
+        ("<tr><td colspan='4'>bigtent offers</td></tr>", "bigtent offers"),
+        ("<tr><td colspan='4'>Inklings and others</td></tr>", "Inklings and others"),
+        ("<tr><td colspan='4'><!-- BGE Large 1.429 --></td></tr>", ""),
+    ],
+    ids=[
+        "cell-less-spacer",
+        "four-cell-spacer",
+        "four-cell-label",
+        "repeated-header-row",
+        "display-inside-a-longer-word",
+        "display-across-a-word-edge",
+        "display-as-a-word-prefix",
+        "comment-only-cell",
+    ],
+)
+def test_detect_row_naming_no_model_warns_without_freezing(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, odd_row: str, label: str
+):
+    # a section row is plainly a label: no graphic, name attribute or nested
+    # table anywhere, and blank, a repeated header row, or one non-empty cell
+    # with no digit and no mapped display (as a word or letter by letter); it
+    # warns on the soft line and never freezes the counters
+    _lone_standard_with(monkeypatch, odd_row)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"parse skip for databricks: section row {label!r} on {PAGE_URL}"
+    ]
 
 
 _TWO_TABLE_IDS = ["kimi-k3", "gte", "kimi-k3-priority", "glm-5.2-priority", "glm-5.3-priority"]
 
 
-def test_detect_priority_rows_beside_a_nested_tbody_raise(monkeypatch: pytest.MonkeyPatch):
+def test_detect_priority_rows_beside_a_nested_tbody_read(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
     # the priority rows sit straight under <table> and one row nests a
-    # footnote table with a tbody: a tbody anywhere below must not satisfy
-    # the pin while the row reader finds no own tbody
+    # footnote table with a tbody: the own rows read, the nested table's row
+    # never prices an id, and the footnote row, holding a nested table, is no
+    # plain label, so it keeps the freeze
     note = (
         "<tr><td colspan='4'><table><tbody><tr><td>see footnote 4</td></tr>"
         "</tbody></table></td></tr>"
@@ -653,7 +901,329 @@ def test_detect_priority_rows_beside_a_nested_tbody_raise(monkeypatch: pytest.Mo
     priority = (
         f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>{_PRIORITY_BODY}{note}</table>"
     )
-    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == _PRIORITY_OFF_PIN
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, priority])
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+    assert any(health.DETECT_SKIP.search(line) for line in _warning_lines(caplog))
+
+
+_KIMI_CELLS = "<td>Kimi K3 ⌖</td><td>42.857</td><td>214.286</td><td>4.286</td>"
+_BGE_CELLS = "<td>BGE Large</td><td>1.429</td><td>-</td><td>-</td>"
+_GTE_CELLS = "<td>GTE</td><td>1.857</td><td>-</td><td>-</td>"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        f"<tr>{_KIMI_CELLS}<tr>{_BGE_CELLS}</tr></tr><tr>{_GTE_CELLS}</tr>",
+        f"<tr>{_KIMI_CELLS}<tr>{_BGE_CELLS}<tr>{_GTE_CELLS}",
+        f"<tr>{_KIMI_CELLS}</tr><div><tr>{_BGE_CELLS}</tr></div><tr>{_GTE_CELLS}</tr>",
+    ],
+    ids=["one-omitted-end-tag", "every-end-tag-omitted", "wrapper-between-tbody-and-row"],
+)
+def test_detect_and_scrape_read_rows_whose_nearest_table_is_this_one(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, body: str
+):
+    # an omitted </tr> (valid HTML) nests the next row inside the last one;
+    # every row whose nearest table is this table is its own row
+    bare = _STANDARD_HEADER.replace("Standard Pay Per Token", "Pay Per Token")
+    html = f"<table class='table'><thead>{bare}</thead><tbody>{body}</tbody></table>"
+    _detect_serve(monkeypatch, [html])
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "bge-large", "gte"]
+    assert _warning_lines(caplog) == []
+    pricing = scraper.scrape(make_cfg(), "bge-large")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.429 / 1e6)
+
+
+@pytest.mark.parametrize("wrapper", ["a href='#bge'", "div"], ids=["anchor", "div"])
+def test_detect_and_scrape_read_cells_under_a_wrapper_element(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, wrapper: str
+):
+    # html.parser keeps an element between <tr> and its cells; the row's own
+    # cells are the cells whose nearest row is this row, so the priced row reads
+    tag = wrapper.split()[0]
+    wrapped_row = (
+        f"<tr><{wrapper}><td>BGE Large</td><td>1.429</td><td>-</td><td>-</td></{tag}></tr>"
+    )
+    _lone_standard_with(monkeypatch, wrapped_row)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["bge-large", "kimi-k3", "gte"]
+    assert _warning_lines(caplog) == []
+    pricing = scraper.scrape(make_cfg(), "bge-large")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.429 / 1e6)
+
+
+def test_detect_unpriced_dash_row_stays_silent(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a "-" input cell is the known unpriced form: no line at all
+    _lone_standard_with(monkeypatch, row("Llama 5 70B", "-", "-", "-"))
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == []
+
+
+_ONE_ROW_HEADER = "<tr><th>Model</th><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+_STANDARD_SPAN = "Pay Per Token (DBU Per 1M Tokens)"
+_PRIORITY_SPAN = "Priority Pay Per Token (DBU Per 1M Tokens)"
+_STANDARD_BODY = row("Kimi K3 ⌖", "42.857", "214.286", "4.286") + row("GTE", "1.857", "-", "-")
+
+
+def _captioned(span: str, body: str) -> str:
+    return (
+        f"<table class='table'><caption>{span}</caption>"
+        f"<thead>{_ONE_ROW_HEADER}</thead><tbody>{body}</tbody></table>"
+    )
+
+
+def _headed(span: str, body: str) -> str:
+    return (
+        f"<h3>{span}</h3><table class='table'>"
+        f"<thead>{_ONE_ROW_HEADER}</thead><tbody>{body}</tbody></table>"
+    )
+
+
+# the live page wraps each table alone in this div, with its h3 outside it
+# (2026-10-14 fixture), so a heading is never the table's own sibling
+def _wrapped(html: str) -> str:
+    return f"<div class='max-w-full overflow-x-auto'>{html}</div>"
+
+
+def _one_row_table(body: str) -> str:
+    return f"<table class='table'><thead>{_ONE_ROW_HEADER}</thead><tbody>{body}</tbody></table>"
+
+
+def _live_headed(span: str, body: str, between: str = "") -> str:
+    return f"<h3>{span}</h3>{between}{_wrapped(_one_row_table(body))}"
+
+
+@pytest.mark.parametrize(
+    "tables",
+    [
+        [_STANDARD_TABLE, _captioned(_PRIORITY_SPAN, _PRIORITY_BODY)],
+        [_captioned(_STANDARD_SPAN, _STANDARD_BODY), table(_PRIORITY_HEADER, _PRIORITY_BODY)],
+        [_STANDARD_TABLE, _headed(_PRIORITY_SPAN, _PRIORITY_BODY)],
+        [_headed(_STANDARD_SPAN, _STANDARD_BODY), table(_PRIORITY_HEADER, _PRIORITY_BODY)],
+        [
+            _STANDARD_TABLE,
+            f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>{_PRIORITY_BODY}</table>",
+        ],
+        [
+            _STANDARD_TABLE,
+            f"<table class='table'><thead>{_PRIORITY_HEADER}</thead>"
+            f"<tbody>{row('Kimi K3 ⌖', '60.000', '300.000', '6.000')}</tbody>"
+            f"<tfoot>{row('GLM-5.2, 5.3', '35.000', '110.000', '6.500')}</tfoot></table>",
+        ],
+        [_STANDARD_TABLE, _live_headed(_PRIORITY_SPAN, _PRIORITY_BODY)],
+        [_live_headed(_STANDARD_SPAN, _STANDARD_BODY), table(_PRIORITY_HEADER, _PRIORITY_BODY)],
+        [_STANDARD_TABLE, _live_headed(_PRIORITY_SPAN, _PRIORITY_BODY, "<p>prices per 1M</p>")],
+        [
+            _STANDARD_TABLE,
+            f"<h3>{_PRIORITY_SPAN}</h3>"
+            + _wrapped(
+                _captioned("", _PRIORITY_BODY).replace(
+                    "<caption></caption>", "<caption> </caption>"
+                )
+            ),
+        ],
+    ],
+    ids=[
+        "priority-span-in-caption",
+        "standard-span-in-caption",
+        "priority-span-in-heading",
+        "standard-span-in-heading",
+        "priority-rows-without-tbody",
+        "priority-row-in-tfoot",
+        "priority-heading-over-live-wrapper",
+        "standard-heading-over-live-wrapper",
+        "heading-then-paragraph-then-wrapper",
+        "empty-caption-under-a-heading",
+    ],
+)
+def test_detect_and_scrape_read_a_moved_span_or_rows_outside_tbody(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, tables: list[str]
+):
+    # a tier span in a <caption> or in the heading over a one-row thead, and
+    # rows straight under <table> or in a <tfoot>, used to hide the table or
+    # the rows silently; each shape now detects and scrapes
+    _detect_serve(monkeypatch, tables)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+    assert _warning_lines(caplog) == []
+    standard = scraper.scrape(make_cfg(), "kimi-k3")
+    assert standard is not None
+    assert standard.input_cost_per_token == pytest.approx(42.857 / 1e6)
+    priority = scraper.scrape(make_cfg(), "glm-5.2-priority")
+    assert priority is not None
+    assert priority.input_cost_per_token == pytest.approx(35.0 / 1e6)
+    assert priority.cache_read_cost_per_token == pytest.approx(6.5 / 1e6)
+
+
+_REWORDED_PRIORITY = _PRIORITY_HEADER.replace(_PRIORITY_SPAN, "Priority tier (DBU per 1M tokens)")
+
+
+@pytest.mark.parametrize(
+    "priority",
+    [
+        f"<table class='table'><tbody>{_REWORDED_PRIORITY}{_PRIORITY_BODY}</tbody></table>",
+        _one_row_table(_PRIORITY_BODY),
+        f"<table class='table'><tbody>{_ONE_ROW_HEADER}{_PRIORITY_BODY}</tbody></table>",
+        f"<table class='table'><thead>{_REWORDED_PRIORITY}<tr><th>note</th></tr></thead>"
+        f"<tbody>{_PRIORITY_BODY}</tbody></table>",
+    ],
+    ids=[
+        "reworded-two-row-header-in-tbody",
+        "one-row-thead-without-a-span",
+        "one-row-header-in-tbody",
+        "three-row-thead-reworded-span",
+    ],
+)
+def test_detect_unpinned_table_naming_the_sub_header_and_a_model_raises(
+    monkeypatch: pytest.MonkeyPatch, priority: str
+):
+    # the table pins nothing and carries no pinned span, but its own cells
+    # (thead rows included) still name Input | Output | Cache read and a
+    # mapped model, so it raises instead of vanishing with every "-priority" id
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == (
+        f"unpinned table naming Input | Output | Cache read and a mapped model on {PAGE_URL}"
+    )
+
+
+@pytest.mark.parametrize(
+    "priority",
+    [
+        _captioned("Priority tier (DBU per 1M tokens)", _PRIORITY_BODY),
+        _live_headed("Priority tier (DBU per 1M tokens)", _PRIORITY_BODY),
+    ],
+    ids=["reworded-caption", "reworded-heading"],
+)
+def test_detect_reworded_caption_or_heading_span_raises(
+    monkeypatch: pytest.MonkeyPatch, priority: str
+):
+    # plan #41 holds on the new span sources: a reworded span raises, never guesses
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == (
+        f"unreadable pay-per-token tier span 'priority tier (dbu per 1m tokens)' on {PAGE_URL}"
+    )
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        _captioned("Partner models (USD per 1M tokens)", row("Foo 1", "1.000", "2.000")),
+        "<table><tr><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+        "<tr><td>per 1M</td><td>per 1M</td><td>per 1M</td></tr></table>",
+        "<h3>Batch Inference</h3>"
+        + _wrapped(table(_HOURLY_HEADER, row("Kimi K3 ⌖", "-", "142.857", "128.571"))),
+    ],
+    ids=["captioned-table-naming-no-model", "legend-with-the-sub-header", "heading-over-hourly"],
+)
+def test_detect_tables_that_name_no_priced_model_read(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, extra: str
+):
+    # a table naming no mapped model, or one whose header is not the one-row
+    # per-token header, is no pricing table: nothing raises and nothing warns
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), extra])
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+    assert _warning_lines(caplog) == []
+
+
+def test_detect_live_layout_heading_over_a_pinned_table_reads(monkeypatch: pytest.MonkeyPatch):
+    # the live headings ("Priority Pay Per Token") sit over two-row pinned
+    # tables; the span comes from the table's own header, never the heading
+    _detect_serve(
+        monkeypatch,
+        [
+            "<h3>Pay Per Token</h3>" + _wrapped(_STANDARD_TABLE),
+            "<h3>Priority Pay Per Token</h3>" + _wrapped(table(_PRIORITY_HEADER, _PRIORITY_BODY)),
+        ],
+    )
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+_NESTED_PRIORITY = (
+    "pay-per-token table 'priority pay per token (dbu per 1m tokens)'"
+    f" nested in another table on {PAGE_URL}"
+)
+
+
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        "<table><thead><tr><th>Priority pricing</th></tr></thead><tbody><tr><td>"
+        + _captioned(_PRIORITY_SPAN, _PRIORITY_BODY)
+        + "</td></tr></tbody></table>",
+        "<table><tr><td>" + table(_PRIORITY_HEADER, _PRIORITY_BODY) + "</td></tr></table>",
+    ],
+    ids=["captioned-table-in-a-layout-table", "pinned-table-in-a-tbody-less-wrapper"],
+)
+def test_detect_nested_priority_table_raises_the_nested_message(
+    monkeypatch: pytest.MonkeyPatch, wrapper: str
+):
+    # a wrapper must never claim the nested table's thead or span
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, wrapper]) == _NESTED_PRIORITY
+
+
+def test_detect_heading_over_a_wrapper_table_holding_the_priority_table_raises(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    inner = _one_row_table(_PRIORITY_BODY)
+    wrapper = f"<h3>{_PRIORITY_SPAN}</h3><table><tr><td>{inner}</td></tr></table>"
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, wrapper]) == (
+        f"pay-per-token table nested in another table on {PAGE_URL}"
+    )
+
+
+def _header_table(header_rows: str, caption: str = "") -> str:
+    caption_html = f"<caption>{caption}</caption>" if caption else ""
+    return (
+        f"<table class='table'>{caption_html}<thead>{header_rows}</thead>"
+        f"<tbody>{_PRIORITY_BODY}</tbody></table>"
+    )
+
+
+@pytest.mark.parametrize(
+    "priority",
+    [
+        _header_table(
+            "<tr><th>Models</th><th>Input</th><th>Output</th><th>Cache read</th></tr>",
+            caption=_PRIORITY_SPAN,
+        ),
+        _header_table(
+            "<tr><th>Model name</th><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+        ),
+        f"<h3>{_PRIORITY_SPAN}</h3>"
+        + _wrapped(
+            _header_table("<tr><th></th><th>Input</th><th>Output</th><th>Cache read</th></tr>")
+        ),
+        _header_table(
+            "<tr><th>Model</th><th>Context</th><th>Input</th><th>Output</th>"
+            "<th>Cache read</th></tr>"
+        ),
+        _header_table(
+            "<tr><th rowspan='2'>Model</th><th colspan='3'>Priority tier (DBU per 1M tokens)"
+            "</th></tr><tr><th></th><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+        ),
+    ],
+    ids=[
+        "models-lead-under-a-caption",
+        "model-name-lead",
+        "empty-corner-under-a-heading",
+        "context-column",
+        "empty-cell-before-the-sub-header",
+    ],
+)
+def test_detect_sub_header_anywhere_in_a_row_keeps_the_table_loud(
+    monkeypatch: pytest.MonkeyPatch, priority: str
+):
+    # Input | Output | Cache read as three consecutive own cells, wherever the
+    # row starts, plus a mapped model: the table raises, never vanishes
+    assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == (
+        f"unpinned table naming Input | Output | Cache read and a mapped model on {PAGE_URL}"
+    )
 
 
 def test_detect_and_scrape_agree_past_an_unpriced_duplicate_row(monkeypatch: pytest.MonkeyPatch):

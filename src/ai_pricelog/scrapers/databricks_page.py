@@ -19,13 +19,13 @@ None = no four-cell row names the model id, or each one that does reads
 0.0 (free is a price), so a fully free row lands a 0.0 price row; the
 detector still emits the id, so a stored model whose row turns free stays
 mapped. FetchError = the fetch failed, the page has no per-token table or
-no standard one, a table that names a
-mapped display and carries a pinned tier span off the sub-header pin or
-nested in another table, a tier span row is outside the header shape or
-its span outside the pinned spellings, two per-token tables read as one
-tier, the table read as the standard tier carries no readable priced
-standard-only row, or the matched row's rate cells are outside the known
-shapes.
+no standard one, a table that names a mapped display and carries a pinned
+tier span off the sub-header pin or nested in another table, a table that
+misses the pin and names both the sub-header and a mapped display, a tier
+span row is outside the header shape or its span outside the pinned
+spellings, two per-token tables read as one tier, the table read as the
+standard tier carries no readable priced standard-only row, or the matched
+row's rate cells are outside the known shapes.
 """
 
 from __future__ import annotations

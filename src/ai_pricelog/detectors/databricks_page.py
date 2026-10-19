@@ -5,14 +5,22 @@ reads https://www.databricks.com/product/pricing/foundation-model-serving
 the standard and the priority one, each pinned by its `Input | Output |
 Cache read` sub-header row and its tier span spelling (the standard span
 read "Standard Pay Per Token (DBU Per 1M Tokens)" until the page dropped
-the qualifier on 2026-10-06; both spellings stay pinned). both tables
-share display names, so a tier is never guessed: `_model_tables` reads
-each tier off its pinned span, and the table read as standard carries a
-content guard (see _guard_standard). the per-hour tables never match: the
-Provisioned Throughput table names reservation terms in its sub-header,
-and the Batch Inference table carries no sub-header at all. the page
-carries display names only ("Kimi K3", "GTE"), so each row's canonical ids
-resolve through the display-name mappings: the standard table's names ->
+the qualifier on 2026-10-06; both spellings stay pinned). a tier span may
+sit in the table's own <caption> or in the nearest preceding heading that
+owns the table (the table is the first table after the heading), but only
+on a one-row `Model | Input | Output | Cache read` thead; the folded span
+still must equal a pinned spelling. both tables share display names, so a
+tier is never guessed: `_model_tables` reads each tier off its pinned
+span, and the table read as standard carries a content guard (see
+_guard_standard). a table's rows are the <tr> elements whose nearest table
+is this table, thead rows aside; a nested table's rows never count. the
+per-hour tables never match: the Provisioned Throughput table
+names reservation terms in its sub-header, and the Batch Inference table
+carries no sub-header at all; a table that misses the pin but whose own
+rows (own thead rows included) name Input | Output | Cache read as three
+consecutive cells and a mapped display raises instead of vanishing. the
+page carries display names only ("Kimi K3", "GTE"), so each row's canonical
+ids resolve through the display-name mappings: the standard table's names ->
 the openrouter id spelling minus its vendor prefix (measured against the
 stored openrouter id set 2026-08-29), the priority table's names -> the
 same with a "-priority" suffix. the "GLM-5.2, 5.3" row carries one rate
@@ -22,12 +30,22 @@ DBU amounts or "-" (unpriced); a row with a "-" input is known unpriced
 and skipped, "-" output reads as a zero output rate (embedding rows bill
 input only). rows outside these shapes (odd cell counts, unknown rate-cell
 text, unmapped names) are additive drift: detection skips them with a
-warning (plan #22), and the scraper stays strict for the matched row, so a
-drifted price column cannot read as a missing model. a page whose
-per-token tables or priced rows are gone still raises. zero-rate rows stay
-emitted (the scraper decides); the scraper's dedup_keys maps the page's
-undated deepseek spellings back to the dated store spellings their rows
-live under.
+warning (plan #22). a row that misses the four-cell shape, or whose input
+cell is neither a rate nor "-", is a section row and warns on the soft
+parse-skip line only when it is plainly a label: it holds no graphic
+element (img, svg, picture, object, embed, input, canvas, iframe, video),
+no element carrying an alt, aria-label or title, and no nested table
+anywhere, and either its whole visible text is empty, it repeats the
+Model | Input | Output | Cache read header row (its own cells and its
+whole text both fold to it), or it has exactly one non-empty own cell and
+its whole text holds no Unicode digit and names no mapped display as a
+whole word or letter by letter across non-alphanumeric characters; every
+other odd row keeps the detect skip, and a "-" input row skips silently.
+the scraper stays strict for the matched row, so a drifted price column
+cannot read as a missing model. a page whose per-token tables or priced
+rows are gone still raises. zero-rate rows stay emitted (the scraper
+decides); the scraper's dedup_keys maps the page's undated deepseek
+spellings back to the dated store spellings their rows live under.
 """
 
 from __future__ import annotations
@@ -37,7 +55,7 @@ import re
 from collections.abc import Iterator
 from functools import cache
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.web import FetchError, fetch_soup, fold_heading
@@ -59,6 +77,11 @@ _PRIORITY_SPANS = frozenset({fold_heading("Priority Pay Per Token (DBU Per 1M To
 _RATE_RE = re.compile(r"^\d+(?:\.\d+)?$")
 _DASH = "-"
 _UPLIFT = "⌖"  # the ⌖ regional-uplift marker glued onto some names
+_ONE_ROW_HEADER_CELLS = ("Model", "Input", "Output", "Cache read")
+_FOLDED_ONE_ROW_HEADER = tuple(fold_heading(cell) for cell in _ONE_ROW_HEADER_CELLS)
+_HEADING_NAMES = ("h1", "h2", "h3", "h4", "h5", "h6")
+_GRAPHIC_NAMES = ("img", "svg", "picture", "object", "embed", "input", "canvas", "iframe", "video")
+_NAME_ATTRS = ("alt", "aria-label", "title")
 
 # display name -> canonical ids, standard table. the ids are the stored
 # openrouter id set's spellings minus the vendor prefix
@@ -119,48 +142,69 @@ def _model_tables(soup: BeautifulSoup, url: str) -> list[tuple[Tag, bool]]:
     """the per-token tables in page order, each paired with its tier (True = priority).
 
     a table pins when its thead holds exactly two header rows and an own
-    tbody holds a row, and the second header row folds to Input | Output |
-    Cache read; the per-hour tables never match (the Provisioned Throughput table names
-    reservation terms in its sub-header, and the Batch Inference table
-    carries no sub-header). a table missing the pin raises only when it
-    looks like a pricing table: its own cells carry a pinned tier span (a
-    nested table's cells aside) and at least one of its own rows' first
-    cell names a mapped display. a top-level one raises off-pin; a nested
-    one raises its own message. a table whose span and sub-header both
-    drift carries no pinned span and reads like the per-hour tables, so
-    this check cannot see it. raises also: no table matches, a tier span
-    row outside the header shape, a span outside the pinned spellings, a
-    tier read twice, no standard table. the table read as standard carries
-    a content guard (_guard_standard) on every page.
+    row exists, and the second header row folds to Input | Output | Cache
+    read; the per-hour tables never match (the Provisioned Throughput table
+    names reservation terms in its sub-header, and the Batch Inference
+    table carries no sub-header). a one-row `Model | Input | Output | Cache
+    read` thead pins through its <caption> or the nearest preceding heading
+    that owns it (the table is the first table after the heading) instead.
+    a table missing the pin raises only when it looks like a pricing table:
+    its own cells carry a pinned tier span (a nested table's cells aside)
+    and one of its own rows (thead included) has a first cell naming a mapped display, or
+    a caption/heading span that folds to no pinned spelling and a mapped
+    display, or the sub-header (own rows, thead included) and a mapped
+    display. a top-level table carrying a pinned span raises off-pin, a
+    nested one raises its own message, a top-level one naming the
+    sub-header raises the unpinned message, and a caption/heading span
+    outside the pinned spellings raises the unreadable-span message. a
+    table whose span and sub-header both drift carries no pinned span and
+    no sub-header, so it reads like the per-hour tables. raises also: no
+    table matches, a tier span row outside the header shape, a span outside
+    the pinned spellings, a tier read twice, no standard table. the table
+    read as standard carries a content guard (_guard_standard) on every
+    page.
     """
-    tables = []
+    tables: list[tuple[Tag, bool]] = []
     for table in soup.find_all("table"):
-        nested = table.find_parent("table") is not None
-        if not nested and _structural_pin(table):
-            tables.append(table)
+        if table.find_parent("table") is not None:
+            span = _pinned_span(table) or _caption_heading_span(table)
+            if span is not None and _names_known_model(table):
+                raise FetchError(f"pay-per-token table {span!r} nested in another table on {url}")
+            if _names_sub_header(table) and _names_known_model(table):
+                raise FetchError(f"pay-per-token table nested in another table on {url}")
             continue
+        if _structural_pin(table):
+            tables.append((table, _is_priority_table(table, url)))
+            continue
+        span = _caption_heading_span(table)
+        if span is not None:
+            if span in _STANDARD_SPANS or span in _PRIORITY_SPANS:
+                tables.append((table, span in _PRIORITY_SPANS))
+                continue
+            if _names_known_model(table):
+                raise FetchError(f"unreadable pay-per-token tier span {span!r} on {url}")
         span = _pinned_span(table)
-        if span is None or not _names_known_model(table):
-            continue
-        if nested:
-            raise FetchError(f"pay-per-token table {span!r} nested in another table on {url}")
-        raise FetchError(f"pay-per-token table {span!r} off the sub-header pin on {url}")
+        if span is not None and _names_known_model(table):
+            raise FetchError(f"pay-per-token table {span!r} off the sub-header pin on {url}")
+        if _names_sub_header(table) and _names_known_model(table):
+            raise FetchError(
+                f"unpinned table naming Input | Output | Cache read and a mapped model on {url}"
+            )
     if not tables:
         raise FetchError(f"no foundation-model-serving dbu table on {url}")
-    tiered = [(table, _is_priority_table(table, url)) for table in tables]
     for priority, tier in ((False, "standard"), (True, "priority")):
-        if sum(1 for _table, table_priority in tiered if table_priority is priority) > 1:
+        if sum(1 for _table, table_priority in tables if table_priority is priority) > 1:
             raise FetchError(f"two pay-per-token tables read as the {tier} tier on {url}")
-    if all(table_priority for _table, table_priority in tiered):
+    if all(table_priority for _table, table_priority in tables):
         raise FetchError(f"no standard pay-per-token table on {url}")
-    _guard_standard(next(table for table, priority in tiered if not priority), url)
-    return tiered
+    _guard_standard(next(table for table, priority in tables if not priority), url)
+    return tables
 
 
 def _structural_pin(table: Tag) -> bool:
-    """whether the table pins: an own tbody holding a row, a two-row thead,
-    and a second header row folding to Input | Output | Cache read."""
-    thead = table.find("thead")
+    """whether the table pins: an own row, a two-row thead, and a second
+    header row folding to Input | Output | Cache read."""
+    thead = table.find("thead", recursive=False)
     if thead is None or next(_rows(table), None) is None:
         return False
     header_rows = thead.find_all("tr", recursive=False)
@@ -182,13 +226,75 @@ def _pinned_span(table: Tag) -> str | None:
     return None
 
 
+def _one_row_thead(table: Tag) -> bool:
+    """whether the table's thead is the one-row Model | Input | Output | Cache read shape."""
+    thead = table.find("thead", recursive=False)
+    if thead is None:
+        return False
+    rows = thead.find_all("tr", recursive=False)
+    if len(rows) != 1:
+        return False
+    cells = [cell.get_text(" ", strip=True) for cell in rows[0].find_all("th")]
+    return len(cells) == 4 and tuple(fold_heading(cell) for cell in cells) == _FOLDED_ONE_ROW_HEADER
+
+
+def _caption_heading_text(table: Tag) -> str | None:
+    """the table's caption text, or the text of the nearest preceding heading
+    that owns the table (the table is the first table after it)."""
+    caption = table.find("caption", recursive=False)
+    if caption is not None:
+        text = caption.get_text(" ", strip=True)
+        if text:
+            return text
+    heading = table.find_previous(_HEADING_NAMES)
+    if heading is not None and heading.find_next("table") is table:
+        text = heading.get_text(" ", strip=True)
+        return text or None
+    return None
+
+
+def _caption_heading_span(table: Tag) -> str | None:
+    """the folded tier span a one-row thead table carries in its caption or
+    the nearest preceding heading that owns it; None when the shape or text
+    is absent."""
+    if not _one_row_thead(table):
+        return None
+    text = _caption_heading_text(table)
+    return fold_heading(text) if text is not None else None
+
+
+def _own_cells(row: Tag) -> list[Tag]:
+    """the row's own cells: the th/td cells whose nearest tr is this row.
+
+    a cell under a wrapper element still counts; a nested table's cells
+    never do (their nearest tr is the nested row).
+    """
+    return [cell for cell in row.find_all(["th", "td"]) if cell.find_parent("tr") is row]
+
+
 def _names_known_model(table: Tag) -> bool:
-    """whether one of the table's own rows has a first cell naming a mapped display."""
+    """whether one of the table's own rows (own thead rows included) has a first
+    cell naming a mapped display."""
     for row in table.find_all("tr"):
         if row.find_parent("table") is not table:
             continue
-        cells = row.find_all(["th", "td"])
+        cells = _own_cells(row)
         if cells and _display_name(cells[0]) in _KNOWN_DISPLAYS:
+            return True
+    return False
+
+
+def _names_sub_header(table: Tag) -> bool:
+    """whether one of the table's own rows (own thead rows included) folds to
+    Input | Output | Cache read as three consecutive cells, wherever the row
+    starts."""
+    thead = table.find("thead", recursive=False)
+    rows: list[Tag] = thead.find_all("tr", recursive=False) if thead is not None else []
+    rows.extend(_rows(table))
+    for row in rows:
+        cells = _own_cells(row)
+        folded = tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)
+        if any(folded[i : i + 3] == _FOLDED_TABLE_HEADERS for i in range(len(folded) - 2)):
             return True
     return False
 
@@ -220,11 +326,19 @@ def _is_priority_table(table: Tag, url: str) -> bool:
 
 
 def _rows(table: Tag) -> Iterator[Tag]:
-    """each own tbody's direct rows in document order, for the watched table's readers."""
-    for tbody in table.find_all("tbody"):
-        if tbody.find_parent("table") is not table:
+    """each own row in document order, for the watched table's readers.
+
+    an own row is a <tr> whose nearest table is this table, thead rows
+    aside; a row an omitted </tr> nests inside another, or one under a
+    wrapper between the group and the row, still counts; a nested table's
+    rows never do.
+    """
+    for row in table.find_all("tr"):
+        if row.find_parent("table") is not table:
             continue
-        yield from tbody.find_all("tr", recursive=False)
+        group = row.find_parent(["thead", "tbody", "tfoot", "table"])
+        if group is not None and group.name != "thead":
+            yield row
 
 
 def _guard_standard(table: Tag, url: str) -> None:
@@ -243,7 +357,7 @@ def _guard_standard(table: Tag, url: str) -> None:
     priority and prices the "-priority" ids at standard rates.
     """
     for row in _rows(table):
-        cells = row.find_all(["th", "td"])
+        cells = _own_cells(row)
         if len(cells) != 4 or _try_rate(cells[1]) is None:
             continue
         if _display_name(cells[0]) in _STANDARD_ONLY_NAMES:
@@ -255,12 +369,96 @@ def _guard_standard(table: Tag, url: str) -> None:
 
 
 def _row_cells(row: Tag, url: str) -> list[Tag]:
-    cells = row.find_all(["th", "td"])
+    cells = _own_cells(row)
     if len(cells) != 4:
         raise FetchError(
             f"row outside the pricing shape on {url}: {row.get_text(' ', strip=True)!r}"
         )
     return cells
+
+
+def _stripped(text: str) -> str:
+    """the text with every non-alphanumeric character removed (letters and digits kept)."""
+    return "".join(char for char in text if char.isalnum())
+
+
+def _names_display(text: str) -> bool:
+    """whether the folded text names a mapped display as a whole word."""
+    return any(
+        re.search(rf"(?<!\w){re.escape(fold_heading(name))}(?!\w)", text)
+        for name in _KNOWN_DISPLAYS
+    )
+
+
+def _names_stripped_display(text: str) -> bool:
+    """whether the casefolded text names a mapped display: its letters in order, only
+    non-alphanumeric characters between them, bounded by non-alphanumeric characters."""
+    return any(
+        re.search(
+            r"(?<![^\W_])"
+            + r"[\W_]*".join(map(re.escape, _stripped(name.casefold())))
+            + r"(?![^\W_])",
+            text,
+        )
+        for name in _KNOWN_DISPLAYS
+    )
+
+
+def _section_row(row: Tag, cells: list[Tag]) -> str | None:
+    """the row's section label, or None when the row may price a model.
+
+    the detect gate sends here every row outside the four-cell shape and
+    every four-cell row whose input cell is neither a rate nor "-". the row
+    is a section row only when it is plainly a label: it holds no graphic
+    element and no element carrying an alt, aria-label or title, and no
+    nested table anywhere, and either its whole visible text is empty, its
+    own cells and its whole text both fold to the Model | Input | Output |
+    Cache read header, or exactly one own cell has non-empty text and the
+    row's whole text holds no Unicode digit and names no mapped display as
+    a whole word or letter by letter across non-alphanumeric characters.
+    the label is the row's own-cell text (nested tables excluded) joined by
+    single spaces. everything else returns None and keeps the detect skip.
+    """
+    if row.find(_GRAPHIC_NAMES) is not None or row.find("table") is not None:
+        return None
+    if any(node.has_attr(attr) for node in row.find_all(True) for attr in _NAME_ATTRS):
+        return None
+    label = " ".join(_cell_text(cell) for cell in cells).strip()
+    if not row.get_text(" ", strip=True):
+        return label
+    folded = tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)
+    if folded == _FOLDED_ONE_ROW_HEADER and fold_heading(row.get_text(" ", strip=True)) == " ".join(
+        _FOLDED_ONE_ROW_HEADER
+    ):
+        return label
+    non_empty = [cell for cell in cells if _cell_text(cell).strip()]
+    if len(non_empty) == 1:
+        spaced = fold_heading(row.get_text(" ", strip=True))
+        if not any(char.isdigit() for char in spaced):
+            glued = fold_heading(row.get_text("", strip=True))
+            if not any(
+                (
+                    _names_display(spaced),
+                    _names_display(glued),
+                    _names_stripped_display(row.get_text(" ", strip=True).casefold()),
+                    _names_stripped_display(row.get_text("", strip=True).casefold()),
+                )
+            ):
+                return label
+    return None
+
+
+def _cell_text(cell: Tag) -> str:
+    """the cell's visible text, nested tables, comments, scripts and styles excluded."""
+    parts: list[str] = []
+    for node in cell.children:
+        if isinstance(node, Tag):
+            if node.name == "table":
+                continue
+            parts.append(_cell_text(node))
+        elif type(node) is NavigableString:
+            parts.append(str(node))
+    return " ".join(part.strip() for part in parts if part.strip())
 
 
 def _try_rate(cell: Tag) -> float | None:
@@ -307,6 +505,19 @@ def detect(cfg: ProviderCfg) -> list[str]:
     seen: set[str] = set()
     for table, priority in _model_tables(soup, cfg.detector_url):
         for row in _rows(table):
+            cells = _own_cells(row)
+            if len(cells) != 4 or (
+                _try_rate(cells[1]) is None and cells[1].get_text(" ", strip=True) != _DASH
+            ):
+                section = _section_row(row, cells)
+                if section is not None:
+                    log.warning(
+                        "parse skip for %s: section row %r on %s",
+                        cfg.key,
+                        section,
+                        cfg.detector_url,
+                    )
+                    continue
             try:
                 cells = _row_cells(row, cfg.detector_url)
                 if _rate(cells[1], cfg.detector_url) is None:
