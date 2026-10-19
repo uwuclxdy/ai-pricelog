@@ -90,7 +90,7 @@ export function whenMatches(when, ctx) {
     }
   }
   const floor = when.min_tokens;
-  if (typeof floor === "number" && Number.isFinite(floor) && ctx.inputTokens < floor) {
+  if (typeof floor === "number" && Number.isFinite(floor) && ctx.inputTokens <= floor) {
     return false;
   }
   if (when.mode !== undefined && when.mode !== ctx.mode) return false;

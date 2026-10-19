@@ -645,6 +645,15 @@ def _node_cases() -> dict[str, dict[str, object]]:
             "now": "2026-09-07T02:00:00Z",
             "expected": (0.3 + 0.3) * 0.5,
         },
+        "a_volume_threshold_exactly_met_prices_the_base_tier": {
+            "entry": VOLUME,
+            "day": "2026-09-07",
+            # anthropic bills "over N": a prompt of exactly 500000 does not
+            # reach the override, so it prices the base input rate, not 0.5
+            "tokens": {"input": 500000, "cached": 0, "output": 0},
+            "now": "2026-09-07T02:00:00Z",
+            "expected": 0.5 * 1.0,
+        },
         "a_multiplier_only_entry_shadows_the_rate_entry": {
             "entry": QUOTA,
             "day": "2026-09-07",
