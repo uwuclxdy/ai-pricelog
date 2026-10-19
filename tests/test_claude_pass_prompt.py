@@ -194,3 +194,12 @@ def test_prompt_spells_listed_branches_as_remote_refs_in_reads_only():
     assert "in every git command" not in text
     assert "`git switch <branch>`" in job
     assert "`git push origin <branch>`" in job
+
+
+def test_prompt_flags_a_cache_read_above_input_row_as_needs_human():
+    # a price row whose cache_read exceeds its input is implausible; the pass
+    # must flag it needs-human — a reword dropping this clause would silently
+    # auto-verify such a row again
+    job = _section_body(PROMPT.read_text(), "your job")
+    assert "`cache_read` exceeds its `input`" in job
+    assert "never auto-verify or merge" in job

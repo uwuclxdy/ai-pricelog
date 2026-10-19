@@ -790,3 +790,42 @@ def test_runner_failure_without_a_refused_retry_keeps_the_plain_message(
     with pytest.raises(pr.PrError) as excinfo:
         pr.PrRunner().run(cmd, tmp_path)
     assert str(excinfo.value) == f"command {cmd} failed: {stderr.strip()}"
+
+
+def test_spec_body_flags_a_cache_read_above_input():
+    # baseten beam landed 2026-10-16 with cache_read 4.3 above input 1.3
+    # (e0f404c, #548); the body must flag the row needs-human so a reviewer
+    # catches the implausible rate before it merges
+    row = {
+        "schema": 4,
+        "source": "baseten",
+        "model_id": "beam",
+        "observed_at": "2026-10-16",
+        "rates": {"input": 1.3, "output": 0.13, "cache_read": 4.3},
+    }
+    body = spec(source="baseten", provider="Baseten", source_url="", rows=(row,)).body
+    assert "needs human" in body
+
+
+def test_spec_body_does_not_flag_a_plausible_row():
+    row = {
+        "schema": 4,
+        "source": "baseten",
+        "model_id": "beam",
+        "observed_at": "2026-10-16",
+        "rates": {"input": 1.3, "output": 0.13, "cache_read": 0.13},
+    }
+    body = spec(source="baseten", provider="Baseten", source_url="", rows=(row,)).body
+    assert "needs human" not in body
+
+
+def test_spec_body_does_not_flag_cache_read_equal_to_input():
+    row = {
+        "schema": 4,
+        "source": "baseten",
+        "model_id": "beam",
+        "observed_at": "2026-10-16",
+        "rates": {"input": 1.3, "output": 0.13, "cache_read": 1.3},
+    }
+    body = spec(source="baseten", provider="Baseten", source_url="", rows=(row,)).body
+    assert "needs human" not in body

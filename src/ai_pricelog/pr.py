@@ -348,12 +348,31 @@ class PrSpec:
         if self._prices():
             lines.append("- [ ] prices verified against the source page")
             lines.append("- [ ] peak/off-peak rates match the page")
+            lines.extend(self._implausible_flags(self._prices()))
         lines += [
             "- [ ] provider name correct",
             "- [ ] a sibling merge conflict: concatenate both shards, dedupe"
             " exact lines only (a key-based union drops same-day updates)",
         ]
         return lines
+
+    def _implausible_flags(self, rows: list[dict[str, object]]) -> list[str]:
+        """A needs-human flag per price row whose cache read exceeds its input."""
+        flags: list[str] = []
+        for row in rows:
+            rates = row.get("rates") if isinstance(row.get("rates"), dict) else {}
+            input_rate = rates.get("input")
+            cache_read = rates.get("cache_read")
+            if (
+                isinstance(input_rate, (int, float))
+                and isinstance(cache_read, (int, float))
+                and cache_read > input_rate
+            ):
+                flags.append(
+                    f"- [ ] needs human: `{row['model_id']}` cache read "
+                    f"{_fmt(cache_read)} above input {_fmt(input_rate)}"
+                )
+        return flags
 
 
 def _fmt(value: object) -> str:
