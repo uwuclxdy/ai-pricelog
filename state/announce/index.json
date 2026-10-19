@@ -58,7 +58,7 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
       "fetched": "2026-10-19"
     }
   },
