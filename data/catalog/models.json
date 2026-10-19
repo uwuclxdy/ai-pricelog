@@ -4590,6 +4590,15 @@
       },
       "vendor": "minimax"
     },
+    "minimax/MiniMax-M3.1-Flash": {
+      "curated": false,
+      "sources": {
+        "minimax": [
+          "MiniMax-M3.1-Flash"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "mistral-large-2407": {
       "curated": true,
       "sources": {

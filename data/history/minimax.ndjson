@@ -18,3 +18,4 @@
 {"schema":4,"source":"minimax","model_id":"MiniMax-M3","observed_at":"2026-08-11","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":1000000},"provenance":{"url":"http://web.archive.org/web/20260811053739/https://platform.minimax.io/docs/guides/pricing-paygo"}}
 {"schema":4,"source":"minimax","model_id":"MiniMax-M3","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2},"provenance":{"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}}
 {"schema":4,"source":"minimax","model_id":"MiniMax-M3","observed_at":"2026-08-29","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}}
+{"schema":4,"source":"minimax","model_id":"MiniMax-M3.1-Flash","observed_at":"2026-10-19","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"provenance":{"url":"https://platform.minimax.io/docs/guides/pricing-paygo.md"}}
