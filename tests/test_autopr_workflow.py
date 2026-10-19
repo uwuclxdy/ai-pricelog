@@ -40,6 +40,18 @@ def test_merge_step_writes_its_rc_marker():
     assert "--merge-alive" in text and "--merge-dead" in text
 
 
+def test_merge_step_runs_after_a_failed_pass():
+    # the pass step is continue-on-error, so a killed pass leaves the job green
+    # unless the merge still runs and the dead-pass tripwire reds it; the
+    # `if: always()` gate is what lets the merge read the pass's dispositions
+    # after a pass death. pin it: a decoy mutant dropping the gate passed the
+    # workflow test, and a dropped gate strands every yes-marked PR
+    body = _step(AUTOPR_WF.read_text(), "merge verified PRs")
+    assert re.search(r"^        if: always\(\)$", body, re.M), (
+        "the merge step lost its if: always(); a dead pass would strand its verdicts"
+    )
+
+
 def test_pass_may_fetch_sources_full_body():
     # WebFetch extraction over the ~750KB openrouter payload silently omits
     # records and produced false absence verdicts (2026-09-22, PRs 333/337);

@@ -29,17 +29,43 @@ def no_github_env(monkeypatch: pytest.MonkeyPatch):
     testing._resolve.cache_clear()
 
 
-def test_pr_event_env_skips(monkeypatch: pytest.MonkeyPatch):
+def test_pr_event_with_a_pipeline_head_ref_skips(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("GITHUB_BASE_REF", "mommy")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "pricelog/openrouter-2026-09-07-121151-sim000000")
     assert not testing.default_branch_test
-    assert testing.default_branch_test.skip_reason.startswith("pull_request against mommy")
+    assert testing.default_branch_test.skip_reason.startswith("pipeline PR branch")
 
 
 @pytest.mark.parametrize("event", ["pull_request", "pull_request_target"])
-def test_pr_event_name_skips(monkeypatch: pytest.MonkeyPatch, event: str):
+def test_pr_event_name_with_a_pipeline_head_ref_skips(monkeypatch: pytest.MonkeyPatch, event: str):
     monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_HEAD_REF", "pricelog/openrouter-2026-09-07-121151-sim000000")
     assert not testing.default_branch_test
-    assert testing.default_branch_test.skip_reason.startswith(event)
+    assert testing.default_branch_test.skip_reason.startswith("pipeline PR branch")
+
+
+def test_pr_event_with_a_human_head_ref_runs(monkeypatch: pytest.MonkeyPatch):
+    # a human PR (a non-pricelog head) must run the four real-tree tests, so a
+    # catalog or README-stats break shows red on the PR, not only on mommy's
+    # push CI (8ebd801 shipped a stale README stat green on its own PR)
+    monkeypatch.setenv("GITHUB_BASE_REF", "mommy")
+    monkeypatch.setenv("GITHUB_HEAD_REF", "feature-x")
+    assert testing.default_branch_test
+
+
+def test_pr_event_with_no_head_ref_runs(monkeypatch: pytest.MonkeyPatch):
+    # GitHub always sets GITHUB_HEAD_REF on a PR event, but the guard must not
+    # fall back to skipping when it is absent: an empty head is not a pipeline
+    # branch, so the real-tree tests run
+    monkeypatch.setenv("GITHUB_BASE_REF", "mommy")
+    assert testing.default_branch_test
+
+
+@pytest.mark.parametrize("event", ["pull_request", "pull_request_target"])
+def test_pr_event_name_with_a_human_head_ref_runs(monkeypatch: pytest.MonkeyPatch, event: str):
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_HEAD_REF", "feature-x")
+    assert testing.default_branch_test
 
 
 @pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch"])

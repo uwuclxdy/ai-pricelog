@@ -2,16 +2,19 @@
 
 two committed-tree invariants (README stats recompute, catalog coverage)
 read the checkout's rows against the checkout's committed README and
-catalog, so they hold only on the default branch: a pipeline PR branch
+catalog, so they red by construction only on a pipeline data branch: it
 carries the default branch's committed derived files plus its own new
-rows, and reds there by construction until publish refreshes the default
-branch (observed 2026-09-05, PRs 149-155). the guard resolves once per
+rows until publish refreshes the default branch (observed 2026-09-05,
+PRs 149-155). a human PR branch carries no such rows, so it runs them
+and a real break shows red on the PR. the guard resolves once per
 process:
 
-- a PR event (`GITHUB_BASE_REF` names the base) checks out the PR head, so
-  it skips; ci's push gate runs only for pushes to the default branch
-  (its own trigger pins that), and the scheduled workflows check out the
-  default branch, so those events run.
+- a PR event (`GITHUB_BASE_REF` names the base, or the event is
+  pull_request/pull_request_target) checks out the PR head: a
+  `pricelog/` head is a pipeline data branch and skips; any other head
+  is a human PR branch and runs. ci's push gate runs only for pushes to
+  the default branch (its own trigger pins that), and the scheduled
+  workflows check out the default branch, so those events run.
 - locally, a `pricelog/` branch is an automation-owned data branch
   (`pr.branch_name`) and skips; a detached local checkout cannot prove
   which tree it holds and skips; every other local checkout runs (rows
@@ -41,11 +44,14 @@ _REASON = (
 def _resolve(repo_root: Path) -> tuple[bool, str]:
     """(is-default-checkout, reason) once per process; never raises."""
     base_ref = os.environ.get("GITHUB_BASE_REF")
-    if base_ref:
-        return False, f"pull_request against {base_ref}: {_REASON}"
     event = os.environ.get("GITHUB_EVENT_NAME")
-    if event in ("pull_request", "pull_request_target"):
-        return False, f"{event} event: {_REASON}"
+    if base_ref or event in ("pull_request", "pull_request_target"):
+        # a PR checks out its head ref: a pipeline data branch reds the
+        # invariants by construction, a human PR branch runs them
+        head_ref = os.environ.get("GITHUB_HEAD_REF") or ""
+        if head_ref.startswith("pricelog/"):
+            return False, f"pipeline PR branch {head_ref}: {_REASON}"
+        return True, _REASON
     # a burst merge in flight holds the pipeline-branch shape on the default
     # branch: staged rows the committed derived files do not reflect yet, so
     # the pre-commit gate would red by construction before the merge lands
