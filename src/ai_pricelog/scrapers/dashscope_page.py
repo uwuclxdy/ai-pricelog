@@ -14,21 +14,18 @@ first cell equals the requested id; tiered continuation rows (`256K<Token
 `International`: rows scoped to Chinese mainland / Global / Japan / US are
 skipped for now (no entry beats a wrong one; the pipeline retries next run).
 price cells like `List price $0.4 Limited-time 20% off` yield the first `$`
-float; USD per 1M tokens -> /1e6. the page carries no context window, so the
-max_tokens fields stay 0 (the entry builder omits them).
+float; a cell whose amount the grammar cannot read is a page-shape break
+(FetchError). USD per 1M tokens -> /1e6. the page carries no context window,
+so the max_tokens fields stay 0 (the entry builder omits them).
 """
 
 from __future__ import annotations
-
-import re
 
 from bs4 import Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
-
-_AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 # a sub-header row names the sub-columns of a split span; its first cell
 # starts with one of these. data rows start with the model id, which never
@@ -43,9 +40,13 @@ def _column(header: list[str], prefix: str) -> int | None:
     return None
 
 
-def _first_amount(cell: str) -> float | None:
-    match = _AMOUNT_RE.search(cell)
-    return float(match.group(1)) if match else None
+def _first_amount(cell: str, model_id: str, url: str) -> float | None:
+    """the cell's first readable dollar amount; an amount the grammar cannot
+    read is a page-shape break. None when the cell holds no amount."""
+    amounts, malformed = amount_scan(cell, before="$")
+    if malformed:
+        raise unreadable_rate_error(cell, model_id, url)
+    return float(amounts[0].replace(",", "")) if amounts else None
 
 
 def _grid(header_row: Tag) -> list[str]:
@@ -96,8 +97,12 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 # a short row is not a verdict: a later table may carry the
                 # same id with full columns
                 continue
-            input_amount = _first_amount(cells[input_idx].get_text(" ", strip=True))
-            output_amount = _first_amount(cells[output_idx].get_text(" ", strip=True))
+            input_amount = _first_amount(
+                cells[input_idx].get_text(" ", strip=True), model_id, cfg.scraper_url
+            )
+            output_amount = _first_amount(
+                cells[output_idx].get_text(" ", strip=True), model_id, cfg.scraper_url
+            )
             if input_amount is None or output_amount is None:
                 # an unpriced row is not a verdict either: a later table may
                 # carry the same id with real prices

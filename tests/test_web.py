@@ -215,6 +215,164 @@ def test_amount_scan_rejects_a_comma_decimal():
     assert web.amount_scan("$0,14", before="$") == ([], True)
 
 
+def test_amount_scan_rejects_a_hyphen_range_like_an_en_dash_range():
+    assert web.amount_scan("$1–2 / MTok", before="$")[1] is True
+    assert web.amount_scan("$1-2 / MTok", before="$") == ([], True)
+    assert web.amount_scan("1-2 USD", after=" USD")[1] is True
+    assert web.amount_scan("1-2") == ([], True)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "$0.3 - 0.6",
+        "$0.3 – 0.6",
+        "$0.3-$0.6",
+        "$0.3–$0.6",
+        "$0.3 - $0.6",
+        "$0.3 — 0.6",
+        "$0.3 − 0.6",
+        "$0.3‐0.6",
+        "$0.3‑0.6",
+        "$0.3 ‒ 0.6",
+        "$0.3‒$0.6",
+        "$0.3 ― 0.6",
+        "$0.3 － 0.6",
+        "$0.3－$0.6",
+        "$0.3~0.6",
+        "$0.3~$0.6",
+        "$0.3 ~ $0.6",
+        "$0.3～$0.6",
+        "$0.3 to 0.6",
+        "$0.3 to $0.6",
+        "$0.30 - .6",
+    ],
+    ids=[
+        "spaced-hyphen",
+        "spaced-en-dash",
+        "re-dollared-hyphen",
+        "re-dollared-en-dash",
+        "spaced-re-dollared",
+        "em-dash",
+        "minus-sign",
+        "unicode-hyphen",
+        "non-breaking-hyphen",
+        "figure-dash",
+        "re-dollared-figure-dash",
+        "horizontal-bar",
+        "fullwidth-hyphen",
+        "re-dollared-fullwidth-hyphen",
+        "tilde",
+        "re-dollared-tilde",
+        "spaced-re-dollared-tilde",
+        "fullwidth-tilde",
+        "word-range",
+        "re-dollared-word-range",
+        "dot-led-bound",
+    ],
+)
+def test_amount_scan_rejects_a_spaced_or_re_dollared_range(text):
+    assert web.amount_scan(text, before="$")[1] is True
+
+
+def test_amount_scan_rejects_a_range_in_every_marker_mode():
+    assert web.amount_scan("USD 0.0636 – USD 0.1", before="USD ")[1] is True
+    assert web.amount_scan("0.30 - 0.60 USD", after=" USD")[1] is True
+
+
+@pytest.mark.parametrize(
+    ("text", "amount"),
+    [
+        ("$2.00 per-request - batch", "2.00"),
+        ("$0.30 - 50% off batch", "0.30"),
+        ("$0.30 — 128K context", "0.30"),
+        ("$0.30 −50% batch", "0.30"),
+        ("$0.3 to 1M tokens", "0.3"),
+        ("$0.30 ~128K", "0.30"),
+        ("$3.00 / $0.30 / $15.00", None),
+        ("~~$0.60~~ $0.30", None),
+    ],
+    ids=[
+        "dash-then-word",
+        "dash-then-percent",
+        "dash-then-token-count",
+        "minus-then-percent",
+        "to-then-token-count",
+        "tilde-then-token-count",
+        "slash-list",
+        "strikethrough",
+    ],
+)
+def test_amount_scan_reads_a_dash_that_opens_no_second_amount(text, amount):
+    # a dash, tilde or "to" before a word, a percent or a token count is
+    # prose, not a range bound; slash lists and strikethroughs stay lists
+    readable, malformed = web.amount_scan(text, before="$")
+    assert malformed is False
+    if amount is not None:
+        assert readable == [amount]
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["$0,342", "$00,342", "$0,027"],
+)
+def test_amount_scan_rejects_a_three_digit_comma_decimal(text):
+    # a thousands group never opens with a zero, so these are comma-decimals
+    assert web.amount_scan(text, before="$") == ([], True)
+
+
+def test_amount_scan_three_digit_comma_decimal_in_every_marker_mode():
+    assert web.amount_scan("0,342 USD", after=" USD")[1] is True
+    assert web.amount_scan("0,342")[1] is True
+    assert web.amount_scan("$12,345", before="$") == (["12,345"], False)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "$5 / MTok (was ＄10 / MTok)",
+        "&#36;10 / MTok $5 / MTok",
+        "$5 / MTok (was 10$)",
+        "$5 / MTok (was &#x24;10 / MTok)",
+        "$5 / MTok (was &#036;10 / MTok)",
+        "$5 / MTok (was &dollar;10 / MTok)",
+        "$5 / MTok (was ﹩10 / MTok)",
+        "$5 / MTok (was 10 $)",
+        "$5 / MTok (was &#X24;10 / MTok)",
+        "$5 / MTok (was 10＄)",
+        "$5 / MTok (was 10 ＄)",
+        "$5 / MTok (was 10 ﹩)",
+        "$5 / MTok (was &#65284;10 / MTok)",
+        "$5 / MTok (was &#xFF04;10 / MTok)",
+        "$5 / MTok (was &#36 10 / MTok)",
+    ],
+    ids=[
+        "fullwidth-dollar",
+        "entity-dollar",
+        "trailing-dollar",
+        "hex-entity-dollar",
+        "padded-entity-dollar",
+        "named-entity-dollar",
+        "small-dollar",
+        "spaced-trailing-dollar",
+        "uppercase-hex-entity",
+        "trailing-fullwidth",
+        "spaced-trailing-fullwidth",
+        "spaced-trailing-small",
+        "fullwidth-decimal-entity",
+        "fullwidth-hex-entity",
+        "semicolon-less-entity",
+    ],
+)
+def test_amount_scan_flags_a_second_amount_in_another_dollar_spelling(text):
+    assert web.amount_scan(text, before="$") == (["5"], True)
+
+
+@pytest.mark.parametrize("text", ["AT&T $0.30", "US$0.50 or $0.50", "$0.30 / 1M tokens, 128K $"])
+def test_amount_scan_other_dollar_check_spares_real_cells(text):
+    assert web.amount_scan(text, before="$")[1] is False
+
+
 def test_amount_scan_rejects_a_trailing_glued_digit():
     assert web.amount_scan("$1,5000", before="$") == ([], True)
 

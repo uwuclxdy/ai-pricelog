@@ -21,11 +21,21 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.ai21_page import _UA, _card_parts, _slug
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
-_PRICE_LINE = re.compile(
-    r"\$(\d+(?:\.\d+)?) / 1M input tokens\s*\$(\d+(?:\.\d+)?) / 1M output tokens"
-)
+# the input and output amounts read from their own spans, so an amount
+# elsewhere in the footer cannot shift the rates
+_PRICE_LINE = re.compile(r"(\$\S+) / 1M input tokens\s*(\$\S+) / 1M output tokens")
+
+
+def _price_amount(span: str, footer_text: str, model_id: str, url: str) -> float:
+    """one price-line amount through the shared grammar; not exactly one
+    readable amount is a page-shape break naming the whole footer (a
+    malformed span already failed the footer's own scan in scrape)."""
+    amounts, _ = amount_scan(span, before="$")
+    if len(amounts) != 1:
+        raise unreadable_rate_error(footer_text, model_id, url)
+    return float(amounts[0].replace(",", ""))
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -41,12 +51,18 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             continue  # additive drift; detect already reported the card
         if footer is None:
             raise FetchError(f"model card {model_id} without a footer on {cfg.scraper_url}")
-        matches = _PRICE_LINE.findall(footer.get_text(" ", strip=True))
-        if len(matches) != 1:
+        footer_text = footer.get_text(" ", strip=True)
+        _, malformed = amount_scan(footer_text, before="$")
+        if malformed:
+            raise unreadable_rate_error(footer_text, model_id, cfg.scraper_url)
+        pairs = _PRICE_LINE.findall(footer_text)
+        if len(pairs) != 1:
             raise FetchError(
                 f"malformed price line for {model_id} on {cfg.scraper_url}: "
-                f"{len(matches)} price lines, want 1"
+                f"{len(pairs)} price lines, want 1"
             )
-        input_cost, output_cost = (float(value) for value in matches[0])
+        input_span, output_span = pairs[0]
+        input_cost = _price_amount(input_span, footer_text, model_id, cfg.scraper_url)
+        output_cost = _price_amount(output_span, footer_text, model_id, cfg.scraper_url)
         return Pricing(input_cost / 1e6, output_cost / 1e6, mode="chat")
     return None

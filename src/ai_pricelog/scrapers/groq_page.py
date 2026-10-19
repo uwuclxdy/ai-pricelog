@@ -53,7 +53,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                     continue
             except FetchError:
                 continue  # additive drift; detect already reported the row
-            amounts = _price_amounts(row[2], cfg.scraper_url)
+            amounts = _price_amounts(row[2], cfg.scraper_url, model_id)
             if amounts is None:
                 return None  # the row carries no per-token rate for this model
             input_rate, output_rate = amounts

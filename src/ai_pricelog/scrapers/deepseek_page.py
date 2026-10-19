@@ -25,7 +25,8 @@ midnight); with the clause present, a window past that raises instead of
 silently mis-scheduling.
 
 None = the model id is not on the page, or a needed price is missing.
-FetchError = the fetch failed or the page has no MODEL header table.
+FetchError = the fetch failed, the page has no MODEL header table, or a
+price cell carries an amount the grammar cannot read.
 """
 
 from __future__ import annotations
@@ -37,13 +38,18 @@ from bs4 import BeautifulSoup
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.deepseek_page import _model_table, header_ids
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, extract_tables, fetch_soup
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    extract_tables,
+    fetch_soup,
+    unreadable_rate_error,
+)
 
 _CACHE_MISS = "1M INPUT TOKENS (CACHE MISS)"
 _CACHE_HIT = "1M INPUT TOKENS (CACHE HIT)"
 _OUTPUT = "1M OUTPUT TOKENS"
 _MARKERS = ("OFF-PEAK", "PEAK")
-_PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
 _K_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
 _M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
 _FOOTNOTE_PATTERN = re.compile(
@@ -72,14 +78,14 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     if model_id not in ids:
         return None
     prices = _pricing_cells(table[1:], ids.index(model_id))
-    off_input = _dollars(prices.get(_CACHE_MISS, {}).get("OFF-PEAK"))
-    off_output = _dollars(prices.get(_OUTPUT, {}).get("OFF-PEAK"))
-    off_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("OFF-PEAK"))
+    off_input = _dollars(prices.get(_CACHE_MISS, {}).get("OFF-PEAK"), model_id, cfg.scraper_url)
+    off_output = _dollars(prices.get(_OUTPUT, {}).get("OFF-PEAK"), model_id, cfg.scraper_url)
+    off_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("OFF-PEAK"), model_id, cfg.scraper_url)
     if off_input is None or off_output is None:
         return None
-    peak_input = _dollars(prices.get(_CACHE_MISS, {}).get("PEAK"))
-    peak_output = _dollars(prices.get(_OUTPUT, {}).get("PEAK"))
-    peak_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("PEAK"))
+    peak_input = _dollars(prices.get(_CACHE_MISS, {}).get("PEAK"), model_id, cfg.scraper_url)
+    peak_output = _dollars(prices.get(_OUTPUT, {}).get("PEAK"), model_id, cfg.scraper_url)
+    peak_cache_read = _dollars(prices.get(_CACHE_HIT, {}).get("PEAK"), model_id, cfg.scraper_url)
     if peak_input is None and peak_output is None and peak_cache_read is None:
         return Pricing(
             input_cost_per_token=off_input / 1e6,
@@ -206,11 +212,15 @@ def _window_tokens(
     return 0
 
 
-def _dollars(text: str | None) -> float | None:
+def _dollars(text: str | None, model_id: str, url: str) -> float | None:
+    """the cell's first readable dollar amount; an amount the grammar cannot
+    read is a page-shape break. None when the cell holds no amount."""
     if text is None:
         return None
-    match = _PRICE_PATTERN.search(text)
-    return float(match.group(1)) if match else None
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    return float(amounts[0].replace(",", "")) if amounts else None
 
 
 def _per_token(dollars: float | None) -> float | None:

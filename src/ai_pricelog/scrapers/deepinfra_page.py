@@ -6,10 +6,11 @@ holds one amount, or two as "$base / $cached cached" when the model bills
 cache reads; the output cell holds exactly one. the context cell ("1024k")
 -> max_tokens_in, k counted as 1024 (the repo convention). rows key by the
 model-cell link's last path segment, lowercased, the detector's id. a
-matched cell with an unexpected amount count, or an unreadable context, is
-a page-shape break (FetchError), so a silent misread cannot ship. rows the
-match scan passes over with a link-less or out-of-charset model cell are
-additive drift detection already reported.
+matched cell with an unexpected amount count, an amount the grammar cannot
+read, or an unreadable context, is a page-shape break (FetchError), so a
+silent misread cannot ship. rows the match scan passes over with a
+link-less or out-of-charset model cell are additive drift detection
+already reported.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
 page has no per-token model table, or a matched cell carries an unexpected
@@ -23,9 +24,8 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.deepinfra_page import _model_tables, _row_id, _table_rows
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
-_AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
 _CONTEXT_RE = re.compile(r"^(\d+)k$")
 
 
@@ -45,12 +45,20 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 continue  # additive drift; detect already reported the row
             if len(row) < 4:
                 raise FetchError(f"malformed row for {model_id} on {cfg.scraper_url}")
-            input_amounts = _AMOUNT_RE.findall(row[2].get_text(" ", strip=True))
-            output_amounts = _AMOUNT_RE.findall(row[3].get_text(" ", strip=True))
+            input_text = row[2].get_text(" ", strip=True)
+            output_text = row[3].get_text(" ", strip=True)
+            input_amounts, input_malformed = amount_scan(input_text, before="$")
+            output_amounts, output_malformed = amount_scan(output_text, before="$")
+            if input_malformed:
+                raise unreadable_rate_error(input_text, model_id, cfg.scraper_url)
+            if output_malformed:
+                raise unreadable_rate_error(output_text, model_id, cfg.scraper_url)
             if len(input_amounts) == 2:
-                input_cost, cache_read = (float(amount) for amount in input_amounts)
+                input_cost, cache_read = (
+                    float(amount.replace(",", "")) for amount in input_amounts
+                )
             elif len(input_amounts) == 1:
-                input_cost, cache_read = float(input_amounts[0]), None
+                input_cost, cache_read = float(input_amounts[0].replace(",", "")), None
             else:
                 raise FetchError(
                     f"malformed input cell for {model_id} on {cfg.scraper_url}: "
@@ -69,7 +77,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 )
             return Pricing(
                 input_cost / 1e6,
-                float(output_amounts[0]) / 1e6,
+                float(output_amounts[0].replace(",", "")) / 1e6,
                 mode="chat",
                 max_tokens_in=int(context_match.group(1)) * 1024,
                 cache_read_cost_per_token=(cache_read / 1e6 if cache_read is not None else None),

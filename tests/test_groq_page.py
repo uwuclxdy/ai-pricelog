@@ -64,6 +64,18 @@ def test_detect_ids(monkeypatch: pytest.MonkeyPatch):
     assert detector.detect(cfg()) == EXPECTED_IDS
 
 
+def test_detect_live_page_logs_no_detect_skip(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # the live page's unpriced compound-system rows link outside /docs/model/;
+    # an unpriced row is never id-parsed, so it never logs the detect skip
+    # that freezes groq's absence counters on every run
+    feed(monkeypatch)
+    with caplog.at_level(logging.WARNING):
+        detector.detect(cfg())
+    assert caplog.messages == []
+
+
 def test_detect_skips_unpriced_rows(monkeypatch: pytest.MonkeyPatch):
     # ContactSales, per-hour, per-character, and unpriced rows carry no
     # per-token rate and are skipped, not emitted
@@ -100,18 +112,45 @@ def test_detect_badge_row_parses_clean_id(monkeypatch: pytest.MonkeyPatch):
     assert detector.detect(cfg()) == ["llama-3.1-8b-instant"]
 
 
-def test_detect_unpriced_row_without_link_is_skipped(monkeypatch: pytest.MonkeyPatch):
-    # unpriced rows are never id-parsed, so a linkless ContactSales row
-    # cannot break the run
+@pytest.mark.parametrize("price", ["ContactSales", "$1,000 per hour"])
+def test_detect_unpriced_row_without_link_is_skipped(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, price: str
+):
+    # unpriced rows (a per-hour rate included, thousands group and all) are
+    # never id-parsed, so a linkless one cannot break the run or warn
     text = table(
-        row("llama-solo", "ContactSales"),
+        row("llama-solo", price),
         row(
             "[GPT OSS 120B](/docs/model/openai/gpt-oss-120b)openai/gpt-oss-120b",
             "$0.15 input$0.60 output",
         ),
     )
     feed(monkeypatch, text)
-    assert detector.detect(cfg()) == ["openai/gpt-oss-120b"]
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["openai/gpt-oss-120b"]
+    assert caplog.messages == []
+
+
+_GPT_OSS_CELL = "[GPT OSS 120B](/docs/model/openai/gpt-oss-120b)openai/gpt-oss-120b"
+_KIMI_CELL = "[Kimi K3](/docs/model/moonshotai/kimi-k3)moonshotai/kimi-k3"
+
+
+@pytest.mark.parametrize(
+    "price",
+    ["$TBD input $0.60 output", "$0.15/$0.10 input $0.60 output"],
+    ids=["no-input-amount", "two-input-amounts"],
+)
+def test_price_cell_without_one_amount_per_side_fails_loud(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, price: str
+):
+    text = table(row(_GPT_OSS_CELL, price), row(_KIMI_CELL, "$1.00 input$3.00 output"))
+    feed(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["moonshotai/kimi-k3"]
+    assert any(line.startswith("detect skip for groq: unreadable rate") for line in caplog.messages)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "openai/gpt-oss-120b")
+    assert str(exc.value).startswith("unreadable rate ")
 
 
 def test_detect_priced_row_without_link_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):

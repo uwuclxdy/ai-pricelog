@@ -7,8 +7,8 @@ line's label decides its slot, so the cached line's position between input
 and output carries no weight. the Price in Neurons cell is an equivalent
 unit the index has no slot for and is dropped (known gap). ids key by the
 page spelling of the api id. a matched cell with an unknown line, a
-duplicate label, or no input/output pair is a page-shape break
-(FetchError), so a silent misread cannot ship.
+duplicate label, no input/output pair, or an amount the grammar cannot
+read is a page-shape break (FetchError), so a silent misread cannot ship.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
 page has no pricing table for a section, or a matched pricing cell has an

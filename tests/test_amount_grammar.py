@@ -1,4 +1,4 @@
-"""comma-decimal amounts across the scrapers that shared the old `[\\d,]+` grammar.
+"""comma-decimal amounts across every reader of a dollar amount.
 
 "$0,14" once read as 14.0: commas were stripped wherever they sat. a comma
 outside a proper three-digit group now makes the amount unreadable, which
@@ -10,6 +10,7 @@ a real thousands group still reads.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -18,20 +19,31 @@ import pytest
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors import cloudflare_page as cloudflare_detector
 from ai_pricelog.detectors import cohere_page as cohere_detector
 from ai_pricelog.detectors import publicai_page as publicai_detector
 from ai_pricelog.detectors import watsonx_page as watsonx_detector
 from ai_pricelog.scrapers import (
+    ai21_page,
     avian_page,
     baseten_page,
+    dashscope_page,
+    deepinfra_page,
+    deepseek_page,
+    fireworks_page,
     google_page,
+    groq_page,
+    minimax_page,
+    mistral_page,
     moonshot_page,
     perplexity_page,
     publicai_page,
     sambanova_page,
     together_page,
     watsonx_page,
+    zai_page,
 )
+from ai_pricelog.scrapers import cloudflare_page as cloudflare_scraper
 from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -390,3 +402,326 @@ def test_cohere_vault_row_with_a_comma_decimal_skips_with_a_warning(monkeypatch,
     assert "embed-4-small" not in ids
     skips = [r.getMessage() for r in caplog.records if r.getMessage().startswith("detect skip for")]
     assert any("cohere" in line and "4,00" in line for line in skips)
+
+
+@pytest.mark.parametrize(
+    "mixed",
+    ["$0.15 (was ＄0.20)", "$0.15 (was 0.20$)"],
+    ids=["fullwidth-dollar", "trailing-dollar"],
+)
+def test_baseten_cell_with_a_second_amount_in_another_spelling_raises(monkeypatch, mixed):
+    case = next(case for case in SCRAPE_CASES if case.key == "baseten")
+    serve(monkeypatch, baseten_page, page_with(case, mixed))
+    with pytest.raises(FetchError) as excinfo:
+        baseten_page.scrape(make_cfg("baseten"), case.model_id)
+    message = str(excinfo.value)
+    assert message.startswith("unreadable rate ")
+    assert case.model_id in message
+
+
+# the readers that used to take an amount's leading digits ("$0,30" read 0.0,
+# "$1,000.00" read 1): each now reads through the shared amount scan. a case
+# edits the first `amount` at or after each occurrence of its `locator` (the
+# deepinfra page repeats every model row in a second, identical table).
+@dataclass(frozen=True)
+class LegacyCase:
+    key: str
+    module: ModuleType
+    markdown: bool
+    fixture: str
+    model_id: str
+    locator: str
+    amount: str
+    axis: str
+
+
+LEGACY_CASES = [
+    LegacyCase(
+        "fireworks",
+        fireworks_page,
+        False,
+        "fireworks_page/pricing.html",
+        "kimi-k3",
+        "Kimi K3</a>",
+        "$0.30",
+        "cache_read_cost_per_token",
+    ),
+    LegacyCase(
+        "minimax",
+        minimax_page,
+        True,
+        "minimax_page/pricing-paygo.md",
+        "MiniMax-M2.7",
+        "| **MiniMax-M2.7** |",
+        "$0.3",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "deepseek",
+        deepseek_page,
+        False,
+        "deepseek_page/pricing.html",
+        "deepseek-v4-pro",
+        "5</td><td>$0.66</t",
+        "$0.66",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "deepinfra",
+        deepinfra_page,
+        False,
+        "deepinfra_page/pricing.html",
+        "llama-4-scout-17b-16e-instruct",
+        ">Llama-4-Scout-17B-16E</a>",
+        "$0.10",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "dashscope",
+        dashscope_page,
+        False,
+        "dashscope_page/model-pricing-intl.html",
+        "qwen3.7-plus",
+        "ce</span> $0.4 <s",
+        "$0.4",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "zai",
+        zai_page,
+        False,
+        "zai_page/pricing.html",
+        "glm-5.3",
+        "GLM-5.3</td>",
+        "$1.4",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "mistral",
+        mistral_page,
+        False,
+        "mistral_page/pricing.html",
+        "zai-glm-5-2",
+        "zai-glm-5-2",
+        "$0.14",
+        "cache_read_cost_per_token",
+    ),
+    LegacyCase(
+        "ai21",
+        ai21_page,
+        False,
+        "ai21_page/pricing.html",
+        "jamba-mini",
+        ">Jamba Mini</h3>",
+        "$0.2",
+        "input_cost_per_token",
+    ),
+    LegacyCase(
+        "groq",
+        groq_page,
+        True,
+        "groq_page/models.md",
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-120b                  |",
+        "$0.15",
+        "input_cost_per_token",
+    ),
+]
+
+
+def legacy_page(case: LegacyCase, replacement: str) -> str:
+    text = (FIXTURES / case.fixture).read_text(encoding="utf-8")
+    locators = [m.start() for m in re.finditer(re.escape(case.locator), text)]
+    assert locators, f"{case.key}: locator absent from {case.fixture}"
+    for locator in reversed(locators):
+        start = text.find(case.amount, locator)
+        assert start != -1, f"{case.key}: no {case.amount} after the locator"
+        text = text[:start] + replacement + text[start + len(case.amount) :]
+    return text
+
+
+def serve_legacy(monkeypatch: pytest.MonkeyPatch, case: LegacyCase, page: str) -> None:
+    if case.markdown:
+        monkeypatch.setattr(case.module, "fetch_text", lambda url, *args, **kwargs: page)
+    else:
+        soup = BeautifulSoup(page, "html.parser")
+        monkeypatch.setattr(case.module, "fetch_soup", lambda url, *args, **kwargs: soup)
+
+
+@pytest.mark.parametrize("case", LEGACY_CASES, ids=lambda case: case.key)
+def test_legacy_reader_rejects_a_comma_decimal_amount(monkeypatch, case):
+    serve_legacy(monkeypatch, case, legacy_page(case, "$0,30"))
+    with pytest.raises(FetchError) as excinfo:
+        case.module.scrape(make_cfg(case.key), case.model_id)
+    message = str(excinfo.value)
+    assert message.startswith("unreadable rate ")
+    assert case.model_id in message
+    assert "0,30" in message
+
+
+@pytest.mark.parametrize("case", LEGACY_CASES, ids=lambda case: case.key)
+def test_legacy_reader_reads_a_thousands_group(monkeypatch, case):
+    serve_legacy(monkeypatch, case, legacy_page(case, "$1,000.00"))
+    pricing = case.module.scrape(make_cfg(case.key), case.model_id)
+    assert pricing is not None
+    assert getattr(pricing, case.axis) == pytest.approx(1000.0 / 1e6)
+
+
+CLOUDFLARE_OTHER_ROW = "m2m100-1.2b</td>\n<td>$0.342 per M input tokens"
+
+
+def cloudflare_detect(monkeypatch, caplog, input_amount: str) -> tuple[list[str], list[str]]:
+    text = (FIXTURES / "cloudflare_page" / "pricing.html").read_text(encoding="utf-8")
+    assert text.count(CLOUDFLARE_OTHER_ROW) == 1
+    page = text.replace(CLOUDFLARE_OTHER_ROW, CLOUDFLARE_OTHER_ROW.replace("$0.342", input_amount))
+    soup = BeautifulSoup(page, "html.parser")
+    monkeypatch.setattr(cloudflare_detector, "fetch_soup", lambda url, *args, **kwargs: soup)
+    caplog.set_level(logging.WARNING)
+    ids = cloudflare_detector.detect(make_cfg("cloudflare"))
+    skips = [r.getMessage() for r in caplog.records if r.getMessage().startswith("detect skip for")]
+    return ids, skips
+
+
+def test_cloudflare_other_table_comma_decimal_row_skips_with_a_warning(monkeypatch, caplog):
+    # the non-LLM table used to drop a row it could not read without a word,
+    # so the id left detection and its absence counter ran
+    ids, skips = cloudflare_detect(monkeypatch, caplog, "$0,30")
+    assert "@cf/meta/m2m100-1.2b" not in ids
+    assert ids
+    assert any("cloudflare" in line and "0,30" in line for line in skips)
+
+
+def test_cloudflare_other_table_thousands_group_still_detects(monkeypatch, caplog):
+    ids, skips = cloudflare_detect(monkeypatch, caplog, "$1,000.00")
+    assert "@cf/meta/m2m100-1.2b" in ids
+    assert skips == []
+
+
+# a comma-decimal whose decimal part has three digits ("$0,030") is shaped
+# like a thousands group; a group never opens with a zero, so it reads none
+@pytest.mark.parametrize("case", LEGACY_CASES, ids=lambda case: case.key)
+def test_legacy_reader_rejects_a_three_digit_comma_decimal(monkeypatch, case):
+    serve_legacy(monkeypatch, case, legacy_page(case, "$0,030"))
+    with pytest.raises(FetchError) as excinfo:
+        case.module.scrape(make_cfg(case.key), case.model_id)
+    message = str(excinfo.value)
+    assert message.startswith("unreadable rate ")
+    assert "0,030" in message
+
+
+THREE_DIGIT_COMMA_DECIMALS = {
+    "together": "$0,140",
+    "google": "$0,300",
+    "baseten": "$0,150",
+    "avian": "$0,050",
+    "perplexity": ">0,250<",
+    "sambanova": ">0,600 USD",
+    "watsonx": "USD 0,064",
+    "publicai": "$0,200",
+}
+
+
+@pytest.mark.parametrize("case", SCRAPE_CASES, ids=lambda case: case.key)
+def test_scrape_rejects_a_three_digit_comma_decimal(monkeypatch, case):
+    amount = THREE_DIGIT_COMMA_DECIMALS[case.key]
+    serve(monkeypatch, case.module, page_with(case, amount))
+    with pytest.raises(FetchError) as excinfo:
+        case.module.scrape(make_cfg(case.key), case.model_id)
+    assert amount.strip("$<> USD") in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("key", "amount", "mixed"),
+    [
+        ("minimax", "$0.3", "~~$0,60~~ $0.30"),
+        ("zai", "$1.4", "<del>$0,15</del> $0.075"),
+    ],
+    ids=["minimax-strikethrough", "zai-promo"],
+)
+def test_last_amount_reader_rejects_a_malformed_amount_beside_a_readable_one(
+    monkeypatch, key, amount, mixed
+):
+    # a struck original that the grammar refuses still fails the cell, even
+    # though the reader takes the last readable amount
+    case = next(case for case in LEGACY_CASES if case.key == key)
+    assert case.amount == amount
+    serve_legacy(monkeypatch, case, legacy_page(case, mixed))
+    with pytest.raises(FetchError) as excinfo:
+        case.module.scrape(make_cfg(case.key), case.model_id)
+    assert str(excinfo.value).startswith("unreadable rate ")
+
+
+def test_deepinfra_output_cell_with_a_second_dollar_spelling_raises(monkeypatch):
+    case = LegacyCase(
+        **{
+            **next(case for case in LEGACY_CASES if case.key == "deepinfra").__dict__,
+            "amount": "$0.30",
+            "axis": "output_cost_per_token",
+        }
+    )
+    serve_legacy(monkeypatch, case, legacy_page(case, "$0.30 (was ＄0.60)"))
+    with pytest.raises(FetchError) as excinfo:
+        deepinfra_page.scrape(make_cfg("deepinfra"), case.model_id)
+    assert str(excinfo.value).startswith("unreadable rate ")
+
+
+AI21_INPUT_LINE = "$0.2 / 1M input tokens"
+
+
+def _ai21_page(replacement: str) -> BeautifulSoup:
+    text = (FIXTURES / "ai21_page" / "pricing.html").read_text(encoding="utf-8")
+    assert text.count(AI21_INPUT_LINE) == 1
+    return BeautifulSoup(text.replace(AI21_INPUT_LINE, replacement), "html.parser")
+
+
+def test_ai21_reads_the_price_line_amounts_past_another_footer_amount(monkeypatch):
+    # an amount earlier in the footer must not shift the rates the price line names
+    soup = _ai21_page("Batch from $0.1 · " + AI21_INPUT_LINE)
+    monkeypatch.setattr(ai21_page, "fetch_soup", lambda url, *args, **kwargs: soup)
+    pricing = ai21_page.scrape(make_cfg("ai21"), "jamba-mini")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.2 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.4 / 1e6)
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["$TBD / 1M input tokens", "$0.1/$0.2 / 1M input tokens"],
+    ids=["no-amount", "two-amounts"],
+)
+def test_ai21_price_line_without_one_amount_raises_unreadable_rate(monkeypatch, line):
+    soup = _ai21_page(line)
+    monkeypatch.setattr(ai21_page, "fetch_soup", lambda url, *args, **kwargs: soup)
+    with pytest.raises(FetchError) as excinfo:
+        ai21_page.scrape(make_cfg("ai21"), "jamba-mini")
+    assert str(excinfo.value).startswith("unreadable rate ")
+
+
+CLOUDFLARE_LLM_INPUT = "llama-3.2-1b-instruct</td>\n<td>$0.027 per M input tokens"
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["Free per M input tokens", "$0.30 / $0.15 per M input tokens"],
+    ids=["no-amount", "two-amounts"],
+)
+def test_cloudflare_llm_line_without_one_amount_fails_loud(monkeypatch, caplog, line):
+    # the rate-line pattern takes any text before "per M"; a line that is not
+    # exactly one amount detect-skips with a warning and fails the scrape
+    text = (FIXTURES / "cloudflare_page" / "pricing.html").read_text(encoding="utf-8")
+    assert text.count(CLOUDFLARE_LLM_INPUT) == 1
+    page = text.replace(
+        CLOUDFLARE_LLM_INPUT,
+        CLOUDFLARE_LLM_INPUT.replace("$0.027 per M input tokens", line),
+    )
+    soup = BeautifulSoup(page, "html.parser")
+    monkeypatch.setattr(cloudflare_detector, "fetch_soup", lambda url, *args, **kwargs: soup)
+    monkeypatch.setattr(cloudflare_scraper, "fetch_soup", lambda url, *args, **kwargs: soup)
+    caplog.set_level(logging.WARNING)
+    ids = cloudflare_detector.detect(make_cfg("cloudflare"))
+    assert "@cf/meta/llama-3.2-1b-instruct" not in ids
+    skips = [r.getMessage() for r in caplog.records if r.getMessage().startswith("detect skip for")]
+    assert any("cloudflare" in skip and "unreadable rate" in skip for skip in skips)
+    with pytest.raises(FetchError) as excinfo:
+        cloudflare_scraper.scrape(make_cfg("cloudflare"), "@cf/meta/llama-3.2-1b-instruct")
+    assert str(excinfo.value).startswith("unreadable rate ")

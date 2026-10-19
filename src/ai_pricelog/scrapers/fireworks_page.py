@@ -6,23 +6,21 @@ output order. the row stores the Standard tier, the default serving path;
 the Priority column is a tier the index has no slot for and is dropped. a
 "—" cell (fast skus have no priority tier) carries no amounts. rows key by
 the normalized page spelling of the sku. a cell with a different amount
-count is a page-shape break (FetchError), so a silent misread cannot ship.
+count, or one carrying an amount the grammar cannot read (a comma-decimal,
+a hyphen range, a second dollar spelling), is a page-shape break
+(FetchError), so a silent misread cannot ship.
 
 None = the model id is not on the page. FetchError = the fetch failed, the
 page has no serverless table, or a matched cell carries an unexpected
-amount count.
+amount.
 """
 
 from __future__ import annotations
 
-import re
-
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.fireworks_page import _normalize_id, _serverless_table
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
-
-_AMOUNT_RE = re.compile(r"\$(\d+(?:\.\d+)?)")
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -30,13 +28,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     for row in table[1:]:
         if not row or _normalize_id(row[0]) != model_id:
             continue
-        amounts = _AMOUNT_RE.findall(row[1])
+        amounts, malformed = amount_scan(row[1], before="$")
+        if malformed:
+            raise unreadable_rate_error(row[1], model_id, cfg.scraper_url)
         if len(amounts) != 3:
             raise FetchError(
                 f"malformed pricing cell for {model_id} on {cfg.scraper_url}: "
                 f"{len(amounts)} amounts, want 3"
             )
-        input_cost, cache_read, output_cost = (float(amount) for amount in amounts)
+        input_cost, cache_read, output_cost = (float(amount.replace(",", "")) for amount in amounts)
         return Pricing(
             input_cost / 1e6,
             output_cost / 1e6,

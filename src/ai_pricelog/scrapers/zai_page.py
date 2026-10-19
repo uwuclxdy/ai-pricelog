@@ -6,8 +6,9 @@ Cached Input -> cache_read_cost_per_token, Output -> output_cost, USD per
 1M -> /1e6. cells without a dollar amount: "Free" and "Limited-time Free"
 are zero rates (free is a price), "-" -> None (skip until priced). a promo
 cell renders the struck-through list price before the charged one
-(`<del>$0.15</del> $0.075`), so the LAST dollar amount is the rate in
-force. the page carries no context window -> the max_tokens fields stay 0.
+(`<del>$0.15</del> $0.075`), so the LAST readable dollar amount is the rate
+in force; a cell whose amount the grammar cannot read raises. the page
+carries no context window -> the max_tokens fields stay 0.
 rows match case-insensitively (detection lowercases; the page keeps
 GLM-4.7-FlashX).
 
@@ -24,8 +25,9 @@ silently.
 
 None = the model id is not on the page or a price cell carries no dollar
 amount and no free marker. FetchError = the fetch failed, the page has no
-per-token tables, the model's table lacks the Cached Input column, or the
-quota notice carries an unparseable clause shape.
+per-token tables, the model's table lacks the Cached Input column, a price
+cell carries an amount the grammar cannot read, or the quota notice
+carries an unparseable clause shape.
 """
 
 from __future__ import annotations
@@ -36,9 +38,14 @@ from functools import cache
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.zai_page import _token_model_tables
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup, fetch_text, fold_heading
-
-_PRICE_PATTERN = re.compile(r"\$(\d+(?:\.\d+)?)")
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    fetch_text,
+    fold_heading,
+    unreadable_rate_error,
+)
 
 # fold-equal column lookups, never raw spellings: the detector admits a
 # recased header, and a raw Cached Input check there false-raises the
@@ -97,11 +104,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             )
         if len(row) < len(header):
             raise FetchError(f"malformed pricing row for {model_id} on {cfg.scraper_url}")
-        input_cost = _dollars(row[folded.index(_FOLDED_INPUT)])
-        output_cost = _dollars(row[folded.index(_FOLDED_OUTPUT)])
+        input_cost = _dollars(row[folded.index(_FOLDED_INPUT)], model_id, cfg.scraper_url)
+        output_cost = _dollars(row[folded.index(_FOLDED_OUTPUT)], model_id, cfg.scraper_url)
         if input_cost is None or output_cost is None:
             return None
-        cache_read = _dollars(row[folded.index(_FOLDED_CACHED_INPUT)])
+        cache_read = _dollars(row[folded.index(_FOLDED_CACHED_INPUT)], model_id, cfg.scraper_url)
         window_rates = _quota_window_rates(cfg, model_id)
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
@@ -209,17 +216,20 @@ def _quota_window_rates(cfg: ProviderCfg, model_id: str) -> tuple[dict[str, obje
     return _quota_entries(text, notice_url).get(model_id.casefold(), ())
 
 
-def _dollars(text: str) -> float | None:
-    """the cell's rate: the last dollar amount, or 0.0 for a free marker.
+def _dollars(text: str, model_id: str, url: str) -> float | None:
+    """the cell's rate: the last readable dollar amount, or 0.0 for a free
+    marker.
 
     a promo cell lists the struck-through price before the charged one, so
-    the last amount wins; a cell with no amount reads as a zero rate when
-    it carries a free marker ("Free", "Limited-time Free"), else as
-    unpriced.
+    the last amount wins; a cell whose amount the grammar cannot read is a
+    page-shape break; a cell with no amount reads as a zero rate when it
+    carries a free marker ("Free", "Limited-time Free"), else as unpriced.
     """
-    matches = _PRICE_PATTERN.findall(text)
-    if matches:
-        return float(matches[-1])
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed:
+        raise unreadable_rate_error(text, model_id, url)
+    if amounts:
+        return float(amounts[-1].replace(",", ""))
     if "free" in text.casefold():
         return 0.0
     return None

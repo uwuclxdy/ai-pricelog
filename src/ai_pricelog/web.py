@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import html
 import re
 import time
+import unicodedata
 import urllib.parse
 
 import httpx
@@ -47,31 +49,59 @@ def fetch_soup(url: str, headers: dict[str, str] | None = None) -> BeautifulSoup
     return BeautifulSoup(fetch_text(url, headers), "html.parser")
 
 
-# the one amount grammar the readers routed through amount_scan use
-# (anthropic, together, google, baseten, avian, perplexity, sambanova,
-# watsonx, publicai, moonshot, cohere): ASCII digits, commas only in proper
-# three-digit groups, an optional decimal part, and nothing numeric glued
-# after it (a digit, or a comma/dot that continues the number). a
-# comma-decimal ("$0,14") reads no amount; a real thousands group
+# the one amount grammar every dollar-amount reader routes through
+# amount_scan, two readers excepted (digitalocean's bare "$X" cell keeps a
+# private fullmatch; novita reads its span-title attribute numbers with a
+# bare float):
+# ASCII digits, commas only in thousands groups that never open with a
+# zero, an optional decimal part, and nothing numeric glued after it (a
+# digit, or a comma/dot that continues the number). a comma-decimal
+# ("$0,14", "$0,342") reads no amount; a real thousands group
 # ("$1,000.14") and a punctuation comma after an amount ("$2.00, prompts")
 # both read. a comma followed by optional whitespace and a digit continues
 # the number only where it could be a decimal comma (see
-# `_spaced_comma_continues`): "$0, 30" reads no amount, while
-# "$0.30, 1M context" reads 0.30.
+# `_spaced_comma_continues`): "$0, 30" reads no amount, while "$0.30, 1M
+# context" reads 0.30.
 # a non-ASCII separator between digits ("$0．30", "$1，000") also continues
-# the number, so its leading digits never read alone.
-_AMOUNT_NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?!(?u:[\d,.]*\d))(?!(?u:[^\x00-\x7f\s]\d))"
+# the number, so its leading digits never read alone, and a digit-hyphen-
+# digit run ("$1-2") is a range, never a number, like the en-dash form.
+_AMOUNT_NUMBER = (
+    r"(?:[1-9]\d{0,2}(?:,\d{3})+|\d+)(?:\.\d+)?(?!(?u:[\d,.]*\d))"
+    r"(?!(?u:[^\x00-\x7f\s]\d))(?!-\d)"
+)
 
 _AMOUNT_FULL_RE = re.compile(_AMOUNT_NUMBER, re.ASCII)
 # `\d` stays Unicode in these two and in the `(?u:)` guards inside
 # `_AMOUNT_NUMBER`: a fullwidth digit is amount-shaped and reads malformed
-_RUN_START_RE = re.compile(r"(?<![\d,.])(?<!\d[^\x00-\x7f\s])[.,]?\d")
+_RUN_START_RE = re.compile(r"(?<![\d,.])(?<!\d[^\x00-\x7f\s])(?<!\d-)[.,]?\d")
 _MALFORMED_AFTER_RE = re.compile(r"\s*[.,]?\d")
 # a run that continues a number through a comma + optional spaces is a
 # spaced comma-decimal ("0, 60 USD"), never a fresh adjacent number, but
 # only where the comma could be a decimal comma ("0.30, 0.60 USD" is a list)
 _SPACED_COMMA_BEFORE_RE = re.compile(r"([\d,.]*\d),\s*$")
 _SPACED_COMMA_AFTER_RE = re.compile(r",\s*(\d[\d,.]*)")
+# every Unicode dash (category Pd) plus the non-Pd dash-likes a page can
+# spell a range with (~, ～, −): a dash-like between two numbers opens a range
+_DASH_LIKE = (
+    "".join(chr(cp) for cp in range(0x110000) if unicodedata.category(chr(cp)) == "Pd") + "~～−"
+)
+_DASH_CLASS = "[" + re.escape(_DASH_LIKE) + "]"
+
+# the after-marker half of the range check: a run start that follows
+# "digit dash-like" ("0.30 - 0.60 USD") is a range bound. the before-marker
+# half carries the reader's own marker, so amount_scan builds it per call
+_RANGE_BEFORE_RE = re.compile(r"\d\s*(?:" + _DASH_CLASS + r"|(?<=\s)to(?=\s))\s*$")
+
+# a "$"-marker reader also refuses the other dollar spellings a cell can
+# carry beside its real "$" amount. html.unescape folds every entity
+# spelling of "$", "＄" or "﹩" into its character first, then the scan
+# flags a "＄" or "﹩" before digits, or a "$"/"＄"/"﹩" after digits with
+# no amount after it ("10$", "10 $", "10 ＄")
+_OTHER_DOLLAR_RE = re.compile(r"[＄﹩]\s*[.,]?\d|\d\s*[$＄﹩](?!\s*[.,]?\d)")
+
+# the entity shape html.unescape decodes; a "$" one sitting before a digit
+# is a second amount the raw-text reader never saw ("&#36;10", "&#36 10")
+_ENTITY_RE = re.compile(r"&(?:#[0-9]+;?|#[xX][0-9a-fA-F]+;?|[^\t\n\f <&#;]{1,32};?)")
 
 
 _DECIMAL_DOT_RE = re.compile(r"\d\.\d")
@@ -86,6 +116,21 @@ def _spaced_comma_continues(before_run: str, after_run: str) -> bool:
         and _DECIMAL_DOT_RE.search(after_run) is None
         and "," not in before_run
     )
+
+
+def _decoded_dollar_before_digit(text: str) -> bool:
+    """an entity that html.unescape folds into "$" and that sits before a
+    digit: the second amount the raw-text reader never saw."""
+    for match in _ENTITY_RE.finditer(text):
+        if html.unescape(match.group(0)) == "$" and _MALFORMED_AFTER_RE.match(text, match.end()):
+            return True
+    return False
+
+
+def _other_dollar_malformed(text: str) -> bool:
+    """a dollar spelling beside a digit that is not the reader's own marker."""
+    unescaped = html.unescape(text)
+    return _OTHER_DOLLAR_RE.search(unescaped) is not None or _decoded_dollar_before_digit(text)
 
 
 def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[str], bool]:
@@ -104,6 +149,16 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
         raise ValueError("amount_scan takes at most one of `before` and `after`")
     if before:
         full = re.compile(re.escape(before) + "(" + _AMOUNT_NUMBER + ")", re.ASCII)
+        # a readable amount, then a dash-like, then optionally the reader's
+        # own marker and a number opens a range ("$0.3 - 0.6", "$0.3-$0.6");
+        # a number that is a percent or a K/M/B/x unit is prose, not a bound
+        range_after = re.compile(
+            r"\s*(?:"
+            + _DASH_CLASS
+            + r"|(?<=\s)to(?=\s))\s*(?:"
+            + re.escape(before)
+            + r")?\s*[.,]?\d(?![\d,.]*\s*(?:%|[KkMmBb]\b|x\b))"
+        )
         readable: list[str] = []
         malformed = False
         for match in re.finditer(re.escape(before), text):
@@ -115,6 +170,8 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
             # after a marker, a comma + optional spaces + a digit continues
             # the number only where it could be a decimal comma: "$0, 30" is
             # a spaced comma-decimal, never 0, while "$0.30, 1M" reads 0.30
+            if range_after.match(text, token.end()):
+                malformed = True
             after_run = _SPACED_COMMA_AFTER_RE.match(text, token.end())
             if after_run is not None and _spaced_comma_continues(
                 token.group(1), after_run.group(1)
@@ -122,6 +179,8 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
                 malformed = True
             else:
                 readable.append(token.group(1))
+        if before == "$" and _other_dollar_malformed(text):
+            malformed = True
         return readable, malformed
     if after:
         readable: list[str] = []
@@ -140,6 +199,8 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
                 # a number that ends short of the marker has no adjacent
                 # amount; the marker contributes nothing
                 continue
+            if _RANGE_BEFORE_RE.search(text[:start]):
+                malformed = True
             before_run = _SPACED_COMMA_BEFORE_RE.search(text[:start])
             if before_run is not None and _spaced_comma_continues(
                 before_run.group(1), token.group(0)

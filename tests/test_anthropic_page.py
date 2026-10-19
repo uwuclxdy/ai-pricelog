@@ -1480,6 +1480,44 @@ def test_rate_cell_with_two_amounts_raises(monkeypatch: pytest.MonkeyPatch, cell
 
 
 @pytest.mark.parametrize(
+    "cell",
+    [
+        "$5 / MTok (was ＄10 / MTok)",
+        "&#36;10 / MTok $5 / MTok",
+        "$5 / MTok (was 10$)",
+        "$1-2 / MTok",
+        "$5 / MTok (was &dollar;10 / MTok)",
+        "$5 / MTok (was 10 $)",
+        "$5 - 10 / MTok",
+        "$5-$10 / MTok",
+    ],
+    ids=[
+        "fullwidth-dollar",
+        "entity-dollar",
+        "trailing-dollar",
+        "hyphen-range",
+        "named-entity-dollar",
+        "spaced-trailing-dollar",
+        "spaced-range",
+        "re-dollared-range",
+    ],
+)
+def test_rate_cell_with_a_second_amount_in_another_spelling_raises(
+    monkeypatch: pytest.MonkeyPatch, cell: str
+):
+    # a second amount written with a fullwidth, entity or trailing dollar
+    # sign, or a hyphen range, names no single rate in force either
+    broken = _TABLE.replace(
+        "| Claude Opus 5 (Fast) | $5 / MTok |", f"| Claude Opus 5 (Fast) | {cell} |"
+    )
+    assert broken != _TABLE
+    feed(monkeypatch, broken)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-opus-5-fast")
+    assert str(exc.value) == f"unreadable rate {cell!r} for claude-opus-5-fast on {PAGE_URL}"
+
+
+@pytest.mark.parametrize(
     "name",
     [
         "—",

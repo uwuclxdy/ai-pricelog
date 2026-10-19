@@ -9,24 +9,22 @@ stored spelling (see ``dedup_keys``: the detector emits raw page slugs, and
 cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. a ``Free`` cell is
 a zero rate (free is a price); non-dollar cells (``$4 /1000 Pages``,
-``$0.003 /Min``, ``—``) have no token pricing -> None. the ``Cached input``
-cell emits as cache-read cost when it carries a bare dollar amount
-(zai-glm-5-2: $0.14); other cached cells leave it None. the page carries no
-context window -> the max_tokens fields 0. mode is chat.
+``$0.003 /Min``, ``—``) have no token pricing -> None, and a cell whose
+amount the grammar cannot read raises. the ``Cached input`` cell emits as
+cache-read cost when it carries a bare dollar amount (zai-glm-5-2: $0.14);
+other cached cells leave it None. the page carries no context window ->
+the max_tokens fields 0. mode is chat.
 """
 
 from __future__ import annotations
 
-import re
-
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.mistral_page import _GENERATION_SEGMENT, SLUG_RE, _compact
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"
-_DOLLAR_CELL = re.compile(r"^\$(\d+(?:\.\d+)?)$")
 
 
 def dedup_keys(model_id: str) -> list[str]:
@@ -48,12 +46,17 @@ def dedup_keys(model_id: str) -> list[str]:
     return keys
 
 
-def _price(cell: str) -> float | None:
-    match = _DOLLAR_CELL.fullmatch(cell)
-    if match is not None:
-        return float(match.group(1)) / 1e6
+def _price(cell: str, model_id: str, url: str) -> float | None:
+    """the cell's per-token rate when it is exactly one bare dollar amount
+    (or `Free`); a cell whose amount the grammar cannot read raises.
+    non-token cells ("$4 /1000 Pages", "—") stay unpriced."""
+    amounts, malformed = amount_scan(cell, before="$")
+    if malformed:
+        raise unreadable_rate_error(cell, model_id, url)
     if cell == "Free":
         return 0.0
+    if len(amounts) == 1 and cell == "$" + amounts[0]:
+        return float(amounts[0].replace(",", "")) / 1e6
     return None
 
 
@@ -86,9 +89,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 match.group(1) != model_id and model_id not in dedup_keys(match.group(1))
             ):
                 continue
-            input_cost = _price(cells[1].get_text(" ", strip=True))
-            cache_read_cost = _price(cells[2].get_text(" ", strip=True))
-            output_cost = _price(cells[3].get_text(" ", strip=True))
+            input_cost = _price(cells[1].get_text(" ", strip=True), model_id, cfg.scraper_url)
+            cache_read_cost = _price(cells[2].get_text(" ", strip=True), model_id, cfg.scraper_url)
+            output_cost = _price(cells[3].get_text(" ", strip=True), model_id, cfg.scraper_url)
             if input_cost is None or output_cost is None:
                 return None
             return Pricing(
