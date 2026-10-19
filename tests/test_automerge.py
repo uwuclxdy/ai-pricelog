@@ -166,6 +166,31 @@ def shard_lines(repo: Path, source: str = "deepseek") -> list[str]:
     return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
 
 
+def test_retry_read_retries_a_transient_failure(monkeypatch, tmp_path):
+    # one transient read failure (the git fetch class) must retry a bounded
+    # number of times before raising, so a single blip does not red the merge
+    monkeypatch.setattr(automerge, "_RETRY_DELAYS", (0, 0))
+    calls = 0
+
+    def flaky_run(self, cmd, cwd):
+        nonlocal calls
+        if " ".join(cmd).startswith("git fetch"):
+            calls += 1
+            if calls == 1:
+                raise pr.PrError(
+                    "fatal: unable to access 'https://github.com': Could not resolve host"
+                )
+            return "fetched\n"
+        raise AssertionError(f"unscripted command: {cmd}")
+
+    monkeypatch.setattr(pr.PrRunner, "run", flaky_run)
+    assert (
+        automerge._retry_read(pr.PrRunner(), tmp_path, ["git", "fetch", "origin", "main"])
+        == "fetched\n"
+    )
+    assert calls == 2
+
+
 def test_merge_lands_union(tmp_path):
     repo, bare = build_repo(tmp_path)
     r1 = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
@@ -292,6 +317,76 @@ def test_merge_lands_a_branchs_newer_announce_channel_over_the_base(tmp_path):
     index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
     channel_file = index["scaleway"][url]["file"]
     assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("new prose")
+
+
+def test_merge_keeps_a_channel_the_base_gained_since_the_branch_was_cut(tmp_path):
+    # a channel the base gained after the branch was cut (a later run added it
+    # to the config) must survive the burst merge, not be pruned as a url the
+    # newest branch's index no longer lists
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/changelog"
+    commit_announce(repo, {"scaleway": {url: "old prose"}}, "2026-09-18")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        announce_texts={"scaleway": {url: "old prose"}},
+        announce_fetched="2026-09-18",
+    )
+    # the base gains a new channel after the branch was cut
+    new_url = "https://example.com/new-channel"
+    commit_announce(
+        repo,
+        {"scaleway": {url: "old prose"}, "together": {new_url: "new channel prose"}},
+        "2026-09-21",
+    )
+    git(repo, "push", "origin", "main")
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert index["together"][new_url]["file"]
+    channel_file = index["together"][new_url]["file"]
+    assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("new channel prose")
+
+
+def test_merge_holds_a_needs_human_channel_at_the_base_copy(tmp_path):
+    # a channel the pass flagged needs-human must not land via a yes-marked
+    # sibling carrying the same fresh snapshot: the merge holds it at the
+    # base copy until a ruling lands
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/changelog"
+    commit_announce(repo, {"perplexity": {url: "old prose"}}, "2026-10-15")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        announce_texts={"perplexity": {url: "new prose"}},
+        announce_fetched="2026-10-16",
+    )
+    make_branch(
+        repo,
+        "pricelog/beta-11111111",
+        [make_row("deepseek", "deepseek-v4-flash", "2026-08-31", 0.05)],
+        announce_texts={"perplexity": {url: "new prose"}},
+        announce_fetched="2026-10-16",
+    )
+
+    automerge.merge_branches(
+        ["pricelog/beta-11111111"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+        held_channels=frozenset({("perplexity", url)}),
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert index["perplexity"][url]["sha256"] == announce._sha256("old prose")
+    channel_file = index["perplexity"][url]["file"]
+    assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("old prose")
 
 
 def test_merge_refreshes_the_committed_readme_stats(tmp_path):

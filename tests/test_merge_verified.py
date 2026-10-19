@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from ai_pricelog import automerge, merge_verified, pr
+from ai_pricelog import announce, automerge, merge_verified, pr
 from conftest import FakeRunner
 
 
@@ -126,7 +126,7 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
 
-    def _fake_merge(branches, repo_root, runner_arg, base, push):
+    def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
         calls.append((branches, base, push))
         return ("f" * 40, [])
 
@@ -186,7 +186,7 @@ def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
 
-    def _fake_merge(branches, repo_root, runner_arg, base, push):
+    def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
         calls.append((branches, base, push))
         return ("f" * 40, [])
 
@@ -227,6 +227,57 @@ def test_main_propagates_a_remote_error_not_as_gone(monkeypatch):
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
     assert merge_verified.main([]) == 1
+
+
+def test_main_retries_a_transient_ls_remote_failure(monkeypatch, capsys):
+    # one transient ls-remote failure must not red a quiet run: the merge
+    # step runs hourly and a network blip on a nothing-to-merge run must stay
+    # green, so the read retries once and the ref then reads as gone
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps([{"number": 279, "headRefName": "pricelog/gone-12345678"}]),
+    )
+    runner.on("pricelog/gone-12345678", output="")
+    monkeypatch.setattr(automerge, "_RETRY_DELAYS", (0, 0))
+    real_run = runner.run
+    calls = 0
+
+    def flaky_run(self, cmd, cwd):
+        nonlocal calls
+        if "ls-remote" in " ".join(cmd):
+            calls += 1
+            if calls == 1:
+                raise pr.PrError(
+                    "fatal: unable to access 'https://github.com': Could not resolve host"
+                )
+        return real_run(cmd, cwd)
+
+    monkeypatch.setattr(pr.PrRunner, "run", flaky_run)
+    assert merge_verified.main([]) == 0
+    assert calls == 2
+    assert "skipping pricelog/gone-12345678" in capsys.readouterr().out
+
+
+def test_held_channels_flags_a_no_pr_channel_that_differs_from_the_base(tmp_path):
+    # a needs-human PR carries the run's fresh snapshot for the channel the
+    # pass flagged; its sha differs from the base, so the channel is held
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    base_index = json.dumps(
+        {"perplexity": {url: {"file": file, "sha256": "a" * 64, "fetched": "2026-10-15"}}}
+    )
+    no_index = json.dumps(
+        {"perplexity": {url: {"file": file, "sha256": "b" * 64, "fetched": "2026-10-16"}}}
+    )
+    runner = FakeRunner()
+    runner.on("HEAD:state/announce/index.json", output=base_index)
+    runner.on("origin/pricelog/no-12345678:state/announce/index.json", output=no_index)
+    candidates = [(552, "pricelog/no-12345678"), (553, "pricelog/yes-87654321")]
+    dispositions = {552: False, 553: True}
+    assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset(
+        {("perplexity", url)}
+    )
 
 
 # the self-healing review queue: a PR the pass never judged (its pass died,
@@ -414,7 +465,7 @@ def test_main_dispatches_publish_after_merge_branches_returns(monkeypatch):
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     events: list[str] = []
 
-    def _fake_merge(branches, repo_root, runner_arg, base, push):
+    def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
         events.append("merge_branches")
         return ("f" * 40, [])
 

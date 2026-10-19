@@ -38,11 +38,14 @@ as a merged PR. the step passes only branches the pass marked
 - the announce tree resolves per channel against the burst base: each url
   lands from the last branch that changed it, so a branch whose run failed a
   channel's fetch (and carries the base's stale entry) never reverts the
-  fresh prose an earlier branch of the burst landed; the newest branch's
-  index owns the url set, so a url that left the config is deleted. a
-  source's absence file lands on that source's branch: each changed copy
-  lands unless HEAD's copy comes from a newer run (the two run stamps are
-  compared on every merge), so a held older-run PR never reverts newer
+  fresh prose an earlier branch of the burst landed; the url set is the
+  newest branch's channels plus a channel only the base holds that no branch
+  carries, so a channel the base gained after the branches were cut survives
+  and a url that left the config is deleted; a channel the merge step holds
+  (its PR was flagged needs-human) stays at the base copy until a ruling
+  lands. a source's absence file lands on that source's branch: each changed
+  copy lands unless HEAD's copy comes from a newer run (the two run stamps
+  are compared on every merge), so a held older-run PR never reverts newer
   absence counters
 
 the push and the ref deletions happen only after every merge commit landed.
@@ -54,6 +57,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -92,6 +96,26 @@ class MergeResult:
     branch: str
     commit: str
     appended: int
+
+
+# the merge step runs hourly, so a single transient git read (a fetch or
+# ls-remote blip) must not red a run that would otherwise change nothing; the
+# retry is bounded and re-raises on the last attempt. the read-only gh reads
+# already retry a 5xx inside pr.PrRunner, so only the git commands use this
+# (one retry layer). tests patch _RETRY_DELAYS to zero to skip the sleeps.
+_RETRY_ATTEMPTS = 3
+_RETRY_DELAYS = (5.0, 15.0)
+
+
+def _retry_read(runner: pr.PrRunner, repo_root: Path, cmd: list[str]) -> str:
+    for attempt in range(_RETRY_ATTEMPTS):
+        try:
+            return runner.run(cmd, cwd=repo_root)
+        except pr.PrError:
+            if attempt == _RETRY_ATTEMPTS - 1:
+                raise
+            time.sleep(_RETRY_DELAYS[attempt])
+    raise AssertionError("unreachable: the last attempt re-raises")
 
 
 def _branch_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
@@ -253,13 +277,16 @@ def _merge_announce(
     base_sha: str,
     base_index: dict[str, dict[str, dict[str, str]]],
     burst: list[tuple[str, dict[str, dict[str, dict[str, str]]]]],
+    held_channels: frozenset[tuple[str, str]] = frozenset(),
 ) -> None:
     """Lay the burst's announce tree over the worktree, resolved per channel.
 
-    The url set comes from the newest branch's index, the newest config the
-    burst observed: a url it no longer carries is deleted. Each url lands from
-    the burst entry with the newest `fetched` date (a same-date tie goes to
-    the newest branch), and from the base itself when no branch entry is
+    The url set is the newest branch's channels plus a channel only the base
+    holds that no branch carries (gained after every branch was cut); a url
+    an earlier branch carried but the newest does not left the config and is
+    deleted even when the base's stale copy still holds it. Each url lands
+    from the burst entry with the newest `fetched` date (a same-date tie goes
+    to the newest branch), and from the base itself when no branch entry is
     newer: a branch whose run failed that channel's fetch carries a stale
     entry (observed 2026-09-11 on PRs 180-184) and so does a branch cut
     before a later landed refresh (observed 2026-09-21 on PR 283), and
@@ -277,9 +304,48 @@ def _merge_announce(
     """
     resolved: dict[str, dict[str, dict[str, str]]] = {}
     named = {ANNOUNCE_INDEX}
-    for source, urls in burst[-1][1].items():
-        for url, newest_entry in urls.items():
-            base_entry = base_index.get(source, {}).get(url)
+    newest = burst[-1][1]
+    for source in [*newest, *[s for s in base_index if s not in newest]]:
+        newest_urls = newest.get(source, {})
+        base_urls = base_index.get(source, {})
+        for url in [*newest_urls, *[u for u in base_urls if u not in newest_urls]]:
+            base_entry = base_urls.get(url)
+            newest_entry = newest_urls.get(url)
+            if (source, url) in held_channels:
+                # a needs-human sibling carries this channel's fresh snapshot;
+                # hold it at the base copy until a ruling lands. a channel the
+                # base lacks is dropped, so an un-ruled new channel never lands
+                if base_entry is not None:
+                    file = base_entry["file"]
+                    try:
+                        text = runner.run(["git", "show", f"{base_sha}:{file}"], cwd=repo_root)
+                    except pr.PrError as exc:
+                        raise AutoMergeError(
+                            f"branch {branch}: announce channel {source!r}/{url!r} file"
+                            f" {file!r} is missing from {base_sha}"
+                        ) from exc
+                    (repo_root / file).write_text(text, encoding="utf-8")
+                    named.add(file)
+                    resolved.setdefault(source, {})[url] = dict(base_entry)
+                continue
+            if newest_entry is None:
+                # a url only the base holds survives only when the base gained
+                # it after every branch was cut; an earlier branch carrying it
+                # means it left the config, and the base's stale copy is pruned
+                if any(index.get(source, {}).get(url) is not None for _rev, index in burst):
+                    continue
+                file = base_entry["file"]
+                try:
+                    text = runner.run(["git", "show", f"{base_sha}:{file}"], cwd=repo_root)
+                except pr.PrError as exc:
+                    raise AutoMergeError(
+                        f"branch {branch}: announce channel {source!r}/{url!r} file"
+                        f" {file!r} is missing from {base_sha}"
+                    ) from exc
+                (repo_root / file).write_text(text, encoding="utf-8")
+                named.add(file)
+                resolved.setdefault(source, {})[url] = dict(base_entry)
+                continue
             winner_rev, winner_entry = base_sha, base_entry
             for rev, index in burst:
                 candidate = index.get(source, {}).get(url)
@@ -298,10 +364,11 @@ def _merge_announce(
                     f"branch {branch}: announce channel {source!r}/{url!r} file {file!r}"
                     f" is missing from {winner_rev}"
                 ) from exc
-            (repo_root / newest_entry["file"]).write_text(text, encoding="utf-8")
-            named.add(newest_entry["file"])
+            resolved_file = newest_entry["file"]
+            (repo_root / resolved_file).write_text(text, encoding="utf-8")
+            named.add(resolved_file)
             resolved.setdefault(source, {})[url] = {
-                "file": newest_entry["file"],
+                "file": resolved_file,
                 "sha256": winner_entry["sha256"],
                 "fetched": winner_entry["fetched"],
             }
@@ -771,6 +838,7 @@ def merge_branches(
     base: str,
     push: bool = True,
     human: bool = False,
+    held_channels: frozenset[tuple[str, str]] = frozenset(),
 ) -> tuple[str, list[MergeResult]]:
     """Union-merge each branch onto HEAD, then push and delete the refs.
 
@@ -791,7 +859,7 @@ def merge_branches(
     # since then is invisible to them (observed 2026-09-22: the merge died
     # `unknown revision` on a concurrent run's ref). the base rides along so
     # _check_checkout reads the true tip
-    runner.run(["git", "fetch", "origin", base, *branches], cwd=repo_root)
+    _retry_read(runner, repo_root, ["git", "fetch", "origin", base, *branches])
     _check_branches(branches, repo_root, runner)
     _check_checkout(repo_root, runner, base)
     # the runner checkout carries no git identity; the merge commits need one
@@ -890,7 +958,7 @@ def merge_branches(
         branch_index = _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
         if branch_index is not None:
             burst.append((f"origin/{branch}", branch_index))
-            _merge_announce(runner, repo_root, branch, base_sha, base_index, burst)
+            _merge_announce(runner, repo_root, branch, base_sha, base_index, burst, held_channels)
         _merge_absence(runner, repo_root, branch)
         add_paths = [
             SHARD_DIR,

@@ -78,7 +78,7 @@ def _present_refs(
     present: list[str] = []
     gone: list[str] = []
     for head in heads:
-        out = runner.run(["git", "ls-remote", "origin", head], cwd=repo_root).strip()
+        out = automerge._retry_read(runner, repo_root, ["git", "ls-remote", "origin", head]).strip()
         (present if out else gone).append(head)
     return present, gone
 
@@ -194,6 +194,50 @@ def _listing(
     return candidates, dispositions, gone
 
 
+def _held_channels(
+    runner: pr.PrRunner,
+    repo_root: Path,
+    candidates: list[tuple[int, str]],
+    dispositions: Mapping[int, bool | None],
+) -> frozenset[tuple[str, str]]:
+    """(source, url) channels the no-marked PRs would change vs the base.
+
+    A needs-human PR carries the run's fresh snapshot for the channel the pass
+    flagged; every branch of that run carries the same fresh snapshot, so a
+    later yes-marked sibling would land it and drop the owed ruling. Holding
+    the channel at the base copy until a ruling lands (the base's copy moves)
+    keeps the ruling owed. A channel the base lacks (a new one the PR would
+    add) is held too, so it stays un-landed. The hold is the whole differing
+    set, so a PR the pass flagged for a row also holds channels it never
+    flagged; that over-hold is conservative (the channel stays at base one
+    more run) and self-heals once the no PR is gone. The derivation is
+    best-effort: a no PR's index that cannot be read holds nothing.
+    """
+    no_heads = [head_ref for number, head_ref in candidates if dispositions.get(number) is False]
+    if not no_heads:
+        return frozenset()
+    try:
+        base_index = automerge._announce_index(runner, repo_root, "HEAD", "base") or {}
+    except automerge.AutoMergeError:
+        base_index = {}
+    held: set[tuple[str, str]] = set()
+    for head_ref in no_heads:
+        try:
+            branch_index = automerge._announce_index(
+                runner, repo_root, f"origin/{head_ref}", f"branch {head_ref}"
+            )
+        except automerge.AutoMergeError:
+            continue
+        if branch_index is None:
+            continue
+        for source, urls in branch_index.items():
+            for url, entry in urls.items():
+                base_entry = base_index.get(source, {}).get(url)
+                if base_entry is None or base_entry["sha256"] != entry["sha256"]:
+                    held.add((source, url))
+    return frozenset(held)
+
+
 def _usage() -> None:
     print(f"usage: {Path(sys.argv[0]).name} [--awaiting-review <limit>]", file=sys.stderr)
 
@@ -252,7 +296,10 @@ def main(argv: list[str] | None = None) -> int:
             print("no PR marked automerge: yes; nothing to merge")
             return 0
         base = pr.default_branch(runner, repo_root)
-        sha, results = automerge.merge_branches(branches, repo_root, runner, base, push=True)
+        held = _held_channels(runner, repo_root, candidates, dispositions)
+        sha, results = automerge.merge_branches(
+            branches, repo_root, runner, base, push=True, held_channels=held
+        )
     except (automerge.AutoMergeError, pr.PrError) as exc:
         # the script's own semantics: every PR stays open, nothing merged
         print(f"error: {exc}", file=sys.stderr)
