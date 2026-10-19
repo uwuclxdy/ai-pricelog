@@ -52,13 +52,12 @@ from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Iterator
 from functools import cache
 
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
 
 log = logging.getLogger(__name__)
 
@@ -205,7 +204,7 @@ def _structural_pin(table: Tag) -> bool:
     """whether the table pins: an own row, a two-row thead, and a second
     header row folding to Input | Output | Cache read."""
     thead = table.find("thead", recursive=False)
-    if thead is None or next(_rows(table), None) is None:
+    if thead is None or next(own_rows(table), None) is None:
         return False
     header_rows = thead.find_all("tr", recursive=False)
     if len(header_rows) != 2:
@@ -290,7 +289,7 @@ def _names_sub_header(table: Tag) -> bool:
     starts."""
     thead = table.find("thead", recursive=False)
     rows: list[Tag] = thead.find_all("tr", recursive=False) if thead is not None else []
-    rows.extend(_rows(table))
+    rows.extend(own_rows(table))
     for row in rows:
         cells = _own_cells(row)
         folded = tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)
@@ -325,22 +324,6 @@ def _is_priority_table(table: Tag, url: str) -> bool:
     raise FetchError(f"unreadable pay-per-token tier span {span!r} on {url}")
 
 
-def _rows(table: Tag) -> Iterator[Tag]:
-    """each own row in document order, for the watched table's readers.
-
-    an own row is a <tr> whose nearest table is this table, thead rows
-    aside; a row an omitted </tr> nests inside another, or one under a
-    wrapper between the group and the row, still counts; a nested table's
-    rows never do.
-    """
-    for row in table.find_all("tr"):
-        if row.find_parent("table") is not table:
-            continue
-        group = row.find_parent(["thead", "tbody", "tfoot", "table"])
-        if group is not None and group.name != "thead":
-            yield row
-
-
 def _guard_standard(table: Tag, url: str) -> None:
     """fail a standard-tier table carrying no readable priced standard-only row.
 
@@ -356,7 +339,7 @@ def _guard_standard(table: Tag, url: str) -> None:
     swapped and the priority tier grown, the real standard table reads as
     priority and prices the "-priority" ids at standard rates.
     """
-    for row in _rows(table):
+    for row in own_rows(table):
         cells = _own_cells(row)
         if len(cells) != 4 or _try_rate(cells[1]) is None:
             continue
@@ -504,7 +487,7 @@ def detect(cfg: ProviderCfg) -> list[str]:
     ids: list[str] = []
     seen: set[str] = set()
     for table, priority in _model_tables(soup, cfg.detector_url):
-        for row in _rows(table):
+        for row in own_rows(table):
             cells = _own_cells(row)
             if len(cells) != 4 or (
                 _try_rate(cells[1]) is None and cells[1].get_text(" ", strip=True) != _DASH

@@ -371,3 +371,98 @@ def test_build_row_converts_eur_quote_to_usd(live_page):
     assert row["rates"]["input"] == pytest.approx(1.80 * 1.1643)
     assert row["rates"]["output"] == pytest.approx(5.50 * 1.1643)
     assert row["provenance"]["url"] == PAGE_URL
+
+
+def _with_last_row_moved(shape: str) -> str:
+    """the fixture with its last model row moved out of the first tbody."""
+    html = FIXTURE.read_text()
+    table_start = html.find("<table")
+    anchor = html.find("bge-multilingual-gemma2", table_start)
+    assert table_start != -1 and anchor != -1
+    start = html.rfind("<tr", table_start, anchor)
+    end = html.find("</tbody>", start)
+    assert start > table_start and end > start
+    row_html = html[start:end]
+    moved = {
+        "second-tbody": "</tbody><tbody>" + row_html + "</tbody>",
+        "row-after-tbody": "</tbody>" + row_html,
+        "tfoot": "</tbody><tfoot>" + row_html + "</tfoot>",
+    }[shape]
+    return html[:start] + moved + html[end + len("</tbody>") :]
+
+
+@pytest.mark.parametrize("shape", ["second-tbody", "row-after-tbody", "tfoot"])
+def test_detect_and_scrape_read_rows_outside_the_first_tbody(
+    monkeypatch: pytest.MonkeyPatch, shape: str
+):
+    # a table may split its body over several tbodies, or carry rows directly
+    # under <table> or in a <tfoot>; every one of its own rows is read
+    html = _with_last_row_moved(shape)
+    assert html != FIXTURE.read_text()
+    serve(monkeypatch, html)
+    assert detector.detect(make_cfg()) == EXPECTED_IDS
+    pricing = scraper.scrape(make_cfg(), "bge-multilingual-gemma2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.10 / 1e6)
+    assert pricing.output_cost_per_token == 0.0
+
+
+_GLM_5_2 = row("glm-5.2", "€1.80 / million tokens", "€5.50 / million tokens")
+_GLM_5_3 = row("glm-5.3", "€1.80 / million tokens", "€5.50 / million tokens")
+
+
+def test_live_page_detects_without_a_skip(live_page, caplog):
+    # the page's own header row is never read as a body row
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == EXPECTED_IDS
+    assert caplog.records == []
+
+
+def test_thead_row_is_never_read(monkeypatch: pytest.MonkeyPatch):
+    serve(monkeypatch, table(_GLM_5_2).replace("</thead>", _GLM_5_3 + "</thead>"))
+    assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert scraper.scrape(make_cfg(), "glm-5.3") is None
+
+
+def test_nested_table_row_is_never_read(monkeypatch: pytest.MonkeyPatch):
+    nested = f"<tr><td colspan='5'><table><tbody>{_GLM_5_3}</tbody></table></td></tr>"
+    serve(monkeypatch, table(_GLM_5_2, nested))
+    assert detector.detect(make_cfg()) == ["glm-5.2"]
+    assert scraper.scrape(make_cfg(), "glm-5.3") is None
+
+
+def test_rows_directly_under_a_table_without_tbody_read(monkeypatch: pytest.MonkeyPatch):
+    serve(
+        monkeypatch,
+        '<table><caption class="sr-only">Generative API</caption>'
+        f"<thead>{_TABLE_HEADER}</thead>{_GLM_5_2}</table>",
+    )
+    assert detector.detect(make_cfg()) == ["glm-5.2"]
+
+
+def test_table_with_no_own_body_row_raises_in_scrape(monkeypatch: pytest.MonkeyPatch):
+    serve(monkeypatch, table())
+    with pytest.raises(FetchError, match="pricing table outside the row shape"):
+        scraper.scrape(make_cfg(), "glm-5.2")
+
+
+def test_pricing_table_nested_in_a_layout_table_still_reads(monkeypatch: pytest.MonkeyPatch):
+    # a layout table around the pricing table changes nothing: the captioned
+    # table's own rows read as before
+    serve(monkeypatch, f"<table><tr><td>{table(_GLM_5_2)}</td></tr></table>")
+    assert detector.detect(make_cfg()) == ["glm-5.2"]
+    pricing = scraper.scrape(make_cfg(), "glm-5.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1.80 / 1e6)
+
+
+def test_caption_wrapped_in_an_element_still_names_its_table(monkeypatch: pytest.MonkeyPatch):
+    # a caption under a wrapper element inside the table is still that
+    # table's own caption (a browser keeps it on the table)
+    wrapped = table(_GLM_5_2).replace(
+        '<caption class="sr-only">Generative API</caption>',
+        '<div><caption class="sr-only">Generative API</caption></div>',
+    )
+    assert "<div><caption" in wrapped
+    serve(monkeypatch, wrapped)
+    assert detector.detect(make_cfg()) == ["glm-5.2"]

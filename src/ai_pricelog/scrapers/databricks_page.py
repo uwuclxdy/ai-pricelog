@@ -36,11 +36,10 @@ from ai_pricelog.detectors.databricks_page import (
     _page,
     _rate,
     _row_cells,
-    _rows,
     parse_id,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError
+from ai_pricelog.web import FetchError, own_rows
 
 # the page's display names dropped the deepseek snapshot dates in the
 # 2026-09-05 restructure, while the store still tracks the dated spellings
@@ -62,7 +61,7 @@ def dedup_keys(model_id: str) -> tuple[str, ...]:
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = _page(cfg.scraper_url)
     for table, priority in _model_tables(soup, cfg.scraper_url):
-        for row in _rows(table):
+        for row in own_rows(table):
             try:
                 cells = _row_cells(row, cfg.scraper_url)
                 if model_id not in parse_id(cells[0], cfg.scraper_url, priority=priority):

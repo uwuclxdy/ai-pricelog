@@ -17,7 +17,8 @@ None = the model id is not on the page, or its row carries no per-token
 rate. zero rates scrape as 0.0 (free is a price), so a fully free row
 lands a 0.0 price row; the detector still emits the id, so a stored model
 whose row turns free stays mapped. FetchError = the fetch failed, the page
-has no generative-api table, or the matched row's cells are outside the
+has no generative-api table or one outside the row and header shape (no
+own body row, drifted headers), or the matched row's cells are outside the
 known shapes.
 """
 
@@ -33,7 +34,7 @@ from ai_pricelog.detectors.scaleway_page import (
     parse_id,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError
+from ai_pricelog.web import FetchError, own_rows
 
 # dated slug spellings map to the base id the store holds (the xai
 # convention): openrouter carries deepseek/deepseek-v4-flash as a base id,
@@ -59,7 +60,7 @@ def dedup_keys(model_id: str) -> tuple[str, ...]:
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = _page(cfg.scraper_url)
     table = _model_table(soup, cfg.scraper_url)
-    for row in table.find("tbody").find_all("tr", recursive=False):
+    for row in own_rows(table):
         try:
             cells = _row_cells(row, cfg.scraper_url)
             if parse_id(cells[0], cells[4], cfg.scraper_url) != model_id:

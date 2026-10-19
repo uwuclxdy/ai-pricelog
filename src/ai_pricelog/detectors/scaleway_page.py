@@ -29,7 +29,7 @@ from functools import cache
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
 
 log = logging.getLogger(__name__)
 
@@ -54,12 +54,13 @@ def _page(url: str) -> BeautifulSoup:
 
 def _model_table(soup: BeautifulSoup, url: str) -> Tag:
     for table in soup.find_all("table"):
-        if table.find_parent("table") is not None:
-            continue
-        caption = table.find("caption")
+        caption = next(
+            (cap for cap in table.find_all("caption") if cap.find_parent("table") is table),
+            None,
+        )
         if caption is not None and caption.get_text(strip=True) == _TABLE_CAPTION:
             header = table.find("thead")
-            if header is None or table.find("tbody") is None:
+            if header is None or next(own_rows(table), None) is None:
                 raise FetchError(f"pricing table outside the row shape on {url}")
             header_cells = header.find_all("th")
             if len(header_cells) != 5 or not all(
@@ -126,12 +127,12 @@ def _output_amount(cell: Tag, url: str) -> float:
 
 
 def detect(cfg: ProviderCfg) -> list[str]:
-    """per-token-priced model slugs, page order; unpriced rows are skipped."""
+    """per-token-priced model slugs, document order; unpriced rows are skipped."""
     soup = _page(cfg.detector_url)
     table = _model_table(soup, cfg.detector_url)
     ids: list[str] = []
     seen: set[str] = set()
-    for row in table.find("tbody").find_all("tr", recursive=False):
+    for row in own_rows(table):
         try:
             cells = _row_cells(row, cfg.detector_url)
             if _input_amounts(cells[2], cfg.detector_url) is None:
