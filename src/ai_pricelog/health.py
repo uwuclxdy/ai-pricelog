@@ -115,15 +115,17 @@ def hold_reason(lines: Iterable[str]) -> str | None:
 
     A held run (the pending hold or the empty-store seed skip) is not provider
     evidence, so its `::warning::` names the reason instead of the issue list.
+    The reason is the full log message: the pending hold's cause rides it, and
+    the seed skip's message is exactly `HOLD_SEED_PR`.
     """
     for line in lines:
         message = _message(line)
         if message is None:
             continue
         if message.startswith(HOLD_PENDING_SCAN):
-            return HOLD_PENDING_SCAN
+            return message
         if message.startswith(HOLD_SEED_PR):
-            return HOLD_SEED_PR
+            return message
     return None
 
 
@@ -173,7 +175,8 @@ def _gh(args: list[str]) -> str:
 
 
 def previous_run(repo: str, current_run_id: str) -> tuple[str, Iterable[str]] | None:
-    """the previous completed autopr run as (id, log lines), or None."""
+    """the previous completed autopr run whose log is provider evidence
+    (a held run is skipped), as (id, log lines), or None."""
     raw = _gh(["api", f"repos/{repo}/actions/workflows/autopr.yml/runs?per_page=10"])
     try:
         runs = json.loads(raw)["workflow_runs"]
@@ -187,7 +190,10 @@ def previous_run(repo: str, current_run_id: str) -> tuple[str, Iterable[str]] | 
             stdout=subprocess.PIPE,
             text=True,
         )
-        return str(run["id"]), (line for line in proc.stdout if line)
+        lines = [line for line in proc.stdout if line]
+        if hold_reason(lines) is not None:
+            continue
+        return str(run["id"]), lines
     return None
 
 

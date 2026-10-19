@@ -170,7 +170,9 @@ def test_hold_reason_detects_the_pending_hold():
         "WARNING:ai_pricelog.pipeline:pending scan failed; opening no pr this run:"
         " pending branch fetch failed: fetch failed"
     ]
-    assert health.hold_reason(lines) == health.HOLD_PENDING_SCAN
+    assert health.hold_reason(lines) == (
+        "pending scan failed; opening no pr this run: pending branch fetch failed: fetch failed"
+    )
 
 
 def test_hold_reason_detects_the_seed_skip():
@@ -183,6 +185,40 @@ def test_hold_reason_detects_the_seed_skip():
 
 def test_hold_reason_none_when_providers_ran():
     assert health.hold_reason(["INFO:ai_pricelog.pipeline:opened pr for deepseek: url"]) is None
+
+
+def test_previous_run_skips_a_held_run(monkeypatch):
+    # a held run (pending scan failed) is not provider evidence: the ping gate
+    # must pick the run before it, not the held one, so hard-held-hard pings
+    monkeypatch.setattr(
+        health,
+        "_gh",
+        lambda args: json.dumps(
+            {
+                "workflow_runs": [
+                    {"id": 1, "status": "completed"},
+                    {"id": 2, "status": "completed"},
+                    {"id": 3, "status": "completed"},
+                ]
+            }
+        ),
+    )
+    logs = {
+        "2": [f"WARNING:ai_pricelog.pipeline:{health.HOLD_PENDING_SCAN}: fetch failed"],
+        "3": ["ERROR:ai_pricelog.pipeline:detector for deepseek failed"],
+    }
+
+    class _FakeProc:
+        def __init__(self, lines):
+            self.stdout = iter(lines)
+
+    monkeypatch.setattr(
+        health.subprocess,
+        "Popen",
+        lambda cmd, **kwargs: _FakeProc(logs[cmd[3]]),
+    )
+    previous = health.previous_run("uwuclxdy/ai-pricelog", "1")
+    assert previous is not None and previous[0] == "3"
 
 
 def test_main_seed_hold_warns_and_closes_no_provider_issue(monkeypatch, tmp_path, capsys):
@@ -428,3 +464,54 @@ def test_main_escapes_an_opened_issue_title_in_its_warning(monkeypatch, tmp_path
     assert capsys.readouterr().out == (
         "::warning::hard failures: x%250Ay\n::warning::opened issue provider broken: x%250Ay\n"
     )
+
+
+def test_main_hard_held_hard_opens_issue_on_third_run(monkeypatch, tmp_path):
+    # the verify clause: hard, held, hard on one provider opens its issue on the
+    # third run — previous_run must skip the held middle run, or the gate reads
+    # the held run as the "previous" and never opens the issue
+    log_path = tmp_path / "run.log"
+    log_path.write_text(
+        "ERROR:ai_pricelog.pipeline:detector for deepseek failed\n", encoding="utf-8"
+    )
+    calls: list[list[str]] = []
+
+    def gh(args: list[str]) -> str:
+        calls.append(args)
+        if args[0] == "api":
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {"id": 1, "status": "completed"},
+                        {"id": 2, "status": "completed"},
+                        {"id": 3, "status": "completed"},
+                    ]
+                }
+            )
+        if args[:2] == ["issue", "list"]:
+            return "[]"
+        return ""
+
+    logs = {
+        "2": [
+            f"WARNING:ai_pricelog.pipeline:{health.HOLD_PENDING_SCAN}: pending branch fetch failed"
+        ],
+        "3": ["ERROR:ai_pricelog.pipeline:detector for deepseek failed"],
+    }
+
+    class _FakeProc:
+        def __init__(self, lines):
+            self.stdout = iter(lines)
+
+    monkeypatch.setattr(health, "_gh", gh)
+    monkeypatch.setattr(
+        health.subprocess,
+        "Popen",
+        lambda cmd, **kwargs: _FakeProc(logs[cmd[3]]),
+    )
+    monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
+    monkeypatch.setenv("GITHUB_RUN_ID", "1")
+    assert health.main([str(log_path)]) == 0
+    created = [c for c in calls if c[:2] == ["issue", "create"]]
+    assert len(created) == 1
+    assert created[0][3] == "provider broken: deepseek"
