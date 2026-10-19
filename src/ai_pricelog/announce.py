@@ -270,14 +270,15 @@ def differs(
 
 
 def fetch_channels(
-    cfg: Config, snapshot: dict[str, dict[str, dict[str, str]]], today: str
+    cfg: Config, snapshot: dict[str, dict[str, dict[str, str]]], now: str
 ) -> FetchResult:
     """Fetch every configured channel; a prose hash differing from the snapshot is a change.
 
     A failed fetch keeps the snapshot entry, so the stale entry re-diffs next
     run. Entries for urls no longer configured drop on the next save. A channel
-    keeps its stored ``fetched`` while its hash is unchanged and takes today's
-    date only when its hash moves, so one real change never re-dates every row.
+    keeps its stored ``fetched`` while its hash is unchanged and takes the
+    run's UTC fetch instant only when its hash moves, so one real change never
+    re-dates every row.
     """
     changes: list[ChannelChange] = []
     errors: list[str] = []
@@ -295,7 +296,7 @@ def fetch_channels(
                 continue
             sha = _sha256(prose)
             old = snapshot.get(pcfg.key, {}).get(url)
-            fetched = old["fetched"] if old is not None and old.get("sha256") == sha else today
+            fetched = old["fetched"] if old is not None and old.get("sha256") == sha else now
             new_entry = {"file": files[url], "text": prose, "sha256": sha, "fetched": fetched}
             fresh.setdefault(pcfg.key, {})[url] = new_entry
             if old is not None and old.get("sha256") != sha:

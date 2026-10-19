@@ -32,7 +32,7 @@ import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -122,6 +122,7 @@ def run(
     runner = runner or pr.PrRunner()
     today = today or date.today().isoformat()
     stamp = now or datetime.now().strftime("%H%M%S")
+    fetched_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     rows = store.load_shards(repo_root / HISTORY_DIR)
     keys = validate.load_schema_keys(repo_root)
@@ -151,7 +152,7 @@ def run(
     held_keys = pending.held_keys
 
     snapshot = announce.load_snapshot(repo_root)
-    fetch = announce.fetch_channels(cfg, snapshot, today)
+    fetch = announce.fetch_channels(cfg, snapshot, fetched_at)
     report.announce = list(fetch.changes)
     report.announce_errors = list(fetch.errors)
     for change in fetch.changes:

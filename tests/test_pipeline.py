@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -2115,6 +2116,31 @@ def test_announce_fetch_error_does_not_block_rows(tmp_path, fake_modules, repo_r
     assert len(runner.pr_urls) == 1
     (_title, body, _head) = runner.created[0]
     assert "## announcement channels" not in body
+
+
+def test_run_stamps_announce_fetched_with_a_utc_instant(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the announce snapshot stamps `fetched` with the run's UTC fetch instant
+    # (YYYY-MM-DDTHH:MM:SSZ, one clock read per run), so two same-day changes
+    # order by time instead of tieing. the date-only observed_at stays separate.
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg("deepseek")
+    captured: dict[str, str] = {}
+
+    def capture_fetch(cfg, snapshot, now):
+        captured["now"] = now
+        return announce.FetchResult((), {}, ())
+
+    monkeypatch.setattr(pipeline.announce, "fetch_channels", capture_fetch)
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    stamp = datetime.strptime(captured["now"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    assert 0 <= (datetime.now(UTC) - stamp).total_seconds() < 5
 
 
 def test_landed_rows_hint_mapping_candidates(tmp_path, fake_modules, repo_root):

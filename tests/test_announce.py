@@ -327,12 +327,12 @@ def test_differs_true_on_changed_hash():
 def test_first_fetch_is_baseline_not_a_change(fake_fetch):
     fake_fetch["https://x/updates"] = "<html><body>one</body></html>"
     cfg = make_cfg(make_provider_cfg("deepseek", ("https://x/updates",)))
-    result = announce.fetch_channels(cfg, {}, "2026-08-26")
+    result = announce.fetch_channels(cfg, {}, "2026-08-26T14:22:10Z")
     assert result.changes == ()
     assert result.errors == ()
     entry = result.snapshot["deepseek"]["https://x/updates"]
     assert entry["text"] == "one"
-    assert entry["fetched"] == "2026-08-26"
+    assert entry["fetched"] == "2026-08-26T14:22:10Z"
     assert entry["sha256"] == announce._sha256("one")
     assert entry["file"] == "state/announce/deepseek/updates.md"
 
@@ -431,8 +431,8 @@ def test_fetch_replaces_fetched_when_hash_changes(fake_fetch):
         }
     }
     cfg = make_cfg(make_provider_cfg("deepseek", ("https://x/updates",)))
-    result = announce.fetch_channels(cfg, snapshot, "2026-09-03")
-    assert result.snapshot["deepseek"]["https://x/updates"]["fetched"] == "2026-09-03"
+    result = announce.fetch_channels(cfg, snapshot, "2026-09-03T14:22:10Z")
+    assert result.snapshot["deepseek"]["https://x/updates"]["fetched"] == "2026-09-03T14:22:10Z"
 
 
 def test_committed_index_round_trips_over_the_real_tree():
