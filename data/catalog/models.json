@@ -6570,6 +6570,15 @@
       },
       "vendor": "minimax"
     },
+    "openrouter/minimax/minimax-m3.1-flash:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/minimax-m3.1-flash:free"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "openrouter/minimax/minimax-m3:batch": {
       "curated": false,
       "sources": {
