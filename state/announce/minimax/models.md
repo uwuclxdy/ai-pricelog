@@ -1,10 +1,10 @@
 Models - MiniMax API Docs Documentation Index Fetch the complete documentation index at: /docs/llms.txt Use this file to discover all available pages before exploring further.
-Skip to main content 🎉 MiniMax H3 is now available!
-A new-generation open general-purpose multimodal video model.
+Skip to main content 🎉 The new-generation MiniMax M3.1 Flash is now available!
 ➔ View docs .
 MiniMax API Docs home page Search...
 ⌘ K Documentation Pricing Console Search...
-Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Jul.
+Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Oct.
+19, 2026 Jul.
 31, 2026 Jul.
 16, 2026 Jun.
 1, 2026 Apr.
@@ -27,7 +27,9 @@ Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Pr
 15, 2025 Feb.
 11, 2025 Jan.
 15, 2025 Models Copy page Copy page Stay updated on MiniMax’s latest model releases across language, audio, video, image, and music.
-Copy page Copy page ​ Jul.
+Copy page Copy page ​ Oct.
+19, 2026 MiniMax M3.1 Flash An ultra-efficient open-weight model for everyday work.
+Learn More ​ Jul.
 31, 2026 MiniMax H3 A new-generation open general-purpose multimodal video model.
 It understands creative intent across multimodal context — text, image, video, and audio — and delivers more natural, coherent generation and expression.
 Learn More ​ Jul.
