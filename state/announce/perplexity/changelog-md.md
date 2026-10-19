@@ -2,7 +2,14 @@
 # Changelog > Updates to the Perplexity API platform.
 <Tip> Looking ahead?
 Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
-</Tip> <Update label="October 2026" tags={["Agent API", "Models"]}> **Older models removed from the model docs; GPT-6 Astra and DeepSeek V4 Pro added** The following models are no longer listed in the Agent API model docs, pricing calculator, or examples: * **Anthropic:** `anthropic/claude-opus-4-8`, `anthropic/claude-opus-4-7`, `anthropic/claude-opus-4-6`, `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-6`, `anthropic/claude-sonnet-4-5`, and `anthropic/claude-haiku-4-5` * **Google:** `google/gemini-3-flash-preview`, `google/gemini-3.1-pro-preview`, `google/gemini-3.1-flash-lite`,
+</Tip> <Update label="October 2026" tags={["Agent API", "Tools", "MCP", "Connectors"]}> **Tool approvals for MCP and connector calls** Set `require_approval` on an `mcp` or `connector` tool to review calls before they run.
+A call that needs approval returns an `mcp_approval_request` item and does not run.
+To approve or deny it, send an `mcp_approval_response` with `previous_response_id`.
+Use `"always"` to review every call, or a filter object to skip approval for selected tools or for read-only tools.
+Calls still run without approval by default.
+The Python SDK 0.43.8 and TypeScript SDK 0.38.8 include the approval types.
+See [MCP approvals](/docs/agent-api/tools/mcp#approvals) and [Connectors](/docs/agent-api/tools/connectors).
+</Update> <Update label="October 2026" tags={["Agent API", "Models"]}> **Older models removed from the model docs; GPT-6 Astra and DeepSeek V4 Pro added** The following models are no longer listed in the Agent API model docs, pricing calculator, or examples: * **Anthropic:** `anthropic/claude-opus-4-8`, `anthropic/claude-opus-4-7`, `anthropic/claude-opus-4-6`, `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-6`, `anthropic/claude-sonnet-4-5`, and `anthropic/claude-haiku-4-5` * **Google:** `google/gemini-3-flash-preview`, `google/gemini-3.1-pro-preview`, `google/gemini-3.1-flash-lite`,
 `google/gemini-3.5-flash`, and `google/gemini-3.5-flash-lite` * **xAI:** `xai/grok-4.3`, `xai/grok-4.20-reasoning`, `xai/grok-4.20-non-reasoning`, and `xai/grok-4.20-multi-agent` For new integrations, use `anthropic/claude-opus-5-5`, `anthropic/claude-sonnet-5-5`, `anthropic/claude-haiku-5-5`, `google/gemini-4-argon`, `google/gemini-3.8-flash`, or `xai/grok-4.7`.
 The model docs now also list `openai/gpt-6-astra` (\$10.00 per million input tokens and \$50.00 per million output tokens up to 272k input tokens, with `flex` and `priority` tiers) and `perplexity/deepseek-v4-pro-0813` (\$1.32 per million input tokens, \$0.044 per million cached input tokens, and \$3.96 per million output tokens), which is also available through the Orchestrator API.
 See the [Agent API Models reference](/docs/agent-api/models).
@@ -13,6 +20,10 @@ See the [Agent API Models reference](/docs/agent-api/models).
 It has a 1,048,576-token context window, returns up to 131,072 output tokens, and accepts text input only.
 It replaces `perplexity/nemotron-3-ultra-550b-a55b`, which is no longer listed in the Agent API or Orchestrator API model docs.
 See the [Agent API Models reference](/docs/agent-api/models).
+</Update> <Update label="October 2026" tags={["Agent API", "Presets"]}> **xhigh preset output budget raised to 512,000 tokens** The Agent API `xhigh` preset now allows up to 512,000 output tokens, up from 128,000.
+If you use a [frozen configuration](/docs/agent-api/presets#current-preset-values), update `max_output_tokens` to keep matching the preset.
+Correction: `xhigh` has used Fast Search since the October update that moved `low`, `medium`, and `high` to Fast Search.
+That entry now lists `xhigh` too.
 </Update> <Update label="October 2026" tags={["Agent API", "Models"]}> **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
 Requests with more than 100k input tokens use higher rates.
 See the [Agent API Models reference](/docs/agent-api/models).
@@ -47,9 +58,8 @@ Per-model tokens appear in `usage.tool_calls_details.sandbox.token_usage`.
 The reported extraction cost appears in `usage.tool_calls_details.sandbox.cost_usd` and `usage.cost.tool_calls_cost_details.sandbox`, and contributes to `usage.cost.total_cost`.
 Sandbox extraction uses the existing [`openai/gpt-6-luna` pricing](/docs/agent-api/models), including cache creation, cache read, and reasoning-token dimensions.
 This corrects response-level usage and cost reporting; it does not change pricing or backfill historical responses.
-</Update> <Update label="October 2026" tags={["Agent API", "Presets"]}> **Low, medium, and high presets use Fast Search** The Agent API `low`, `medium`, and `high` presets now use Fast Search (`search_type: "fast"`) for `web_search`, matching the `fast` preset.
+</Update> <Update label="October 2026" tags={["Agent API", "Presets"]}> **Low, medium, high, and xhigh presets use Fast Search** The Agent API `low`, `medium`, `high`, and `xhigh` presets now use Fast Search (`search_type: "fast"`) for `web_search`, matching the `fast` preset.
 `web_search` calls made under these presets drop from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
-The `xhigh` preset is unchanged and continues to use standard web search.
 Models, prompts, tool budgets, and step limits are unchanged.
 To keep standard web search under any preset, set `search_type: "web"` on the `web_search` tool.
 See [Agent API Web Search](/docs/agent-api/tools/web-search#search-type).
