@@ -34,6 +34,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable
+from datetime import datetime
 from pathlib import Path
 
 ISSUE_PREFIX = "provider broken: "
@@ -172,6 +173,68 @@ def providers_to_ping(
 
 def _gh(args: list[str]) -> str:
     return subprocess.run(["gh", *args], capture_output=True, text=True).stdout
+
+
+def _created(run: dict) -> datetime | None:
+    """the run's created_at as UTC, or None when it is missing or unparseable."""
+    created = run.get("created_at")
+    if not created:
+        return None
+    try:
+        return datetime.fromisoformat(created)
+    except ValueError:
+        return None
+
+
+def weekly_smoke(repo: str) -> str | None:
+    """the newest monday dispatch whose smoke job ran, green or a warning.
+
+    every autopr run is a workflow_dispatch (the workflow is dispatch-only).
+    the hourly timer and the cron fallback dispatch with `scheduled=true`, so
+    their smoke job is skipped; the weekly monday 05:17 fire (and any other
+    manual-shaped dispatch) runs it. so the newest completed monday run whose
+    smoke job is not skipped is the fire; a fire that wrongly gained
+    `scheduled=true` reads as "no monday run whose smoke ran" and warns.
+    """
+    raw = _gh(["api", f"repos/{repo}/actions/workflows/autopr.yml/runs?per_page=100"])
+    try:
+        runs = json.loads(raw)["workflow_runs"]
+    except (json.JSONDecodeError, KeyError):
+        return None
+    monday: list[tuple[datetime, dict]] = []
+    for run in runs:
+        created = _created(run)
+        if created is not None and created.isoweekday() == 1:
+            monday.append((created, run))
+    if not monday:
+        return None
+    monday.sort(key=lambda pair: pair[0], reverse=True)
+    if monday[0][1].get("status") != "completed":
+        # the newest monday dispatch is still running (its smoke job runs in
+        # parallel); judge it on a later run, never red on its own run
+        return None
+    for _, run in monday:
+        if run.get("status") != "completed":
+            continue
+        run_id = run.get("id")
+        if run_id is None:
+            continue
+        jobs_raw = _gh(["api", f"repos/{repo}/actions/runs/{run_id}/jobs"])
+        try:
+            jobs = json.loads(jobs_raw)["jobs"]
+        except (json.JSONDecodeError, KeyError):
+            return None
+        smoke = next((job for job in jobs if job.get("name") == "smoke"), None)
+        if smoke is None:
+            return f"weekly moonshot smoke probe did not run: run {run_id} has no smoke job"
+        if smoke.get("conclusion") == "skipped":
+            continue
+        if smoke.get("conclusion") == "success":
+            return None
+        return (
+            f"weekly moonshot smoke probe failed: run {run_id} concluded {smoke.get('conclusion')}"
+        )
+    return "weekly moonshot smoke probe skipped: no monday dispatch ran its smoke job"
 
 
 def previous_run(repo: str, current_run_id: str) -> tuple[str, Iterable[str]] | None:
@@ -416,4 +479,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             for title in created:
                 print(f"::warning::opened issue {escape_command_data(title)}")
+        smoke_warning = weekly_smoke(repo)
+        if smoke_warning is not None:
+            print(f"::warning::{escape_command_data(smoke_warning)}")
     return 0

@@ -515,3 +515,67 @@ def test_main_hard_held_hard_opens_issue_on_third_run(monkeypatch, tmp_path):
     created = [c for c in calls if c[:2] == ["issue", "create"]]
     assert len(created) == 1
     assert created[0][3] == "provider broken: deepseek"
+
+
+def test_weekly_smoke_green_when_the_monday_probe_ran(monkeypatch):
+    # the weekly (monday 05:17) fire ran its smoke job: green, no warning
+    def gh(args):
+        url = args[1] if len(args) > 1 else ""
+        if "workflows/autopr.yml/runs" in url:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {"id": 5, "status": "completed", "created_at": "2026-09-07T05:17:00Z"}
+                    ]
+                }
+            )
+        if "/jobs" in url:
+            return json.dumps({"jobs": [{"name": "smoke", "conclusion": "success"}]})
+        return "[]"
+
+    monkeypatch.setattr(health, "_gh", gh)
+    assert health.weekly_smoke("uwuclxdy/ai-pricelog") is None
+
+
+def test_weekly_smoke_red_when_the_monday_probe_was_skipped(monkeypatch):
+    # a wrongly-flagged weekly fire (gaining scheduled=true) skips the smoke
+    # job; the observer must red, never read the skip as green
+    def gh(args):
+        url = args[1] if len(args) > 1 else ""
+        if "workflows/autopr.yml/runs" in url:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {"id": 5, "status": "completed", "created_at": "2026-09-07T05:17:00Z"}
+                    ]
+                }
+            )
+        if "/jobs" in url:
+            return json.dumps({"jobs": [{"name": "smoke", "conclusion": "skipped"}]})
+        return "[]"
+
+    monkeypatch.setattr(health, "_gh", gh)
+    assert health.weekly_smoke("uwuclxdy/ai-pricelog") is not None
+
+
+def test_weekly_smoke_skips_an_in_progress_monday_fire(monkeypatch):
+    # the fire's own run is still in progress when its health step runs (smoke
+    # runs in parallel); the observer must not red on it — only a completed
+    # fire is judged, and an in-progress newest monday dispatch defers
+    def gh(args):
+        url = args[1] if len(args) > 1 else ""
+        if "workflows/autopr.yml/runs" in url:
+            return json.dumps(
+                {
+                    "workflow_runs": [
+                        {"id": 5, "status": "in_progress", "created_at": "2026-09-07T05:17:00Z"},
+                        {"id": 4, "status": "completed", "created_at": "2026-09-07T05:00:00Z"},
+                    ]
+                }
+            )
+        if "/jobs" in url:
+            return json.dumps({"jobs": [{"name": "smoke", "conclusion": "skipped"}]})
+        return "[]"
+
+    monkeypatch.setattr(health, "_gh", gh)
+    assert health.weekly_smoke("uwuclxdy/ai-pricelog") is None
