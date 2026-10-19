@@ -12,8 +12,8 @@
     },
     "https://api-docs.deepseek.com/guides/search": {
       "file": "state/announce/deepseek/search.md",
-      "sha256": "d94972e491bc3c873043df31a291cb43a80292dad35becf8fed13f67e7baa63f",
-      "fetched": "2026-10-18"
+      "sha256": "83b54072d3256476e3f93d5b44ffd39bb657f0cef413f853c2e7522b4a60d128",
+      "fetched": "2026-10-19"
     }
   },
   "zai": {
@@ -110,8 +110,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "d2b0b4ac2241a483b62fc5aef0332e0f1fec7ca4cc092e2986c504bb5eb16187",
-      "fetched": "2026-10-18"
+      "sha256": "20e261f8bed43d95701ee4cb83d8ba93bdf39088a94276fab14acd4b76602488",
+      "fetched": "2026-10-19"
     }
   },
   "cohere": {
