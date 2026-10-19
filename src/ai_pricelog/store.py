@@ -500,6 +500,8 @@ def build_row(
         rates["image"] = to_mtok(pricing.image_cost_per_token * factor)
     if pricing.image_output_cost_per_token is not None:
         rates["image_output"] = to_mtok(pricing.image_output_cost_per_token * factor)
+    if pricing.audio_cost_per_token is not None:
+        rates["audio"] = to_mtok(pricing.audio_cost_per_token * factor)
 
     limits: dict[str, object] = {}
     if pricing.max_tokens_in > 0:

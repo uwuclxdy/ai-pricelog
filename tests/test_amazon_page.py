@@ -519,3 +519,127 @@ def test_scrape_product_without_on_demand_terms_raises(monkeypatch: pytest.Monke
     feed(monkeypatch, index=mutated_index(drop_terms))
     with pytest.raises(FetchError, match="no on-demand terms"):
         scraper.scrape(cfg(), "amazon.nova-lite-v1:0")
+
+
+OMNI_ID = "amazon.nova-2-omni-v1:0"
+PRO_ID = "amazon.nova-2-pro-v1:0"
+
+# per-1K USD from the live 2026-10-16 publication; the row stores each x1000
+# per-1M. omni has an image output axis, pro does not; video input drops on
+# both (equal to text input). no cache axis on either.
+OMNI_1K = {
+    "input": 0.0003,
+    "output": 0.0028,
+    "image": 0.0003,
+    "audio": 0.0011,
+    "image_output": 0.044,
+}
+PRO_1K = {
+    "input": 0.001375,
+    "output": 0.011,
+    "image": 0.001375,
+    "audio": 0.001375,
+}
+
+
+def _inject_nova_2_multimodal(data: dict) -> None:
+    """the 2026-09-11 fixture predates Nova 2.0 Omni/Pro: inject their
+    on-demand rows in the fixture's own product/term shape. each carries the
+    new axis spellings plus the video-input row that must drop."""
+    base_sku = _sku(data, "Nova Lite", "Input tokens")
+    rows = [
+        # name, inferenceType, per-1K usd
+        ("Nova 2.0 Omni", "Text Input Token", "0.0003"),
+        ("Nova 2.0 Omni", "Text output token", "0.0028"),
+        ("Nova 2.0 Omni", "Input Image Token Count", "0.0003"),
+        ("Nova 2.0 Omni", "Input Audio Token Count", "0.0011"),
+        ("Nova 2.0 Omni", "Input Video Token Count", "0.0003"),
+        ("Nova 2.0 Omni", "Output Image Token Count", "0.044"),
+        ("Nova 2.0 Pro", "Text Input Token", "0.001375"),
+        ("Nova 2.0 Pro", "Text output token", "0.011"),
+        ("Nova 2.0 Pro", "Input Image Token Count", "0.001375"),
+        ("Nova 2.0 Pro", "Input Audio Token Count", "0.001375"),
+        ("Nova 2.0 Pro", "Input Video Token Count", "0.001375"),
+    ]
+    for i, (name, inference_type, rate) in enumerate(rows):
+        clone_sku = base_sku + "MM" + str(i)
+        clone = json.loads(json.dumps(data["products"][base_sku]))
+        clone["sku"] = clone_sku
+        clone["attributes"]["model"] = name
+        clone["attributes"]["inferenceType"] = inference_type
+        data["products"][clone_sku] = clone
+        terms = json.loads(json.dumps(data["terms"]["OnDemand"][base_sku]))
+        for offer in terms.values():
+            offer["effectiveDate"] = "2026-10-01T00:00:00Z"
+            for dimension in offer["priceDimensions"].values():
+                dimension["pricePerUnit"]["USD"] = rate
+        data["terms"]["OnDemand"][clone_sku] = terms
+
+
+def _inject_sonic(data: dict) -> None:
+    """the three sonic speech models carry Text Input/Output token on-demand
+    rows; once those spellings join the axis map they reach the join and must
+    skip silently, never warn on every run."""
+    base_sku = _sku(data, "Nova Lite", "Input tokens")
+    for i, name in enumerate(("Nova Sonic", "Nova Sonic 2.0", "Nova 2.5 Sonic")):
+        for j, inference_type in enumerate(("Text Input Token", "Text output token")):
+            clone_sku = base_sku + "SNC" + str(i) + str(j)
+            clone = json.loads(json.dumps(data["products"][base_sku]))
+            clone["sku"] = clone_sku
+            clone["attributes"]["model"] = name
+            clone["attributes"]["inferenceType"] = inference_type
+            data["products"][clone_sku] = clone
+            data["terms"]["OnDemand"][clone_sku] = json.loads(
+                json.dumps(data["terms"]["OnDemand"][base_sku])
+            )
+
+
+def test_detect_nova_2_omni_pro_ids(monkeypatch: pytest.MonkeyPatch):
+    feed(monkeypatch, index=mutated_index(_inject_nova_2_multimodal))
+    ids = detector.detect(cfg())
+    assert set(ids) == set(EXPECTED_IDS) | {OMNI_ID, PRO_ID}
+
+
+def test_scrape_nova_2_omni_round_trips_all_axes(monkeypatch: pytest.MonkeyPatch):
+    # every mapped per-1K rate x1000 lands on the omni row, the video axis
+    # dropped, no cache axis
+    feed(monkeypatch, index=mutated_index(_inject_nova_2_multimodal))
+    pricing = scraper.scrape(cfg(), OMNI_ID)
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(OMNI_1K["input"] / 1000)
+    assert pricing.output_cost_per_token == pytest.approx(OMNI_1K["output"] / 1000)
+    assert pricing.image_cost_per_token == pytest.approx(OMNI_1K["image"] / 1000)
+    assert pricing.audio_cost_per_token == pytest.approx(OMNI_1K["audio"] / 1000)
+    assert pricing.image_output_cost_per_token == pytest.approx(OMNI_1K["image_output"] / 1000)
+    assert pricing.cache_read_cost_per_token is None
+    assert pricing.effective_at == "2026-10-01"
+    row = build_row("amazon", OMNI_ID, pricing, "2026-10-18", cfg().scraper_url, VERSION)
+    validate_row(row, load_schema_keys(ROOT))
+    assert row["rates"] == {axis: round(rate * 1000, 6) for axis, rate in OMNI_1K.items()}
+    assert "cache_read" not in row["rates"]
+
+
+def test_scrape_nova_2_pro_axes(monkeypatch: pytest.MonkeyPatch):
+    # pro carries image + audio but no image output axis
+    feed(monkeypatch, index=mutated_index(_inject_nova_2_multimodal))
+    pricing = scraper.scrape(cfg(), PRO_ID)
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(PRO_1K["input"] / 1000)
+    assert pricing.output_cost_per_token == pytest.approx(PRO_1K["output"] / 1000)
+    assert pricing.image_cost_per_token == pytest.approx(PRO_1K["image"] / 1000)
+    assert pricing.audio_cost_per_token == pytest.approx(PRO_1K["audio"] / 1000)
+    assert pricing.image_output_cost_per_token is None
+    assert pricing.cache_read_cost_per_token is None
+    row = build_row("amazon", PRO_ID, pricing, "2026-10-18", cfg().scraper_url, VERSION)
+    validate_row(row, load_schema_keys(ROOT))
+    assert row["rates"] == {axis: round(rate * 1000, 6) for axis, rate in PRO_1K.items()}
+
+
+def test_detect_sonic_names_skip_silently(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    feed(monkeypatch, index=mutated_index(_inject_sonic))
+    with caplog.at_level(logging.WARNING):
+        ids = detector.detect(cfg())
+    assert set(ids) == set(EXPECTED_IDS)
+    assert "Sonic" not in caplog.text

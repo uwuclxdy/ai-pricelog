@@ -14,10 +14,10 @@ id; the carded names join through NAME_TO_ID to the `amazon.nova-*` ids the
 aws docs model cards carry. every other product skips, by mechanism: a
 nova-family chat name with no card and no known tier-variant spelling is
 additive drift and skips with a warning (plan #22); a name in
-CARDLESS_TIER_VARIANTS (a serving tier of a carded model, never its own
-index entry) skips silently, the digitalocean by-name exclusion shape; a
-nova name whose products carry only non-chat inferenceTypes (canvas, reel,
-sonic, MME, the 2.0 omni/pro audio-image rows) never passes the axis filter;
+UNWATCHED_NOVA_NAMES (nova names with no model card that are deliberately
+unwatched: a serving tier, or a speech-only model) skips silently, the
+digitalocean by-name exclusion shape; a nova name whose products carry only
+non-mapped inferenceTypes (canvas, reel, MME) never passes the axis filter;
 a third-party chat model (the file serves dozens: claude, llama, mistral) is
 another provider's coverage and skips silently; a product with no model
 attribute at all (titan keys on titanModel) skips at the name check. a page
@@ -56,20 +56,31 @@ NAME_TO_ID = {
     "Nova Pro": "amazon.nova-pro-v1:0",
     "Nova Premier": "amazon.nova-premier-v1:0",
     "Nova 2.0 Lite": "amazon.nova-2-lite-v1:0",
+    "Nova 2.0 Omni": "amazon.nova-2-omni-v1:0",
+    "Nova 2.0 Pro": "amazon.nova-2-pro-v1:0",
 }
 
 ID_TO_NAME = {model_id: name for name, model_id in NAME_TO_ID.items()}
 
-# nova chat-axis names that are serving tiers of a carded model and carry no
-# model card of their own: tier variants never join (the scraper docstring's
-# rule), and a permanent warning for one would mask a genuinely new name
-CARDLESS_TIER_VARIANTS = frozenset({"Nova Pro Latency Optimized"})
+# nova names with no model card that are deliberately unwatched: a serving
+# tier of a carded model (latency optimized) and the speech-only sonic
+# models. they never join (the scraper docstring's rule), and a permanent
+# warning for one would mask a genuinely new name
+UNWATCHED_NOVA_NAMES = frozenset(
+    {"Nova Pro Latency Optimized", "Nova Sonic", "Nova Sonic 2.0", "Nova 2.5 Sonic"}
+)
 
-# the chat price axes: on-demand inferenceType -> axis
+# the price axes: on-demand inferenceType spellings -> axis. video input is
+# deliberately in no set (it drops — equal to text input), and the
+# flex/priority/batch tier variants drop by exact match (e.g. "Text Input
+# Tokens Priority" and "Input Image Token Count Flex" are not in the sets).
 AXIS_INFERENCE_TYPES = {
-    "input": "Input tokens",
-    "output": "Output tokens",
-    "cache_read": "Prompt cache read input tokens",
+    "input": frozenset({"Input tokens", "Text Input Token"}),
+    "output": frozenset({"Output tokens", "Text output token"}),
+    "cache_read": frozenset({"Prompt cache read input tokens"}),
+    "image": frozenset({"Input Image Token Count"}),
+    "audio": frozenset({"Input Audio Token Count"}),
+    "image_output": frozenset({"Output Image Token Count"}),
 }
 
 
@@ -123,8 +134,10 @@ def parse_index(products: dict, url: str) -> list[dict]:
         if not isinstance(attributes, dict):
             raise FetchError(f"product without an attributes object on {url}")
         inference_type = attributes.get("inferenceType")
-        if attributes.get("feature") != ON_DEMAND_FEATURE or inference_type not in (
-            AXIS_INFERENCE_TYPES.values()
+        if (
+            attributes.get("feature") != ON_DEMAND_FEATURE
+            or not isinstance(inference_type, str)
+            or not any(inference_type in spellings for spellings in AXIS_INFERENCE_TYPES.values())
         ):
             continue
         name = attributes.get("model")
@@ -151,10 +164,10 @@ def detect(cfg: ProviderCfg) -> list[str]:
         model_id = NAME_TO_ID.get(name)
         if model_id is None:
             # only the nova family is this provider's watch scope: a nova
-            # name with no card is drift to report, a known tier variant and
-            # a third-party bedrock model (the file serves dozens) skip
-            # silently
-            if name.startswith("Nova") and name not in CARDLESS_TIER_VARIANTS:
+            # name with no card is drift to report, a known cardless name (a
+            # serving tier or a speech-only model) and a third-party bedrock
+            # model (the file serves dozens) skip silently
+            if name.startswith("Nova") and name not in UNWATCHED_NOVA_NAMES:
                 unjoined.add(name)
             continue
         if model_id not in seen:

@@ -2,11 +2,12 @@
 
 same payload as detection: the region index pins the watched region's
 currentVersionUrl, and the versioned per-region file carries the products and
-their on-demand terms. the chat axes join by exact (model display name,
-feature "On-demand Inference", inferenceType): input/output/prompt-cache-read
-token rows are the price axes; the tier variants (priority, flex) and the
-batch/customization/provisioned-throughput features never join, so they cannot
-smuggle a wrong rate into a standard row.
+their on-demand terms. the axes join by exact (model display name, feature
+"On-demand Inference", inferenceType): input/output/prompt-cache-read, plus
+the multimodal image/audio/image_output rate axes; the video-input spelling
+is in no axis set, so it drops (equal to text input). the tier variants
+(priority, flex) and the batch/customization/provisioned-throughput features
+never join, so they cannot smuggle a wrong rate into a standard row.
 
 every rate is quoted USD per 1K tokens: the per-1K value /1000 is the
 per-token cost build_row converts to the per-1M rate axes. a non-"1K tokens"
@@ -103,7 +104,14 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         if attributes.get("feature") != ON_DEMAND_FEATURE:
             continue
         inference_type = attributes.get("inferenceType")
-        axis = next((a for a, t in AXIS_INFERENCE_TYPES.items() if t == inference_type), None)
+        axis = next(
+            (
+                a
+                for a, spellings in AXIS_INFERENCE_TYPES.items()
+                if isinstance(inference_type, str) and inference_type in spellings
+            ),
+            None,
+        )
         if axis is None:
             continue
         if axis in axis_skus:
@@ -128,6 +136,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         mode="chat",
         cache_read_cost_per_token=(
             rates["cache_read"] / _TOKENS_PER_K if "cache_read" in rates else None
+        ),
+        image_cost_per_token=rates["image"] / _TOKENS_PER_K if "image" in rates else None,
+        audio_cost_per_token=rates["audio"] / _TOKENS_PER_K if "audio" in rates else None,
+        image_output_cost_per_token=(
+            rates["image_output"] / _TOKENS_PER_K if "image_output" in rates else None
         ),
         url=url,
         effective_at=effective,
