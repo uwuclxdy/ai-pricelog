@@ -58,7 +58,7 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
       "fetched": "2026-10-19"
     }
   },
@@ -129,22 +129,22 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "d3df5226a857e9507bd64b68fdcfc70c276f097de570b82c5efb32ce39fe3001",
-      "fetched": "2026-10-16"
+      "sha256": "06baffa12c3d1dfdafc224ea744ab92bbd435c7719029e7f451ebaf8ef3cdecd",
+      "fetched": "2026-10-19"
     }
   },
   "cloudflare": {
     "https://developers.cloudflare.com/workers-ai/changelog/": {
       "file": "state/announce/cloudflare/changelog.md",
-      "sha256": "ea07cb9d50e4d3aee96cbfca243b06a8b43e9cb4845d4d096e788bc84e3d246f",
-      "fetched": "2026-09-25"
+      "sha256": "45adac7aa9e1f4cbb1c030843e34a6de4096f213e0350e8af6a570c9a6ef4d8e",
+      "fetched": "2026-10-19"
     }
   },
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "ed95009c7a45a5e0434471a892cd03d5f1e82a9d86887fee89424b7144c3ce21",
-      "fetched": "2026-10-15"
+      "sha256": "b66e9f47ec637a766508241c1e4ce27d0d6e5b3f5d5c621ea7c18459a32c92ee",
+      "fetched": "2026-10-19"
     }
   },
   "scaleway": {
