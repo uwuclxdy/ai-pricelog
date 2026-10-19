@@ -113,6 +113,25 @@ def test_detect_skips_unusable_model_cells(monkeypatch):
     assert detector.detect(cfg()) == ["minimax-m3"]
 
 
+def test_detect_excludes_promo_card(monkeypatch):
+    # a promo card carries a model-looking name in a non-pricing_model-link
+    # anchor; its slug must not mint a fake id beside the real models
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table class='pricing_table'><thead><th>Model</th><th>Input</th>"
+            "<th>output</th></thead>"
+            "<tr><td><a href='/models/minimax-m3' class='pricing_model-link'>MiniMax M3</a></td>"
+            "<td>$1</td><td>$1</td></tr>"
+            "<tr><td><a href='/promo/flash' class='pricing_promo-link'>Flash Sale</a></td>"
+            "<td>$0.10</td><td>$0.10</td></tr></table>",
+            "html.parser",
+        ),
+    )
+    assert detector.detect(cfg()) == ["minimax-m3"]
+
+
 def test_detect_no_ids_raises(monkeypatch):
     # a per-token table whose model cells all fail the id pattern is a parse
     # failure, not a silent empty detection

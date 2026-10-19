@@ -10,7 +10,9 @@ table in document order wins, so each model id appears once. ids are the
 Model column cells slugged: lowercase, whitespace runs -> "-", other
 punctuation kept as written ("DeepSeek V4 Pro 0813" -> "deepseek-v4-pro-0813";
 page names already carry dots and dashes, which the stored id charset
-allows). cells whose slug does not fit that charset are skipped. every other
+allows). cells whose slug does not fit that charset are skipped, and a
+promo-card cell (its model-looking text sits in a non-pricing_model-link
+anchor) is skipped rather than minting a fake id. every other
 table (image, audio, embeddings, moderation, fine-tuning, hardware) has
 different headers and is out of scope; the batch-api-price toggle holds no
 rates in the static html, so standard rates are the only ones read. a page
@@ -59,8 +61,18 @@ def _table_rows(table: Tag) -> list[list[Tag]]:
 
 
 def _model_name(cell: Tag) -> str:
+    """the model id source text, or "" for promo content.
+
+    a pricing_model-link anchor supplies the name when present; a linkless
+    cell falls back to its plain text; a cell whose only anchor is not
+    pricing_model-link is promo content and yields "" so its slug is skipped.
+    """
     link = cell.find("a", class_="pricing_model-link")
-    return link.get_text(" ", strip=True) if link else cell.get_text(" ", strip=True)
+    if link is not None:
+        return link.get_text(" ", strip=True)
+    if cell.find("a") is not None:
+        return ""
+    return cell.get_text(" ", strip=True)
 
 
 def _normalize_id(name: str) -> str:
