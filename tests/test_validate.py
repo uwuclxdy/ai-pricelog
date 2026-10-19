@@ -297,6 +297,10 @@ def test_fees_reject_unknown_fee():
         check(row(fees={"bogus": 0.1}))
 
 
+def test_fees_accept_search_and_fetch():
+    check(row(fees={"search": 0.00075, "fetch": 0.00075}))
+
+
 @pytest.mark.parametrize("bad", [[], {}])
 def test_unmapped_must_be_a_non_empty_dict(bad):
     with pytest.raises(ValidationError, match="unmapped"):

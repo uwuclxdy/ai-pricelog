@@ -44,6 +44,27 @@ def synthetic_soup(*rows: tuple[str, ...]) -> BeautifulSoup:
     return BeautifulSoup(f"{header}{body}</table>", "html.parser")
 
 
+WEB_SEARCH_URL = "https://docs.perplexity.ai/docs/agent-api/tools/web-search"
+WEB_SEARCH_FIXTURE = Path(__file__).parent / "fixtures" / "perplexity_page" / "web_search.html"
+
+
+def load_web_search_soup() -> BeautifulSoup:
+    return BeautifulSoup(WEB_SEARCH_FIXTURE.read_text(), "html.parser")
+
+
+def soup_for(url: str) -> BeautifulSoup:
+    return load_web_search_soup() if url == WEB_SEARCH_URL else load_soup()
+
+
+def patch_models_soup(monkeypatch, soup: BeautifulSoup) -> None:
+    """serve `soup` for the models page, the web-search fixture for the fee page."""
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: soup if url == PAGE_URL else load_web_search_soup(),
+    )
+
+
 def test_detect_emits_sonar_only(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: load_soup())
     ids = detector.detect(cfg())
@@ -159,7 +180,7 @@ def test_fetch_error_propagates(monkeypatch):
 def test_scrape_sonar(monkeypatch):
     # the page row spells the id `perplexity/sonar`; the store keys on
     # `sonar`, and the three rates differ, so a swapped column cannot pass
-    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    monkeypatch.setattr(scraper, "fetch_soup", soup_for)
     pricing = scraper.scrape(cfg(), "sonar")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.25 / 1e6)
@@ -218,10 +239,9 @@ def test_scrape_no_pricing_table_raises(monkeypatch):
 
 
 def test_scrape_thousands_separator(monkeypatch):
-    monkeypatch.setattr(
-        scraper,
-        "fetch_soup",
-        lambda url: synthetic_soup(("perplexity/sonar", "$1,000", "$2,000.5", "$0.50", "—", "—")),
+    patch_models_soup(
+        monkeypatch,
+        synthetic_soup(("perplexity/sonar", "$1,000", "$2,000.5", "$0.50", "—", "—")),
     )
     pricing = scraper.scrape(cfg(), "sonar")
     assert pricing is not None
@@ -233,10 +253,9 @@ def test_scrape_header_wording_drift_still_scrapes(monkeypatch):
     # scrape indexes the same folded headers detection pins, so a
     # fold-equal but differently-spelled header row still scrapes instead
     # of crashing on the raw-spelling index
-    monkeypatch.setattr(
-        scraper,
-        "fetch_soup",
-        lambda url: BeautifulSoup(
+    patch_models_soup(
+        monkeypatch,
+        BeautifulSoup(
             "<table><tr><th>Model</th><th>input ($/1m)</th><th>output ($/1m)</th>"
             "<th>cache read ($/1m)</th><th>Service tiers</th><th>Docs</th></tr>"
             "<tr><td>perplexity/sonar</td><td>0.25</td><td>2.50</td><td>0.0625</td>"
@@ -270,3 +289,93 @@ def test_scrape_malformed_cell_quotes_the_raw_cell_bytes():
     with pytest.raises(FetchError) as excinfo:
         scraper._amount("  0,25  ", "sonar", PAGE_URL)
     assert str(excinfo.value) == ("unreadable rate '  0,25  ' for sonar on " + PAGE_URL)
+
+
+def test_scrape_carries_web_search_fee(monkeypatch):
+    # the Agent API prices a standard web_search invocation at $2.50 per
+    # 1,000 (the $1.00 fast tier gets no key); the scraper reads the
+    # standard rate into the per-request fees dict
+    web_search = (
+        '<span data-as="p">Fast calls cost $1.00 per 1,000 invocations'
+        " instead of $2.50, plus model tokens.</span>"
+    )
+    web_search_url = "https://docs.perplexity.ai/docs/agent-api/tools/web-search"
+
+    def soup_for(url):
+        return BeautifulSoup(web_search, "html.parser") if url == web_search_url else load_soup()
+
+    monkeypatch.setattr(scraper, "fetch_soup", soup_for)
+    pricing = scraper.scrape(cfg(), "sonar")
+    assert pricing is not None
+    assert pricing.fees == {"web_search": 0.0025}
+
+
+def test_web_search_fee_parse_the_live_fixture():
+    assert scraper._web_search_fee(load_web_search_soup(), WEB_SEARCH_URL) == 0.0025
+
+
+def test_web_search_fee_reads_standard_not_fast_rate():
+    # a different standard rate proves the parser keys on "instead of",
+    # never the $1.00 fast tier named before it
+    soup = BeautifulSoup(
+        '<span data-as="p">Fast calls cost $1.00 per 1,000 invocations'
+        " instead of $2.75, plus model tokens.</span>",
+        "html.parser",
+    )
+    assert scraper._web_search_fee(soup, WEB_SEARCH_URL) == 0.00275
+
+
+def test_scrape_web_search_fee_missing_raises(monkeypatch):
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: (
+            BeautifulSoup("<p>no fee sentence</p>", "html.parser")
+            if url == WEB_SEARCH_URL
+            else load_soup()
+        ),
+    )
+    with pytest.raises(FetchError, match="web_search"):
+        scraper.scrape(cfg(), "sonar")
+
+
+def test_scrape_web_search_fetch_failure_raises(monkeypatch):
+    def boom(url):
+        if url == WEB_SEARCH_URL:
+            raise FetchError(f"fetch failed for {url}")
+        return load_soup()
+
+    monkeypatch.setattr(scraper, "fetch_soup", boom)
+    with pytest.raises(FetchError, match=WEB_SEARCH_URL):
+        scraper.scrape(cfg(), "sonar")
+
+
+def test_web_search_fee_follows_the_stated_unit():
+    # a rescaled per-10,000 unit must still read per-request: the divisor
+    # follows the sentence's "per N invocations", never a hardcoded 1,000
+    soup = BeautifulSoup(
+        '<span data-as="p">Fast calls cost $10.00 per 10,000 invocations'
+        " instead of $25.00, plus model tokens.</span>",
+        "html.parser",
+    )
+    assert scraper._web_search_fee(soup, WEB_SEARCH_URL) == 0.0025
+
+
+def test_web_search_fee_unrecognized_unit_raises():
+    soup = BeautifulSoup(
+        '<span data-as="p">Fast calls cost $1.00 per request instead of $2.50,'
+        " plus model tokens.</span>",
+        "html.parser",
+    )
+    with pytest.raises(FetchError, match="unit"):
+        scraper._web_search_fee(soup, WEB_SEARCH_URL)
+
+
+def test_web_search_fee_standard_clause_unit_wins():
+    # the standard-rate clause's own unit beats the fast tier's shared unit
+    soup = BeautifulSoup(
+        '<span data-as="p">Fast calls cost $1.00 per 1,000 invocations'
+        " instead of $2.50 per 500 invocations, plus model tokens.</span>",
+        "html.parser",
+    )
+    assert scraper._web_search_fee(soup, WEB_SEARCH_URL) == 0.005

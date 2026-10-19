@@ -24,9 +24,15 @@ UTC-day weekdays only while every window ends by 16:00 UTC (beijing
 midnight); with the clause present, a window past that raises instead of
 silently mis-scheduling.
 
+the search/fetch guide (api-docs.deepseek.com/guides/search) supplies the
+per-request search and fetch fees (USD per the Unit cell's N successful
+requests, 1,000 on the live page); a missing or unreadable fee, or an
+unrecognized unit, is a scrape failure.
+
 None = the model id is not on the page, or a needed price is missing.
-FetchError = the fetch failed, the page has no MODEL header table, or a
-price cell carries an amount the grammar cannot read.
+FetchError = the fetch failed, the page has no MODEL header table, a
+price cell carries an amount the grammar cannot read, or the guide fee or
+its unit is missing or unreadable.
 """
 
 from __future__ import annotations
@@ -43,6 +49,7 @@ from ai_pricelog.web import (
     amount_scan,
     extract_tables,
     fetch_soup,
+    fold_heading,
     unreadable_rate_error,
 )
 
@@ -50,6 +57,7 @@ _CACHE_MISS = "1M INPUT TOKENS (CACHE MISS)"
 _CACHE_HIT = "1M INPUT TOKENS (CACHE HIT)"
 _OUTPUT = "1M OUTPUT TOKENS"
 _MARKERS = ("OFF-PEAK", "PEAK")
+_GUIDE_URL = "https://api-docs.deepseek.com/guides/search"
 _K_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
 _M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
 _FOOTNOTE_PATTERN = re.compile(
@@ -96,6 +104,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             ),
             max_tokens_out=_window_tokens(table[1:], ids, model_id, "MAX OUTPUT", _K_PATTERN, 1024),
             cache_read_cost_per_token=_per_token(off_cache_read),
+            fees=_guide_fees(fetch_soup(_GUIDE_URL), _GUIDE_URL),
         )
     if peak_input is None or peak_output is None:
         return None
@@ -116,6 +125,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         effective_at=_WEEKEND_RULE_EFFECTIVE if peak_days else None,
         peak_days=peak_days,
         timezone="Asia/Shanghai",
+        fees=_guide_fees(fetch_soup(_GUIDE_URL), _GUIDE_URL),
     )
 
 
@@ -226,3 +236,53 @@ def _dollars(text: str | None, model_id: str, url: str) -> float | None:
 def _per_token(dollars: float | None) -> float | None:
     """USD per 1M tokens -> USD per token."""
     return None if dollars is None else dollars / 1e6
+
+
+def _guide_fees(soup: BeautifulSoup, url: str) -> dict[str, float]:
+    """the search + fetch per-request fees from the guide's API/Unit/Price table.
+
+    each row's price cell is USD per the row's own Unit cell ("Per 1,000
+    successful requests" -> /1000 per request). either fee missing, a cell
+    carrying an amount the grammar cannot read, or an unrecognized unit, is a
+    page-shape break.
+    """
+    for table in extract_tables(soup):
+        if not table or not table[0]:
+            continue
+        if [fold_heading(cell) for cell in table[0]] != ["api", "unit", "price"]:
+            continue
+        fees: dict[str, float] = {}
+        for row in table[1:]:
+            if len(row) < 3:
+                continue
+            key = fold_heading(row[0])
+            if key not in ("search", "fetch") or key in fees:
+                continue
+            divisor = _guide_divisor(row[1], url)
+            amounts, malformed = amount_scan(row[2], before="$")
+            if malformed or len(amounts) != 1:
+                raise unreadable_rate_error(row[2], key, url)
+            fees[key] = float(amounts[0].replace(",", "")) / divisor
+        missing = [key for key in ("search", "fetch") if key not in fees]
+        if missing:
+            raise FetchError(f"missing {', '.join(missing)} fee on {url}")
+        return fees
+    raise FetchError(f"no API/Unit/Price billing table on {url}")
+
+
+_GUIDE_UNIT_RE = re.compile(r"^per\s+([\d,.]*)\s+successful requests$", re.IGNORECASE)
+
+
+def _guide_divisor(cell: str, url: str) -> float:
+    """the per-N divisor the Unit cell states ("Per 1,000 successful requests" -> 1000).
+
+    a cell that is not the "per <N> successful requests" shape, or whose N the
+    amount grammar cannot read, is a shape break, never a silent rescale.
+    """
+    match = _GUIDE_UNIT_RE.match(cell.strip())
+    if match is None:
+        raise FetchError(f"unrecognized guide unit {cell!r} on {url}")
+    amounts, malformed = amount_scan(match.group(1))
+    if malformed or len(amounts) != 1:
+        raise FetchError(f"unrecognized guide unit {cell!r} on {url}")
+    return float(amounts[0].replace(",", ""))

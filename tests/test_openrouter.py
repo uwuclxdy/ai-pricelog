@@ -443,7 +443,8 @@ def test_map_typed_fields_rate_keys_match_the_contract_axes():
     }
     rates, fees = map_typed_fields(pricing, "x/y")
     assert set(rates) == keys.rate_axes
-    assert set(fees) == keys.fees == {"web_search"}
+    assert set(fees) == {"web_search"}
+    assert set(fees) <= keys.fees
 
 
 def test_build_row_maps_fixture_cache_write_tiers(fake_fetch: list[str]) -> None:

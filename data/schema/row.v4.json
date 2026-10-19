@@ -53,7 +53,9 @@
       "minProperties": 1,
       "additionalProperties": false,
       "properties": {
-        "web_search": {"$ref": "#/$defs/fee"}
+        "web_search": {"$ref": "#/$defs/fee"},
+        "search": {"$ref": "#/$defs/fee"},
+        "fetch": {"$ref": "#/$defs/fee"}
       },
       "description": "Per-request USD fees, never per token."
     },

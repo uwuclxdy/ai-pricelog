@@ -577,6 +577,8 @@ def build_row(
         row["overrides"] = overrides
     if limits:
         row["limits"] = limits
+    if pricing.fees:
+        row["fees"] = pricing.fees
     provenance: dict[str, object] = {"url": pricing.url or url}
     if conversion is not None:
         provenance["fx_rate"] = conversion[0]

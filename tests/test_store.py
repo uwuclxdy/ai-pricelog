@@ -448,6 +448,17 @@ def test_build_row_includes_cache_read_and_limits():
     assert row["limits"] == {"context": 200000, "output": 8192}
 
 
+def test_build_row_includes_fees():
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="flex",
+        fees={"search": 0.00075, "fetch": 0.00075},
+    )
+    row = build_row("deepseek", "m", pricing, "2026-08-30", "u", VERSION)
+    assert row["fees"] == {"search": 0.00075, "fetch": 0.00075}
+
+
 def test_build_row_includes_cache_write_tiers():
     pricing = Pricing(
         input_cost_per_token=1e-6,

@@ -192,7 +192,36 @@ def page_with(case: Case, amount: str) -> BeautifulSoup:
 
 
 def serve(monkeypatch: pytest.MonkeyPatch, module: ModuleType, soup: BeautifulSoup) -> None:
-    monkeypatch.setattr(module, "fetch_soup", lambda url, *args, **kwargs: soup)
+    fetch = _fee_aware_soup_fetch(module, soup)
+    if fetch is not None:
+        monkeypatch.setattr(module, "fetch_soup", fetch)
+    else:
+        monkeypatch.setattr(module, "fetch_soup", lambda url, *args, **kwargs: soup)
+
+
+def _fee_aware_soup_fetch(module: ModuleType, pricing_soup: BeautifulSoup):
+    """serve `pricing_soup` for the scraper url and the fee fixture for its fee url.
+
+    scrapers that now fetch a separate fee page need a second fixture the
+    single-page `serve` cannot provide; every other scraper fetches one page.
+    """
+    if module is perplexity_page:
+        fee_soup = BeautifulSoup(
+            (FIXTURES / "perplexity_page" / "web_search.html").read_text(encoding="utf-8"),
+            "html.parser",
+        )
+    elif module is deepseek_page:
+        fee_soup = BeautifulSoup(
+            (FIXTURES / "deepseek_page" / "search.html").read_text(encoding="utf-8"),
+            "html.parser",
+        )
+    else:
+        return None
+
+    def fetch(url, *args, **kwargs):
+        return pricing_soup if url == URL else fee_soup
+
+    return fetch
 
 
 @pytest.mark.parametrize("case", SCRAPE_CASES, ids=lambda case: case.key)
@@ -545,7 +574,11 @@ def serve_legacy(monkeypatch: pytest.MonkeyPatch, case: LegacyCase, page: str) -
         monkeypatch.setattr(case.module, "fetch_text", lambda url, *args, **kwargs: page)
     else:
         soup = BeautifulSoup(page, "html.parser")
-        monkeypatch.setattr(case.module, "fetch_soup", lambda url, *args, **kwargs: soup)
+        fetch = _fee_aware_soup_fetch(case.module, soup)
+        if fetch is not None:
+            monkeypatch.setattr(case.module, "fetch_soup", fetch)
+        else:
+            monkeypatch.setattr(case.module, "fetch_soup", lambda url, *args, **kwargs: soup)
 
 
 @pytest.mark.parametrize("case", LEGACY_CASES, ids=lambda case: case.key)

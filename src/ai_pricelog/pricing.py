@@ -51,6 +51,9 @@ class Pricing:
     # appended at the end so positional constructions keep their meaning
     image_cost_per_token: float | None = None
     image_output_cost_per_token: float | None = None
+    # per-request USD fees (deepseek search/fetch, perplexity web_search);
+    # source-level, appended last so positional constructions keep their meaning
+    fees: dict[str, float] | None = None
 
 
 def to_mtok(per_token: float) -> float:
