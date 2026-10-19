@@ -1,13 +1,23 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation Nexus API & SDK Reference CLI Reference Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page 2026-10-18 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page
-Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
-Copy page Copy page ​ 2026-10-18 Inference ​ Expanded Small serverless rate-limit tier The Small serverless model tier now includes models with fewer than 800B total parameters , up from 600B.
+⌘ K Changelog On this page 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13
+2025-05-20 2025-05-19 Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
+Copy page Copy page ​ 2026-10-18 Training ​ Upcoming Serverless Training deprecation: DeepSeek V4 Flash (0731) On November 2, 2026 , DeepSeek V4 Flash (0731) will be removed from the shared Serverless Training pool.
+This change applies only to Serverless Training.
+If you train DeepSeek V4 Flash (0731) on Serverless Training, migrate to DeepSeek V4.1 Flash 1017 before November 2, 2026.
+​ 2026-10-18 Training ​ New Serverless Training model: DeepSeek V4.1 Flash 1017 DeepSeek V4.1 Flash 1017 is now available for LoRA workloads on the shared Serverless Training pool, with up to 262K context.
+It’s available on Serverless Training only: Managed Training and the Dedicated Training API don’t support it yet.
+See the Serverless Training guide for setup and the training model catalog for current availability.
+​ 2026-10-18 Training ​ New training model: NVIDIA Nemotron 3.5 Super VL NVIDIA Nemotron 3.5 Super VL 120B A12B is now available for training on all three surfaces, with up to 262K context: Managed Training : LoRA SFT and DPO Dedicated Training API : LoRA and full-parameter training, including RL Serverless Training : LoRA on the shared pool, billed per token See the training model catalog for current availability and training shapes.
+​ 2026-10-18 Inference ​ Expanded Small serverless rate-limit tier The Small serverless model tier now includes models with fewer than 800B total parameters , up from 600B.
 The Medium tier now covers models from 800B to less than 1.6T .
 This moves models such as GLM 5.3 into the Small tier.
 The ceiling values for each tier are unchanged.
 See Serverless rate limits for the current thresholds and ceilings.
+​ 2026-10-15 Training ​ New Serverless Training model: Muse Spark Open Muse Spark Open is now available for LoRA workloads on the shared Serverless Training pool, with up to 262K context.
+Use accounts/fireworks/models/muse-spark-open-nvfp4 as the base model.
+See the Serverless Training guide for setup and the training model catalog for current availability.
 ​ 2026-10-07 Inference ​ Doubled serverless rate limits for Small models We doubled the adaptive rate-limit ceilings for Small serverless models.
 The Small tier now has these ceilings: Total Prompt TPM: 216M Uncached Prompt TPM: 54M Generated TPM: 2.16M Medium and Large model ceilings are unchanged.
 Serverless rate limits now also lists which tier each Serverless model falls in.

@@ -66,7 +66,7 @@ Failed requests, empty search results, and timeouts are not billed.
 count only controls how many results are returned and does not affect the per-request price.
 Note: when you use the DeepSeek API through DeepSeek Harness, Claude Code, or Codex, server-side tool calls already hit the Search and Fetch APIs.
 These calls are currently free of charge; per-request billing starts at 00:00 Beijing time on November 1, 2026.
-Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 5 Fetch 5 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
+Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 100 Fetch 25 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
 Requests above the account-level QPS limit receive HTTP 429.
 In addition to the account-level limit, Fetch is also subject to a per-domain QPS limit, and requests above that limit also receive HTTP 429.
 Previous Files API Next Context Caching Authentication Search API Request Query Operators Response Fetch API Request Response Errors Billing Rate Limits WeChat Official Account Community Email Discord Twitter More GitHub Copyright © 2026 DeepSeek, Inc.
