@@ -5013,6 +5013,15 @@
       },
       "vendor": "deepseek"
     },
+    "novita/deepseek/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "deepseek/deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "novita/deepseek/deepseek-v4.1-flash-p": {
       "curated": false,
       "sources": {
