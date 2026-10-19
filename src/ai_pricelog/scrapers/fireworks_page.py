@@ -17,10 +17,20 @@ amount.
 
 from __future__ import annotations
 
+from datetime import date
+
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.fireworks_page import _normalize_id, _serverless_table
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
+
+# the announced DeepSeek V4.1 Flash rate change (billing-rules id
+# fireworks-deepseek-v41-flash-rate-update-2026-10-01) is effective 2026-10-01
+# UTC. stamp only while the observation predates the effective date: the
+# stored last priced row is already unstamped at the new rates, so an
+# always-on stamp would churn a duplicate once the date passes. equality on
+# the base id keeps the -us and -1017 skus unstamped
+_V41_FLASH_RATE_EFFECTIVE = date(2026, 10, 1)
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -42,5 +52,10 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             output_cost / 1e6,
             mode="chat",
             cache_read_cost_per_token=cache_read / 1e6,
+            effective_at=(
+                _V41_FLASH_RATE_EFFECTIVE.isoformat()
+                if model_id == "deepseek-v4.1-flash" and date.today() < _V41_FLASH_RATE_EFFECTIVE
+                else None
+            ),
         )
     return None

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,18 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import fireworks_page as detector
 from ai_pricelog.scrapers import fireworks_page as scraper
 from ai_pricelog.web import FetchError
+
+
+class _FrozenDate:
+    """a date stub whose today() is pinned: datetime.date is immutable, so its
+    class-level today cannot be monkeypatched directly."""
+
+    def __init__(self, today: date) -> None:
+        self._today = today
+
+    def today(self) -> date:
+        return self._today
+
 
 PAGE_URL = "https://docs.fireworks.ai/serverless/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "fireworks_page" / "pricing.html"
@@ -69,6 +82,69 @@ def test_scrape_kimi_k3(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(15.0 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(0.3 / 1e6)
     assert pricing.mode == "chat"
+
+
+def test_scrape_v41_flash_stamps_announced_rate(monkeypatch):
+    # the announced DeepSeek V4.1 Flash rate change (effective 2026-10-01)
+    # stamps effective_at on the base id only while the observation predates
+    # the effective date, so a re-scrape matches the stored stamped row
+    # instead of appending one unstamped duplicate per run
+    monkeypatch.setattr(scraper, "date", _FrozenDate(date(2026, 9, 20)))
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>Standard</th><th>Priority</th></tr>"
+            "<tr><td>DeepSeek V4.1 Flash</td>"
+            "<td>$0.30 / $0.006 / $1.20</td><td>$0.375 / $0.0075 / $1.50</td></tr>"
+            "</table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4.1-flash")
+    assert pricing is not None
+    assert pricing.effective_at == "2026-10-01"
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+
+
+def test_scrape_v41_flash_unstamped_after_effective_date(monkeypatch):
+    # once the effective date has passed, the stored row is already unstamped
+    # at the new rates, so the stamp must stop to avoid churning a duplicate
+    monkeypatch.setattr(scraper, "date", _FrozenDate(date(2026, 10, 1)))
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>Standard</th><th>Priority</th></tr>"
+            "<tr><td>DeepSeek V4.1 Flash</td>"
+            "<td>$0.30 / $0.006 / $1.20</td><td>$0.375 / $0.0075 / $1.50</td></tr>"
+            "</table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4.1-flash")
+    assert pricing is not None
+    assert pricing.effective_at is None
+
+
+def test_scrape_other_model_unstamped(monkeypatch):
+    # the announced-rate stamp keys only the V4.1 Flash base id by equality;
+    # the -us sku shares the "deepseek-v4.1-flash" prefix and must stay
+    # unstamped, so a startswith over-stamp fails this test
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>Standard</th><th>Priority</th></tr>"
+            "<tr><td>DeepSeek V4.1 Flash US</td>"
+            "<td>$0.30 / $0.006 / $1.20</td><td>—</td></tr>"
+            "</table>",
+            "html.parser",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v4.1-flash-us")
+    assert pricing is not None
+    assert pricing.effective_at is None
 
 
 def test_scrape_fast_sku_standard_tier(monkeypatch):
