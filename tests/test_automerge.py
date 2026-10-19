@@ -226,6 +226,25 @@ def test_merge_lands_union(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_lands_a_row_whose_name_has_a_line_separator(tmp_path):
+    # a raw U+2028 inside a provenance name must not tear one branch row into
+    # two ndjson lines, so the burst merge lands it as one row
+    repo, bare = build_repo(tmp_path)
+    row = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    row["provenance"]["name"] = "x y"
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [row],
+        announce_texts={"deepseek": {"https://example.com/u": "new"}},
+    )
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+    assert store.load(repo / "data" / "history" / "deepseek.ndjson") == [
+        make_row("deepseek", "deepseek-v4-pro", "2026-08-30", 0.435),
+        row,
+    ]
+
+
 def test_merge_keeps_a_newer_base_announce_channel_over_a_stale_branch(tmp_path):
     # a branch cut before a later landed refresh carries the older snapshot
     # for a channel; the merge must not revert the base's newer prose

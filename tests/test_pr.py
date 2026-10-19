@@ -510,6 +510,25 @@ def test_fetch_pending_rows_reads_branch_shards(tmp_path):
     ]
 
 
+def test_fetch_pending_rows_holds_key_when_name_has_a_line_separator(tmp_path):
+    # a raw U+2028 inside a provenance name must not tear the branch row into
+    # two ndjson lines, so the pending scan parses it and holds its key
+    row = pending_row("x")
+    row["provenance"]["name"] = "a b"
+    line = json.dumps(row, ensure_ascii=False) + "\n"
+    fake = (
+        FakeRunner()
+        .on("git fetch")
+        .on("git for-each-ref", output="refs/remotes/pending/x-12345678\n")
+        .on("git ls-tree", output="data/history/deepseek.ndjson\n")
+        .on("git show", output=line)
+    )
+    open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
+    scan = pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS)
+    assert list(scan) == [row]
+    assert scan.held_keys == frozenset({("deepseek", "x")})
+
+
 def test_fetch_pending_rows_skips_branch_without_shards(tmp_path):
     fake = (
         FakeRunner()

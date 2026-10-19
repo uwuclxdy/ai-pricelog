@@ -66,6 +66,21 @@ def test_load_non_object_line_names_file_and_line(tmp_path):
     assert "line 2" in message
 
 
+def test_load_row_with_line_separator_in_name_stays_one_row(tmp_path):
+    # rows save with ensure_ascii=False, so a raw U+2028 (line separator)
+    # inside a string field must not tear one row into two ndjson lines
+    row = {
+        "schema": 4,
+        "source": "a",
+        "model_id": "m",
+        "observed_at": "t",
+        "provenance": {"name": "x y"},
+    }
+    path = tmp_path / "history.ndjson"
+    save([row], path)
+    assert load(path) == [row]
+
+
 def test_save_load_roundtrip_preserves_order_and_trailing_newline(tmp_path):
     rows = [
         {"schema": 4, "source": "a", "model_id": "m", "observed_at": "t1", "rates": {"input": 1.5}},

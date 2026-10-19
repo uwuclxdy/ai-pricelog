@@ -135,19 +135,20 @@ def _aligned_branch_rows(
     read, with the same message.
     """
     label = f"origin/{branch}:{path}"
+    lines = store.shard_lines(branch_text)
     try:
         rows = store.parse(branch_text, label)
     except ValueError as exc:
         raise AutoMergeError(
             f"branch {branch}: {exc}. do not retry: report the error and leave every PR open"
         ) from exc
-    if len(rows) != len(branch_text.splitlines()):
+    if len(rows) != len(lines):
         raise AutoMergeError(
-            f"branch {branch}: {label}: {len(branch_text.splitlines())} line(s) parsed as"
+            f"branch {branch}: {label}: {len(lines)} line(s) parsed as"
             f" {len(rows)} row(s); fix: the offending line on the branch, one json"
             " object per line"
         )
-    return list(zip(branch_text.splitlines(), rows, strict=False))
+    return list(zip(lines, rows, strict=False))
 
 
 def _validate_appended(
@@ -501,7 +502,8 @@ def _branch_churn(
         branch_text = _branch_text(runner, repo_root, branch, path)
         new = set(
             _appended_lines(
-                _head_text(runner, repo_root, path).splitlines(), branch_text.splitlines()
+                store.shard_lines(_head_text(runner, repo_root, path)),
+                store.shard_lines(branch_text),
             )
         )
         appended += len(new)
@@ -566,7 +568,8 @@ def _check_carried_claims(
             branch_text = _branch_text(runner, repo_root, branch, path)
             new = set(
                 _appended_lines(
-                    _head_text(runner, repo_root, path).splitlines(), branch_text.splitlines()
+                    store.shard_lines(_head_text(runner, repo_root, path)),
+                    store.shard_lines(branch_text),
                 )
             )
             for line, row in _aligned_branch_rows(branch_text, branch=branch, path=path):
@@ -853,9 +856,9 @@ def merge_branches(
         # left conflict markers in the conflicted files
         appended = 0
         for shard_path in _branch_shard_paths(runner, repo_root, branch):
-            head_lines = _head_text(runner, repo_root, shard_path).splitlines()
+            head_lines = store.shard_lines(_head_text(runner, repo_root, shard_path))
             branch_text = _branch_text(runner, repo_root, branch, shard_path)
-            new_lines = _appended_lines(head_lines, branch_text.splitlines())
+            new_lines = _appended_lines(head_lines, store.shard_lines(branch_text))
             appended += len(new_lines)
             _validate_appended(new_lines, branch_text, branch=branch, path=shard_path, keys=keys)
             union = _sorted_lines([*head_lines, *new_lines], branch, shard_path)

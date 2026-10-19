@@ -33,10 +33,24 @@ def load(path: Path) -> list[dict[str, object]]:
     return parse(text, str(path))
 
 
+def shard_lines(text: str) -> list[str]:
+    """ndjson shard text split on '\\n' only, dropping the trailing empty line.
+
+    str.splitlines() also treats U+2028/U+0085 as line breaks, which would tear
+    a raw separator inside a string field (a name, a provenance url) into two
+    rows. shards serialize rows with json.dumps and one '\\n' each, so '\\n'
+    alone is a row boundary.
+    """
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    return lines
+
+
 def parse(text: str, label: str) -> list[dict[str, object]]:
     """Parse ndjson rows from text; errors name the label and the line."""
     rows: list[dict[str, object]] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(shard_lines(text), start=1):
         try:
             row = json.loads(line)
         except json.JSONDecodeError as exc:

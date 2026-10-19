@@ -549,7 +549,7 @@ def _landed_shard_lines(repo_root: Path, path: str) -> list[str]:
     text at that point; the pending hold compares the branch shard against it.
     """
     try:
-        return (repo_root / path).read_text(encoding="utf-8").splitlines()
+        return store.shard_lines((repo_root / path).read_text(encoding="utf-8"))
     except FileNotFoundError:
         return []
 
@@ -655,7 +655,7 @@ def fetch_pending_rows(
                 raise PendingScanError(
                     f"pending branch {ref} shard {path} unparseable: {exc}"
                 ) from exc
-            branch_lines = text.splitlines()
+            branch_lines = store.shard_lines(text)
             appended = set(store.appended_lines(_landed_shard_lines(repo_root, path), branch_lines))
             for line, row in zip(branch_lines, branch_rows, strict=True):
                 if line not in appended:
