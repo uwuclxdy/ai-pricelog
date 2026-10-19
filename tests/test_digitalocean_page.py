@@ -199,6 +199,19 @@ def test_scrape_long_context_first_group_standard(monkeypatch):
     assert pricing.cache_read_cost_per_token == pytest.approx(0.30 / 1e6)
 
 
+def test_scrape_long_context_override(monkeypatch):
+    # the > 200K Standard row emits one min_tokens override at 200k; its
+    # N/A cache-read cell inherits the base rate, so the override carries no
+    # cache_read_mtok
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    pricing = scraper.scrape(cfg(), "claude-sonnet-4.5")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)  # base unchanged
+    assert pricing.window_rates == (
+        {"min_tokens": 200_000, "input_mtok": 6.00, "output_mtok": 22.50},
+    )
+
+
 def test_scrape_deepseek_v4_pro_0813(monkeypatch):
     # the provider-hosted table (Provider | Model | Serverless Inference)
     # prices this DeepSeek row $1.32/$3.96/$0.044

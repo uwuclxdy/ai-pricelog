@@ -164,6 +164,22 @@ def test_scrape_gemini_2_5_pro_takes_base_input_tier(live_page):
     assert pricing.cache_read_cost_per_token == 0.125 / 1e6
 
 
+def test_scrape_gemini_2_5_pro_long_context_override(live_page):
+    # the "> 200k tokens" tier is the second amount in every cell; it emits
+    # one min_tokens override at 200k carrying the long-tier per-1M rates
+    pricing = scraper.scrape(cfg(), "gemini-2.5-pro")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 1.25 / 1e6  # base unchanged
+    assert pricing.window_rates == (
+        {
+            "min_tokens": 200_000,
+            "input_mtok": 2.50,
+            "output_mtok": 15.00,
+            "cache_read_mtok": 0.25,
+        },
+    )
+
+
 def test_scrape_customtools_second_slug_same_section(live_page):
     # the 3.1 Pro Preview section carries two slugs in one heading; both
     # resolve to the section's Standard rates

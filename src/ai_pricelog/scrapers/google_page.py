@@ -10,7 +10,12 @@ header cell holding "Paid Tier". every cell's first dollar amount is the base
 rate: promo cells list the current rate first ($0.75 through December 31,
 2026. $1.50 starting January 1, 2027.), tiered cells list the <=200k base
 first ($2.00, prompts <= 200k tokens $4.00, prompts > 200k tokens), and
-cache cells list the read rate before the storage price. dollars per 1M
+cache cells list the read rate before the storage price. a cell carrying a
+`> N` tier marker (`> 200k tokens`, `> 200k`) also emits the `$` amount right
+before that marker as the long-context tier: one window_rates entry
+`{"min_tokens": N, "<axis>_mtok": amount}` per model, the amount per-1M
+verbatim (no /1e6); a cell without the marker contributes nothing, and a
+model whose cells carry none emits no window_rates. dollars per 1M
 tokens -> divided by 1e6. a first amount directly followed by "per " is a
 per-image/per-unit rate, not a per-token one (2.5 Flash Image output reads
 $0.039 per image) -> the model has no usable output rate. a cell carrying a
@@ -47,6 +52,7 @@ from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 _CONTEXT_WINDOW_RE = re.compile(r"(\d[\d,]*)\s*([KkMm])\s+token context window")
+_LONG_TIER_RE = re.compile(r">\s*(\d[\d,]*)\s*([KkMm])\b")
 
 _GA_IMAGE_IDS = {
     "gemini-3.1-flash-image": "gemini-3.1-flash-image-preview",
@@ -129,6 +135,68 @@ def _per_token(cell: str | None, model_id: str, url: str) -> float | None:
     return float(first.replace(",", ""))
 
 
+def _long_tier(cell: str | None, model_id: str, url: str) -> tuple[int, float] | None:
+    """(threshold, per-1M amount) of the cell's `> N` long tier, or None.
+
+    the long-tier amount is the last `$` amount before the `> N` marker; a
+    storage price after the marker (cache cells) never reads as the tier. a
+    `> N` marker whose preceding amount is unreadable, or a cell carrying a
+    second `> N` marker (an unmodeled multi-tier cell), raises (plan #22):
+    silently dropping it would omit a rate the page carries.
+    """
+    if cell is None:
+        return None
+    match = _LONG_TIER_RE.search(cell)
+    if match is None:
+        return None
+    if _LONG_TIER_RE.search(cell, match.end()) is not None:
+        raise FetchError(f"model {model_id!r}: cell carries a second long tier on {url}: {cell!r}")
+    scale = 1_000 if match.group(2) in ("k", "K") else 1_000_000
+    threshold = int(match.group(1).replace(",", "")) * scale
+    readable, malformed = amount_scan(cell[: match.start()], before="$")
+    if malformed or not readable:
+        raise unreadable_rate_error(cell, model_id, url)
+    return threshold, float(readable[-1].replace(",", ""))
+
+
+def _window_rates(
+    input_cell: str | None,
+    output_cell: str | None,
+    cache_cell: str | None,
+    model_id: str,
+    url: str,
+) -> tuple[dict[str, object], ...]:
+    """the model's long-context tier as window_rates, () when no cell has one.
+
+    each cell's `> N` tier contributes its per-1M amount under its axis key;
+    the cells of one model describe one tier, so they must agree on the
+    threshold (a single override carries one min_tokens). a cell without the
+    marker contributes no key.
+    """
+    tiers: dict[str, tuple[int, float]] = {}
+    for axis, cell in (
+        ("input", input_cell),
+        ("output", output_cell),
+        ("cache_read", cache_cell),
+    ):
+        tier = _long_tier(cell, model_id, url)
+        if tier is not None:
+            tiers[axis] = tier
+    if not tiers:
+        return ()
+    thresholds = {threshold for threshold, _ in tiers.values()}
+    if len(thresholds) > 1:
+        raise FetchError(
+            f"model {model_id!r}: long-context tiers disagree on threshold:"
+            f" {sorted(thresholds)} on {url}"
+        )
+    entry: dict[str, object] = {"min_tokens": next(iter(thresholds))}
+    for axis in ("input", "output", "cache_read"):
+        if axis in tiers:
+            entry[f"{axis}_mtok"] = tiers[axis][1]
+    return (entry,)
+
+
 def _context_window(h2: Tag) -> int:
     for element in _section_elements(h2):
         if element.name != "p":
@@ -148,21 +216,26 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     if h2 is None:
         return None
     rows = _rows(_standard_table(h2, model_id, cfg.scraper_url), model_id, cfg.scraper_url)
-    input_cost = _per_token(_cell_value(rows, "Input price"), model_id, cfg.scraper_url)
+    input_cell = _cell_value(rows, "Input price")
+    input_cost = _per_token(input_cell, model_id, cfg.scraper_url)
     if input_cost is None:
-        input_cost = _per_token(_cell_value(rows, "Text input price"), model_id, cfg.scraper_url)
+        input_cell = _cell_value(rows, "Text input price")
+        input_cost = _per_token(input_cell, model_id, cfg.scraper_url)
     if input_cost is None:
         return None
-    output_cost = _per_token(_cell_value(rows, "Output price"), model_id, cfg.scraper_url)
+    output_cell = _cell_value(rows, "Output price")
+    output_cost = _per_token(output_cell, model_id, cfg.scraper_url)
     if output_cost is None and not any(label.startswith("Output price") for label in rows):
         output_cost = 0.0
     if output_cost is None:
         return None
-    cache_read = _per_token(rows.get("Context caching price"), model_id, cfg.scraper_url)
+    cache_cell = rows.get("Context caching price")
+    cache_read = _per_token(cache_cell, model_id, cfg.scraper_url)
     return Pricing(
         input_cost_per_token=input_cost / 1e6,
         output_cost_per_token=output_cost / 1e6,
         mode="chat",
         max_tokens_in=_context_window(h2),
         cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
+        window_rates=_window_rates(input_cell, output_cell, cache_cell, model_id, cfg.scraper_url),
     )

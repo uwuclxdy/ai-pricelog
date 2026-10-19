@@ -6,8 +6,12 @@ span.gen-ai-pricing-matrix (role=table): a header row naming the columns
 write (1h), Cache read) and one data row per processing mode. the
 standard rate is the first Standard row carrying both an input and an
 output amount (tiered models price the "<= 272K tokens" row first);
-later prompt-length rows are long-context tiers the index has no slot
-for and are dropped. when no Standard row carries both, the first
+later Standard rows reading "> N tokens"/"> N" (N with a K/M scale
+suffix) are long-context tiers and emit one window_rates override each:
+min_tokens N plus the row's per-1M input/output and, when its Cache read
+cell is priced, cache read (an N/A cell omits cache_read_mtok, so it
+inherits the base rate); mode rows never emit one. when no Standard row
+carries both, the first
 Standard row with a priced input and an explicit rate-less output cell
 (N/A, "-", empty) prices output 0.0: an input-only model bills input
 tokens only, so its free output is a real zero (the litellm convention,
@@ -47,6 +51,8 @@ from ai_pricelog.web import FetchError, fetch_soup
 
 _AMOUNT_RE = re.compile(r"^\$(\d+(?:\.\d+)?)$")
 _NONE_CELLS = frozenset({"n/a", "-", ""})
+_LONG_PROMPT_RE = re.compile(r">\s*(\d[\d,]*)\s*([KkMm])(?:\s*tokens?)?\s*")
+_PROMPT_LENGTH_LABEL = "prompt length"
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -54,7 +60,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     for name, matrix in _priced_rows(fetch_soup(cfg.scraper_url), cfg.scraper_url):
         labels, data_rows = _matrix_rows(matrix, cfg.scraper_url)
         mode_col = _column_index(labels, _MODE_LABEL, cfg.scraper_url)
+        base: tuple[float, float, float | None] | None = None
         input_only: tuple[float, float | None] | None = None
+        long_tiers: list[tuple[int, float, float, float | None]] = []
         for row in data_rows:
             slug = _normalize_id(row[mode_col])
             candidate = name if slug == "standard" else f"{name}-{slug}"
@@ -64,12 +72,13 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 labels, row, requested, cfg.scraper_url
             )
             if input_cost is not None and output_cost is not None:
-                return Pricing(
-                    input_cost_per_token=input_cost / 1e6,
-                    output_cost_per_token=output_cost / 1e6,
-                    mode="chat",
-                    cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
-                )
+                if base is None:
+                    base = (input_cost, output_cost, cache_read)
+                elif slug == "standard":
+                    threshold = _long_tier_threshold(_prompt_length(labels, row))
+                    if threshold is not None:
+                        long_tiers.append((threshold, input_cost, output_cost, cache_read))
+                continue
             if slug != "standard":
                 raise FetchError(
                     f"no per-1M input/output rates for {requested} on {cfg.scraper_url}"
@@ -78,6 +87,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 # an input-only Standard row: the page prices no output
                 # (free output); a later row carrying both still wins
                 input_only = (input_cost, cache_read)
+        if base is not None:
+            input_cost, output_cost, cache_read = base
+            return Pricing(
+                input_cost_per_token=input_cost / 1e6,
+                output_cost_per_token=output_cost / 1e6,
+                mode="chat",
+                cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
+                window_rates=_window_rates(long_tiers),
+            )
         if input_only is not None:
             input_cost, cache_read = input_only
             return Pricing(
@@ -122,3 +140,43 @@ def _cell_amount(
     if match is None:
         raise FetchError(f"unparseable rate cell {text!r} for {model_id} on {url}")
     return float(match.group(1))
+
+
+def _prompt_length(labels: tuple[str, ...], row: tuple[str, ...]) -> str | None:
+    try:
+        return row[labels.index(_PROMPT_LENGTH_LABEL)]
+    except ValueError:
+        return None
+
+
+def _long_tier_threshold(cell: str | None) -> int | None:
+    """the `> N` threshold of a Prompt length cell, or None when it is a base row."""
+    if cell is None:
+        return None
+    match = _LONG_PROMPT_RE.fullmatch(cell.strip())
+    if match is None:
+        return None
+    scale = 1_000 if match.group(2) in ("k", "K") else 1_000_000
+    return int(match.group(1).replace(",", "")) * scale
+
+
+def _window_rates(
+    tiers: list[tuple[int, float, float, float | None]],
+) -> tuple[dict[str, object], ...]:
+    """window_rates overrides for the model's long-context tiers.
+
+    one entry per tier, distinct thresholds included (the overrides list
+    carries every tier); a tier whose Cache read cell is N/A omits
+    cache_read_mtok (it inherits the base rate).
+    """
+    overrides: list[dict[str, object]] = []
+    for threshold, input_cost, output_cost, cache_read in tiers:
+        entry: dict[str, object] = {
+            "min_tokens": threshold,
+            "input_mtok": input_cost,
+            "output_mtok": output_cost,
+        }
+        if cache_read is not None:
+            entry["cache_read_mtok"] = cache_read
+        overrides.append(entry)
+    return tuple(overrides)
