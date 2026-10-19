@@ -10,13 +10,17 @@ cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. a ``Free`` cell is
 a zero rate (free is a price); non-dollar cells (``$4 /1000 Pages``,
 ``$0.003 /Min``, ``—``) have no token pricing -> None, and a cell whose
-amount the grammar cannot read raises. the ``Cached input`` cell emits as
-cache-read cost when it carries a bare dollar amount (zai-glm-5-2: $0.14);
-other cached cells leave it None. the page carries no context window ->
-the max_tokens fields 0. mode is chat.
+amount the grammar cannot read raises. a cell written as sale markup (an
+``<ins>`` beside a ``<del>``) prices its ``<ins>`` rate in force by the
+bare-cell rule; ``_price`` states the exact rule. the ``Cached input``
+cell emits as cache-read cost when it carries a bare dollar amount
+(zai-glm-5-2: $0.14); other cached cells leave it None. the page carries
+no context window -> the max_tokens fields 0. mode is chat.
 """
 
 from __future__ import annotations
+
+from bs4 import Tag
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.mistral_page import _GENERATION_SEGMENT, SLUG_RE, _compact
@@ -46,16 +50,31 @@ def dedup_keys(model_id: str) -> list[str]:
     return keys
 
 
-def _price(cell: str, model_id: str, url: str) -> float | None:
-    """the cell's per-token rate when it is exactly one bare dollar amount
-    (or `Free`); a cell whose amount the grammar cannot read raises.
-    non-token cells ("$4 /1000 Pages", "—") stay unpriced."""
-    amounts, malformed = amount_scan(cell, before="$")
-    if malformed:
-        raise unreadable_rate_error(cell, model_id, url)
-    if cell == "Free":
+def _price(cell: Tag, model_id: str, url: str) -> float | None:
+    """the cell's per-token rate.
+
+    a cell written as sale markup (an `<ins>` beside a `<del>`) joins the
+    cell's outermost `<ins>` texts as the rate in force and prices it like
+    a bare cell: the last whitespace-separated word is the rate token, a
+    non-token unit stays unpriced, `Free` is 0.0 only when no dollar
+    amount is named, and exactly one bare dollar amount prices. every
+    other cell keeps the bare-cell rule; a cell whose amount the grammar
+    cannot read, or a sale cell naming more than one amount, raises.
+    """
+    outer = cell.find_parent("ins")
+    ins_tags = [tag for tag in cell.find_all("ins") if tag.find_parent("ins") is outer]
+    sale = bool(ins_tags) and cell.find("del") is not None
+    if sale:
+        text = " ".join(tag.get_text(" ", strip=True) for tag in ins_tags)
+    else:
+        text = cell.get_text(" ", strip=True)
+    amounts, malformed = amount_scan(text, before="$")
+    if malformed or (sale and len(amounts) > 1):
+        raise unreadable_rate_error(text, model_id, url)
+    rate = (text.split() or [""])[-1] if sale else text
+    if rate == "Free" and not amounts:
         return 0.0
-    if len(amounts) == 1 and cell == "$" + amounts[0]:
+    if len(amounts) == 1 and rate == "$" + amounts[0]:
         return float(amounts[0].replace(",", "")) / 1e6
     return None
 
@@ -89,9 +108,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                 match.group(1) != model_id and model_id not in dedup_keys(match.group(1))
             ):
                 continue
-            input_cost = _price(cells[1].get_text(" ", strip=True), model_id, cfg.scraper_url)
-            cache_read_cost = _price(cells[2].get_text(" ", strip=True), model_id, cfg.scraper_url)
-            output_cost = _price(cells[3].get_text(" ", strip=True), model_id, cfg.scraper_url)
+            input_cost = _price(cells[1], model_id, cfg.scraper_url)
+            cache_read_cost = _price(cells[2], model_id, cfg.scraper_url)
+            output_cost = _price(cells[3], model_id, cfg.scraper_url)
             if input_cost is None or output_cost is None:
                 return None
             return Pricing(

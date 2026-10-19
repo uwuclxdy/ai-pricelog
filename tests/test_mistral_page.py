@@ -270,6 +270,117 @@ def test_scrape_ministral_prices(live_pricing):
     )
 
 
+_LARGE_3_ROW_ANCHOR = 'href="/models/mistral-large-3-25-12"'
+
+
+def _pricing_with_row(row: str) -> str:
+    """the pricing fixture with `row` inserted before the Large 3 row."""
+    text = (FIXTURES / "pricing.html").read_text(encoding="utf-8")
+    assert text.count(_LARGE_3_ROW_ANCHOR) == 1
+    start = text.rfind("<tr", 0, text.find(_LARGE_3_ROW_ANCHOR))
+    return text[:start] + row + text[start:]
+
+
+def test_scrape_sale_markup_reads_the_rate_in_force(monkeypatch):
+    # the live Large 4 row (captured 2026-10-18) writes every rate cell as
+    # <del>Original price: $1.36</del><ins>Sale price: $0.68</ins>; the
+    # charged rate is the sale one, and the row used to scrape as unpriced
+    row = (FIXTURES / "large-4-sale-row.html").read_text(encoding="utf-8")
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(row)})
+    assert mistral_scraper.scrape(make_cfg(), "mistral-large-4-0") == Pricing(
+        input_cost_per_token=pytest.approx(0.68e-6, rel=1e-12),
+        output_cost_per_token=pytest.approx(2.09e-6, rel=1e-12),
+        mode="chat",
+        cache_read_cost_per_token=pytest.approx(0.07e-6, rel=1e-12),
+    )
+
+
+def test_scrape_two_amounts_without_sale_markup_stay_unpriced(monkeypatch):
+    # only sale markup names which of two amounts is in force; a bare
+    # two-amount cell reads no single rate, as before
+    row = (FIXTURES / "large-4-sale-row.html").read_text(encoding="utf-8")
+    bare = row.replace("<del", "<span").replace("</del>", "</span>")
+    bare = bare.replace("<ins", "<span").replace("</ins>", "</span>")
+    assert "<del" not in bare and "<ins" not in bare
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(bare)})
+    assert mistral_scraper.scrape(make_cfg(), "mistral-large-4-0") is None
+
+
+def _large_4_row(input_cell: str) -> str:
+    return (
+        "<tr><td><a href='/models/mistral-large-4-0'>Mistral Large 4</a></td>"
+        f"<td>{input_cell}</td><td>$0.07</td><td>$2.09</td></tr>"
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_cell", "expected"),
+    [
+        ("<del>$8 /1000 Pages</del><ins>$4 /1000 Pages</ins>", None),
+        ("<del>$0.10</del><ins>Sale price: Free</ins>", 0.0),
+        ("<del>$1.36</del><ins>Sale price:&nbsp;$0.68</ins>", 0.68e-6),
+        ("<del>$1.36</del><ins>Sale price:\xa0$0.68</ins>", 0.68e-6),
+        ("<del>$1.36</del><ins>Sale price:\t$0.68</ins>", 0.68e-6),
+        ("<del>$1.36</del><ins>Sale price:\n$0.68</ins>", 0.68e-6),
+        ("<del>$0.10</del><ins>$0.10 Free</ins>", None),
+        ("<del>$0.10</del><ins>was $0.10, now Free</ins>", None),
+        ("<del>$1.36</del><ins><ins>$0.68</ins></ins>", 0.68e-6),
+        ("<ins>Sale price: $0.68</ins>", None),
+    ],
+    ids=[
+        "non-token-unit-on-sale",
+        "free-on-sale",
+        "nbsp-entity-before-rate",
+        "nbsp-char-before-rate",
+        "tab-before-rate",
+        "newline-before-rate",
+        "amount-then-free",
+        "amount-then-now-free",
+        "ins-nested-in-ins",
+        "ins-without-del",
+    ],
+)
+def test_scrape_sale_cell_follows_the_bare_cell_rule_on_its_rate(monkeypatch, input_cell, expected):
+    # the sale's rate in force follows the same rule as a bare cell: a
+    # non-token unit stays unpriced, Free is a zero rate only when the rate
+    # in force names no amount; any whitespace separates the label from the rate, a
+    # nested <ins> is one rate, and an <ins> with no <del> beside it is no sale
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(_large_4_row(input_cell))})
+    pricing = mistral_scraper.scrape(make_cfg(), "mistral-large-4-0")
+    if expected is None:
+        assert pricing is None
+    else:
+        assert pricing is not None
+        assert pricing.input_cost_per_token == pytest.approx(expected, rel=1e-12, abs=0)
+
+
+@pytest.mark.parametrize(
+    "input_cell",
+    [
+        "<del>$1.36</del><ins>$0.68</ins><ins>$0.50</ins>",
+        "<del>$1.36</del><ins>Sale price: $0.68 ＄0.5</ins>",
+        "<del>$1.36</del><ins>$0.68 $0.50</ins>",
+        "<del>$1.36</del><ins>Sale price: $0,68</ins>",
+    ],
+    ids=["two-ins-elements", "second-dollar-spelling", "two-amounts-in-ins", "malformed-amount"],
+)
+def test_scrape_sale_cell_without_one_readable_rate_raises(monkeypatch, input_cell):
+    # a sale that names no single rate in force fails loud
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(_large_4_row(input_cell))})
+    with pytest.raises(web.FetchError) as excinfo:
+        mistral_scraper.scrape(make_cfg(), "mistral-large-4-0")
+    assert str(excinfo.value).startswith("unreadable rate ")
+
+
+def test_scrape_sale_cell_inside_an_ins_wrapped_row_reads_its_own_ins(monkeypatch):
+    # an <ins> around the whole row is no part of the cell's sale markup
+    row = "<ins>" + _large_4_row("<del>$1.36</del><ins>$0.68</ins>") + "</ins>"
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(row)})
+    pricing = mistral_scraper.scrape(make_cfg(), "mistral-large-4-0")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.68e-6, rel=1e-12, abs=0)
+
+
 def test_scrape_token_priced_tables_beyond_flagship(live_pricing):
     cfg = make_cfg()
     assert mistral_scraper.scrape(cfg, "zai-glm-5-2") == Pricing(1.4e-6, 4.4e-6, "chat", 0, 1.4e-7)
