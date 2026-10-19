@@ -6288,6 +6288,15 @@
       },
       "vendor": "inception"
     },
+    "openrouter/inception/mercury-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inception/mercury-3"
+        ]
+      },
+      "vendor": "inception"
+    },
     "openrouter/inclusionai/ling-3.0-flash-fin": {
       "curated": false,
       "sources": {

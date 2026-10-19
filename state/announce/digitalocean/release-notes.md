@@ -10,6 +10,11 @@ On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
 October 2026 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
+13 October In public preview , you can now create spend alerts for Serverless Inference model access keys .
+Each key’s spend is tracked against its own monthly budget, and you receive email alerts as it crosses the thresholds you choose.
+You can also have the alert pause the key when its spend reaches 100% of its budget, which stops Serverless Inference requests for that key without affecting other keys.
+Paused keys resume at the start of the next billing cycle, or sooner if you raise the budget, turn off pausing, or delete the alert.
+For details, see Set Spend Thresholds on Keys .
 12 October DigitalOcean Harness Runtime now supports OpenHands agents.
 Run the OpenHands Agent Server in an isolated sandbox, create agents from OpenHands Agent Canvas or the DigitalOcean API, and connect a model such as one from DigitalOcean Serverless Inference.
 To set up an agent, see How to Run an OpenHands Agent on DigitalOcean Harness Runtime .
