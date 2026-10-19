@@ -266,8 +266,13 @@ def run(
     )
 
     fresh_absence_full = fresh_absence
-    fresh_absence = {source: entries for source, entries in fresh_absence_full.items() if entries}
-    absence_diff = fresh_absence != absence_state
+    # a change is a NAMED source whose entries differ from the committed state:
+    # a provider popped for having no stored ids is absent here, so save_absence
+    # leaves its file untouched, and a missing committed file reads as empty
+    absence_diff = any(
+        fresh_absence_full.get(source) != absence_state.get(source, {})
+        for source in fresh_absence_full
+    )
 
     if not plan and not removal_groups:
         # no pr opened, so nothing reviewable landed, whatever the in-memory

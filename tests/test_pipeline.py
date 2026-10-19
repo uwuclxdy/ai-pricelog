@@ -2238,6 +2238,67 @@ def test_absent_once_counts_without_removal(tmp_path, fake_modules, repo_root):
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
+def test_seed_body_names_absence_only_when_its_branch_changes_a_file(
+    tmp_path, fake_modules, repo_root
+):
+    # a seed run with committed provider-only absence counters: the provider is
+    # dropped for having no stored ids, so the body must not name `## absence
+    # state` and the branch must leave the committed absence file untouched
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing()}
+    cfg = make_cfg("deepseek")
+    absence.save_absence(
+        {"deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-25"}}},
+        repo_root,
+    )
+    git(repo_root, "add", ".")
+    git(repo_root, "commit", "-m", "absence counters")
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    (title, body, _head) = runner.created[0]
+    assert "## absence state" not in body
+    assert branch_absence(repo_root, "pricelog/seed") == {
+        "deepseek": {"deepseek-chat": {"absent_runs": 1, "since": "2026-08-25"}}
+    }
+    assert_default_branch_clean(repo_root, tip="absence counters")
+
+
+def test_seed_body_names_absence_when_its_branch_deletes_openrouter_counter(
+    tmp_path, fake_modules, repo_root, or_models
+):
+    # a seed run whose openrouter counter clears: the branch deletes the
+    # openrouter absence file, so the body must still name `## absence state`
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="deepseek/deepseek-chat",
+            name="DeepSeek Chat",
+            input_mtok=0.27,
+            output_mtok=1.1,
+            cache_read_mtok=None,
+            pricing={"prompt": "2.7e-7", "completion": "1.1e-6"},
+        )
+    )
+    cfg = make_cfg("deepseek")
+    seed_absence(
+        repo_root,
+        {"openrouter": {"deepseek/deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}},
+    )
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    (title, body, _head) = runner.created[0]
+    assert "## absence state" in body
+    assert branch_absence(repo_root, "pricelog/seed") == {}
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
 def test_absence_section_only_on_the_pr_whose_source_counters_changed(
     tmp_path, fake_modules, repo_root
 ):
