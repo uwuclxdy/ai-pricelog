@@ -1,1 +1,1 @@
-{"deepseek/deepseek-r1": {"absent_runs": 1, "since": "2026-10-19"}, "microsoft/wizardlm-2-8x22b": {"absent_runs": 1, "since": "2026-10-19"}, "sao10k/l3.3-euryale-70b": {"absent_runs": 1, "since": "2026-10-19"}}
+{"deepseek/deepseek-r1": {"absent_runs": 2, "since": "2026-10-19"}, "microsoft/wizardlm-2-8x22b": {"absent_runs": 2, "since": "2026-10-19"}, "sao10k/l3.3-euryale-70b": {"absent_runs": 2, "since": "2026-10-19"}}
