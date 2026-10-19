@@ -58,7 +58,7 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
       "fetched": "2026-10-19"
     }
   },
@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "f05035f705915d5038fd28bd39d97eb6d0bf03008690365ce66fc3b9da600ddf",
-      "fetched": "2026-10-17"
+      "sha256": "9fd8ad589d812548127a908f88f00ff02b2fdbc35470f4ebeff51da918bf9693",
+      "fetched": "2026-10-19"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -155,8 +155,8 @@
     },
     "https://www.scaleway.com/en/docs/changelog/rss.xml": {
       "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "3a71fe5048a6483c4ef0b734cb3bde76d599bce4014a248c8b1b8d8217b35630",
-      "fetched": "2026-10-14"
+      "sha256": "410f94a18ea351e5770e855efc8376768931bcd1b42fe29bbd7d228f6c474566",
+      "fetched": "2026-10-19"
     }
   },
   "databricks": {
