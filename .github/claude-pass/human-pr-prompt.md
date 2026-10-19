@@ -12,9 +12,9 @@ you review exactly one pull request on this repo: the one the `PR_NUMBER` enviro
 ## what to review
 
 - read the PR through `gh pr view "$PR_NUMBER"` (title, body, branch) and the diff below.
-- check the PR's own check-runs: `gh pr checks "$PR_NUMBER"`. the `ci` workflow already gates this tree (uv sync --frozen, ruff check, ruff format --check, pytest); report failed or pending checks in your comment, never re-run the gate. pull_request CI skips every real-tree test behind `default_branch_test` (catalog coverage, the README stats recompute, the flat export, the intervals oracle), so a green check proves none of them: never check them by hand; write "real-tree tests skipped on this PR: unverified" in your comment, and a human runs the suite before merging.
+- check the PR's own check-runs: `gh pr checks "$PR_NUMBER"`. the `ci` workflow already gates this tree (uv sync --frozen, ruff check, ruff format --check, pytest); report failed or pending checks in your comment, never re-run the gate. the four real-tree tests (catalog coverage, the README stats recompute, the flat export, the intervals oracle) run on a human PR's own checks now that a non-`pricelog/` head runs them, so a green check proves they passed; never check them by hand.
 - flag pipeline-owned paths in the diff: `data/history/` and `state/` are written only through pipeline PR branches. a human PR touching them is a finding.
-- catalog edits (`data/catalog/*.json`): the coverage invariant (every `(source, model_id)` in the store appears in exactly one `models.json` entry's `sources`) is one of the skipped real-tree tests above. judge curation impact: twin merges, `curated` flags, vendor claims, new billing-rules entries shaped like the existing ones, dated fx entries, alias records.
+- catalog edits (`data/catalog/*.json`): the coverage invariant (every `(source, model_id)` in the store appears in exactly one `models.json` entry's `sources`) is one of the four real-tree tests that run on this PR's own checks. judge curation impact: twin merges, `curated` flags, vendor claims, new billing-rules entries shaped like the existing ones, dated fx entries, alias records.
 - code edits: review them like any code change — correctness, the tests it ships, what the gate covers.
 - anchor every finding at `file:line` of the diff.
 
