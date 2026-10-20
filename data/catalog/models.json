@@ -2578,6 +2578,15 @@
       },
       "vendor": "moonshot"
     },
+    "fireworks/muse-spark-open": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "muse-spark-open"
+        ]
+      },
+      "vendor": "meta"
+    },
     "fireworks/nvidia-nemotron-3-ultra-preview": {
       "curated": false,
       "sources": {

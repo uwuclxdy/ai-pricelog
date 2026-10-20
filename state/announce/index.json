@@ -19,13 +19,13 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "1ef6f0de6813c792cffbef9fa91b39a5bc89163db32576c5eddad1811e0c1602",
-      "fetched": "2026-10-14"
+      "sha256": "d3402b7ecf86692d71995b707599da40b999d3b35faf28a96c63e9151ec213e8",
+      "fetched": "2026-10-20T19:00:12Z"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "672894656836e55418826ae2447624a1ae3461eb5eadc348568fe95c4770e683",
-      "fetched": "2026-10-14"
+      "sha256": "f30865f27b3ecd0d805b9c19cee8f345d61ff3ba5a49b92f6bb4da846671c5d4",
+      "fetched": "2026-10-20T19:00:12Z"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
@@ -41,8 +41,8 @@
   "moonshot": {
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
-      "sha256": "69067d9dde6f63939ef714980f6d37b32354693733cc1b6b99043fc733f49baf",
-      "fetched": "2026-09-18"
+      "sha256": "b3031fa17af2a28d8eb5e49fa6d4f23346a9068a2faa25ae3253b0183550664c",
+      "fetched": "2026-10-20T19:00:12Z"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
