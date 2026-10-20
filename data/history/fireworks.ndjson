@@ -43,6 +43,7 @@
 {"schema":4,"source":"fireworks","model_id":"minimax-m3","observed_at":"2026-08-29","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"muse-glimmer-30b","observed_at":"2026-08-29","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"muse-glimmer-30b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.35,"output":1.5,"cache_read":0.04}}
+{"schema":4,"source":"fireworks","model_id":"muse-spark-open","observed_at":"2026-10-20","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"nvidia-nemotron-3-ultra-preview","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.4,"cache_read":0.12},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"nvidia-nemotron-3.5-lightning-30b-a3b","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.2,"cache_read":0.01},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"openai-gpt-oss-120b","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
