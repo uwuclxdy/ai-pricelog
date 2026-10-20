@@ -1,9 +1,20 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation Nexus API & SDK Reference CLI Reference Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13
-2025-05-20 2025-05-19 Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
-Copy page Copy page ​ 2026-10-18 Training ​ Upcoming Serverless Training deprecation: DeepSeek V4 Flash (0731) On November 2, 2026 , DeepSeek V4 Flash (0731) will be removed from the shared Serverless Training pool.
+⌘ K Changelog On this page 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24
+2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
+Copy page Copy page ​ 2026-10-19 Inference ​ Upcoming Serverless deprecation: GPT OSS 120B, Inkling, Nemotron, and US endpoints for MiniMax M3 and GLM 5.3 Flash Several Serverless models will be decommissioned on November 7, 2026 to better serve newer, higher-performance replacements.
+This applies only to serverless inference .
+Dedicated deployments and Reserved Throughput are unaffected.
+​ Action required If you use any of the models below on serverless, migrate to a recommended replacement before November 7, 2026 .
+After that date, they will no longer be available via serverless endpoints.
+​ Recommended migrations GPT OSS 120B — move to a dedicated deployment of GPT OSS 120B Inkling — migrate to Muse Spark Open (US endpoint, 50% US regional premium waived) NVIDIA Nemotron 3 Ultra — move to a dedicated deployment of Nemotron Super VL NVIDIA Nemotron 3.5 Lightning 30B A3B — move to a dedicated deployment of Nemotron Super VL MiniMax M3 (US endpoint only) — migrate to DeepSeek V4.1 Flash 1017 (US endpoint) .
+The global MiniMax M3 endpoint remains available.
+GLM 5.3 Flash (US endpoint only) — migrate to DeepSeek V4.1 Flash 1017 (US endpoint) .
+The global GLM 5.3 Flash endpoint remains available.
+GLM 5.3 and DeepSeek V4.1 Flash are not affected and remain available on serverless.
+​ New models on Serverless DeepSeek V4.1 Flash 1017: accounts/fireworks/models/deepseek-v4p1-flash-1017 DeepSeek V4.1 Flash 1017 (US endpoint): accounts/fireworks/models/deepseek-v4p1-flash-1017-us Muse Spark Open (US endpoint, 50% US regional premium waived): accounts/fireworks/models/muse-spark-open MiniMax M3.1: coming to serverless after its open-source release, expected Friday, October 23 If you want to switch to a dedicated deployment, see the Serverless model list and the on-demand deployment quickstart .
+​ 2026-10-18 Training ​ Upcoming Serverless Training deprecation: DeepSeek V4 Flash (0731) On November 2, 2026 , DeepSeek V4 Flash (0731) will be removed from the shared Serverless Training pool.
 This change applies only to Serverless Training.
 If you train DeepSeek V4 Flash (0731) on Serverless Training, migrate to DeepSeek V4.1 Flash 1017 before November 2, 2026.
 ​ 2026-10-18 Training ​ New Serverless Training model: DeepSeek V4.1 Flash 1017 DeepSeek V4.1 Flash 1017 is now available for LoRA workloads on the shared Serverless Training pool, with up to 262K context.
