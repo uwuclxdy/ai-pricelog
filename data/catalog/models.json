@@ -714,6 +714,15 @@
       },
       "vendor": "deepseek-ai"
     },
+    "cloudflare/@cf/deepseek-ai/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "cloudflare": [
+          "@cf/deepseek-ai/deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek-ai"
+    },
     "cloudflare/@cf/google/gemma-3-12b-it": {
       "curated": false,
       "sources": {
