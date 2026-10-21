@@ -22,6 +22,7 @@ from ai_pricelog.store import (
     load_shards,
     newest,
     resolve_rate,
+    row_recorded,
     save,
     save_shard,
     shard_name,
@@ -446,6 +447,21 @@ def test_build_row_includes_cache_read_and_limits():
     row = build_row("a", "m", pricing, "t", "u", VERSION)
     assert row["rates"]["cache_read"] == 0.1
     assert row["limits"] == {"context": 200000, "output": 8192}
+
+
+def test_row_recorded_matches_the_exact_line_only():
+    # the merge dedupes exact lines, so an identical line is already recorded;
+    # the same values on another day are a distinct observation
+    row = build_row("a", "m", Pricing(1e-6, 2e-6, "chat"), "2026-10-21", "u", VERSION)
+    assert row_recorded([row], dict(row))
+    later = build_row("a", "m", Pricing(1e-6, 2e-6, "chat"), "2026-10-22", "u", VERSION)
+    assert not row_recorded([row], later)
+    # the same key with different values is a real same-day update
+    changed = build_row("a", "m", Pricing(3e-6, 4e-6, "chat"), "2026-10-21", "u", VERSION)
+    assert not row_recorded([row], changed)
+    # the identity is the serialized line, not the field values
+    reordered = dict(reversed(list(row.items())))
+    assert not row_recorded([row], reordered)
 
 
 def test_build_row_treats_a_missing_context_as_unset():

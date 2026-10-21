@@ -63,10 +63,13 @@ def parse(text: str, label: str) -> list[dict[str, object]]:
     return rows
 
 
+def _serialize_row(row: dict[str, object]) -> str:
+    """The one serialization of a row: save writes it, row_recorded compares it."""
+    return json.dumps(row, ensure_ascii=False, separators=(",", ":"))
+
+
 def save(rows: list[dict[str, object]], path: Path) -> None:
-    payload = "".join(
-        json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows
-    )
+    payload = "".join(_serialize_row(row) + "\n" for row in rows)
     _atomic_write(payload, path)
 
 
@@ -160,6 +163,23 @@ def appended_lines(head: list[str], branch: list[str]) -> list[str]:
             seen.add(line)
             appended.append(line)
     return appended
+
+
+def row_recorded(rows: list[dict[str, object]], row: dict[str, object]) -> bool:
+    """True when a row under the same key serializes to the same ndjson line.
+
+    The merge unions history by exact line, so an identical line lands
+    nothing. Only rows sharing (source, model_id, observed_at) can serialize
+    identically: observed_at sits in the line, so another day is a distinct
+    observation.
+    """
+    key = (row.get("source"), row.get("model_id"), row.get("observed_at"))
+    line = _serialize_row(row)
+    return any(
+        (candidate.get("source"), candidate.get("model_id"), candidate.get("observed_at")) == key
+        and _serialize_row(candidate) == line
+        for candidate in rows
+    )
 
 
 def last(rows: list[dict[str, object]], source: str, model_id: str) -> dict[str, object] | None:

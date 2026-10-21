@@ -259,24 +259,203 @@ def test_main_retries_a_transient_ls_remote_failure(monkeypatch, capsys):
     assert "skipping pricelog/gone-12345678" in capsys.readouterr().out
 
 
-def test_held_channels_flags_a_no_pr_channel_that_differs_from_the_base(tmp_path):
-    # a needs-human PR carries the run's fresh snapshot for the channel the
-    # pass flagged; its sha differs from the base, so the channel is held
+def _channel_index(sha: str, url: str, file: str, fetched: str = "2026-10-16") -> str:
+    return json.dumps({"perplexity": {url: {"file": file, "sha256": sha * 64, "fetched": fetched}}})
+
+
+def _held_fixture(older: tuple[int, str, bool | None]):
+    """the base plus an older carrier plus a newer carrier on one channel."""
     url = "https://example.com/changelog"
     file = announce.channel_files("perplexity", [url])[url]
-    base_index = json.dumps(
-        {"perplexity": {url: {"file": file, "sha256": "a" * 64, "fetched": "2026-10-15"}}}
-    )
-    no_index = json.dumps(
-        {"perplexity": {url: {"file": file, "sha256": "b" * 64, "fetched": "2026-10-16"}}}
-    )
+    older_number, older_head, older_mark = older
+    newer_number, newer_head = older_number + 1, older_head.replace("older", "newer")
     runner = FakeRunner()
-    runner.on("HEAD:state/announce/index.json", output=base_index)
-    runner.on("origin/pricelog/no-12345678:state/announce/index.json", output=no_index)
-    candidates = [(552, "pricelog/no-12345678"), (553, "pricelog/yes-87654321")]
-    dispositions = {552: False, 553: True}
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=_channel_index("a", url, file, "2026-10-15"),
+    )
+    runner.on(
+        f"origin/{older_head}:state/announce/index.json", output=_channel_index("b", url, file)
+    )
+    runner.on(
+        f"origin/{newer_head}:state/announce/index.json", output=_channel_index("b", url, file)
+    )
+    candidates = [(older_number, older_head), (newer_number, newer_head)]
+    dispositions = {older_number: older_mark, newer_number: None}
+    return runner, candidates, dispositions, ("perplexity", url)
+
+
+def test_held_channels_releases_a_channel_a_newer_yes_pr_carries(tmp_path):
+    # the newest pass judged the same channel on a newer PR and marked it
+    # yes: the owed ruling is made, so the channel is no longer held
+    runner, candidates, dispositions, channel = _held_fixture((552, "pricelog/older-no", False))
+    dispositions[553] = True
+    assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset()
+
+
+def test_held_channels_holds_when_the_newest_carrier_is_no(tmp_path):
+    runner, candidates, dispositions, channel = _held_fixture((552, "pricelog/older-yes", True))
+    dispositions[553] = False
     assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset(
-        {("perplexity", url)}
+        {channel}
+    )
+
+
+def test_held_channels_holds_an_unjudged_newest_carrier(tmp_path):
+    runner, candidates, dispositions, channel = _held_fixture((552, "pricelog/older-no", False))
+    assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset(
+        {channel}
+    )
+
+
+def test_settled_no_heads_requeues_a_no_pr_whose_channel_a_newer_yes_carries(tmp_path):
+    # the no PR's only differing channel is settled by the newer yes PR: its
+    # reason is gone, so it re-enters the review queue
+    runner, candidates, dispositions, _channel = _held_fixture((552, "pricelog/older-no", False))
+    dispositions[553] = True
+    assert merge_verified._settled_no_heads(
+        runner, tmp_path, candidates, dispositions
+    ) == frozenset({552})
+    assert merge_verified.awaiting_review(
+        candidates, dispositions, limit=10, requeue=frozenset({552})
+    ) == [(552, "pricelog/older-no")]
+
+
+def test_settled_no_heads_leaves_a_no_pr_when_the_newest_carrier_is_no(tmp_path):
+    runner, candidates, dispositions, _channel = _held_fixture((552, "pricelog/older-yes", True))
+    dispositions[553] = False
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions) == frozenset()
+    )
+
+
+def test_settled_no_heads_never_settles_an_unreadable_branch(tmp_path):
+    # a no PR whose announce index cannot be read is unknown, never settled
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    runner = FakeRunner()
+    runner.on("HEAD:state/announce/index.json", output=_channel_index("a", url, file))
+    runner.on("origin/pricelog/older-no:state/announce/index.json", failure=pr.PrError("missing"))
+    runner.on(
+        "origin/pricelog/newer-yes:state/announce/index.json",
+        output=_channel_index("b", url, file),
+    )
+    candidates = [(552, "pricelog/older-no"), (553, "pricelog/newer-yes")]
+    dispositions = {552: False, 553: True}
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions) == frozenset()
+    )
+
+
+def test_settled_no_heads_leaves_a_no_pr_carrying_no_differing_channel(tmp_path):
+    # a price-only no PR carries no announce channel, so no ruling settled it:
+    # re-queueing it would churn the queue and bypass the human it waits on
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    runner = FakeRunner()
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=_channel_index("a", url, file, "2026-10-15"),
+    )
+    runner.on(
+        "origin/pricelog/older-no:state/announce/index.json",
+        output=_channel_index("a", url, file),
+    )
+    runner.on(
+        "origin/pricelog/newer-yes:state/announce/index.json",
+        output=_channel_index("b", url, file),
+    )
+    candidates = [(552, "pricelog/older-no"), (553, "pricelog/newer-yes")]
+    dispositions = {552: False, 553: True}
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions) == frozenset()
+    )
+
+
+def test_settled_no_heads_leaves_a_no_pr_when_the_newest_carrier_is_unjudged(tmp_path):
+    runner, candidates, dispositions, _channel = _held_fixture((552, "pricelog/older-no", False))
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions) == frozenset()
+    )
+
+
+def test_settled_no_heads_requires_every_carried_channel_settled(tmp_path):
+    # the no PR carries two channels; only one has a newer yes carrier, so
+    # the other channel's ruling is still owed
+    x_url, y_url = "https://example.com/x", "https://example.com/y"
+    files = announce.channel_files("perplexity", [x_url, y_url])
+    runner = FakeRunner()
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=json.dumps(
+            {
+                "perplexity": {
+                    x_url: {"file": files[x_url], "sha256": "a" * 64, "fetched": "2026-10-15"},
+                    y_url: {"file": files[y_url], "sha256": "a" * 64, "fetched": "2026-10-15"},
+                }
+            }
+        ),
+    )
+    runner.on(
+        "origin/pricelog/older-no:state/announce/index.json",
+        output=json.dumps(
+            {
+                "perplexity": {
+                    x_url: {"file": files[x_url], "sha256": "b" * 64, "fetched": "2026-10-16"},
+                    y_url: {"file": files[y_url], "sha256": "b" * 64, "fetched": "2026-10-16"},
+                }
+            }
+        ),
+    )
+    runner.on(
+        "origin/pricelog/newer-yes:state/announce/index.json",
+        output=json.dumps(
+            {
+                "perplexity": {
+                    x_url: {"file": files[x_url], "sha256": "b" * 64, "fetched": "2026-10-16"},
+                    y_url: {"file": files[y_url], "sha256": "a" * 64, "fetched": "2026-10-15"},
+                }
+            }
+        ),
+    )
+    candidates = [(552, "pricelog/older-no"), (553, "pricelog/newer-yes")]
+    dispositions = {552: False, 553: True}
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions) == frozenset()
+    )
+
+
+def test_held_channels_ignores_a_stale_branch_snapshot(tmp_path):
+    # the merge never lets a stale copy win: a no branch whose snapshot is
+    # older than the base carries nothing to hold
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    runner = FakeRunner()
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=_channel_index("a", url, file, "2026-10-17"),
+    )
+    runner.on(
+        "origin/pricelog/older-no:state/announce/index.json",
+        output=_channel_index("b", url, file, "2026-10-15"),
+    )
+    candidates = [(552, "pricelog/older-no")]
+    dispositions = {552: False}
+    assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset()
+
+
+def test_held_channels_ranks_carriers_by_their_marker_time(tmp_path):
+    # an older yes on a higher-numbered PR must not outrank a newer no on a
+    # lower-numbered one: the stranded-yes + requeue sequence
+    runner, candidates, dispositions, channel = _held_fixture((552, "pricelog/older-no", False))
+    dispositions[553] = True
+    marker_times = {552: "2026-10-21T11:00:00Z", 553: "2026-10-21T10:00:00Z"}
+    assert merge_verified._held_channels(
+        runner, tmp_path, candidates, dispositions, marker_times
+    ) == frozenset({channel})
+    assert (
+        merge_verified._settled_no_heads(runner, tmp_path, candidates, dispositions, marker_times)
+        == frozenset()
     )
 
 
@@ -348,7 +527,9 @@ def test_main_awaiting_review_prints_the_queue(monkeypatch, capsys):
     # a human's marker is not the pass's disposition: it queues
     runner.on("pr view 400", output=_comments(("uwuclxdy", "automerge: yes")))
     runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("git fetch", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    monkeypatch.setattr(merge_verified, "_settled_no_heads", lambda *a, **k: frozenset())
     monkeypatch.setattr(
         automerge,
         "merge_branches",
@@ -358,6 +539,82 @@ def test_main_awaiting_review_prints_the_queue(monkeypatch, capsys):
     assert capsys.readouterr().out == (
         "400 pricelog/openrouter-400\n414 pricelog/anthropic-414\n488 pricelog/openrouter-488\n"
     )
+
+
+def test_main_awaiting_review_requeues_a_settled_no_pr(monkeypatch, capsys):
+    # a no PR whose channel a newer yes pass settled prints in the queue
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [
+                {"number": 488, "headRefName": "pricelog/openrouter-488"},
+                {"number": 460, "headRefName": "pricelog/anthropic-460"},
+            ]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on("pr view 488", output=_comments())
+    runner.on("pr view 460", output=_comments(("cldbot", "needs human\n\nautomerge: no")))
+    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("git fetch", output="")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    monkeypatch.setattr(merge_verified, "_settled_no_heads", lambda *a, **k: frozenset({460}))
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    assert capsys.readouterr().out == ("460 pricelog/anthropic-460\n488 pricelog/openrouter-488\n")
+
+
+def test_main_awaiting_review_survives_a_failed_ref_fetch(monkeypatch, capsys):
+    # the queue fetch is best-effort: a failure warns on stderr and the
+    # unjudged list still prints on stdout, exit 0
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps([{"number": 488, "headRefName": "pricelog/openrouter-488"}]),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on("pr view 488", output=_comments())
+    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("git fetch", failure=pr.PrError("network"))
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    monkeypatch.setattr(merge_verified, "_settled_no_heads", lambda *a, **k: frozenset())
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "488 pricelog/openrouter-488\n"
+    assert "fetch" in captured.err
+
+
+def test_main_awaiting_review_skips_the_fetch_when_every_pr_is_judged(monkeypatch, capsys):
+    # no no-marked candidate means nothing to settle: no ref fetch, empty list
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps([{"number": 553, "headRefName": "pricelog/yes-553"}]),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on("pr view 553", output=_comments(("cldbot", "verified\n\nautomerge: yes")))
+    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    assert capsys.readouterr().out == ""
+    assert not any("fetch" in " ".join(cmd) for cmd, _cwd in runner.calls)
+
+
+def test_announce_index_wraps_a_malformed_url(tmp_path):
+    # a hand-edited index url that urlsplit cannot parse is a named stop
+    runner = FakeRunner()
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=json.dumps(
+            {
+                "perplexity": {
+                    "https://[foo": {"file": "x", "sha256": "a" * 64, "fetched": "2026-10-16"}
+                }
+            }
+        ),
+    )
+    with pytest.raises(automerge.AutoMergeError, match="perplexity"):
+        automerge._announce_index(runner, tmp_path, "HEAD", "base")
 
 
 def test_main_awaiting_review_prints_nothing_for_an_empty_queue(monkeypatch, capsys):

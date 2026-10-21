@@ -1071,6 +1071,66 @@ def test_refresh_unchanged_appends_nothing(tmp_path, fake_modules, repo_root):
     assert runner.pr_urls == []
 
 
+def test_refresh_same_day_repeat_appends_no_duplicate_line(tmp_path, fake_modules, repo_root):
+    # a same-day A -> B -> A flip-flop rebuilds A while B is the last row;
+    # A's exact line already sits in the shard, so the append lands nothing
+    # the merge can take (the 2026-10-21 nemotron phantom)
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": Pricing(0.2e-6, 0.4e-6, "chat")}
+    cfg = make_cfg("deepseek")
+    first = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        TODAY,
+        "https://example.com/pricing",
+        VERSION,
+    )
+    second = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.3e-6, 0.6e-6, "chat"),
+        TODAY,
+        "https://example.com/pricing",
+        VERSION,
+    )
+    seed_store(repo_root, [first, second])
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    provider_report = report.providers["deepseek"]
+    assert provider_report.prs == []
+    assert provider_report.rows == []
+    assert provider_report.errors == []
+    assert runner.pr_urls == []
+
+
+def test_openrouter_same_day_repeat_appends_no_duplicate_line(
+    tmp_path, fake_modules, or_models, repo_root
+):
+    # the observed site: the api serves A while B is the last landed row and
+    # A's exact line is already in the shard
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    first = openrouter.build_row(or_model("x/foo", 0.1, 0.2), TODAY, VERSION)
+    second = openrouter.build_row(or_model("x/foo", 0.15, 0.3), TODAY, VERSION)
+    assert first is not None and second is not None
+    seed_store(repo_root, [first, second])
+    or_models.append(or_model("x/foo", 0.1, 0.2))
+    runner = PipelineRunner()
+
+    report = pipeline.run(make_cfg("deepseek"), repo_root, runner, today=TODAY)
+
+    or_report = report.providers["openrouter"]
+    assert or_report.candidates == []
+    assert or_report.prs == []
+    assert or_report.errors == []
+    assert runner.pr_urls == []
+
+
 def test_refresh_uses_dedup_spelling_for_stored_rows(tmp_path, fake_modules, repo_root):
     # the mistral case: the page spells dated snapshots with dashes, a store
     # seeded from the pre-pivot era tracks the compacted spelling
@@ -2496,6 +2556,36 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
         "deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}
     }
     assert_default_branch_clean(repo_root, tip="merge deepseek pr")
+
+
+def test_same_day_duplicate_removal_line_is_not_replanned(tmp_path, fake_modules, repo_root):
+    # a delist -> revival -> re-delist whose removal snapshot repeats an
+    # earlier same-day removal builds a byte-identical line; the merge would
+    # drop it, so the run plans no PR
+    detect, scrape = fake_modules
+    detect["deepseek"] = []
+    scrape["deepseek"] = {}
+    cfg = make_cfg("deepseek")
+    price = deepseek_prior()
+    removal = store.build_removal_row("deepseek", "deepseek-chat", TODAY, VERSION, last_row=price)
+    revival = store.build_row(
+        "deepseek",
+        "deepseek-chat",
+        Pricing(0.2e-6, 0.4e-6, "chat"),
+        TODAY,
+        "https://example.com/pricing",
+        VERSION,
+    )
+    seed_store(repo_root, [price, removal, revival])
+    seed_absence(repo_root, {"deepseek": {"deepseek-chat": {"absent_runs": 2, "since": TODAY}}})
+    runner = PipelineRunner()
+
+    report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+
+    deepseek_report = report.providers["deepseek"]
+    assert deepseek_report.prs == []
+    assert deepseek_report.errors == []
+    assert runner.pr_urls == []
 
 
 def test_pending_removal_keeps_the_counter_until_the_row_lands(tmp_path, fake_modules, repo_root):

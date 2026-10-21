@@ -538,7 +538,8 @@ def _refresh_drift(
     Maps the page id through the scraper's dedup_keys to the stored spelling
     (the first spelling that has a row, pending branches included), scrapes
     with the PAGE id (the scrapers key their rows by page spelling), and
-    appends a row under the STORED spelling when the rates changed. Stateless:
+    appends a row under the STORED spelling when the rates changed and its
+    exact line is not already recorded. Stateless:
     a merged PR settles by itself (the next run diffs against the landed row),
     an open one is skipped by the pending check.
     """
@@ -573,6 +574,9 @@ def _refresh_drift(
             row, store.last(rows, pcfg.key, stored)
         ):
             log.debug("refresh for %s: unchanged", stored)
+            continue
+        if store.row_recorded(rows, row):
+            log.debug("refresh for %s: identical line already recorded", stored)
             continue
         # a removal row as the newest row means the model reappeared: append
         # the fresh row even at unchanged prices so the index drops removed_at
@@ -632,6 +636,9 @@ def _openrouter_rows(
             continue
         if ("openrouter", model_id) in held_keys:
             or_report.skipped_pending.append(model_id)
+            continue
+        if store.row_recorded(rows, row):
+            log.debug("openrouter %s: identical line already recorded", model_id)
             continue
         or_report.candidates.append(model_id)
         group = plan.setdefault(
@@ -728,7 +735,8 @@ def _track_absence(
 
     A present id clears its entry; an absent id raises its counter, and the
     second landed absent observation plans a removal row whose pr opens like
-    any price row (same per-source batch). The raised entry stays in the
+    any price row (same per-source batch), unless the row's exact line is
+    already recorded (a same-day re-delist), which plans nothing. The raised entry stays in the
     state: the landed-removal cleanup drops it once the row reaches the
     store, and a rejected pr leaves the committed baseline untouched for the
     next run to re-derive. Ids behind an open pr are skipped entirely.
@@ -783,6 +791,9 @@ def _track_absence(
             # report, the entry stays at 2 and the next run retries
             log.warning("removal for %s failed validation in %s: %s", model_id, source, exc)
             errors.append(_describe(exc))
+            continue
+        if store.row_recorded(rows, row):
+            log.debug("removal for %s in %s: identical line already recorded", model_id, source)
             continue
         group = _PrGroup(source, provider, source_url)
         group.rows.append(row)
