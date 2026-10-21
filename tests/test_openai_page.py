@@ -252,18 +252,30 @@ def grouped_soup(panes: dict[str, str | None]) -> BeautifulSoup:
     )
 
 
-def both_tables_soup(image_groups: list, image_pane: str = "standard") -> BeautifulSoup:
-    """the chat standard island plus the image switcher, one soup.
-
-    `image_pane` names the pane holding the image island; the other stays empty.
-    """
+def image_switcher_soup(panes_props: dict[str, str]) -> BeautifulSoup:
+    """the chat standard island plus the image switcher; `panes_props` maps a
+    pane value to the island props it holds."""
     chat = island_soup("standard", [["gpt-5.6-sol", 4, 0.4, 5, 20]])
     panes: dict[str, str | None] = {"standard": None, "batch": None}
-    panes[image_pane] = image_island(image_props(image_groups))
+    panes.update({value: image_island(props) for value, props in panes_props.items()})
     image = grouped_soup(panes)
-    chat_island = chat.find("astro-island")
-    image.append(chat_island)
+    image.append(chat.find("astro-island"))
     return image
+
+
+def both_tables_soup_with_props(props: str, image_pane: str = "standard") -> BeautifulSoup:
+    """the chat standard island plus one image pane holding `props`."""
+    return image_switcher_soup({image_pane: props})
+
+
+def both_tables_soup(image_groups: list, image_pane: str = "standard") -> BeautifulSoup:
+    """the chat standard island plus the image switcher, one pane held."""
+    return both_tables_soup_with_props(image_props(image_groups), image_pane)
+
+
+def both_panes_soup_with_props(standard_props: str, batch_props: str) -> BeautifulSoup:
+    """the chat standard island plus both image panes holding their props."""
+    return image_switcher_soup({"standard": standard_props, "batch": batch_props})
 
 
 def empty_groups_props() -> str:
@@ -277,16 +289,8 @@ def empty_groups_props() -> str:
 
 
 def both_panes_soup(standard_groups: list, batch_groups: list) -> BeautifulSoup:
-    """the chat standard island plus the image switcher with both panes held."""
-    chat = island_soup("standard", [["gpt-5.6-sol", 4, 0.4, 5, 20]])
-    panes = {
-        "standard": image_island(image_props(standard_groups)),
-        "batch": image_island(image_props(batch_groups)),
-    }
-    image = grouped_soup(panes)
-    chat_island = chat.find("astro-island")
-    image.append(chat_island)
-    return image
+    """the chat standard island plus both image panes."""
+    return both_panes_soup_with_props(image_props(standard_groups), image_props(batch_groups))
 
 
 STANDARD_IMAGE = [
@@ -335,6 +339,208 @@ def test_scrape_image_model_text_output_prefers_text(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(10 / 1e6)
     assert pricing.image_cost_per_token == pytest.approx(8 / 1e6)
     assert pricing.image_output_cost_per_token == pytest.approx(32 / 1e6)
+
+
+def test_scrape_image_rows_follow_the_live_heading_order(monkeypatch):
+    # the live props order the columns Input | Output | Cached input, so the
+    # cells must map by heading, never by position. the values are the live
+    # 2026-10-21 gpt-image-1.5 row: Text 5 / 10 / 1.25, Image 8 / 32 / 2
+    groups = [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]
+    props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output", "Cached input"],
+            "groups": [1, groups],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    pricing = scraper.scrape(cfg(), "gpt-image-1.5")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(5 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(10 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(1.25 / 1e6)
+    assert pricing.image_cost_per_token == pytest.approx(8 / 1e6)
+    assert pricing.image_output_cost_per_token == pytest.approx(32 / 1e6)
+
+
+def test_scrape_image_row_unmapped_heading_raises(monkeypatch):
+    # a heading the mapping cannot place on a group it prices must raise,
+    # never guess an axis or drop the cell
+    groups = [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]
+    props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output", "Audio"],
+            "groups": [1, groups],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    with pytest.raises(FetchError, match="unmapped pricing heading 'Audio'"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
+
+
+def test_scrape_image_row_cell_count_mismatch_raises(monkeypatch):
+    # a matched row whose cells do not line up with the headings raises
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: both_tables_soup([group("gpt-image-1.5", [8, 32, 2], [5])]),
+    )
+    with pytest.raises(FetchError, match="2 cells against 4 columns"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
+
+
+def test_detect_keeps_chat_ids_when_image_island_lacks_headings(monkeypatch, caplog):
+    # the headings only price image rows; the ids are readable without them,
+    # so a headings-less island is additive drift, never a provider halt
+    props = json.dumps(
+        {"groups": [1, [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]]}
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    with caplog.at_level(logging.WARNING):
+        ids = detector.detect(cfg())
+    assert "gpt-5.6-sol" in ids
+    assert "gpt-image-1.5" in ids
+    assert "headings" in caplog.text
+
+
+def test_scrape_chat_row_ignores_a_bad_image_heading(monkeypatch):
+    # a chat-only id must price even when the image island's headings drift;
+    # the image table is read for its ids here, never for a rate
+    groups = [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]
+    props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output", {"no_label": 1}],
+            "groups": [1, groups],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    pricing = scraper.scrape(cfg(), "gpt-5.6-sol")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(4 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(20 / 1e6)
+
+
+def test_scrape_image_heading_set_missing_cached_input_raises(monkeypatch):
+    # a dropped cache column must fail loud, never read as a cache-rate drop
+    groups = [group("gpt-image-1.5", [8, 32], [5, 10])]
+    props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output"],
+            "groups": [1, groups],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    with pytest.raises(FetchError, match="Cached input"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
+
+
+def test_scrape_image_unreadable_heading_raises(monkeypatch):
+    # an unrecognised heading object is unreadable, never dropped
+    props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output", {"no_label": 1}],
+            "groups": [1, [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    with pytest.raises(FetchError, match="unreadable pricing heading"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
+
+
+def test_scrape_image_headings_without_modality_raise(monkeypatch):
+    props = json.dumps(
+        {
+            "headings": ["Model", "Input", "Output", "Cached input"],
+            "groups": [1, [group("gpt-image-1.5", [8, 32, 2], [5, 10, 1.25])]],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: both_tables_soup_with_props(props))
+    with pytest.raises(FetchError, match="Modality"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
+
+
+def test_scrape_batch_override_maps_by_the_batch_headings(monkeypatch):
+    # the batch pane's cells follow its own headings; borrowing the standard
+    # pane's map would misprice the override
+    standard = [group("gpt-image-1.5", [8, 2, 32], [5, 1.25, 10])]
+    batch = [group("gpt-image-1.5", [4, 16, 1], [2.5, 5, 0.63])]
+    standard_props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Cached input", "Output"],
+            "groups": [1, standard],
+        }
+    ).replace('"', "&quot;")
+    batch_props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output", "Cached input"],
+            "groups": [1, batch],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(
+        scraper, "fetch_soup", lambda url: both_panes_soup_with_props(standard_props, batch_props)
+    )
+    pricing = scraper.scrape(cfg(), "gpt-image-1.5")
+    assert pricing is not None
+    assert pricing.window_rates == (
+        {
+            "mode": "batch",
+            "input_mtok": 2.5,
+            "cache_read_mtok": 0.63,
+            "output_mtok": 5,
+            "image_mtok": 4,
+            "image_output_mtok": 16,
+        },
+    )
+
+
+def test_scrape_batch_pane_missing_rate_heading_drops_the_override(monkeypatch):
+    # a batch table that drops a rate column is additive drift: the standard
+    # price stands and the override drops with a warning, never a raise
+    standard = [group("gpt-image-1.5", [8, 2, 32], [5, 1.25, 10])]
+    batch = [group("gpt-image-1.5", [4, 16], [2.5, 5])]
+    standard_props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Cached input", "Output"],
+            "groups": [1, standard],
+        }
+    ).replace('"', "&quot;")
+    batch_props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Output"],
+            "groups": [1, batch],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(
+        scraper, "fetch_soup", lambda url: both_panes_soup_with_props(standard_props, batch_props)
+    )
+    pricing = scraper.scrape(cfg(), "gpt-image-1.5")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(5 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(1.25 / 1e6)
+    assert pricing.window_rates == ()
+
+
+def test_scrape_batch_headings_without_modality_raise(monkeypatch):
+    # the batch rows are identified by Modality even when its rate headings
+    # may drop; a batch table without it raises
+    standard = [group("gpt-image-1.5", [8, 2, 32], [5, 1.25, 10])]
+    batch = [group("gpt-image-1.5", [4, 16, 1], [2.5, 5, 0.63])]
+    standard_props = json.dumps(
+        {
+            "headings": ["Model", "Modality", "Input", "Cached input", "Output"],
+            "groups": [1, standard],
+        }
+    ).replace('"', "&quot;")
+    batch_props = json.dumps(
+        {
+            "headings": ["Model", "Input", "Output", "Cached input"],
+            "groups": [1, batch],
+        }
+    ).replace('"', "&quot;")
+    monkeypatch.setattr(
+        scraper, "fetch_soup", lambda url: both_panes_soup_with_props(standard_props, batch_props)
+    )
+    with pytest.raises(FetchError, match="Modality"):
+        scraper.scrape(cfg(), "gpt-image-1.5")
 
 
 def test_scrape_image_models_all_five_priced(monkeypatch):

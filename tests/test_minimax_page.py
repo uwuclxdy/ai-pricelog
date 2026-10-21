@@ -345,7 +345,7 @@ def test_scrape_model_row_under_a_header_missing_a_rate_column_raises(
         ),
         (_M27_HEADER.replace("| Model |", "| Models |"), "Model"),
     ],
-    ids=["bolded-header", "models-first-cell"],
+    ids=["bolded-header-without-unit", "models-first-cell"],
 )
 def test_scrape_model_row_under_an_unrecognised_header_raises(
     minimax_cfg, monkeypatch, new_header, column
@@ -388,6 +388,55 @@ def test_scrape_table_with_a_reworded_cache_read_column_raises(
         minimax_scrape.scrape(minimax_cfg, model_id)
     assert str(excinfo.value) == (
         f"malformed pricing table for {model_id} on {_PRICING_URL}: no Prompt caching Read column"
+    )
+
+
+def test_scrape_reads_the_unit_suffixed_bold_header(minimax_cfg, monkeypatch):
+    # the live page bolds every header and appends its unit; the M3.1 row
+    # prices 0.15 / 0.60 / 0.015 per 1M on it (measured 2026-10-21)
+    page = (
+        "| **Model** | **Input** \\$ / M tokens | **Output** \\$ / M tokens"
+        " | **Prompt caching Read** \\$ / M tokens |\n"
+        "| :- | :-: | :-: | :-: |\n"
+        "| **MiniMax-M3.1-Flash** | \\$0.15 | \\$0.60 | \\$0.015 |\n"
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M3.1-Flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.15 / 1e6
+    assert pricing.output_cost_per_token == 0.60 / 1e6
+    assert pricing.cache_read_cost_per_token == 0.015 / 1e6
+
+
+def test_scrape_unbalanced_bold_header_raises(minimax_cfg, monkeypatch):
+    # only a matched **pair** drops; stripping each marker independently
+    # would accept a half-bold header and silently price it
+    page = _pricing_page_with(
+        _M27_HEADER,
+        "| Model** | **Input** \\$ / M tokens | **Output** \\$ / M tokens"
+        " | **Prompt caching Read** \\$ / M tokens |",
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    with pytest.raises(FetchError) as excinfo:
+        minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7")
+    assert str(excinfo.value) == (
+        f"malformed pricing table for MiniMax-M2.7 on {_PRICING_URL}: no Model column"
+    )
+
+
+def test_scrape_unbalanced_bold_rate_header_raises(minimax_cfg, monkeypatch):
+    # the unit-suffixed rate cell drops its bold pair only as a pair too;
+    # a half-bold rate cell must raise, never resolve
+    page = _pricing_page_with(
+        _M27_HEADER,
+        "| **Model** | Input** \\$ / M tokens | **Output** \\$ / M tokens"
+        " | **Prompt caching Read** \\$ / M tokens |",
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    with pytest.raises(FetchError) as excinfo:
+        minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7")
+    assert str(excinfo.value) == (
+        f"malformed pricing table for MiniMax-M2.7 on {_PRICING_URL}: no Input column"
     )
 
 

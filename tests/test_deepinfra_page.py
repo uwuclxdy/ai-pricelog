@@ -224,6 +224,26 @@ def test_scrape_unreadable_context_raises(monkeypatch):
         scraper.scrape(cfg(), "kimi-k3")
 
 
+def test_scrape_dashed_context_leaves_context_unset(monkeypatch):
+    # the page now renders "-" where a model lists no context window; the
+    # rates still read, so the row prices without a context limit
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: token_table_soup(
+            model_row(
+                "DeepSeek V3.2", "/deepseek-ai/DeepSeek-V3.2", "-", "$0.26 / $0.13 cached", "$0.38"
+            )
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "deepseek-v3.2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.26 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.13 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.38 / 1e6)
+    assert pricing.max_tokens_in is None
+
+
 def test_scrape_missing_table_raises(monkeypatch):
     monkeypatch.setattr(
         scraper,

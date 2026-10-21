@@ -448,6 +448,20 @@ def test_build_row_includes_cache_read_and_limits():
     assert row["limits"] == {"context": 200000, "output": 8192}
 
 
+def test_build_row_treats_a_missing_context_as_unset():
+    # a scraper whose page no longer lists a context window passes None;
+    # the row omits limits.context instead of raising on the comparison
+    pricing = Pricing(
+        input_cost_per_token=1e-6,
+        output_cost_per_token=2e-6,
+        mode="chat",
+        max_tokens_in=None,
+        max_tokens_out=8192,
+    )
+    row = build_row("a", "m", pricing, "t", "u", VERSION)
+    assert row["limits"] == {"output": 8192}
+
+
 def test_build_row_includes_fees():
     pricing = Pricing(
         input_cost_per_token=1e-6,

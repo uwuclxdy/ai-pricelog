@@ -3,7 +3,10 @@
 reads https://platform.minimax.io/docs/guides/pricing-paygo.md (static markdown).
 token-priced tables have a header `Model | Input | Output | ...`, matched on
 folded headings (case, whitespace, &/and), so a recased header still scrapes
-and a `**Model / API**` table stays out. MiniMax-M3 rows live in
+and a `**Model / API**` table stays out. the live page bolds each header name
+and appends its unit (`**Input** $ / M tokens`): a unit-suffixed cell folds to
+its name with the unit and bold pair dropped, and the first cell drops its bold
+pair; a bolded rate cell with no unit does not resolve. MiniMax-M3 rows live in
 Standard/Priority tab variants and are split by context size; we take the
 first M3 row, which is the Standard tab's <=512k row. price cells like
 `~~$0.60~~ $0.30 / M tokens` carry a strikethrough original plus the current
@@ -43,6 +46,7 @@ _FOLDED_MODEL = fold_heading("Model")
 _FOLDED_INPUT = fold_heading("Input")
 _FOLDED_OUTPUT = fold_heading("Output")
 _FOLDED_CACHE_READ = fold_heading("Prompt caching Read")
+_UNIT_SUFFIX_RE = re.compile(r"\s*\\?\$\s*/\s*m tokens$")
 
 
 def _last_amount(cell: str, model_id: str, url: str) -> float | None:
@@ -63,6 +67,27 @@ def _model_row(table: list[list[str]], model_id: str) -> list[str] | None:
     return None
 
 
+def _drop_bold_pair(folded: str) -> str:
+    """`folded` with one complete `**` pair dropped; an unbalanced marker stays."""
+    if len(folded) >= 4 and folded.startswith("**") and folded.endswith("**"):
+        return folded[2:-2]
+    return folded
+
+
+def _fold_header(cell: str) -> str:
+    """the cell's folded heading; a unit-suffixed cell drops the unit and its bold pair."""
+    folded = fold_heading(cell)
+    suffix = _UNIT_SUFFIX_RE.search(folded)
+    if suffix is None:
+        return folded
+    return _drop_bold_pair(folded[: suffix.start()].strip())
+
+
+def _is_model_heading(cell: str) -> bool:
+    """whether the first header cell names the model column (the live page bolds it)."""
+    return _drop_bold_pair(_fold_header(cell)) == _FOLDED_MODEL
+
+
 def _missing_column(folded: list[str]) -> str | None:
     """the first column the scraper reads that the header does not resolve."""
     if _FOLDED_INPUT not in folded:
@@ -76,8 +101,8 @@ def _missing_column(folded: list[str]) -> str | None:
 
 def _is_pricing_table(table: list[list[str]]) -> bool:
     """a table the scraper can price from: `Model | Input | Output`."""
-    folded = [fold_heading(cell) for cell in table[0]]
-    return folded[0] == _FOLDED_MODEL and _FOLDED_INPUT in folded and _FOLDED_OUTPUT in folded
+    folded = [_fold_header(cell) for cell in table[0]]
+    return _is_model_heading(table[0][0]) and _FOLDED_INPUT in folded and _FOLDED_OUTPUT in folded
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
@@ -88,9 +113,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         row = _model_row(table, model_id)
         if row is None:
             continue
-        folded = [fold_heading(cell) for cell in table[0]]
+        folded = [_fold_header(cell) for cell in table[0]]
         missing = _missing_column(folded)
-        if missing is None and folded[0] != _FOLDED_MODEL:
+        if missing is None and not _is_model_heading(table[0][0]):
             missing = "Model"
         if missing is not None:
             priced = any("$" in cell for cell in row[1:])

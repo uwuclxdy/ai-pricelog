@@ -504,7 +504,7 @@ def build_row(
         rates["audio"] = to_mtok(pricing.audio_cost_per_token * factor)
 
     limits: dict[str, object] = {}
-    if pricing.max_tokens_in > 0:
+    if pricing.max_tokens_in is not None and pricing.max_tokens_in > 0:
         limits["context"] = pricing.max_tokens_in
     if pricing.max_tokens_out > 0:
         limits["output"] = pricing.max_tokens_out

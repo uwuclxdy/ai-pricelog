@@ -16,7 +16,9 @@ class Pricing:
     input_cost_per_token: float
     output_cost_per_token: float
     mode: str
-    max_tokens_in: int = 0
+    # None = the page lists no context, 0 = the legacy default; both omit
+    # limits.context
+    max_tokens_in: int | None = 0
     cache_read_cost_per_token: float | None = None
     peak_input_cost_per_token: float | None = None
     peak_output_cost_per_token: float | None = None

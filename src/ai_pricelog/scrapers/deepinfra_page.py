@@ -4,7 +4,8 @@ the per-token tables (Model | Context | $ per 1M input tokens | $ per 1M
 output tokens | Actions) price each model per 1M tokens. the input cell
 holds one amount, or two as "$base / $cached cached" when the model bills
 cache reads; the output cell holds exactly one. the context cell ("1024k")
--> max_tokens_in, k counted as 1024 (the repo convention). rows key by the
+-> max_tokens_in, k counted as 1024 (the repo convention); a `-` cell, the
+page's no-context marker, leaves max_tokens_in None. rows key by the
 model-cell link's last path segment, lowercased, the detector's id. a
 matched cell with an unexpected amount count, an amount the grammar cannot
 read, or an unreadable context, is a page-shape break (FetchError), so a
@@ -70,16 +71,20 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
                     f"{len(output_amounts)} amounts, want 1"
                 )
             context = row[1].get_text(" ", strip=True)
-            context_match = _CONTEXT_RE.fullmatch(context)
-            if context_match is None:
-                raise FetchError(
-                    f"unreadable context {context!r} for {model_id} on {cfg.scraper_url}"
-                )
+            if context == "-":
+                max_tokens_in = None
+            else:
+                context_match = _CONTEXT_RE.fullmatch(context)
+                if context_match is None:
+                    raise FetchError(
+                        f"unreadable context {context!r} for {model_id} on {cfg.scraper_url}"
+                    )
+                max_tokens_in = int(context_match.group(1)) * 1024
             return Pricing(
                 input_cost / 1e6,
                 float(output_amounts[0].replace(",", "")) / 1e6,
                 mode="chat",
-                max_tokens_in=int(context_match.group(1)) * 1024,
+                max_tokens_in=max_tokens_in,
                 cache_read_cost_per_token=(cache_read / 1e6 if cache_read is not None else None),
             )
     return None

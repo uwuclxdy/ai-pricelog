@@ -20,16 +20,25 @@ model rows still raises.
 the image-generation models sit in their own island shape: the content
 switcher root data-content-switcher-id="multimodal-image-pricing" holds
 standard and batch panes, and the standard pane's astro-island
-(component-export="GroupedPricingTable") carries groups of {model, rows}
-where each row is [label, input, cached input, output] with label "Image"
-or "Text". the batch pane repeats the ids at discounted rates, so the
-pane's DOM containment picks the island, never its position: the video
-and specialized sections carry GroupedPricingTable islands of their own.
+(component-export="GroupedPricingTable") carries a headings list naming
+the columns and groups of {model, rows} with label "Image" or "Text".
+each row holds one cell per heading except "Model", which names the
+group's own id; the scraper maps the cells by heading, never by position
+(the live page moved "Output" ahead of "Cached input" on 2026-10-21, so a
+positional read priced the cached cell as the output rate). the headings
+are read only when the scraper prices an image group: an unreadable one
+never blocks a chat id, and a heading set the scraper cannot use raises
+there, naming the heading.
+the batch pane repeats the ids at discounted rates, so the pane's DOM
+containment picks the island, never its position: the video and
+specialized sections carry GroupedPricingTable islands of their own.
 detection appends the image ids after the chat ids, page order, deduped
 (they also appear in hiddenModels, which is why groups alone carry them).
 a missing image section or standard pane is additive drift — a warning,
 and the chat ids stand — while an island with unparseable props or no
-groups still raises.
+groups still raises. an island without headings is additive drift too:
+detection warns and still appends its group ids, which need no headings,
+while the scraper raises when it prices one of those groups.
 """
 
 from __future__ import annotations
@@ -37,6 +46,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import NamedTuple
 
 from bs4 import BeautifulSoup, Tag
 
@@ -111,9 +121,17 @@ _IMAGE_SWITCHER_ID = "multimodal-image-pricing"
 _BATCH_PANE = "batch"
 
 
-def _image_pane_groups(soup: BeautifulSoup, url: str, pane_value: str) -> list[dict] | None:
-    """one image-generation pane's group dicts, or None when the section or
-    the pane is missing.
+class _ImagePane(NamedTuple):
+    """an image-generation pane's island: its groups, and the headings as the
+    props serve them (decoded only when the scraper prices a group)."""
+
+    headings: tuple[object, ...]
+    groups: list[dict]
+
+
+def _image_pane(soup: BeautifulSoup, url: str, pane_value: str) -> _ImagePane | None:
+    """one image-generation pane's island, or None when the section or the
+    pane is missing.
 
     the pane's DOM containment picks the island: the video and specialized
     sections carry GroupedPricingTable islands of their own, and the batch
@@ -132,19 +150,20 @@ def _image_pane_groups(soup: BeautifulSoup, url: str, pane_value: str) -> list[d
     groups = data.get("groups")
     if not isinstance(groups, list) or not groups:
         raise FetchError(f"image pricing island without groups on {url}")
-    return groups
+    headings = data.get("headings")
+    return _ImagePane(tuple(headings) if isinstance(headings, list) else (), groups)
 
 
-def _image_standard_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
-    """the image-generation standard pane's group dicts, or None when the
-    section or its standard pane is missing."""
-    return _image_pane_groups(soup, url, "standard")
+def _image_standard_pane(soup: BeautifulSoup, url: str) -> _ImagePane | None:
+    """the image-generation standard pane's island, or None when the section
+    or its standard pane is missing."""
+    return _image_pane(soup, url, "standard")
 
 
-def _image_batch_groups(soup: BeautifulSoup, url: str) -> list[dict] | None:
-    """the image-generation batch pane's group dicts, or None when the
-    section or its batch pane is missing."""
-    return _image_pane_groups(soup, url, _BATCH_PANE)
+def _image_batch_pane(soup: BeautifulSoup, url: str) -> _ImagePane | None:
+    """the image-generation batch pane's island, or None when the section or
+    its batch pane is missing."""
+    return _image_pane(soup, url, _BATCH_PANE)
 
 
 def _group_id(group, url: str) -> str:
@@ -171,15 +190,22 @@ def detect(cfg: ProviderCfg) -> list[str]:
         if model_id not in seen:
             seen.add(model_id)
             ids.append(model_id)
-    groups = _image_standard_groups(soup, cfg.detector_url)
-    if groups is None:
+    pane = _image_standard_pane(soup, cfg.detector_url)
+    if pane is None:
         log.warning(
             "detect for %s: no image-generation standard pane on %s; keeping the chat ids",
             cfg.key,
             cfg.detector_url,
         )
     else:
-        for group in groups:
+        if not pane.headings:
+            log.warning(
+                "detect for %s: image pricing island carries no headings on %s;"
+                " reading the image ids from its groups",
+                cfg.key,
+                cfg.detector_url,
+            )
+        for group in pane.groups:
             try:
                 model_id = _group_id(group, cfg.detector_url)
             except FetchError as exc:
