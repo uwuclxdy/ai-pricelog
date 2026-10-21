@@ -1554,6 +1554,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-omni-flash","observed_at":"2026-09-22","rates":{"input":0.15,"output":0.47,"cache_read":0.016},"limits":{"context":1000000},"provenance":{"name":"Qwen3.8 Omni Flash"}}
 {"schema":4,"source":"openrouter","model_id":"reflection/beam-1.0-501b-a23b","observed_at":"2026-10-16","rates":{"input":0.25,"output":1.0},"limits":{"context":1048576},"provenance":{"name":"Beam 1.0 501B A23B"}}
 {"schema":4,"source":"openrouter","model_id":"reflection/beam-1.0-501b-a23b","observed_at":"2026-10-16","rates":{"input":1.0,"output":3.0,"cache_read":0.1},"limits":{"context":1048576},"provenance":{"name":"Beam 1.0 501B A23B"}}
+{"schema":4,"source":"openrouter","model_id":"reflection/beam-1.0-501b-a23b","observed_at":"2026-10-19","rates":{"input":0.3,"output":1.0,"cache_read":0.04},"limits":{"context":1048576},"provenance":{"name":"Beam 1.0 501B A23B"}}
 {"schema":4,"source":"openrouter","model_id":"rekaai/reka-edge","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.1},"limits":{"context":16384},"provenance":{"name":"Reka Edge"}}
 {"schema":4,"source":"openrouter","model_id":"rekaai/reka-flash-3","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.2},"limits":{"context":65536},"provenance":{"name":"Reka Flash 3"}}
 {"schema":4,"source":"openrouter","model_id":"relace/relace-apply-3","observed_at":"2025-12-28","rates":{"input":0.85,"output":1.25},"limits":{"context":256000},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826/https://openrouter.ai/api/v1/models"}}
