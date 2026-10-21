@@ -59,7 +59,7 @@
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
       "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
-      "fetched": "2026-10-19T22:00:13Z"
+      "fetched": "2026-10-20T00:00:12Z"
     }
   },
   "xai": {
@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "2c9ee59edd5671cbbd145534a3162f8238da59d6dfb91d407134c4da34caf4a4",
-      "fetched": "2026-10-19T22:00:13Z"
+      "sha256": "ba6a8834d374a902a1d61351e15c157b6bf2f0eb972d24dd14c90043e1e5c71e",
+      "fetched": "2026-10-20T00:00:12Z"
     }
   },
   "together": {
@@ -97,7 +97,7 @@
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
       "sha256": "b4472395cbb7e20dcf2c64ee68559e0a396da1907efb38f2765b829852565546",
-      "fetched": "2026-10-19T22:00:13Z"
+      "fetched": "2026-10-20T00:00:12Z"
     }
   },
   "novita": {
@@ -130,7 +130,7 @@
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
       "sha256": "eb9fe1321713fb733eabc51f496117acc248f8fed9b5cf26e11d8b66b35285e3",
-      "fetched": "2026-10-19T22:00:13Z"
+      "fetched": "2026-10-20T00:00:12Z"
     }
   },
   "cloudflare": {

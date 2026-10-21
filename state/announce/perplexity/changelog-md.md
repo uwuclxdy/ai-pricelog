@@ -1,7 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.perplexity.ai/llms.txt > Use this file to discover all available pages before exploring further.
 # Changelog > Updates to the Perplexity API platform.
-<Tip> Looking ahead?
-Check out our [Feature Roadmap](/docs/resources/feature-roadmap) to see what's coming next.
+<Tip> Have a feature request?
+Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
 </Tip> <Update label="October 2026" tags={["Agent API", "Tools", "MCP", "Connectors"]}> **Tool approvals for MCP and connector calls** Set `require_approval` on an `mcp` or `connector` tool to review calls before they run.
 A call that needs approval returns an `mcp_approval_request` item and does not run.
 To approve or deny it, send an `mcp_approval_response` with `previous_response_id`.
