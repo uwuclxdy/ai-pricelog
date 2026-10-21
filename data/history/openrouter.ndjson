@@ -953,6 +953,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-09-14","rates":{"input":0.08,"output":0.45},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-08","rates":{"input":0.085,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-15","rates":{"input":0.08,"output":0.45},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-21","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"limits":{"context":512288},"provenance":{"name":"Nemotron 3 Ultra"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-29","rates":{"input":0.5,"output":2.2,"cache_read":0.1},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Ultra"}}
@@ -1467,6 +1468,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-397b-a17b","observed_at":"2026-10-06","rates":{"input":0.45,"output":3.0,"cache_read":0.22},"limits":{"context":262144},"provenance":{"name":"Qwen3.5 397B A17B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-397b-a17b","observed_at":"2026-10-15","rates":{"input":0.5,"output":3.6,"cache_read":0.3},"limits":{"context":262144},"provenance":{"name":"Qwen3.5 397B A17B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.15},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-10-21","rates":{"input":0.08,"output":0.13,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b:batch","observed_at":"2026-08-29","rates":{"input":0.17,"output":0.25},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":0.17,"output":0.25},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-flash-02-23","observed_at":"2026-08-26","rates":{"input":0.065,"output":0.26},"limits":{"context":1000000},"provenance":{"name":"Qwen3.5-Flash"}}
@@ -1756,6 +1758,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-09-25","rates":{"input":0.9646,"output":3.0316,"cache_read":0.17914},"limits":{"context":204800},"provenance":{"name":"GLM 5.1"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-09-28","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"limits":{"context":204800},"provenance":{"name":"GLM 5.1"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-10-15","rates":{"input":0.966,"output":3.036,"cache_read":0.1794},"limits":{"context":204800},"provenance":{"name":"GLM 5.1"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.1","observed_at":"2026-10-21","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"limits":{"context":204800},"provenance":{"name":"GLM 5.1"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-08-26","rates":{"input":1.19,"output":3.74,"cache_read":0.221},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-09-02","rates":{"input":0.966,"output":3.036,"cache_read":0.1932},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-09-09","rates":{"input":0.28,"output":0.88,"cache_read":0.052},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
