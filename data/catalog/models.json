@@ -27,6 +27,24 @@
       },
       "vendor": "amazon"
     },
+    "amazon/amazon.nova-2-omni-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-2-omni-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "amazon/amazon.nova-2-pro-v1:0": {
+      "curated": false,
+      "sources": {
+        "amazon": [
+          "amazon.nova-2-pro-v1:0"
+        ]
+      },
+      "vendor": "amazon"
+    },
     "amazon/amazon.nova-lite-v1:0": {
       "curated": false,
       "sources": {
