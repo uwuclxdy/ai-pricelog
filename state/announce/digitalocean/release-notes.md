@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
+October 2026 20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
+15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
 13 October In public preview , you can now create spend alerts for Serverless Inference model access keys .
 Each key’s spend is tracked against its own monthly budget, and you receive email alerts as it crosses the thresholds you choose.
 You can also have the alert pause the key when its spend reaches 100% of its budget, which stops Serverless Inference requests for that key without affecting other keys.
@@ -232,19 +233,7 @@ This reduces the number of pulls that leave the cluster, lowers your exposure to
 The plugin is disabled by default and is available on new clusters running Kubernetes 1.36 or later.
 27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit, and agents : Kimi K3 For more information, see the Available Models page .
 24 July The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Opus 5 For more information, see the Available Models page .
-23 July The following OpenAI model is deprecated from DigitalOcean Inference as of 23 July 2026: GPT-5.1-Codex-Max Migrate to GPT-5.3-Codex ( openai-gpt-5.3-codex ) to avoid service disruption.
-For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
-We now support prompt caching for Gemma 4 for serverless inference.
-The server-side model synthesis tool is available in public preview on DigitalOcean Inference.
-The model synthesis tool is an API-only multi-model tool that runs up to eight analysis models in parallel on the same task, compares their results, and returns one synthesized answer.
-You can use the model synthesis tool with serverless inference, dedicated inference, and inference routers on the Chat Completions, Responses, and Messages APIs.
-Opt in from the Feature Preview page .
-For more information, see How to Use the Model Synthesis Tool .
-Released v1.164.0 of doctl , the official DigitalOcean CLI.
-This release adds commands for managing Secrets Manager secrets and Network File Storage access points.
-We have updated the following buildpack for App Platform: Node.js buildpack : We added the following Node.js versions and updated the buildpack to version 342 .
-Visit the Node.js buildpack to learn more about specifying a Node.js engine version.
-Node.js 24.15.0 In this article...
+In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
 Try using different keywords or simplifying your search terms.
