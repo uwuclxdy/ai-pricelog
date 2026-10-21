@@ -8022,6 +8022,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/recursive/flint-v1.0:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recursive/flint-v1.0:free"
+        ]
+      },
+      "vendor": "recursive"
+    },
     "openrouter/reflection/beam-1.0-501b-a23b": {
       "curated": false,
       "sources": {

@@ -58,7 +58,7 @@ Actual available usage may vary depending on project complexity, repository size
 > </li> > > <li> > **GLM-5.3-Flash**: API calls consume quota at a rate of 0.4× during off-peak hours and 1.2× during peak hours.
 > </li> > [!NOTE] > > Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).
 ### Team Plan <table> <thead> <tr> <th> Plan Type </th> <th> Quota per 5 hours / seat (Dynamically refreshed; quota is restored 5 hours after request consumption) </th> <th> Weekly quota / seat (Starts at purchase; quota refreshes every 7-day cycle) </th> </tr> </thead> <tbody> <tr> <td> Standard Seat </td> <td> GLM-5.3: Up to 60 M tokens GLM-5.3-Flash: Up to 150 M tokens </td> <td> GLM-5.3: Up to 300 M tokens GLM-5.3-Flash: Up to 750 M tokens </td> </tr> <tr> <td> Premium Seat </td> <td> GLM-5.3: Up to 160 M tokens GLM-5.3-Flash: Up to 400 M tokens </td> <td> GLM-5.3: Up to 800 M tokens
-GLM-5.3-Flash: Up to 2,000 M tokens </td> </tr> <tr> <td> Notes </td> <td colSpan={2}> “Maximum” refers to the total number of Tokens that can actually be consumed when the **off-peak consumption multiplier** applies.
+GLM-5.3-Flash: Up to 2,000 M tokens </td> </tr> <tr> <td> Notes </td> <td colSpan="2"> “Maximum” refers to the total number of Tokens that can actually be consumed when the **off-peak consumption multiplier** applies.
 The current quota consumption rules for each model are as follows: <ul> <li> **GLM-5.3**: As the flagship model, API calls consume quota at a rate of "1× during off-peak hours and 3× during peak hours".
 </li> <li> **GLM-5.3-Flash**: API calls consume quota at a rate of 0.4× during off-peak hours and 1.2× during peak hours.
 </li> </ul> \*Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).
