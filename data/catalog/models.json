@@ -9341,6 +9341,15 @@
       },
       "vendor": "alibaba"
     },
+    "sambanova/glm-5.3": {
+      "curated": false,
+      "sources": {
+        "sambanova": [
+          "glm-5.3"
+        ]
+      },
+      "vendor": "zai"
+    },
     "sambanova/meta-llama-3.3-70b-instruct": {
       "curated": false,
       "sources": {
