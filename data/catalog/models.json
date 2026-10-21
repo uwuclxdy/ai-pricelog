@@ -9792,6 +9792,15 @@
       },
       "vendor": "zai"
     },
+    "zai/glm-5.3-flashx-legal": {
+      "curated": false,
+      "sources": {
+        "zai": [
+          "glm-5.3-flashx-legal"
+        ]
+      },
+      "vendor": "zai"
+    },
     "zai/glm-ocr": {
       "curated": false,
       "sources": {
