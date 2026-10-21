@@ -1,3 +1,4 @@
+{"schema":4,"source":"digitalocean","model_id":"beam","observed_at":"2026-10-21","rates":{"input":0.4,"output":1.2,"cache_read":0.04},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"claude-fable-5","observed_at":"2026-08-29","rates":{"input":10.0,"output":50.0,"cache_read":1.0},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"claude-fable-5.1","observed_at":"2026-09-02","rates":{"input":10.0,"output":50.0,"cache_read":0.25},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"claude-haiku-4.5","observed_at":"2026-08-29","rates":{"input":1.0,"output":5.0,"cache_read":0.1},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}

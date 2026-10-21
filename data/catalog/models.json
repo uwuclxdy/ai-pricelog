@@ -1995,6 +1995,15 @@
       },
       "vendor": "deepseek"
     },
+    "digitalocean/beam": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "beam"
+        ]
+      },
+      "vendor": null
+    },
     "digitalocean/claude-fable-5.1": {
       "curated": false,
       "sources": {
