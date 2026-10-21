@@ -47,19 +47,19 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "f3d4dd7e0763d76939fde618fb378993a5f7ea9ecdcdc3a879f876a8e1022315",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
       "sha256": "ac718539aa28523d58f757a097097c69a5a6562f1c68987690e20e1d0e0346ca",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
       "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "xai": {
@@ -78,14 +78,14 @@
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
       "sha256": "ebfe8b3d8191539933a52fd4ce4bbce2e9643958637a5374030d1dffa9af208b",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "ba6a8834d374a902a1d61351e15c157b6bf2f0eb972d24dd14c90043e1e5c71e",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "together": {
@@ -97,21 +97,21 @@
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
       "sha256": "b4472395cbb7e20dcf2c64ee68559e0a396da1907efb38f2765b829852565546",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "0bebcec1a71090a4dd1dc71e0006b9be74d726bdcbe48f95427833eb7195aec2",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "5fd9a33e755888b4e9edb3e44b0499c94ff9f23d176922d55c12855d25c22279",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "cohere": {
@@ -130,7 +130,7 @@
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
       "sha256": "1af79fd320c6fa5b6b0dd6f42c67c545cb45b49351b06f1d44903b7c2b7a0226",
-      "fetched": "2026-10-20T17:00:48Z"
+      "fetched": "2026-10-20T18:00:14Z"
     }
   },
   "cloudflare": {
