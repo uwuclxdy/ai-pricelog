@@ -46,27 +46,27 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "f9365aaa854d609000e42b0fe66dacf9dac4f18ade423edb16c233de5117183f",
-      "fetched": "2026-10-14"
+      "sha256": "f3d4dd7e0763d76939fde618fb378993a5f7ea9ecdcdc3a879f876a8e1022315",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "ee98ea7d4cf822e6bf27fcd82eae2e714be2901d1afd716317e39ae821ce1de2",
-      "fetched": "2026-10-19"
+      "sha256": "ac718539aa28523d58f757a097097c69a5a6562f1c68987690e20e1d0e0346ca",
+      "fetched": "2026-10-21T00:59:24Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
-      "fetched": "2026-10-19"
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "32030e2b85ff40fcb659724c80cd26d39f6c3761e228240d308dd4fa4a9a60bd",
-      "fetched": "2026-10-14"
+      "sha256": "44c50100bdfeac1a70b0003432f3049ee571e4ca4ce13e00b0c102e0d3c44c88",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "mistral": {
@@ -77,48 +77,48 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "80cf13565c50beac391b32804724492983699b2c87039a11d603f3c9a6bddf04",
-      "fetched": "2026-10-15"
+      "sha256": "ebfe8b3d8191539933a52fd4ce4bbce2e9643958637a5374030d1dffa9af208b",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "0490168ebf6a23a0e5bf125e32a2b30abc681db7395219ce53b8c9173bc1eece",
-      "fetched": "2026-10-17"
+      "sha256": "bc316db6a3f6c8d0f712f7d7f3963e1e9010290184153c00a5836cc130703a60",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "9fd8ad589d812548127a908f88f00ff02b2fdbc35470f4ebeff51da918bf9693",
-      "fetched": "2026-10-19"
+      "sha256": "db3926c28290b8837639edaaf337279b298bae8ec80a31fbbd5ce47e98ad5411",
+      "fetched": "2026-10-21T00:59:24Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "372c956d6c847c9c908b319dfb0cc565cb43d4363a38433e5049555010795a1b",
-      "fetched": "2026-10-15"
+      "sha256": "b4472395cbb7e20dcf2c64ee68559e0a396da1907efb38f2765b829852565546",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "44fb52500fb8ca63f415e7eccc9867cb33ea4ee7f742477c7680365205058522",
-      "fetched": "2026-10-15"
+      "sha256": "0bebcec1a71090a4dd1dc71e0006b9be74d726bdcbe48f95427833eb7195aec2",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "20e261f8bed43d95701ee4cb83d8ba93bdf39088a94276fab14acd4b76602488",
-      "fetched": "2026-10-19"
+      "sha256": "e0edd605f9b16d4411f2d8fd9e8e6c4d1241bb951154d5c81940d6f13a60665c",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "969d1bda8ac7aeb458349151ed59880b982a1bbc50e75e167de99848e37fa5f3",
-      "fetched": "2026-10-16"
+      "sha256": "a5d7c5ff1889ed750bf317de3e0c80cf3a40badb6d211ba4de0f139f6757df4f",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "google": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "06baffa12c3d1dfdafc224ea744ab92bbd435c7719029e7f451ebaf8ef3cdecd",
-      "fetched": "2026-10-19"
+      "sha256": "155e218ed6acb69deb23dc7771282051e0068eb3d631af1f1de613b1d56bd544",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "cloudflare": {
