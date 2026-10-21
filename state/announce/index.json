@@ -58,8 +58,8 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "030ce71add822ad1838d4cf47a613f69c8024acc9d26adba36b64f70d13378c1",
-      "fetched": "2026-10-19"
+      "sha256": "25cf3767bfc553418195c8a386c867c0df255fd345dfdc4046ce364a42bc300f",
+      "fetched": "2026-10-19T22:00:13Z"
     }
   },
   "xai": {
@@ -85,7 +85,7 @@
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "2c9ee59edd5671cbbd145534a3162f8238da59d6dfb91d407134c4da34caf4a4",
-      "fetched": "2026-10-19"
+      "fetched": "2026-10-19T22:00:13Z"
     }
   },
   "together": {
@@ -97,7 +97,7 @@
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
       "sha256": "b4472395cbb7e20dcf2c64ee68559e0a396da1907efb38f2765b829852565546",
-      "fetched": "2026-10-19"
+      "fetched": "2026-10-19T22:00:13Z"
     }
   },
   "novita": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "06baffa12c3d1dfdafc224ea744ab92bbd435c7719029e7f451ebaf8ef3cdecd",
-      "fetched": "2026-10-19"
+      "sha256": "eb9fe1321713fb733eabc51f496117acc248f8fed9b5cf26e11d8b66b35285e3",
+      "fetched": "2026-10-19T22:00:13Z"
     }
   },
   "cloudflare": {
