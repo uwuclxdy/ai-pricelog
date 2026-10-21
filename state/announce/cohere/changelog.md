@@ -1,8 +1,32 @@
 Release Notes | Cohere For AI agents: a documentation index is available at the root level at /llms.txt.
 Append /llms.txt to any URL for a page-level index, or .md for the markdown version of any page.
 docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI Skip to navigation This page is for version v2 API (default).
-For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical details Getting started Availability December 11, 2025 Technical Details Example Query
-Release Notes Subscribe via RSS September 30, 2026 September 30, 2026 Announcing Cohere's Embed 5 Models We’re pleased to announce the release of Embed 5 , Cohere’s most powerful embeddings family yet.
+For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page October 21, 2026 Key features Upgrading Example query with Context Focus Availability September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical
+details Getting started Availability December 11, 2025 Technical Details Example Query Release Notes Subscribe via RSS October 21, 2026 October 21, 2026 Announcing Cohere's Rerank 5 Models We’re pleased to announce the release of Rerank 5 , Cohere’s most advanced reranking models for enterprise retrieval: sharper search, with fewer tokens sent to your LLM.
+Rerank 5 Pro delivers our highest reranking quality yet, with its largest gains on reasoning-intensive retrieval and in enterprise domains such as finance, healthcare, and scientific research.
+Rerank 5 Fast brings that quality to latency- and cost-sensitive workloads, and outperforms our previous-generation Rerank 4 Pro model.
+Key features Two model variants available: rerank-v5.0-pro : Optimized for the highest ranking quality, particularly for complex, reasoning-heavy queries and long or domain-specific documents.
+rerank-v5.0-fast : Optimized for low latency and high throughput, particularly for high-volume search and agents that run many searches per task.
+Context Focus : An optional capability that returns the most relevant passages within each document, as scored character spans, in the same Rerank call.
+Pass only those passages to your LLM to cut token costs, or highlight them to show users why a result matched.
+Calibrated relevance scores : Scores are consistent across queries and domains, so you can set one threshold to decide which results reach your LLM.
+Multilingual support : Supports over 100 languages.
+Extended context length : 32k token context window.
+Semi-structured data support : Rerank JSON, tables, and other records formatted as YAML strings.
+Upgrading Rerank reads raw text at query time, so upgrading doesn’t require re-indexing or re-embedding your corpus.
+To upgrade from an earlier Rerank model, update the model parameter to rerank-v5.0-pro or rerank-v5.0-fast .
+Context Focus is off by default.
+Example query with Context Focus cURL curl --request POST \ --url https://api.cohere.com/v2/rerank \ --header ' accept: application/json ' \ --header ' content-type: application/json ' \ --header " Authorization: bearer $CO_API_KEY " \ --data ' { "model": "rerank-v5.0-pro", "query": "What is the capital of the United States?", "top_n": 3, "documents": [ "Carson City is the capital city of the American state of Nevada.", "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean.
+Its capital is Saipan.", "Washington, D.C.
+(also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States.
+It is a federal district.", "Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word.
+English usage varies from capitalization in other languages.", "Capital punishment has existed in the United States since before the United States was a country.
+As of 2017, capital punishment is legal in 30 of the 50 states." ], "relevant_spans": { "mode": "enabled", "threshold": 0.3, "max_spans": 10 } } ' Each result includes its relevance_score and, where passages meet the threshold , a relevant_spans list with the start and end character offsets of each passage in the original document and its score .
+Availability Rerank 5 is available through the Rerank API , as well as Microsoft Foundry ( Pro , Fast ) and Amazon SageMaker ( Pro , Fast ).
+For single-tenant deployment, Rerank 5 is also available in Cohere’s Model Vault (see Standard Vault pricing ).
+For private deployments in your own VPC or on-premises, contact our sales team .
+For more details, see the model documentation , the Rerank overview , and the best practices guide .
+September 30, 2026 September 30, 2026 Announcing Cohere's Embed 5 Models We’re pleased to announce the release of Embed 5 , Cohere’s most powerful embeddings family yet.
 Embed 5 delivers frontier retrieval quality on complex enterprise data, with major gains over Embed 4 on visually rich documents, financial filings, parsed PDFs, code, and multilingual retrieval.
 Key features Two model variants available: embed-v5.0-pro : Optimized for the highest retrieval quality, particularly for offline indexing and quality-critical retrieval embed-v5.0-fast : Optimized for low latency and high throughput, particularly for interactive search, agent loops, and high-volume query traffic Shared embedding space : Pro and Fast share an embedding space, so a corpus indexed with one model can be queried with the other.
 We recommend indexing with Pro and querying with Fast.
@@ -84,8 +108,4 @@ This makes it the political center of the United States of America.
 As of 2017, capital punishment is legal in 30 of the 50 states.
 The federal government (including the United States military) also uses capital punishment.
 " , ] results = co .
-rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) September 16, 2025 September 16, 2025 Announcing Major Command Deprecations As part of our ongoing commitment to delivering advanced AI solutions, we are deprecating the following models, features, and API endpoints: Deprecated Models: command-r-03-2024 (and the alias command-r ) command-r-plus-04-2024 (and the alias command-r-plus ) command-light command summarize (Refer to the migration guide for alternatives).
-For command model replacements, we recommend you use command-r-08-2024 , command-r-plus-08-2024 , or command-a-03-2025 (which is the strongest-performing model across domains) instead.
-Retired Fine-Tuning Capabilities: All fine-tuning options via dashboard and API for models including command-light , command , command-r , classify , and rerank are being retired.
-Previously fine-tuned models will no longer be accessible.
-Deprecated Features and API Endpoints: /v1/connectors (Managed connectors for RAG) /v1/chat parameters: connectors , search_queries_only /v1/generate (Legacy generative endpoint) /v1/summarize (Legacy summarization endpoint) /v1/classify Slack App integration Coral Web UI (chat.cohere.com and coral.cohere.com) For questions, reach out to support@cohere.com Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API
+rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API

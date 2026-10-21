@@ -98,7 +98,7 @@ May 14 Grok Build Grok Build is now available in beta.
 Use the interactive TUI, run headlessly in scripts, or build apps and orchestrators with the Agent Client Protocol.
 Install with a single command: Bash curl -fsSL https://x.ai/cli/install.sh | bash For more details, see the Grok Build docs .
 May 1 Custom Voices You can now clone a voice from a short audio clip and use it across the Text-to-Speech and Speech to Speech APIs.
-Create and manage your voice catalog from the xAI console.
+Create and manage your voice catalog from the SpaceXSI console.
 For more details, check out the Custom Voices docs and our blog post .
 April Apr 30 Cost Tracking Every API response now includes the exact cost of the request via a cost_in_usd_ticks field in the usage object.
 Works across chat completions, Responses API, image generation, video generation, and streaming.
@@ -109,7 +109,7 @@ For more details, see the Files API docs .
 Apr 23 Grok Voice 1.0 is available Grok Voice 1.0 is now available with the Speech to Speech API.
 To get started, check out the Speech to Speech docs .
 For more details, see our blog post .
-Apr 15 Speech to Text is available The xAI Speech to Text API is now generally available.
+Apr 15 Speech to Text is available The SpaceXSI Speech to Text API is now generally available.
 Transcribe audio to text in 25 languages with batch and streaming modes.
 For more details, check out the Speech to Text docs .
 March Mar 16 Text-to-Speech is available The Text-to-Speech API is now generally available.
@@ -170,4 +170,4 @@ Python Docs: https://python.langchain.com/integrations/providers/xai/ Javascript
 Nov 4 API Public Beta We are happy to announce the immediate availability of our API, which gives developers programmatic access to our Grok series of foundation models.
 To get started, head to console.x.ai and sign up to create an account.
 We are excited to see what developers build using Grok.
-Last updated: October 13, 2026
+Last updated: October 15, 2026

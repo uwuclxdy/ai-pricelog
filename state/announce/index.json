@@ -65,8 +65,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "32030e2b85ff40fcb659724c80cd26d39f6c3761e228240d308dd4fa4a9a60bd",
-      "fetched": "2026-10-14"
+      "sha256": "44c50100bdfeac1a70b0003432f3049ee571e4ca4ce13e00b0c102e0d3c44c88",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "mistral": {
@@ -117,8 +117,8 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "969d1bda8ac7aeb458349151ed59880b982a1bbc50e75e167de99848e37fa5f3",
-      "fetched": "2026-10-16"
+      "sha256": "a5d7c5ff1889ed750bf317de3e0c80cf3a40badb6d211ba4de0f139f6757df4f",
+      "fetched": "2026-10-21T00:59:24Z"
     }
   },
   "google": {
