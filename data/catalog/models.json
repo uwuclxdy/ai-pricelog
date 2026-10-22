@@ -2076,6 +2076,15 @@
       },
       "vendor": "deepseek"
     },
+    "digitalocean/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "digitalocean/gemma-4": {
       "curated": false,
       "sources": {

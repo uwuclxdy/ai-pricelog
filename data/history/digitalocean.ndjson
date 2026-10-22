@@ -32,6 +32,7 @@
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-pro","observed_at":"2026-09-22","rates":{"input":1.74,"output":3.48,"cache_read":0.348},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-pro-0813","observed_at":"2026-08-29","rates":{"input":1.32,"output":3.96,"cache_read":0.044},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4.1-flash","observed_at":"2026-09-18","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"deepseek-v4.1-flash-1017","observed_at":"2026-10-22","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"gemma-4","observed_at":"2026-08-29","rates":{"input":0.18,"output":0.5,"cache_read":0.036},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"glm-5","observed_at":"2026-08-29","rates":{"input":1.0,"output":3.2,"cache_read":0.2},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"glm-5","observed_at":"2026-09-11","removed":true,"rates":{"input":1.0,"output":3.2,"cache_read":0.2}}
