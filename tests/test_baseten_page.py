@@ -258,6 +258,149 @@ def test_detect_folded_header_matches(monkeypatch):
     assert detector.detect(cfg()) == ["glm-53-flash"]
 
 
+_HEADER_ROW = (
+    '<div class="grid"><div>Model</div><div>Input</div>'
+    "<div>Cache Input</div><div>Output</div></div>"
+)
+_BUTTON = '<a href="https://app.baseten.co/model-apis/create"><span>Try Model API</span></a>'
+
+
+def _row(model_id: str, input_cell: str, cache_cell: str, output_cell: str) -> str:
+    return (
+        '<div class="grid">'
+        f'<div><div class="hidden md:flex"><a href="/library/{model_id}/">'
+        f"{model_id}</a></div></div>"
+        f'<div><div class="hidden md:flex">{input_cell}</div></div>'
+        f'<div><div class="hidden md:flex">{cache_cell}</div></div>'
+        f'<div><div class="hidden md:flex">{output_cell}</div></div>'
+        "</div>"
+    )
+
+
+def _page(*rows: str) -> BeautifulSoup:
+    return BeautifulSoup(f"<div>{_HEADER_ROW}{''.join(rows)}</div>", "html.parser")
+
+
+def test_scrape_all_dash_row_is_unpriced(monkeypatch):
+    # live page 2026-10-22: elephant-1 and mammoth-1 render "-" in Input,
+    # Cache Input and Output while sixteen rows price normally; every run
+    # read the row as a page-shape break and the provider went dark
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row(
+                "glm-53-flash",
+                "<span>$0.15</span>",
+                "<span>$0.03</span>",
+                f"<span>$0.50</span>{_BUTTON}",
+            ),
+            _row("elephant-1", "<span>-</span>", "<span>-</span>", f"<span>-</span>{_BUTTON}"),
+        ),
+    )
+    assert scraper.scrape(cfg(), "elephant-1") is None
+    pricing = scraper.scrape(cfg(), "glm-53-flash")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.15 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.03 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.50 / 1e6)
+
+
+def test_scrape_all_dash_page_raises(monkeypatch):
+    # a page that prices nothing at all is the structural break plan #22
+    # keeps loud; only a dash row beside priced ones reads as unpriced
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row("elephant-1", "<span>-</span>", "<span>-</span>", f"<span>-</span>{_BUTTON}"),
+            _row("mammoth-1", "<span>-</span>", "<span>-</span>", f"<span>-</span>{_BUTTON}"),
+        ),
+    )
+    with pytest.raises(FetchError, match="no priced model rows"):
+        scraper.scrape(cfg(), "elephant-1")
+    # the guard is a page property, so an off-page id raises too
+    with pytest.raises(FetchError, match="no priced model rows"):
+        scraper.scrape(cfg(), "not-listed-99")
+
+
+def test_scrape_reads_the_rate_not_the_button_label(monkeypatch):
+    # the output cell carries the Try Model API button, so an amount in its
+    # label must not join the rate scan
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row(
+                "glm-53-flash",
+                "<span>$0.15</span>",
+                "<span>$0.03</span>",
+                "<span>$0.50</span>"
+                '<a href="https://app.baseten.co/model-apis/create"><span>Try for $5</span></a>',
+            ),
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "glm-53-flash")
+    assert pricing is not None
+    assert pricing.output_cost_per_token == pytest.approx(0.50 / 1e6)
+
+
+def test_scrape_partially_unpriced_row_raises(monkeypatch):
+    # only the all-dash form is unpriced; a row with one "-" column stays a
+    # page-shape break
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row(
+                "glm-53-flash",
+                "<span>$0.15</span>",
+                "<span>$0.03</span>",
+                "<span>$0.50</span>",
+            ),
+            _row("half-priced", "<span>-</span>", "<span>$0.03</span>", "<span>$0.50</span>"),
+        ),
+    )
+    with pytest.raises(FetchError, match="0 amounts, want 1"):
+        scraper.scrape(cfg(), "half-priced")
+
+
+@pytest.mark.parametrize(
+    "cells",
+    [
+        ("<span>$0.15</span>", "<span>-</span>", "<span>-</span>"),
+        ("<span>-</span>", "<span>$0.03</span>", "<span>-</span>"),
+        ("<span>-</span>", "<span>-</span>", "<span>$0.50</span>"),
+    ],
+)
+def test_scrape_guard_reads_an_amount_in_every_price_column(monkeypatch, cells):
+    # the page-level guard must see an amount in any of the three price
+    # columns; the matched row then raises its own column error, never the
+    # page-level "no priced model rows"
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(_row("half-priced", *cells)),
+    )
+    with pytest.raises(FetchError, match="0 amounts, want 1"):
+        scraper.scrape(cfg(), "half-priced")
+
+
+def test_scrape_guard_reads_a_malformed_amount_as_priced(monkeypatch):
+    # an unreadable amount-shaped token still marks the page as priced, so
+    # the matched row raises the unreadable-rate error, not the page-level
+    # structural message
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row("half-priced", "<span>$1-2</span>", "<span>-</span>", "<span>-</span>")
+        ),
+    )
+    with pytest.raises(FetchError, match="unreadable rate"):
+        scraper.scrape(cfg(), "half-priced")
+
+
 def test_scrape_skips_unrelated_malformed_row(monkeypatch):
     # an unrelated row with an odd link is additive drift detect reported;
     # the chosen model still scrapes
