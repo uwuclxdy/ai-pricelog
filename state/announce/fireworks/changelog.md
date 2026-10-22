@@ -35,7 +35,7 @@ The global MiniMax M3 endpoint remains available.
 GLM 5.3 Flash (US endpoint only) — migrate to DeepSeek V4.1 Flash 1017 (US endpoint) .
 The global GLM 5.3 Flash endpoint remains available.
 GLM 5.3 and DeepSeek V4.1 Flash are not affected and remain available on serverless.
-​ New models on Serverless DeepSeek V4.1 Flash 1017: accounts/fireworks/models/deepseek-v4p1-flash-1017 DeepSeek V4.1 Flash 1017 (US endpoint): accounts/fireworks/models/deepseek-v4p1-flash-1017-us Muse Spark Open (US endpoint, 50% US regional premium waived): accounts/fireworks/models/muse-spark-open MiniMax M3.1: coming to serverless after its open-source release, expected Friday, October 23 If you want to switch to a dedicated deployment, see the Serverless model list and the on-demand deployment quickstart .
+​ New models on Serverless DeepSeek V4.1 Flash 1017: accounts/fireworks/models/deepseek-v4p1-flash-1017 DeepSeek V4.1 Flash 1017 (US endpoint): accounts/fireworks/routers/deepseek-v4p1-flash-1017-us ( US-only Serverless ) Muse Spark Open (US endpoint, 50% US regional premium waived): accounts/fireworks/models/muse-spark-open MiniMax M3.1: coming to serverless after its open-source release, expected Friday, October 23 If you want to switch to a dedicated deployment, see the Serverless model list and the on-demand deployment quickstart .
 ​ 2026-10-18 Training ​ Upcoming Serverless Training deprecation: DeepSeek V4 Flash (0731) On November 2, 2026 , DeepSeek V4 Flash (0731) will be removed from the shared Serverless Training pool.
 This change applies only to Serverless Training.
 If you train DeepSeek V4 Flash (0731) on Serverless Training, migrate to DeepSeek V4.1 Flash 1017 before November 2, 2026.

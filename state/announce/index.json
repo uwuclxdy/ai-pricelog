@@ -72,13 +72,13 @@
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "8ce8d95e9aec0b63d48c7205f9ea34296539960e30a3a6f037abec3e3b4f9a28",
-      "fetched": "2026-10-14"
+      "sha256": "061017da3e432cd38b18c4209f8848937a935ca9ca7f3bcf254ed2e4c3308c54",
+      "fetched": "2026-10-22T17:22:18Z"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "76482eb8a5a8659209247a78aa8b29df34d94329228d01dbfce967d5afec0ec1",
-      "fetched": "2026-10-21T23:00:13Z"
+      "sha256": "4898823215852e86aadaecdb32ba226fcd9c44c3a27ec51cca3d5e10754122d1",
+      "fetched": "2026-10-22T17:22:18Z"
     }
   },
   "perplexity": {
@@ -110,8 +110,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "4db185405aceec1f65a8b906e364442b333dea269e08821e28ab5813ee189bfc",
-      "fetched": "2026-10-22T05:00:13Z"
+      "sha256": "dfa24441b6fa9b8ece1973c4b54133d178f48c35ba7f58909c6bf95ff64f85c5",
+      "fetched": "2026-10-22T17:22:18Z"
     }
   },
   "cohere": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "99831dd79f5e039491525d16655ab9fb3d85706874ea78b51e131dcaf8d6bb46",
-      "fetched": "2026-10-21T23:00:13Z"
+      "sha256": "18825d98a9217ed54700be0e9bec8b4b433a29ce321a38e9006be65b6a1342d3",
+      "fetched": "2026-10-22T17:22:18Z"
     }
   },
   "cloudflare": {

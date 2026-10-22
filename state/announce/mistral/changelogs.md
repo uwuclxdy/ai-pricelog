@@ -1,6 +1,19 @@
 Changelog | Mistral Docs Docs & API Search docs ⌘K Vibe Studio Inference & Models Admin Resources API Reference Search docs ⌘K Toggle theme Reach out Try Studio Home Resources Build API Reference SDKs MCP Supported languages Cookbooks Migration guides Updates Release notes Changelogs Security advisories Knowledge base Glossary Error glossary Known limitations Observability integrations Deprecated features Community Ambassadors Mistral Events ↗ Resources Changelogs Changelog Find out about all the latest changes to our tool.
 You may filter by date and type of release.
-Oct 26 October 6 Mistral Large 4 ( mistral-large-4 ) is now available in Public Preview.
+Oct 26 October 20 We released the Voxtral 3 audio family, our next generation of speech-to-text and text-to-speech models.
+All four models are in Public Preview.
+See the Voxtral 3 announcement and the audio models pricing .
+MODEL RELEASED Voxtral TTS 3 ( voxtral-mini-tts-3-0 ): text-to-speech with zero-shot voice cloning, streaming, and contextual delivery.
+See the model card .
+Voxtral Mini Transcribe 3 ( voxtral-mini-transcribe-3-0 ): offline transcription and diarization with timestamps.
+See the model card .
+Voxtral Mini Transcribe Realtime 3 ( voxtral-mini-transcribe-realtime-3-0 ): real-time transcription.
+See the model card .
+Voxtral Small Transcribe 3 ( voxtral-small-transcribe-3-0 ): offline transcription and diarization with timestamps.
+See the model card .
+We released Voice Agents , a managed real-time bidirectional voice pipeline (microphone capture, STT, LLM, TTS, playback) exposed through the Voice Agents SDK, with telephony, browser, and custom-audio interfaces.
+See the Voice Agents overview and Voice Agents pricing .
+OTHER October 6 Mistral Large 4 ( mistral-large-4 ) is now available in Public Preview.
 For details, see the Mistral Large 4 model card .
 MODEL RELEASED Mistral Large 4 is an open-weight, general-purpose multimodal model with a Mixture-of-Experts architecture and a 1M context window.
 Open weights are coming soon.
