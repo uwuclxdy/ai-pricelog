@@ -135,6 +135,16 @@ def test_channel_files_no_collision_no_suffix():
     assert files["https://x/updates/"] == "state/announce/src/updates.md"
 
 
+def test_channel_files_names_the_unparseable_url():
+    # urlsplit refuses a malformed IPv6 host; the name must carry the url so
+    # the owner can find the entry, not just the source that holds it
+    with pytest.raises(ValueError) as excinfo:
+        announce.channel_files("src", ("https://[foo",))
+    assert str(excinfo.value) == (
+        "announce channel url 'https://[foo' is unparseable: Invalid IPv6 URL"
+    )
+
+
 def test_wrap_is_sentence_per_line_and_round_trips():
     prose = "New price. Input $2 per 1M. Output $3."
     wrapped = announce.wrap(prose)

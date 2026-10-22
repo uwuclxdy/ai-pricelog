@@ -256,9 +256,7 @@ def _announce_index(
         try:
             derived = channel_files(source, urls.keys())
         except ValueError as exc:
-            raise AutoMergeError(
-                f"{label}: {ANNOUNCE_INDEX} source {source!r} carries an unparseable url: {exc}"
-            ) from exc
+            raise AutoMergeError(f"{label}: {ANNOUNCE_INDEX} source {source!r}: {exc}") from exc
         for url, entry in urls.items():
             if not isinstance(entry, dict) or not all(
                 isinstance(entry.get(key), str) for key in ("file", "sha256", "fetched")

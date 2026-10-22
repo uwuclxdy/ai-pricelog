@@ -14,8 +14,10 @@ of every open pricelog PR, whatever run posted them, lets a later
 run's merge step pick the stranded ones up. the workflow's list
 step also runs this script with `--awaiting-review` to print the pricelog
 PRs the claude pass must judge — the unjudged ones, plus a no-marked PR whose
-owed ruling a newer yes-marked carrier settled — oldest first. the pure halves
-are network-free; main() owns the network, health.py's shape.
+every carried announce channel is settled: the base already holds it, or its
+newest carrier's verdict is yes (a verdict's recency is the comment's edit
+time, `updated_at or created_at`) — oldest first. the pure halves are
+network-free; main() owns the network, health.py's shape.
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import TextIO
 
-from ai_pricelog import automerge, health, pr
+from ai_pricelog import announce, automerge, health, pr
 
 # the marker the pass ends every PR comment with: one whole line
 _DISPOSITION_LINE = re.compile(r"automerge: (yes|no)")
@@ -41,7 +43,12 @@ def parse_disposition(comments: Iterable[tuple[str, str]], bot_login: str) -> bo
 def parse_disposition_at(
     comments: Iterable[tuple[str, str, str]], bot_login: str
 ) -> tuple[bool | None, str | None]:
-    """The last bot marker's verdict and its comment time; (None, None) = no marker."""
+    """The last bot marker's verdict and its comment's edit time; (None, None) = no marker.
+
+    The edit time is `updated_at or created_at`: github never moves
+    `created_at` on an edit, and the pass edits its existing verdict comment
+    on a re-queued PR.
+    """
     return _last_marker(comments, bot_login)
 
 
@@ -50,12 +57,12 @@ def _last_marker(
 ) -> tuple[bool | None, str | None]:
     disposition: bool | None = None
     at: str | None = None
-    for author, body, created_at in comments:
+    for author, body, edited_at in comments:
         if author != bot_login:
             continue
         marker = _marker_line(body)
         if marker is not None:
-            disposition, at = marker, created_at or None
+            disposition, at = marker, edited_at or None
     return disposition, at
 
 
@@ -130,7 +137,8 @@ def awaiting_review(
     a PR queues when its head is a `pricelog/` branch that is not the seed and
     the pass's disposition is None — no marker at all, or only bot comments
     the pass never finished — or when its number sits in `requeue`: a
-    no-marked PR whose owed ruling a newer yes-marked carrier settled.
+    no-marked PR whose every carried announce channel is settled, the base
+    holding it or a newest carrier's verdict being yes.
     `automerge: no` otherwise waits on a human, so it stays out of the pass's
     queue.
     """
@@ -167,23 +175,47 @@ def _open_prs(runner: pr.PrRunner, repo_root: Path) -> list[tuple[int, str]]:
 
 
 def _pr_comments(runner: pr.PrRunner, repo_root: Path, number: int) -> list[tuple[str, str, str]]:
-    """(author, body, createdAt) triples for one PR's comments, oldest first."""
-    out = runner.run(["gh", "pr", "view", str(number), "--json", "comments"], cwd=repo_root)
+    """(author, body, edit time) triples for one PR's comments, oldest first.
+
+    The REST issue-comments endpoint carries every comment, where
+    `gh pr view --json comments` exposes only `createdAt`. The recency stamp
+    is the comment's edit time (`updated_at or created_at`), because github
+    never moves `created_at` on an edit and the pass edits its existing
+    verdict comment on a re-queued PR. `--paginate --slurp` reads every page:
+    the endpoint returns comments created-ascending, so a first page alone
+    carries the OLDEST hundred and drops the verdict, leaving the PR unjudged
+    forever.
+    """
+    out = runner.run(
+        [
+            "gh",
+            "api",
+            "--paginate",
+            "--slurp",
+            f"repos/{{owner}}/{{repo}}/issues/{number}/comments?per_page=100",
+        ],
+        cwd=repo_root,
+    )
     try:
-        entries = json.loads(out)["comments"]
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise pr.PrError(f"gh pr view {number} returned an unexpected shape: {exc}") from exc
-    if not isinstance(entries, list):
-        raise pr.PrError(f"gh pr view {number} returned a non-list comments value")
-    comments = [entry for entry in entries if isinstance(entry, dict)]
+        pages = json.loads(out)
+    except json.JSONDecodeError as exc:
+        raise pr.PrError(
+            f"gh api issues/{number}/comments returned invalid json: {exc.msg}"
+        ) from exc
+    if not isinstance(pages, list) or not all(isinstance(page, list) for page in pages):
+        raise pr.PrError(f"gh api issues/{number}/comments returned a non-list page value")
+    comments = [entry for page in pages for entry in page if isinstance(entry, dict)]
     triples: list[tuple[str, str, str]] = []
-    for entry in sorted(comments, key=lambda item: str(item.get("createdAt") or "")):
-        author = entry.get("author") or {}
+    for entry in sorted(
+        comments,
+        key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""),
+    ):
+        user = entry.get("user") or {}
         triples.append(
             (
-                str(author.get("login") or ""),
+                str(user.get("login") or ""),
                 str(entry.get("body") or ""),
-                str(entry.get("createdAt") or ""),
+                str(entry.get("updated_at") or entry.get("created_at") or ""),
             )
         )
     return triples
@@ -198,9 +230,9 @@ def _listing(
     bot login and the per-PR comment reads. returns (candidates,
     dispositions, marker_times, gone), candidates in gh list order; the maps
     are empty when no live pricelog PR remains, and marker_times holds the
-    last bot marker comment's createdAt per judged PR, the pass's recency.
-    `diag` receives the skipped-ref lines, so the queue mode keeps stdout a
-    machine list.
+    last bot marker comment's edit time (`updated_at or created_at`) per
+    judged PR, the pass's recency. `diag` receives the skipped-ref lines, so
+    the queue mode keeps stdout a machine list.
     """
     open_prs = _open_prs(runner, repo_root)
     candidates = [(number, head_ref) for number, head_ref in open_prs if _pricelog_head(head_ref)]
@@ -222,29 +254,27 @@ def _listing(
     return candidates, dispositions, marker_times, gone
 
 
-def _channel_carriers(
+def _index_readings(
     runner: pr.PrRunner,
     repo_root: Path,
     candidates: list[tuple[int, str]],
-) -> tuple[dict[tuple[str, str], set[int]], frozenset[int]]:
-    """(channel -> the PR numbers carrying it, the numbers whose index was unread).
+) -> tuple[
+    dict[str, dict[str, dict[str, str]]],
+    dict[int, dict[str, dict[str, dict[str, str]]]],
+    frozenset[int],
+]:
+    """(base index, per-PR branch index, the numbers whose branch index was unread).
 
-    A channel is carried the way the merge itself decides a branch wins it: the
-    base lacks the channel, or the branch's entry carries a different sha and a
-    newer `fetched` instant. A same-sha entry is a no-op at the merge, and a
-    stale copy (an older `fetched`, or a same-instant tie the base wins) never
-    reverts the base's channel, so neither carries anything. Every open
-    pricelog candidate is read, yes-marked ones included: a ruling on the same
-    snapshot can arrive on a PR other than the one that first carried it, so
-    the carrier set must name all of them. A branch whose index cannot be read
-    or does not exist is skipped and returned as unread — never as carrying
-    nothing, which would settle it vacuously.
+    One index read per candidate, shared by the merge's carrier question and
+    the requeue question, so a settled-no read never re-runs `git show` per
+    branch. A branch whose index cannot be read or does not exist is unread —
+    never carrying nothing, which would settle it vacuously.
     """
     try:
         base_index = automerge._announce_index(runner, repo_root, "HEAD", "base") or {}
     except automerge.AutoMergeError:
         base_index = {}
-    carriers: dict[tuple[str, str], set[int]] = {}
+    indexes: dict[int, dict[str, dict[str, dict[str, str]]]] = {}
     unread: set[int] = set()
     for number, head_ref in candidates:
         try:
@@ -257,6 +287,24 @@ def _channel_carriers(
         if branch_index is None:
             unread.add(number)
             continue
+        indexes[number] = branch_index
+    return base_index, indexes, frozenset(unread)
+
+
+def _carriers(
+    base_index: dict[str, dict[str, dict[str, str]]],
+    indexes: dict[int, dict[str, dict[str, dict[str, str]]]],
+) -> dict[tuple[str, str], set[int]]:
+    """channel -> the PR numbers carrying it, the merge's own win rule.
+
+    A channel is carried the way the merge itself decides a branch wins it:
+    the base lacks the channel, or the branch's entry carries a different sha
+    and a newer `fetched` instant. A same-sha entry is a no-op at the merge,
+    and a stale copy (an older `fetched`, or a same-instant tie the base wins)
+    never reverts the base's channel, so neither carries anything.
+    """
+    carriers: dict[tuple[str, str], set[int]] = {}
+    for number, branch_index in indexes.items():
         for source, urls in branch_index.items():
             for url, entry in urls.items():
                 base_entry = base_index.get(source, {}).get(url)
@@ -265,7 +313,25 @@ def _channel_carriers(
                     and entry["fetched"] > base_entry["fetched"]
                 ):
                     carriers.setdefault((source, url), set()).add(number)
-    return carriers, frozenset(unread)
+    return carriers
+
+
+def _channel_carriers(
+    runner: pr.PrRunner,
+    repo_root: Path,
+    candidates: list[tuple[int, str]],
+) -> tuple[dict[tuple[str, str], set[int]], frozenset[int]]:
+    """(channel -> the PR numbers carrying it, the numbers whose index was unread).
+
+    The carriers follow the merge's own win rule (`_carriers`). Every open
+    pricelog candidate is read, yes-marked ones included: a ruling on the same
+    snapshot can arrive on a PR other than the one that first carried it, so
+    the carrier set must name all of them. A branch whose index cannot be read
+    or does not exist is returned as unread — never as carrying nothing, which
+    would settle it vacuously.
+    """
+    base_index, indexes, unread = _index_readings(runner, repo_root, candidates)
+    return _carriers(base_index, indexes), unread
 
 
 def _newest_carrier(numbers: set[int], marker_times: Mapping[int, str] | None) -> int:
@@ -321,29 +387,100 @@ def _settled_no_heads(
     dispositions: Mapping[int, bool | None],
     marker_times: Mapping[int, str] | None = None,
 ) -> frozenset[int]:
-    """No-marked PR numbers whose every carried channel a newest yes settles.
+    """No-marked PR numbers whose every carried channel is settled.
 
-    A no-marked PR waits on a human while it carries a channel the merge would
-    let win. Once the newest carrier of every channel it carries is yes-marked,
-    that ruling landed and the PR's own snapshot is already at base: its reason
-    is gone, so it re-enters the pass's queue for a fresh judgement. The newest
-    carrier is ranked by marker time (the PR number when `marker_times` is not
-    given). A PR whose branch index could not be read is never settled (what it
-    carries is unknown), and neither is one carrying no channel the merge would
-    let win: its no is not an announce ruling, so re-queueing it would churn
-    the slots a human's PR needs.
+    Carried means the branch's own commit range changed the announce file,
+    never what it would win now (a sibling merge can already hold the branch's
+    snapshot, and that must still settle the no). Each carried channel settles
+    when the base already holds it — the same sha, or a same-or-newer fetched
+    instant, the merge keeps the base on a tie — or when the newest carrier of
+    the channel, ranked by marker time, is yes-marked: that ruling landed. A
+    PR whose branch index or diff could not be read is never settled (what it
+    carries is unknown), and neither is one carrying no channel: its no is not
+    an announce ruling, so re-queueing it would churn the slots a human's PR
+    needs.
     """
-    carriers, unread = _channel_carriers(runner, repo_root, candidates)
+    base_index, indexes, unread = _index_readings(runner, repo_root, candidates)
+    carriers = _carriers(base_index, indexes)
     settled: set[int] = set()
-    for number, _head_ref in candidates:
+    for number, head_ref in candidates:
         if dispositions.get(number) is not False or number in unread:
             continue
-        carried = [numbers for numbers in carriers.values() if number in numbers]
-        if carried and all(
-            dispositions.get(_newest_carrier(numbers, marker_times)) is True for numbers in carried
+        try:
+            carried = _carried_channels(runner, repo_root, head_ref, indexes[number])
+        except pr.PrError:
+            continue
+        if not carried:
+            continue
+        if all(
+            _channel_settled(
+                channel, indexes[number], base_index, carriers, dispositions, marker_times
+            )
+            for channel in carried
         ):
             settled.add(number)
     return frozenset(settled)
+
+
+def _carried_channels(
+    runner: pr.PrRunner,
+    repo_root: Path,
+    head_ref: str,
+    branch_index: dict[str, dict[str, dict[str, str]]],
+) -> frozenset[tuple[str, str]]:
+    """The (source, url) channels the branch's own commit range changed.
+
+    `_carriers` answers the merge's question — which channels the branch would
+    win NOW — so a no PR whose snapshot a sibling already merged reads as
+    carrying nothing and never re-queues. The requeue question reads the
+    branch's own diff over the announce tree instead, each changed file mapped
+    back to its (source, url) through the branch index's own derivation; a
+    deleted channel's file names no index entry, so it carries nothing.
+    """
+    changed = set(
+        runner.run(
+            [
+                "git",
+                "diff",
+                "--name-only",
+                f"HEAD...origin/{head_ref}",
+                "--",
+                f"{announce.ANNOUNCE_DIR}/",
+            ],
+            cwd=repo_root,
+        ).splitlines()
+    )
+    carried: set[tuple[str, str]] = set()
+    for source, urls in branch_index.items():
+        derived = announce.channel_files(source, urls.keys())
+        for url in urls:
+            if derived[url] in changed:
+                carried.add((source, url))
+    return frozenset(carried)
+
+
+def _channel_settled(
+    channel: tuple[str, str],
+    branch_index: dict[str, dict[str, dict[str, str]]],
+    base_index: dict[str, dict[str, dict[str, str]]],
+    carriers: dict[tuple[str, str], set[int]],
+    dispositions: Mapping[int, bool | None],
+    marker_times: Mapping[int, str] | None,
+) -> bool:
+    """Whether one carried channel's owed ruling is settled.
+
+    Settled when the base already holds it — its entry exists and carries the
+    same sha or a same-or-newer fetched instant, so the branch's copy lands
+    nothing — or when the newest carrier of the channel is yes-marked.
+    """
+    source, url = channel
+    entry = branch_index[source][url]
+    base_entry = base_index.get(source, {}).get(url)
+    if base_entry is not None and (
+        entry["sha256"] == base_entry["sha256"] or base_entry["fetched"] >= entry["fetched"]
+    ):
+        return True
+    return dispositions.get(_newest_carrier(carriers.get(channel, set()), marker_times)) is True
 
 
 def _fetch_pricelog_refs(runner: pr.PrRunner, repo_root: Path) -> None:

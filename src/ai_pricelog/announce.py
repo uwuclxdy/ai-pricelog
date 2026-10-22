@@ -96,9 +96,15 @@ def slug(url: str) -> str:
 
     The segment lowercases, every run of non-alphanumeric characters collapses
     to one dash, and leading/trailing dashes strip; an empty segment reads as
-    ``index``.
+    ``index``. A url urlsplit cannot parse is refused by name: slugging it to
+    ``index`` would collide it with the homepage channel and hide which entry
+    broke.
     """
-    segments = [part for part in urllib.parse.urlsplit(url).path.split("/") if part]
+    try:
+        parsed = urllib.parse.urlsplit(url)
+    except ValueError as exc:
+        raise ValueError(f"announce channel url {url!r} is unparseable: {exc}") from exc
+    segments = [part for part in parsed.path.split("/") if part]
     segment = segments[-1] if segments else ""
     return re.sub(r"[^a-z0-9]+", "-", segment.lower()).strip("-") or "index"
 
