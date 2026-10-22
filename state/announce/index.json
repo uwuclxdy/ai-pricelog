@@ -19,13 +19,13 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "d3402b7ecf86692d71995b707599da40b999d3b35faf28a96c63e9151ec213e8",
-      "fetched": "2026-10-20T19:00:12Z"
+      "sha256": "c1f680796afc071c426d82998f0354d81e5a28068b93148f49d008fa88f5e1ec",
+      "fetched": "2026-10-22T19:00:21Z"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "5f949c894694102a6304093196abf61473cfd1085557006f2dae7cca8fc1fcd7",
-      "fetched": "2026-10-21T23:00:13Z"
+      "sha256": "65b96a4027a0f72dedc1032c0eee5baf244621682cea2a1e4c94dc8fab41b714",
+      "fetched": "2026-10-22T19:00:21Z"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
@@ -41,8 +41,8 @@
   "moonshot": {
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
-      "sha256": "b3031fa17af2a28d8eb5e49fa6d4f23346a9068a2faa25ae3253b0183550664c",
-      "fetched": "2026-10-20T19:00:12Z"
+      "sha256": "dd7fefc950f196301852e645a345acefd7f923fed54df9e72134bd3ca164a2fe",
+      "fetched": "2026-10-22T19:00:21Z"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
@@ -72,8 +72,8 @@
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "061017da3e432cd38b18c4209f8848937a935ca9ca7f3bcf254ed2e4c3308c54",
-      "fetched": "2026-10-22T17:22:18Z"
+      "sha256": "b49d43f2581f2184c8387b6b81bf0c595cea2c7199bc41473bd8e0950e445437",
+      "fetched": "2026-10-22T19:00:21Z"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
@@ -84,15 +84,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "bc316db6a3f6c8d0f712f7d7f3963e1e9010290184153c00a5836cc130703a60",
-      "fetched": "2026-10-21T23:00:13Z"
+      "sha256": "a1a71272b3ab8a5fc0bb1a5d6e5805a7735c8142580d19083b3436fcb152256b",
+      "fetched": "2026-10-22T19:00:21Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "db3926c28290b8837639edaaf337279b298bae8ec80a31fbbd5ce47e98ad5411",
-      "fetched": "2026-10-21T23:00:13Z"
+      "sha256": "4aded9b10775053d4fda9c151d5c01022166b714ba99f1443df01280a6ad85a5",
+      "fetched": "2026-10-22T19:00:21Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",

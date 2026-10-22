@@ -1,6 +1,10 @@
 Changelog | Mistral Docs Docs & API Search docs ⌘K Vibe Studio Inference & Models Admin Resources API Reference Search docs ⌘K Toggle theme Reach out Try Studio Home Resources Build API Reference SDKs MCP Supported languages Cookbooks Migration guides Updates Release notes Changelogs Security advisories Knowledge base Glossary Error glossary Known limitations Observability integrations Deprecated features Community Ambassadors Mistral Events ↗ Resources Changelogs Changelog Find out about all the latest changes to our tool.
 You may filter by date and type of release.
-Oct 26 October 20 We released the Voxtral 3 audio family, our next generation of speech-to-text and text-to-speech models.
+Oct 26 October 22 Z.ai GLM 5.3 Flash ( zai-glm-5-3-flash ) is now available.
+MODEL RELEASED A multimodal 320B-parameter (18B active) Mixture-of-Experts model from Z.ai with a 1M-token context window.
+Built for developer agent workflows, visual coding, and complex tool-use tasks.
+Pricing: $0.15/M input tokens, $0.03/M cached input, $0.50/M output tokens.
+October 20 We released the Voxtral 3 audio family, our next generation of speech-to-text and text-to-speech models.
 All four models are in Public Preview.
 See the Voxtral 3 announcement and the audio models pricing .
 MODEL RELEASED Voxtral TTS 3 ( voxtral-mini-tts-3-0 ): text-to-speech with zero-shot voice cloning, streaming, and contextual delivery.
