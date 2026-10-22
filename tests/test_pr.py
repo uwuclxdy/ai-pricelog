@@ -829,3 +829,58 @@ def test_spec_body_does_not_flag_cache_read_equal_to_input():
     }
     body = spec(source="baseten", provider="Baseten", source_url="", rows=(row,)).body
     assert "needs human" not in body
+
+
+def test_spec_body_flags_an_override_cache_read_above_input():
+    # the same implausibility class inside an override entry: the top-level
+    # rates are plausible, so only the entry carries the signal
+    row = {
+        "schema": 4,
+        "source": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "observed_at": "2026-10-19",
+        "rates": {"input": 0.02, "output": 0.08, "cache_read": 0.002},
+        "overrides": [
+            {
+                "when": {"days": ["monday"], "window": [1600, 2359], "timezone": "UTC"},
+                "rates": {"input": 0.03, "output": 0.12, "cache_read": 0.09},
+            }
+        ],
+    }
+    body = spec(source="deepseek", provider="DeepSeek", source_url="", rows=(row,)).body
+    assert (
+        "- [ ] needs human: `deepseek-v4-pro` override monday 16:00-23:59 UTC"
+        " cache read 0.09 above input 0.03"
+    ) in body.splitlines()
+
+
+def test_spec_body_does_not_flag_a_plausible_override_entry():
+    row = {
+        "schema": 4,
+        "source": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "observed_at": "2026-10-19",
+        "rates": {"input": 0.02, "output": 0.08, "cache_read": 0.002},
+        "overrides": [
+            {
+                "when": {"days": ["monday"], "window": [1600, 2359]},
+                "rates": {"input": 0.03, "output": 0.12, "cache_read": 0.02},
+            }
+        ],
+    }
+    body = spec(source="deepseek", provider="DeepSeek", source_url="", rows=(row,)).body
+    assert "needs human" not in body
+
+
+def test_spec_body_ignores_an_override_without_rates():
+    # a quota-multiplier entry carries no rate axis to compare
+    row = {
+        "schema": 4,
+        "source": "zai",
+        "model_id": "glm-5.3-flash",
+        "observed_at": "2026-10-19",
+        "rates": {"input": 0.15, "output": 0.50},
+        "overrides": [{"when": {"days": ["monday"]}, "quota_multiplier": 0.4}],
+    }
+    body = spec(source="zai", provider="Z.ai", source_url="", rows=(row,)).body
+    assert "needs human" not in body
