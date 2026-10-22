@@ -7,6 +7,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 
 from ai_pricelog.pr import PrRunner
 
@@ -97,6 +98,28 @@ def git_init_repo(path: Path) -> None:
     # newline-escape sanitizer test)
     (path / "no-hooks").mkdir(exist_ok=True)
     git(path, "config", "core.hooksPath", str(path / "no-hooks"))
+
+
+def move_last_row_to_second_tbody(soup: BeautifulSoup) -> int:
+    """Move each table's last <td> row into a fresh second tbody; return the count.
+
+    the row-selection test's control: a reader that owns only the first tbody
+    loses these rows, while the document still nests every row the same way.
+    """
+    moved = 0
+    for table in soup.find_all("table"):
+        rows = [
+            row
+            for row in table.find_all("tr")
+            if row.find_parent("table") is table and row.find_all("td", recursive=False)
+        ]
+        if not rows:
+            continue
+        tbody = soup.new_tag("tbody")
+        table.append(tbody)
+        tbody.append(rows[-1].extract())
+        moved += 1
+    return moved
 
 
 def register_fake_module(monkeypatch: pytest.MonkeyPatch, kind: str, name: str) -> types.ModuleType:

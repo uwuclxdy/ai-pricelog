@@ -27,7 +27,7 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
 
 _ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._/-]*$")
 _MODEL_HEADERS = ("model", "input", "output")
@@ -52,12 +52,8 @@ def _model_tables(soup: BeautifulSoup) -> list[Tag]:
 
 
 def _table_rows(table: Tag) -> list[list[Tag]]:
-    """the table's own rows as td cell lists (nested tables excluded)."""
-    return [
-        row.find_all("td", recursive=False)
-        for row in table.find_all("tr")
-        if row.find_parent("table") is table
-    ]
+    """the table's own body rows as td cell lists (web.own_rows)."""
+    return [row.find_all("td", recursive=False) for row in own_rows(table)]
 
 
 def _model_name(cell: Tag) -> str:

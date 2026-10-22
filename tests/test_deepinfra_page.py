@@ -12,6 +12,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import deepinfra_page as detector
 from ai_pricelog.scrapers import deepinfra_page as scraper
 from ai_pricelog.web import FetchError
+from conftest import move_last_row_to_second_tbody
 
 PAGE_URL = "https://deepinfra.com/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "deepinfra_page" / "pricing.html"
@@ -343,3 +344,15 @@ def test_scrape_model_cell_without_link_does_not_block(monkeypatch):
     assert pricing.input_cost_per_token == pytest.approx(2.85 / 1e6)
     assert pricing.cache_read_cost_per_token == pytest.approx(0.285 / 1e6)
     assert scraper.scrape(cfg(), "kimi-k9") is None
+
+
+def test_detect_and_scrape_read_a_second_tbody(monkeypatch):
+    # a row moved out of a table's first tbody into a second one must still
+    # detect and scrape: the reader owns every tbody, never just the first
+    soup = load_soup()
+    assert move_last_row_to_second_tbody(soup) > 0
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
+    assert detector.detect(cfg()) == EXPECTED_IDS
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
+    for model_id in EXPECTED_IDS:
+        assert scraper.scrape(cfg(), model_id) is not None

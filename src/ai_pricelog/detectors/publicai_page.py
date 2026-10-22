@@ -27,6 +27,7 @@ from ai_pricelog.web import (
     amount_scan,
     fetch_soup,
     fold_heading,
+    own_rows,
     unreadable_rate_error,
 )
 
@@ -82,12 +83,8 @@ def _models_table(soup: BeautifulSoup, url: str) -> Tag:
 
 
 def _table_rows(table: Tag) -> list[list[Tag]]:
-    """the table's own rows as td cell lists (nested tables excluded)."""
-    return [
-        row.find_all("td", recursive=False)
-        for row in table.find_all("tr")
-        if row.find_parent("table") is table
-    ]
+    """the table's own body rows as td cell lists (web.own_rows)."""
+    return [row.find_all("td", recursive=False) for row in own_rows(table)]
 
 
 def _model_id(cells: list[Tag]) -> str | None:

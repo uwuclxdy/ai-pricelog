@@ -26,7 +26,14 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, amount_scan, fetch_soup, fold_heading, unreadable_rate_error
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    fold_heading,
+    own_rows,
+    unreadable_rate_error,
+)
 
 log = logging.getLogger(__name__)
 
@@ -103,12 +110,8 @@ def _header_matches(table: Tag) -> bool:
 
 
 def _table_rows(table: Tag) -> list[list[Tag]]:
-    """the table's own rows as td cell lists (nested tables excluded)."""
-    return [
-        row.find_all("td", recursive=False)
-        for row in table.find_all("tr")
-        if row.find_parent("table") is table
-    ]
+    """the table's own body rows as td cell lists (web.own_rows)."""
+    return [row.find_all("td", recursive=False) for row in own_rows(table)]
 
 
 def _model_id(cell: Tag) -> str:

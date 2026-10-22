@@ -9,6 +9,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import together_page as detector
 from ai_pricelog.scrapers import together_page as scraper
 from ai_pricelog.web import FetchError
+from conftest import move_last_row_to_second_tbody
 
 PAGE_URL = "https://www.together.ai/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "together_page" / "pricing.html"
@@ -310,3 +311,15 @@ def test_dedup_keys_page_spelling_matches_too():
 def test_dedup_keys_plain_ids_return_nothing():
     for page_id in ("deepseek-v4-pro-0813", "deepseek-v4-pro", "minimax-m3", "kimi-k3"):
         assert scraper.dedup_keys(page_id) == (), page_id
+
+
+def test_detect_and_scrape_read_a_second_tbody(monkeypatch):
+    # a row moved out of a table's first tbody into a second one must still
+    # detect and scrape: the reader owns every tbody, never just the first
+    soup = load_soup()
+    assert move_last_row_to_second_tbody(soup) > 0
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
+    assert detector.detect(cfg()) == EXPECTED_IDS
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
+    for model_id in EXPECTED_IDS:
+        assert scraper.scrape(cfg(), model_id) is not None

@@ -9,6 +9,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import digitalocean_page as detector
 from ai_pricelog.scrapers import digitalocean_page as scraper
 from ai_pricelog.web import FetchError
+from conftest import move_last_row_to_second_tbody
 
 PAGE_URL = "https://docs.digitalocean.com/products/inference/details/pricing/"
 FIXTURE = Path(__file__).parent / "fixtures" / "digitalocean_page" / "pricing.html"
@@ -550,3 +551,15 @@ def test_missing_processing_mode_column_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="processing mode"):
         detector.detect(cfg())
+
+
+def test_detect_and_scrape_read_a_second_tbody(monkeypatch):
+    # a row moved out of a table's first tbody into a second one must still
+    # detect and scrape: the reader owns every tbody, never just the first
+    soup = load_soup()
+    assert move_last_row_to_second_tbody(soup) > 0
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
+    assert detector.detect(cfg()) == EXPECTED_IDS
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
+    for model_id in EXPECTED_IDS:
+        assert scraper.scrape(cfg(), model_id) is not None
