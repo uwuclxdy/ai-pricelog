@@ -287,6 +287,16 @@
       "citation": [
         "https://docs.fireworks.ai/updates/changelog"
       ]
+    },
+    {
+      "id": "novita-mimo-v25-retirement-2026-10-23",
+      "provider": "novita",
+      "effective": "2026-10-23",
+      "timezone": "UTC",
+      "statement": "the 2026-10-22 Model Deprecation Notice retires xiaomimimo/mimo-v2.5 and xiaomimimo/mimo-v2.5-pro from the Novita platform at 00:00 UTC on 2026-10-23, with migrations to xiaomimimo/mimo-v2.6-flash and xiaomimimo/mimo-v2.6-pro before the cutoff. the page names no timezone beyond UTC. the stored novita rows already carry removal rows (2026-09-02) through the absence machinery",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }
