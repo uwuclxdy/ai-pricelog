@@ -232,7 +232,6 @@ The plugin uses Spegel to mirror container image layers across cluster nodes, so
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
 The plugin is disabled by default and is available on new clusters running Kubernetes 1.36 or later.
 27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit, and agents : Kimi K3 For more information, see the Available Models page .
-24 July The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Opus 5 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
