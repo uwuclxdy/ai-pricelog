@@ -48,3 +48,4 @@
 {"schema":4,"source":"mistral","model_id":"zai-glm-5-2","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"zai-glm-5-2","observed_at":"2026-10-15","removed":true,"rates":{"input":1.4,"output":4.4,"cache_read":0.14}}
 {"schema":4,"source":"mistral","model_id":"zai-glm-5-3","observed_at":"2026-09-16","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
+{"schema":4,"source":"mistral","model_id":"zai-glm-5-3-flash","observed_at":"2026-10-22","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}

@@ -3,25 +3,25 @@
 This page is updated periodically with Kimi Open Platform product updates and related documentation changes.
 **September 2026** ### 🔍 Web Search API Launch web searches through `/v1/tools/search` and `/v1/tools/search_pro` and get structured results — ideal for Agent applications that orchestrate their own search logic.
 Organization- and project-level QPS limits are supported.
-See [Web Search Basic](/docs/api/tools-search), [Web Search Pro](/docs/api/tools-search-pro), [Web Search Best Practices](/docs/guide/web-search-best-practice), and [Web Search Pricing](/docs/pricing/websearch).
+See [Web Search Basic](/docs/api/tools-search.md), [Web Search Pro](/docs/api/tools-search-pro.md), [Web Search Best Practices](/docs/guide/web-search-best-practice.md), and [Web Search Pricing](/docs/pricing/websearch.md).
 ### 💰 Billing method change Account usage is now deducted at a uniform ratio of 50% cash and 50% vouchers.
 When either balance is depleted, all subsequent usage is deducted from the remaining balance type.
 Users with signed contracts follow their contract terms and continue to prioritize voucher usage — they are not affected.
 **August 2026** * The `kimi-k2.5` and all `moonshot-v1` series models (including `-vision-preview` and `moonshot-v1-auto`) were retired across all platforms.
 Calls to these models now return a 404 "model not found" error.
-Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart).
-* Files API updates: newly generated file IDs now carry the `file_` prefix; improved parsing of complex content such as tables and formulas; images are no longer OCR'd for text extraction (for image understanding, upload images with `purpose=image`; see [Use Vision Models](/docs/guide/use-kimi-vision-model)); files uploaded with the same name as an existing file are automatically renamed by the server.
+Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart.md).
+* Files API updates: newly generated file IDs now carry the `file_` prefix; improved parsing of complex content such as tables and formulas; images are no longer OCR'd for text extraction (for image understanding, upload images with `purpose=image`; see [Use Vision Models](/docs/guide/use-kimi-vision-model.md)); files uploaded with the same name as an existing file are automatically renamed by the server.
 **July 2026** ### 🚀 Kimi K3 available on the Open Platform API Kimi K3 — our flagship model for long-horizon coding and end-to-end knowledge work — is now available through the Open Platform API, with a 1M token context and leading overall intelligence.
-See the [Kimi K3 Quickstart](/docs/guide/kimi-k3-quickstart).
+See the [Kimi K3 Quickstart](/docs/guide/kimi-k3-quickstart.md).
 At the same time, `kimi-k2.5` and the `moonshot-v1` series are no longer offered to newly registered users; the Global edition added email verification-code sign-up/login and email & Google account binding management.
 The account overview now shows current-day spending, and the platform Terms of Service have been updated.
 **June 2026** * Added organization-level API IP allowlists for finer enterprise security control.
-* Released Kimi K2.7 Code through the Open Platform API, followed by a HighSpeed variant — see the [Kimi K2.7 Code Quickstart](/docs/guide/kimi-k2-7-code-quickstart); custom top-up amounts are now supported.
+* Released Kimi K2.7 Code through the Open Platform API, followed by a HighSpeed variant — see the [Kimi K2.7 Code Quickstart](/docs/guide/kimi-k2-7-code-quickstart.md); custom top-up amounts are now supported.
 **May 2026** * The `kimi-k2` series (including `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`, `kimi-k2-thinking`, and `kimi-k2-thinking-turbo`) was retired and is no longer maintained or supported.
-Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart).
+Please migrate to [Kimi K3](/docs/guide/kimi-k3-quickstart.md).
 * Added automatic balance top-up and top-up amount configuration.
-**April 2026** * The Batch API is now open to all users for lower-cost large-scale asynchronous inference — see [Use the Batch API](/docs/guide/use-batch-api).
-* Released Kimi K2.6 through the Open Platform API — see the [Kimi K2.6 Quickstart](/docs/guide/kimi-k2-6-quickstart).
+**April 2026** * The Batch API is now open to all users for lower-cost large-scale asynchronous inference — see [Use the Batch API](/docs/guide/use-batch-api.md).
+* Released Kimi K2.6 through the Open Platform API — see the [Kimi K2.6 Quickstart](/docs/guide/kimi-k2-6-quickstart.md).
 **January 2026** * Released Kimi K2.5 through the Open Platform API; discontinued `kimi-latest`.
 **December 2025** * Added organization verification, member invitations, and multi-account organization support to the Global Open Platform.
 **November 2025** * Released Kimi K2 Thinking and its Turbo variant, increased default TPM limits across tiers, and reduced Kimi Turbo prices; discontinued `kimi-thinking-preview`.
