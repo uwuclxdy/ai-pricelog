@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
+October 2026 21 October The following DeepSeek model is now available on DigitalOcean Inference for serverless inference : DeepSeek V4.1 Flash 1017 For more information, see the Available Models page .
+20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
 13 October In public preview , you can now create spend alerts for Serverless Inference model access keys .
 Each key’s spend is tracked against its own monthly budget, and you receive email alerts as it crosses the thresholds you choose.
