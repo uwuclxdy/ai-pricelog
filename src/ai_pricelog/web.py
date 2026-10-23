@@ -12,9 +12,20 @@ from collections.abc import Iterator
 import httpx
 from bs4 import BeautifulSoup, Tag
 
+_LINE_BREAKS = str.maketrans(
+    {"\n": "\\n", "\r": "\\r", "\x85": "\\x85", " ": "\\u2028", " ": "\\u2029"}
+)
+
 
 class FetchError(Exception):
-    """a fetch failed after retries; the message names the url."""
+    """a fetch failed after retries; the message names the url.
+
+    its text keeps one line: the run log is read line by line, traceback tail
+    included, so page text inside a message must not forge a level-prefixed
+    line the health step classes as a real failure."""
+
+    def __str__(self) -> str:
+        return super().__str__().translate(_LINE_BREAKS)
 
 
 def fetch_text(url: str, headers: dict[str, str] | None = None) -> str:

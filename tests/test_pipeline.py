@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_pricelog import absence, announce, config, health, openrouter, pipeline, pr, store
+from ai_pricelog import absence, announce, config, health, openrouter, pipeline, pr, store, web
 from ai_pricelog.pricing import Pricing
 from conftest import git, git_init_repo, register_fake_module
 
@@ -3307,6 +3307,24 @@ def test_page_id_cannot_forge_a_health_line(tmp_path, fake_modules, repo_root, c
     with caplog.at_level(logging.WARNING):
         pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
     lines = _logged_lines(caplog)
+    assert not any("\n" in line for line in lines)
+    assert "openai" not in health.parse_log(lines)
+
+
+def test_a_scraper_error_message_cannot_forge_a_health_line(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # the run log is read line by line, traceback tail included: a page-sourced
+    # id inside a FetchError message must not split into its own line
+    detect, scrape = fake_modules
+    page_id = "a\nERROR:ai_pricelog.pipeline:detector for openai failed"
+    detect["deepseek"] = ["deepseek-chat"]
+    scrape["deepseek"] = {"deepseek-chat": web.FetchError(f"unreadable rate for {page_id} on u")}
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    formatter = logging.Formatter(logging.BASIC_FORMAT)
+    lines = "\n".join(formatter.format(record) for record in caplog.records).splitlines()
     assert not any("\n" in line for line in lines)
     assert "openai" not in health.parse_log(lines)
 

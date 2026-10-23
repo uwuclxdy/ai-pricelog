@@ -324,6 +324,13 @@ _EMPTY_SHELL = """
 </table>
 """
 
+_PLACEHOLDER_SHELL = """
+<table>
+  <thead><tr><th>Model</th><th>Input Price</th><th>Output Price</th></tr></thead>
+  <tbody><tr><td>&#8203;</td><td>&#8203;</td><td>&#8203;</td></tr></tbody>
+</table>
+"""
+
 
 def _chat_page(monkeypatch: pytest.MonkeyPatch, page_text: str) -> None:
     def fake(url: str) -> str:
@@ -350,11 +357,15 @@ def test_scrape_reads_the_html_table_shape(monkeypatch):
     assert pricing.max_tokens_in == 1_048_576
 
 
-def test_an_empty_html_table_shell_still_raises(monkeypatch):
-    # the page as observed 2026-10-23: every series table ships a self-closed
-    # header row and an empty body. that must stay a loud shape break, never
-    # a silent "model absent" (which would read as a delisting half)
-    _chat_page(monkeypatch, _EMPTY_SHELL)
+@pytest.mark.parametrize(
+    "page_text", [_EMPTY_SHELL, _PLACEHOLDER_SHELL], ids=["empty-shell", "placeholder-row"]
+)
+def test_a_shell_with_no_readable_row_still_raises(monkeypatch, page_text):
+    # the page as observed 2026-10-23 ships a self-closed header row and an
+    # empty body; a table whose only data row is zero-width placeholders is
+    # the same shell. both must stay a loud shape break, never a silent
+    # "model absent" (which would read as a delisting half)
+    _chat_page(monkeypatch, page_text)
     with pytest.raises(FetchError) as exc:
         scraper.scrape(cfg(), "kimi-k3")
     assert CHAT_URL in str(exc.value)

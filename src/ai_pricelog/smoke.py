@@ -2,7 +2,8 @@
 
 kimi's pricing HTML is JS-rendered; the pipeline runs entirely on the static
 .md twins (models.md for detection, llms.txt resolving the merged pricing
-chat page and its <DocTable> blocks for scraping). the fixture tests pin saved
+chat page and its pricing tables — `<DocTable>` blocks or plain html ones —
+for scraping). the fixture tests pin saved
 copies and cannot catch the upstream pages changing shape or disappearing,
 so the cron workflow runs this probe against the live endpoints. exit 0 =
 every endpoint still serves what the pipeline expects.

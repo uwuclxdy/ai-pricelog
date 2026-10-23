@@ -79,7 +79,7 @@ def test_check_pricing_pages_fetches_resolved_page(monkeypatch):
     assert smoke.check_pricing_pages(INDEX_URL) == CHAT_URL
 
 
-def test_check_pricing_pages_requires_doctable(monkeypatch):
+def test_check_pricing_pages_requires_a_table(monkeypatch):
     base = fixture_fetch("llms")
 
     def fake(url: str) -> str:
