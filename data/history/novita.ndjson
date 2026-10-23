@@ -81,6 +81,7 @@
 {"schema":4,"source":"novita","model_id":"minimax/minimax-m2.5-highspeed","observed_at":"2026-10-15","removed":true,"rates":{"input":0.6,"output":2.4,"cache_read":0.03},"limits":{"context":204800}}
 {"schema":4,"source":"novita","model_id":"minimax/minimax-m2.7","observed_at":"2026-04-12","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://blogs.novita.ai/minimax-m2-7-on-novita/"}}
 {"schema":4,"source":"novita","model_id":"minimax/minimax-m2.7","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":204800},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"minimax/minimax-m3.1-flash","observed_at":"2026-10-23","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"limits":{"context":1000000},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"minimaxai/minimax-m1-80k","observed_at":"2025-07-02","rates":{"input":0.55,"output":2.2},"provenance":{"url":"https://blogs.novita.ai/how-to-access-minimax-m1/"}}
 {"schema":4,"source":"novita","model_id":"minimaxai/minimax-m1-80k","observed_at":"2026-08-26","rates":{"input":0.55,"output":2.2},"limits":{"context":1000000},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"mistralai/mistral-nemo","observed_at":"2026-08-29","rates":{"input":0.04,"output":0.17},"limits":{"context":60288},"provenance":{"url":"https://novita.ai/pricing"}}
