@@ -6,7 +6,7 @@ Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) ca
 Effort levels keep the same models, prompts, tools, limits, and pricing.
 Version pinning and frozen configurations continue to work as before.
 `preset` is still accepted as a deprecated alias, and responses return both fields.
-See [Effort](/docs/agent-api/effort.md).
+See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md).
 The Python SDK 0.46.0 and TypeScript SDK 0.41.0 add the `effort` parameter.
 **October 2026** **Tool approvals for MCP and connector calls** Set `require_approval` on an `mcp` or `connector` tool to review calls before they run.
 A call that needs approval returns an `mcp_approval_request` item and does not run.
@@ -14,25 +14,25 @@ To approve or deny it, send an `mcp_approval_response` with `previous_response_i
 Use `"always"` to review every call, or a filter object to skip approval for selected tools or for read-only tools.
 Calls still run without approval by default.
 The Python SDK 0.43.8 and TypeScript SDK 0.38.8 include the approval types.
-See [MCP approvals](/docs/agent-api/tools/mcp.md#approvals) and [Connectors](/docs/agent-api/tools/connectors.md).
+See [MCP approvals](https://docs.perplexity.ai/docs/agent-api/tools/mcp.md#approvals) and [Connectors](https://docs.perplexity.ai/docs/agent-api/tools/connectors.md).
 **October 2026** **Older models removed from the model docs; GPT-6 Astra and DeepSeek V4 Pro added** The following models are no longer listed in the Agent API model docs, pricing calculator, or examples: * **Anthropic:** `anthropic/claude-opus-4-8`, `anthropic/claude-opus-4-7`, `anthropic/claude-opus-4-6`, `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-6`, `anthropic/claude-sonnet-4-5`, and `anthropic/claude-haiku-4-5` * **Google:** `google/gemini-3-flash-preview`, `google/gemini-3.1-pro-preview`, `google/gemini-3.1-flash-lite`, `google/gemini-3.5-flash`, and
 `google/gemini-3.5-flash-lite` * **xAI:** `xai/grok-4.3`, `xai/grok-4.20-reasoning`, `xai/grok-4.20-non-reasoning`, and `xai/grok-4.20-multi-agent` For new integrations, use `anthropic/claude-opus-5-5`, `anthropic/claude-sonnet-5-5`, `anthropic/claude-haiku-5-5`, `google/gemini-4-argon`, `google/gemini-3.8-flash`, or `xai/grok-4.7`.
 The model docs now also list `openai/gpt-6-astra` (\$10.00 per million input tokens and \$50.00 per million output tokens up to 272k input tokens, with `flex` and `priority` tiers) and `perplexity/deepseek-v4-pro-0813` (\$1.32 per million input tokens, \$0.044 per million cached input tokens, and \$3.96 per million output tokens), which is also available through the Orchestrator API.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **October 2026** **Gemini 4 Argon** The Agent API now supports `google/gemini-4-argon`.
 Introductory pricing through November 30, 2026 is \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens, including reasoning tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **October 2026** **NVIDIA Nemotron 3.5 Super** The Agent API now supports `perplexity/nemotron-3.5-super-120b-a12b` at \$0.20 per million input tokens, \$0.04 per million cached input tokens, and \$0.50 per million output tokens.
 It has a 1,048,576-token context window, returns up to 131,072 output tokens, and accepts text input only.
 It replaces `perplexity/nemotron-3-ultra-550b-a55b`, which is no longer listed in the Agent API or Orchestrator API model docs.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **October 2026** **xhigh preset output budget raised to 512,000 tokens** The Agent API `xhigh` preset now allows up to 512,000 output tokens, up from 128,000.
-If you use a [frozen configuration](/docs/agent-api/presets.md#current-preset-values), update `max_output_tokens` to keep matching the preset.
+If you use a [frozen configuration](https://docs.perplexity.ai/docs/agent-api/presets.md#current-preset-values), update `max_output_tokens` to keep matching the preset.
 Correction: `xhigh` has used Fast Search since the October update that moved `low`, `medium`, and `high` to Fast Search.
 That entry now lists `xhigh` too.
 **October 2026** **Claude Haiku 5.5** The Agent API now supports `anthropic/claude-haiku-5-5`.
 Requests with more than 100k input tokens use higher rates.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **October 2026** **Decisions API: pplx-decider-v1.2 and pplx-decider-flash-v1.2** `pplx-decider-v1.2` replaces `pplx-decider-v1.1-27b` as the 27B decision model, at \$0.02 per million input tokens.
 `pplx-decider-flash-v1.2` is a new 4B decision model at \$0.01 per million input tokens.
 Both accept text and images and use the same request limits.
@@ -40,127 +40,127 @@ Output tokens stay free.
 Use `pplx-decider-latest` or `pplx-decider-flash-latest` to follow the newest version of each model.
 `perplexity/pplx-decider-latest` and `perplexity/pplx-decider-flash-latest` are also accepted.
 Requests that name `pplx-decider-v1.1-27b` or `pplx-decider-v1-27b` continue to work and select `pplx-decider-v1.2`.
-See [When to use each](/docs/decisions/quickstart.md#when-to-use-each) and [Pricing](/docs/getting-started/pricing.md).
+See [When to use each](https://docs.perplexity.ai/docs/decisions/quickstart.md#when-to-use-each) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md).
 **October 2026** **Decisions API: pplx-decider-v1.1-27b replaces v1** `pplx-decider-v1.1-27b` replaces `pplx-decider-v1-27b` as the Decisions API model.
 Input now costs \$0.02 per million tokens, down from \$0.04.
 Use `pplx-decider-v1.1-27b` in new requests.
 Requests that still name `pplx-decider-v1-27b` continue to work and bill at the same \$0.02 rate.
-See [Pricing](/docs/getting-started/pricing.md) and the [Decisions API quickstart](/docs/decisions/quickstart.md).
+See [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md) and the [Decisions API quickstart](https://docs.perplexity.ai/docs/decisions/quickstart.md).
 **October 2026** **New: Decisions API** The Decisions API answers questions about text, JSON, or images with probabilities instead of generated text.
 Use `POST /v1/decisions` with `pplx-decider-v1-27b` for yes-or-no, choice, or scored answers that application code can act on directly.
 Input costs \$0.04 per million tokens.
 Output tokens are free, with no per-request fee.
-See the [Decisions API quickstart](/docs/decisions/quickstart.md).
+See the [Decisions API quickstart](https://docs.perplexity.ai/docs/decisions/quickstart.md).
 **October 2026** **Native document input** The Agent API now accepts PDF, DOC, DOCX, TXT, and RTF documents as `input_file` content.
 Send a document inline with `file_data` or provide a public HTTPS `file_url`.
 For inline documents, continue the conversation with `previous_response_id` without uploading the file again.
-See [Working with Files](/docs/agent-api/working-with-files.md).
+See [Working with Files](https://docs.perplexity.ai/docs/agent-api/working-with-files.md).
 **October 2026** **Image Search** The new `image_search` tool searches for images on the web and returns typed `image_search_results` with image and source-page URLs.
 Use result limits plus domain, format, and safe-search filters to control the results.
 Usage reports successful calls at \$2.50 per 1,000 invocations; failed calls have zero tool cost.
-See [Agent API Image Search](/docs/agent-api/tools/image-search.md).
+See [Agent API Image Search](https://docs.perplexity.ai/docs/agent-api/tools/image-search.md).
 **October 2026** **Accurate sandbox extraction usage and costs** Agent API responses now include model token usage and cost for successful `pplx_sdk.llm.extract` calls made inside the `sandbox` tool.
 Per-model tokens appear in `usage.tool_calls_details.sandbox.token_usage`.
 The reported extraction cost appears in `usage.tool_calls_details.sandbox.cost_usd` and `usage.cost.tool_calls_cost_details.sandbox`, and contributes to `usage.cost.total_cost`.
-Sandbox extraction uses the existing [`openai/gpt-6-luna` pricing](/docs/agent-api/models), including cache creation, cache read, and reasoning-token dimensions.
+Sandbox extraction uses the existing [`openai/gpt-6-luna` pricing](https://docs.perplexity.ai/docs/agent-api/models), including cache creation, cache read, and reasoning-token dimensions.
 This corrects response-level usage and cost reporting; it does not change pricing or backfill historical responses.
 **October 2026** **Low, medium, high, and xhigh presets use Fast Search** The Agent API `low`, `medium`, `high`, and `xhigh` presets now use Fast Search (`search_type: "fast"`) for `web_search`, matching the `fast` preset.
 `web_search` calls made under these presets drop from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
 Models, prompts, tool budgets, and step limits are unchanged.
 To keep standard web search under any preset, set `search_type: "web"` on the `web_search` tool.
-See [Agent API Web Search](/docs/agent-api/tools/web-search.md#search-type).
+See [Agent API Web Search](https://docs.perplexity.ai/docs/agent-api/tools/web-search.md#search-type).
 **September 2026** **GPT-6.1 Sol** The Agent API now supports `openai/gpt-6.1-sol`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **Claude Sonnet 5.5** The Agent API now supports `anthropic/claude-sonnet-5-5`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **xhigh preset uses Claude Opus 5.5** The Agent API `xhigh` preset now uses Claude Opus 5.5: | Preset | Previous model | New model | | - | - | - | | `xhigh` | `openai/gpt-5.6-sol` | `anthropic/claude-opus-5-5` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
 **September 2026** **Low, medium, and high presets use GPT-6** The Agent API `low`, `medium`, and `high` presets now use the GPT-6 model family: | Preset | Previous model | New model | | - | - | - | | `low` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `medium` | `openai/gpt-5.6-luna` | `openai/gpt-6-luna` | | `high` | `openai/gpt-5.6-sol` | `openai/gpt-6-sol` | Prompts, reasoning effort, tools, token budgets, and step limits are unchanged.
 **September 2026** **Upcoming retirement of older OpenAI models** On October 24, 2026 at 00:00 UTC, the Agent API and Orchestrator API will retire these model IDs: * `openai/gpt-5.4` * `openai/gpt-5.4-mini` * `openai/gpt-5.4-nano` * `openai/gpt-5.2` * `openai/gpt-5.1` * `openai/gpt-5` * `openai/gpt-5-mini` Update direct model selections and fallback chains before the cutoff.
 The models remain available until then.
 After the cutoff, the retired IDs will no longer be accepted or returned by model-list endpoints.
-For new integrations, choose a current OpenAI model in the [Agent API Models reference](/docs/agent-api/models.md).
+For new integrations, choose a current OpenAI model in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **Fast preset uses Fast Search** The Agent API `fast` preset now uses Fast Search (`search_type: "fast"`).
 `web_search` drops from \$2.50 to \$1.00 per 1,000 invocations, and search is about 800 ms faster.
-See [Agent API Web Search](/docs/agent-api/tools/web-search.md#search-type).
+See [Agent API Web Search](https://docs.perplexity.ai/docs/agent-api/tools/web-search.md#search-type).
 **September 2026** **Fast Search** Set `search_type: "fast"` on the Search API or the Agent API `web_search` tool to use a lower-latency search path.
 Fast Search costs \$1.00 per 1,000 Search API requests or `web_search` invocations, with model tokens billed separately for Agent API.
 Set `search_type: "web"` for standard web search.
-See [Search API Fast Search](/docs/search/fast-search.md) or [Agent API Web Search](/docs/agent-api/tools/web-search.md#search-type).
+See [Search API Fast Search](https://docs.perplexity.ai/docs/search/fast-search.md) or [Agent API Web Search](https://docs.perplexity.ai/docs/agent-api/tools/web-search.md#search-type).
 **September 2026** **GPT-6 Sol** The Agent API now supports `openai/gpt-6-sol`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **GPT-6 Luna** The Agent API now supports `openai/gpt-6-luna`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **Claude Opus 5.5** The Agent API now supports `anthropic/claude-opus-5-5`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **Grok 4.7** The Agent API now supports `xai/grok-4.7`.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **Custom connectors: Bring your own MCP server** Register a remote MCP server once on your [Project connectors page](https://console.perplexity.ai/project/connectors).
 Perplexity stores the server's credential, so your application does not need to store or send it with each request.
 Use the generated connector ID with `type: "connector"` in Agent API requests.
 Custom connectors are available to all Projects and support API-key or no authentication, with Streamable HTTP or SSE transport.
-See [Add a custom connector](/docs/agent-api/tools/connectors.md#add-a-custom-connector).
-**September 2026** **Sign in with Perplexity for the remote MCP server** The [remote Perplexity MCP Server](/docs/getting-started/integrations/mcp-server.md) now supports OAuth.
+See [Add a custom connector](https://docs.perplexity.ai/docs/agent-api/tools/connectors.md#add-a-custom-connector).
+**September 2026** **Sign in with Perplexity for the remote MCP server** The [remote Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) now supports OAuth.
 Add `https://api.perplexity.ai/mcp` to any MCP client that supports OAuth, such as claude.ai, Claude Code, Cursor, or VS Code, and sign in with your Perplexity account instead of pasting an API key.
 You choose which API organization to bill during sign-in.
 API keys continue to work for clients without OAuth support.
 **September 2026** **Gemini 3.8 Flash** The Agent API now supports `google/gemini-3.8-flash`.
 Promotional pricing through December 31, 2026 is \$0.75 per million uncached-input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **GLM 5.3 Flash** The Agent API and Orchestrator API now support `perplexity/glm-5.3-flash` at \$0.15 per million uncached-input tokens, \$0.03 per million cached-input tokens, and \$0.50 per million output tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md) or the [Router model catalog](/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
 **August 2026** **GLM 5.3** The Agent API and Orchestrator API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md) or the [Router model catalog](/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
 **August 2026** **Prompt caching for presets** Agent API presets now use stable prompt cache keys automatically, allowing independent requests with the same preset to reuse the shared prompt prefix (system prompt and tool definitions).
 No request changes are required, and an explicit `prompt_cache_key` still overrides the preset default.
 This can reduce costs by about 5% for applications that use presets frequently, depending on cache utilization.
-The [current preset values](/docs/agent-api/presets.md#current-preset-values) include each key for frozen configurations.
+The [current preset values](https://docs.perplexity.ai/docs/agent-api/presets.md#current-preset-values) include each key for frozen configurations.
 **August 2026** **Fast preset updated** The Agent API `fast` preset now uses `openai/gpt-6-luna` with reasoning effort set to `none` and priority processing.
 Dynamic `fast` preset requests pick up the change automatically.
-If you use a [frozen configuration](/docs/agent-api/presets.md#current-preset-values), update the model and reasoning effort and set `service_tier` to `priority`.
+If you use a [frozen configuration](https://docs.perplexity.ai/docs/agent-api/presets.md#current-preset-values), update the model and reasoning effort and set `service_tier` to `priority`.
 Priority processing uses 2× the model's standard token prices.
 **August 2026** **Gemini 3.7 Flash** Pricing for `google/gemini-3.7-flash` increased on August 27, 2026 to \$0.75 per million input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **August 2026** **Grok 4.6** The Agent API now supports `xai/grok-4.6`, xAI's latest flagship reasoning and agentic model.
-See pricing in the [Agent API Models reference](/docs/agent-api/models.md).
+See pricing in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **August 2026** **NVIDIA Nemotron 3 Ultra** The Agent API and Orchestrator API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
-See the [Agent API Models reference](/docs/agent-api/models.md) or the [Router model catalog](/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
 **July 2026** **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
 GPT-5.6 Terra now costs \$2 per million input tokens and \$12 per million output tokens.
 GPT-5.6 Sol now supports Fast mode at 2× standard token pricing; send `service_tier: "priority"` to use it.
 **July 2026** **New: Orchestrator API** Unified access to open-weight models hosted by Perplexity through a single endpoint — with your existing Perplexity API key.
-**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](/docs/router/quickstart.md) **July 2026** **Remote MCP Server** The [Perplexity MCP Server](/docs/getting-started/integrations/mcp-server.md) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
+**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](https://docs.perplexity.ai/docs/router/quickstart.md) **July 2026** **Remote MCP Server** The [Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
 Connect any MCP client that supports Streamable HTTP using your API key as a bearer token, with no local installation and nothing to update.
 Tools and behavior are identical to the local server, and usage is billed to your API key at standard API pricing.
 **July 2026** **Low preset updated** The Agent API `low` preset now uses `openai/gpt-5.6-luna` with `minimal` reasoning effort and a 32,768-token maximum output.
-If you use a [frozen configuration](/docs/agent-api/presets.md#current-preset-values), update these values to match the current preset.
+If you use a [frozen configuration](https://docs.perplexity.ai/docs/agent-api/presets.md#current-preset-values), update these values to match the current preset.
 Dynamic `low` preset requests pick up the change automatically.
 **July 2026** **Inline citations for research presets** The Agent API's search-backed presets include inline citations: `fast` cites claims drawn from search results with numbered citations such as `[1]`, while `low`, `medium`, and `high` now cite claims drawn from tool results or provided source artifacts with source-typed citations such as `[web:1]`.
 After a successful tool call, the `low`, `medium`, and `high` presets include at least one citation in the final answer.
-The [current preset values](/docs/agent-api/presets.md#current-preset-values) include the system prompts for frozen configurations.
-**July 2026** **MCP Server 1.0: now backed by the Agent API** The [Perplexity MCP Server](/docs/getting-started/integrations/mcp-server.md) v1.0.0 moves its model-backed tools from the legacy Sonar models to [Agent API presets](/docs/agent-api/presets.md): `perplexity_ask` uses the `fast` preset, `perplexity_reason` uses `medium`, and `perplexity_research` uses `high`.
+The [current preset values](https://docs.perplexity.ai/docs/agent-api/presets.md#current-preset-values) include the system prompts for frozen configurations.
+**July 2026** **MCP Server 1.0: now backed by the Agent API** The [Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) v1.0.0 moves its model-backed tools from the legacy Sonar models to [Agent API presets](https://docs.perplexity.ai/docs/agent-api/presets.md): `perplexity_ask` uses the `fast` preset, `perplexity_reason` uses `medium`, and `perplexity_research` uses `high`.
 Tool names and response shapes are unchanged, and all three tools are faster and cheaper on average than their Sonar predecessors.
 Long-running research now streams progress to MCP clients that request it, and cancelling an MCP request cancels the underlying run.
 The `strip_thinking` and `reasoning_effort` parameters were removed from the tool schemas (the Agent API emits no think tags, and presets manage reasoning effort); clients still sending them are ignored gracefully.
-**July 2026** **Sonar Chat Completions migration** More models, tools, and research-backed presets: Sonar Chat Completions is now [Agent API.](/docs/agent-api/quickstart.md) Migration guide [here](/docs/agent-api/migrate-from-sonar/overview.md).
+**July 2026** **Sonar Chat Completions migration** More models, tools, and research-backed presets: Sonar Chat Completions is now [Agent API.](https://docs.perplexity.ai/docs/agent-api/quickstart.md) Migration guide [here](https://docs.perplexity.ai/docs/agent-api/migrate-from-sonar/overview.md).
 **July 2026** **Agent API: New Models** The Agent API added support for several new models this month, all with direct first-party token pricing.
-See the full list in the [Agent API Models reference](/docs/agent-api/models.md).
+See the full list in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **Claude Opus 5** The Agent API now supports `anthropic/claude-opus-5`.
 **GPT-5.6 Family** The Agent API now supports `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, and `openai/gpt-5.6-luna`, giving you access to the latest GPT-5.6 models.
 **Gemini Flash Models** The Agent API now supports `google/gemini-3.6-flash` and `google/gemini-3.5-flash-lite`, adding Google's latest fast and cost-efficient models.
 **Grok 4.5** The Agent API now supports `xai/grok-4.5`, xAI's flagship coding and agentic model.
 **Kimi K3** The Agent API now supports `perplexity/kimi-k3`, Moonshot AI's flagship reasoning model.
-See the [Agent API Models reference](/docs/agent-api/models.md) for pricing and model-specific settings.
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) for pricing and model-specific settings.
 **Retired: Gemini 3.1 Flash Lite Preview** `google/gemini-3.1-flash-lite-preview` has been retired: Google removed the underlying preview model from its API.
 Requests for this id now return a `model not supported` error.
 Use `google/gemini-3.1-flash-lite` instead — the stable successor at the same pricing.
-See the [Agent API Models reference](/docs/agent-api/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **June 2026** **Agent API: New Models** The Agent API expanded model coverage this month, all with direct first-party token pricing.
-See the full list in the [Agent API Models reference](/docs/agent-api/models.md).
+See the full list in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 * **Claude Sonnet 5** — `anthropic/claude-sonnet-5`, Anthropic's latest Sonnet model.
 * **Kimi K2.7 Code** — `perplexity/kimi-k2.7-code`, Moonshot AI's coding and agentic model.
 * **Nemotron 3 Super** — `nvidia/nemotron-3-super-120b-a12b`, NVIDIA's open-weight reasoning model.
 **May 2026** **Agent API: New Models** The Agent API added support for several new third-party models this month, all with direct first-party token pricing.
-See the full list in the [Agent API Models reference](/docs/agent-api/models.md).
+See the full list in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 * **Claude Opus 4.8** — `anthropic/claude-opus-4-8`, Anthropic's flagship model.
 * **Gemini 3.5 Flash** — `google/gemini-3.5-flash`, Google's fast multimodal model.
 * **Gemini 3.1 Flash Lite** — `google/gemini-3.1-flash-lite` (and `-preview`), a cost-efficient option.
@@ -168,50 +168,50 @@ See the full list in the [Agent API Models reference](/docs/agent-api/models.md)
 **May 2026** **Finance Search: Now Available** The `finance_search` tool is now available in the Agent API.
 Pull structured financial and market data — quotes, financials, earnings, analyst estimates, segment KPIs, ETF constituents, and more — for public companies and instruments.
 The model decides which fields to fetch based on your prompt, so a single call can return valuation, earnings, and context together.
-**Highlights:** * **Quotes and pricing**: Near-real-time prices, OHLCV ranges, pre-market and after-hours data * **Financials**: Income statement, balance sheet, cash flow (quarterly and annual), key ratios * **Earnings**: Last call transcript, filings, beat/miss history, guidance * **Coverage and market activity**: Analyst estimates, top gainers/losers, ownership and corporate actions * **Recommended configurations**: Presets for live quotes, single-company historical lookups, and multi-step cross-company research Start here: [Finance Search](/docs/agent-api/tools/finance-search.md) **April
-2026** **Agent API: New Third-Party Models** The Agent API now supports Claude Opus 4.7, GPT-5.5, and Grok 4.20 Reasoning — extending model choice for tool-calling, structured outputs, and fallback chains.
-See the full list in the [Agent API Models reference](/docs/agent-api/models.md).
+**Highlights:** * **Quotes and pricing**: Near-real-time prices, OHLCV ranges, pre-market and after-hours data * **Financials**: Income statement, balance sheet, cash flow (quarterly and annual), key ratios * **Earnings**: Last call transcript, filings, beat/miss history, guidance * **Coverage and market activity**: Analyst estimates, top gainers/losers, ownership and corporate actions * **Recommended configurations**: Presets for live quotes, single-company historical lookups, and multi-step cross-company research Start here: [Finance
+Search](https://docs.perplexity.ai/docs/agent-api/tools/finance-search.md) **April 2026** **Agent API: New Third-Party Models** The Agent API now supports Claude Opus 4.7, GPT-5.5, and Grok 4.20 Reasoning — extending model choice for tool-calling, structured outputs, and fallback chains.
+See the full list in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **API Key Management: Security Upgrade** We've upgraded API key management with a one-time reveal model: full token values are now returned **only at the moment of creation** and cannot be retrieved again from the console or any endpoint.
 This significantly reduces the blast radius of credential exposure and aligns with industry best practices.
 Always set a descriptive `token_name` so keys remain identifiable after creation, and rotate regularly.
-Start here: [API Key Management](/docs/admin/api-key-management.md) **New Integration: n8n** n8n now ships a native Perplexity node with full API coverage — Chat Completions, Agent, Search, and Embeddings — all configurable from the visual canvas.
+Start here: [API Key Management](https://docs.perplexity.ai/docs/admin/api-key-management.md) **New Integration: n8n** n8n now ships a native Perplexity node with full API coverage — Chat Completions, Agent, Search, and Embeddings — all configurable from the visual canvas.
 Models load dynamically from the API, so the dropdown always reflects the latest options.
-Start here: [n8n Integration Guide](/docs/getting-started/integrations/n8n.md) **New Integration: OpenClaw** OpenClaw, the open-source terminal AI agent, now supports Perplexity Search API as a native web search provider.
+Start here: [n8n Integration Guide](https://docs.perplexity.ai/docs/getting-started/integrations/n8n.md) **New Integration: OpenClaw** OpenClaw, the open-source terminal AI agent, now supports Perplexity Search API as a native web search provider.
 Configure your API key once and get structured search results (`title`, `url`, `snippet`) directly inside your terminal workflows.
-Start here: [OpenClaw Integration Guide](/docs/getting-started/integrations/openclaw.md) **API Credits now available through the AWS Marketplace** The Perplexity API Platform is now available as a SaaS listing on AWS Marketplace.
+Start here: [OpenClaw Integration Guide](https://docs.perplexity.ai/docs/getting-started/integrations/openclaw.md) **API Credits now available through the AWS Marketplace** The Perplexity API Platform is now available as a SaaS listing on AWS Marketplace.
 Purchase API credits through your AWS account for consolidated billing, simplified procurement, and no separate vendor relationship.
-Start here: [AWS Marketplace](/docs/resources/aws-marketplace.md) **`/v1/models` Endpoint** A new `GET /v1/models` endpoint lists all available Agent API models in OpenAI-compatible format.
+Start here: [AWS Marketplace](https://docs.perplexity.ai/docs/resources/aws-marketplace.md) **`/v1/models` Endpoint** A new `GET /v1/models` endpoint lists all available Agent API models in OpenAI-compatible format.
 No authentication required, useful for dynamic model selection in your integrations.
 **March 2026** **Agent API: New Third-Party Models** The Agent API now supports additional third-party models including GPT-5.4, NVIDIA Nemotron, Claude Sonnet 4.6, and Gemini 3.1 Pro Preview — giving you more flexibility for tool-calling, structured outputs, and model fallback chains.
 **Model Deprecations: Gemini 2.5 Flash & Gemini 2.5 Pro** As of March 20, 2026, `google/gemini-2.5-flash` has been deprecated and removed from the API.
 `google/gemini-2.5-pro` followed on April 1, along with `google/gemini-3-pro-preview`.
-If you were using these models, we recommend switching to newer alternatives available in the [Agent API Models reference](/docs/agent-api/models.md).
+If you were using these models, we recommend switching to newer alternatives available in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **Agent API Endpoint: `/v1/agent`** The canonical Agent API endpoint is now `/v1/agent`.
 The previous `/v1/responses` path continues to work as an alias for OpenAI compatibility, no migration is required.
 **February 2026** **Agent API: Now Available** We're excited to announce the general availability of the **Agent API**!
 Build autonomous agents with production-ready guidance on model behavior, output controls, and OpenAI-compatibility patterns to seamlessly integrate with your existing systems.
-Start here: [Agent API Quickstart](/docs/agent-api/quickstart.md) **Embeddings API: Now Available** We're thrilled to launch the **Embeddings API** with comprehensive guides for standard and contextualized embeddings, plus best practices for semantic search and retrieval workflows.
-Start here: [Embeddings API Quickstart](/docs/embeddings/quickstart.md) **December 2025** **Model Deprecation: `sonar-reasoning` Removed** As of December 15, 2025, the `sonar-reasoning` model has been deprecated and removed from the API.
+Start here: [Agent API Quickstart](https://docs.perplexity.ai/docs/agent-api/quickstart.md) **Embeddings API: Now Available** We're thrilled to launch the **Embeddings API** with comprehensive guides for standard and contextualized embeddings, plus best practices for semantic search and retrieval workflows.
+Start here: [Embeddings API Quickstart](https://docs.perplexity.ai/docs/embeddings/quickstart.md) **December 2025** **Model Deprecation: `sonar-reasoning` Removed** As of December 15, 2025, the `sonar-reasoning` model has been deprecated and removed from the API.
 If you were using this model, we recommend migrating to `sonar-reasoning-pro` for enhanced multi-step reasoning capabilities with web search.
 **New: Media Classifier for Intelligent Visual Content** We're excited to introduce the **Media Classifier** — an intelligent system that automatically detects when your queries would benefit from visual content and includes relevant images or videos in responses.
 **Key capabilities:** * **Automatic detection**: Analyzes queries to identify when visual content adds value * **Smart media selection**: Intelligently chooses between images, videos, or both based on query type * **Context-aware**: Perfect for educational content, geographic queries, processes, and demonstrations * **Configurable control**: Enable/disable and override media types as needed Available exclusively with `sonar-pro`, the Media Classifier enhances responses for visual concepts, locations, step-by-step processes, and educational content.
 **Search API Enhancements** We've made several improvements to the Search API: * **New `max_tokens` parameter**: Control the maximum tokens extracted per page in search results.
 This gives you finer control over response size and costs.
-[Learn more →](/docs/search/quickstart.md) * **`last_updated_filter` support**: Filter search results by when content was last updated, in addition to publication date.
+[Learn more →](https://docs.perplexity.ai/docs/search/quickstart.md) * **`last_updated_filter` support**: Filter search results by when content was last updated, in addition to publication date.
 Perfect for finding the most current information.
-[Learn more →](/docs/search/filters/date-time-filters.md) * **Vercel AI SDK Support**: The Search API is now compatible with the Vercel AI SDK, allowing you to build with Perplexity in a framework-agnostic way.
-[Learn more →](https://ai-sdk.dev/tools-registry/perplexity-search) **Ecosystem & Community** New community showcase: [**Perplexity Client**](/docs/cookbook/showcase/perplexity-client.md) — An Electron-based desktop application with advanced API parameter controls, custom spaces, and API debugging mode.
+[Learn more →](https://docs.perplexity.ai/docs/search/filters/date-time-filters.md) * **Vercel AI SDK Support**: The Search API is now compatible with the Vercel AI SDK, allowing you to build with Perplexity in a framework-agnostic way.
+[Learn more →](https://ai-sdk.dev/tools-registry/perplexity-search) **Ecosystem & Community** New community showcase: [**Perplexity Client**](https://docs.perplexity.ai/docs/cookbook/showcase/perplexity-client.md) — An Electron-based desktop application with advanced API parameter controls, custom spaces, and API debugging mode.
 Built by the community for developers who want fine-grained control over their Sonar interactions.
 **November 2025** **Pro Search: Now Generally Available** We're excited to announce the general availability of **Pro Search** for Sonar Pro!
 Pro Search enhances your queries with automated tool usage, enabling multi-step reasoning through intelligent tool orchestration.
 **Key capabilities:** * **Multi-step reasoning**: The model automatically performs multiple web searches and fetches URL content to answer complex queries * **Real-time thought streaming**: Watch the model's reasoning process as it works through your question * **Automatic classification**: Use `search_type: "auto"` to let the system intelligently route queries based on complexity * **Built-in tools**: Access `web_search` and `fetch_url_content` tools that the model uses automatically **MCP Server: One-Click Installation** The [Perplexity MCP
-Server](/docs/getting-started/integrations/mcp-server.md) now supports **one-click installation** for popular AI development environments: * **Cursor**: Click to auto-configure the Perplexity MCP server * **VS Code**: One-click setup via the VS Code MCP extension * **Claude Desktop & Claude Code**: Easy JSON configuration The MCP server provides four powerful tools: `perplexity_search`, `perplexity_ask`, `perplexity_research`, and `perplexity_reason` — enabling AI assistants to access Perplexity's search and reasoning capabilities directly.
+Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) now supports **one-click installation** for popular AI development environments: * **Cursor**: Click to auto-configure the Perplexity MCP server * **VS Code**: One-click setup via the VS Code MCP extension * **Claude Desktop & Claude Code**: Easy JSON configuration The MCP server provides four powerful tools: `perplexity_search`, `perplexity_ask`, `perplexity_research`, and `perplexity_reason` — enabling AI assistants to access Perplexity's search and reasoning capabilities directly.
 **October 2025** **Official Perplexity SDKs** We're thrilled to announce the official **Perplexity SDKs** for Python and Typescript!
 These SDKs provide convenient, type-safe access to all Perplexity APIs with both synchronous and asynchronous clients.
-**Installation:** ```bash theme={null} # Python pip install perplexityai # Typescript npm install @perplexity-ai/perplexity_ai ``` **Features:** * Full type definitions for all request parameters and response fields * Support for Sonar and Search APIs * Streaming support with async iterators * Automatic environment variable handling for API keys Get started with our [SDK Quickstart Guide](/docs/sdk/overview.md).
+**Installation:** ```bash theme={null} # Python pip install perplexityai # Typescript npm install @perplexity-ai/perplexity_ai ``` **Features:** * Full type definitions for all request parameters and response fields * Support for Sonar and Search APIs * Streaming support with async iterators * Automatic environment variable handling for API keys Get started with our [SDK Quickstart Guide](https://docs.perplexity.ai/docs/sdk/overview.md).
 **Interactive Search API Playground** Test Search API queries and parameters in real time with our new [Interactive Playground](https://console.perplexity.ai) — **no API key required** to get started.
 Experiment with filtering options, see response structures, and refine your queries before implementing them in code.
-**New Search API Capabilities** * **`language_preference`**: Specify preferred languages for search results (available for `sonar` and `sonar-pro`) * **`search_domain_filter`**: Filter results to specific domains for more targeted searches * **Date/time filters**: Enhanced control over result freshness with publication and update filters **Ecosystem & Community** New community showcase: [**StarPlex**](/docs/cookbook/showcase/starplex.md) — An AI-powered startup intelligence platform featuring an interactive 3D globe interface.
+**New Search API Capabilities** * **`language_preference`**: Specify preferred languages for search results (available for `sonar` and `sonar-pro`) * **`search_domain_filter`**: Filter results to specific domains for more targeted searches * **Date/time filters**: Enhanced control over result freshness with publication and update filters **Ecosystem & Community** New community showcase: [**StarPlex**](https://docs.perplexity.ai/docs/cookbook/showcase/starplex.md) — An AI-powered startup intelligence platform featuring an interactive 3D globe interface.
 Built with Sonar Pro, it helps entrepreneurs validate business ideas by mapping competitors, VCs, and market opportunities worldwide.
 Featured at recent hackathon events!
 **September 2025** **New: File Attachments Support** You can now upload and analyze documents in multiple formats using Sonar models!
@@ -221,7 +221,7 @@ This powerful new feature supports PDF, DOC, DOCX, TXT, and RTF files, allowing 
 This new endpoint gives you raw, ranked search results from Perplexity's continuously refreshed index.
 **Perfect for:** * Building custom search experiences * Integrating search results into your own applications * Creating specialized workflows that need search data without AI responses * Applications requiring just the search functionality **Key features:** * Direct access to Perplexity's search index * All existing search filters and controls * Faster responses since no LLM processing is involved * Same powerful filtering options (domain, date range, academic sources, etc.) This complements our existing chat completions API and gives developers more flexibility in how they use Perplexity's
 search capabilities.
-Learn more in our [Search API documentation](/docs/search/quickstart.md).
+Learn more in our [Search API documentation](https://docs.perplexity.ai/docs/search/quickstart.md).
 **September 2025** **New: API Key Rotation Mechanism** We've introduced a comprehensive API key rotation system to enhance security and simplify key management for your applications.
 **Key features:** * **Seamless Rotation**: Replace API keys without service interruption * **Automated Workflows**: Set up automatic key rotation schedules * **Enhanced Security**: Regularly refresh keys to minimize security risks * **Audit Trail**: Track key usage and rotation history * **Zero Downtime**: Smooth transitions between old and new keys **How it works:** 1.
 Generate a new API key while keeping the old one active 2.

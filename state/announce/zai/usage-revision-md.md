@@ -41,7 +41,7 @@ For a same-tier switch or downgrade, wait until your current plan expires.
 Plans are not switched automatically.
 You must subscribe or switch manually.
 **Q: Can I still use the migration discount I received on April 30?** **A:** Yes.
-If you met the eligibility requirements in the [Legacy Plan Migration Notice](/devpack/transition.md), your **50% Migration Support discount** remains valid through its original validity period and can be used for the new credits-based plan.
+If you met the eligibility requirements in the [Legacy Plan Migration Notice](https://docs.z.ai/devpack/transition.md), your **50% Migration Support discount** remains valid through its original validity period and can be used for the new credits-based plan.
 ## Usage Reference for Legacy Plans ### Legacy Plan V2 To manage resources and ensure fair access for all users, we apply usage limits on a 5-hour and weekly basis.
 You can check your quota consumption progress in [Usage Statistics](https://z.ai/manage-apikey/subscription).
 One prompt refers to one query.
