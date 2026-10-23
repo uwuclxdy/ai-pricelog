@@ -108,6 +108,25 @@ def test_detect_no_token_tables_raises(monkeypatch):
         detector.detect(cfg())
 
 
+def test_detect_ignores_a_row_nested_in_a_pricing_table(monkeypatch):
+    # a nested table's input-price row must not make an outer table token-shaped:
+    # the section would be watched and its ids seeded, then its scrape returns None
+    monkeypatch.setattr(
+        detector,
+        "fetch_soup",
+        lambda url: synthetic_soup(
+            "<h2 id='gemini-x'><em><code>gemini-x</code></em></h2>"
+            "<table class='pricing-table'>"
+            "<tr><th>Image</th><th>Paid Tier, per 1M tokens in USD</th></tr>"
+            "<tr><td>Image price</td><td>$0.039</td>"
+            "<td><table><tr><td>Input price</td><td>$1</td></tr></table></td></tr>"
+            "</table>"
+        ),
+    )
+    with pytest.raises(FetchError, match="no token pricing tables"):
+        detector.detect(cfg())
+
+
 def test_detect_no_ids_raises(monkeypatch):
     # a token-shaped table under a heading with no id and no slug em yields
     # no ids: a parse failure, not a silent empty detection
@@ -284,6 +303,27 @@ def test_scrape_missing_paid_column_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="no Paid Tier column"):
         scraper.scrape(cfg(), "gemini-x")
+
+
+def test_scrape_ignores_a_rate_row_nested_in_a_cell(monkeypatch):
+    # a nested table's row must not overwrite a rate of the table it sits in
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: synthetic_soup(
+            "<h2 id='gemini-x'><em><code>gemini-x</code></em></h2>"
+            "<table class='pricing-table'>"
+            "<tr><th></th><th>Paid Tier, per 1M tokens in USD</th></tr>"
+            "<tr><td>Input price</td><td>$1.00</td></tr>"
+            "<tr><td>Output price</td><td>$2.00</td></tr>"
+            "<tr><td>Embedding price</td>"
+            "<td><table><tr><td>Output price</td><td>$99.00</td></tr></table></td></tr>"
+            "</table>"
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "gemini-x")
+    assert pricing is not None
+    assert pricing.output_cost_per_token == 2 / 1e6
 
 
 def test_scrape_equals_pricing_shape(live_page):

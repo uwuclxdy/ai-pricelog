@@ -19,7 +19,7 @@ import re
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_cells, own_table_rows
 
 _GLM_ID_PATTERN = re.compile(r"^glm-[a-z0-9][a-z0-9.-]*$", re.IGNORECASE)
 _TOKEN_HEADERS = frozenset(fold_heading(cell) for cell in ("Model", "Input", "Output"))
@@ -51,9 +51,8 @@ def _token_model_tables(soup: BeautifulSoup, url: str) -> list[list[list[str]]]:
         if table.find_parent("table") is not None:
             continue
         rows = [
-            [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
-            for row in table.find_all("tr")
-            if row.find_parent("table") is table
+            [cell.get_text(" ", strip=True) for cell in own_cells(row)]
+            for row in own_table_rows(table)
         ]
         if rows and {fold_heading(cell) for cell in rows[0]} >= _TOKEN_HEADERS:
             tables.append(rows)

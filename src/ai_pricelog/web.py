@@ -316,19 +316,29 @@ def extract_tables(soup: BeautifulSoup) -> list[list[list[str]]]:
     return tables
 
 
+def own_table_rows(table: Tag) -> Iterator[Tag]:
+    """the table's own rows in document order, thead rows included.
+
+    an own row is a <tr> whose nearest table is this table: a row in the
+    thead, any tbody, directly under the table, or in a tfoot counts; a
+    row an omitted </tr> nests inside another, or one under a wrapper
+    between the group and the row, still counts; a nested table's rows
+    never do.
+    """
+    for row in table.find_all("tr"):
+        if row.find_parent("table") is table:
+            yield row
+
+
 def own_rows(table: Tag) -> Iterator[Tag]:
     """the table's own body rows in document order.
 
-    an own body row is a <tr> whose nearest table is this table and whose
-    nearest row group (thead, tbody, tfoot, or the table itself) is not a
-    thead: rows in any tbody, directly under the table, or in a tfoot all
-    count; a row an omitted </tr> nests inside another, or one under a
-    wrapper between the group and the row, still counts; a nested table's
-    rows never do.
+    an own body row is an own table row whose nearest row group (thead,
+    tbody, tfoot, or the table itself) is not a thead: rows in any tbody,
+    directly under the table, or in a tfoot all count; a nested table's
+    rows never count (own_table_rows).
     """
-    for row in table.find_all("tr"):
-        if row.find_parent("table") is not table:
-            continue
+    for row in own_table_rows(table):
         group = row.find_parent(["thead", "tbody", "tfoot", "table"])
         if group is not None and group.name != "thead":
             yield row

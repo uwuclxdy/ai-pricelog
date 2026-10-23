@@ -136,6 +136,25 @@ def test_scrape_omni_split_columns_take_first_sub_column(dashscope_cfg, monkeypa
     assert pricing.output_cost_per_token == pytest.approx(0.40 / 1e6)
 
 
+def test_scrape_reads_only_the_tables_own_header_cells(dashscope_cfg, monkeypatch):
+    # a nested table inside a header cell must not widen the column grid, which
+    # would shift every rate column and leave the row short of its indexes
+    html = (
+        "<table><tr><td>Model ID</td><td>Deployment scope"
+        "<table><tr><td>nested</td></tr></table></td>"
+        "<td>Input price (per 1 million tokens)</td>"
+        "<td>Output price (per 1 million tokens)</td></tr>"
+        "<tr><td>qwen-x</td><td>International</td><td>$0.1</td><td>$0.5</td></tr></table>"
+    )
+    monkeypatch.setattr(
+        dashscope_scrape, "fetch_soup", lambda url: BeautifulSoup(html, "html.parser")
+    )
+    pricing = dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.1 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(0.5 / 1e6)
+
+
 def test_scrape_global_only_scope_returns_none(dashscope_cfg, feed_fixtures):
     assert dashscope_scrape.scrape(dashscope_cfg, "qwen3.7-max") is None
 

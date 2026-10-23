@@ -57,7 +57,14 @@ from functools import cache
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_cells, own_rows
+from ai_pricelog.web import (
+    FetchError,
+    fetch_soup,
+    fold_heading,
+    own_cells,
+    own_rows,
+    own_table_rows,
+)
 
 log = logging.getLogger(__name__)
 
@@ -268,9 +275,7 @@ def _caption_heading_span(table: Tag) -> str | None:
 def _names_known_model(table: Tag) -> bool:
     """whether one of the table's own rows (own thead rows included) has a first
     cell naming a mapped display."""
-    for row in table.find_all("tr"):
-        if row.find_parent("table") is not table:
-            continue
+    for row in own_table_rows(table):
         cells = own_cells(row)
         if cells and _display_name(cells[0]) in _KNOWN_DISPLAYS:
             return True
@@ -295,9 +300,7 @@ def _names_sub_header(table: Tag) -> bool:
 def _folded_span(table: Tag) -> str | None:
     """the second own cell of the first row whose nearest table is this table,
     folded; th or td, wherever that row sits."""
-    first_row = next(
-        (row for row in table.find_all("tr") if row.find_parent("table") is table), None
-    )
+    first_row = next(own_table_rows(table), None)
     if first_row is None:
         return None
     cells = own_cells(first_row)

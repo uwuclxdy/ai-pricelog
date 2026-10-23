@@ -72,6 +72,23 @@ def test_scrape_glm53(monkeypatch):
     assert pricing.max_tokens_in == pricing.max_tokens_out == 0
 
 
+def test_scrape_ignores_cells_nested_in_a_rate_cell(monkeypatch):
+    # a nested table's cells must not shift the rate columns of their row
+    soup = BeautifulSoup(
+        "<table><tr><th>Model</th><th>Input</th><th>Cached Input</th>"
+        "<th>Cached Input Storage</th><th>Output</th></tr>"
+        "<tr><td>GLM-Nested</td><td>$1</td><td>$0.1</td>"
+        "<td>$0.2<table><tr><td>$9</td></tr></table></td><td>$2</td></tr></table>",
+        "html.parser",
+    )
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
+    pricing = scraper.scrape(cfg(), "glm-nested")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.1 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(2 / 1e6)
+
+
 def test_scrape_promo_takes_charged_rate_not_struck_list_price(monkeypatch):
     # a promo cell renders the struck-through list price before the charged
     # one; the last dollar amount is the rate in force

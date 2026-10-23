@@ -403,6 +403,20 @@ def test_scrape_free_cells_in_a_token_table_price_zero(monkeypatch):
     assert mistral_scraper.scrape(make_cfg(), "free-model") == Pricing(0.0, 0.0, "chat", 0, 0.0)
 
 
+def test_scrape_ignores_a_model_row_nested_in_a_cell(monkeypatch):
+    # a rate table nested inside a cell is not a row of the token table
+    html = (
+        "<html><body><section><p>Prices /M Tokens</p><table>"
+        "<tr><th>Model</th><th>Input</th><th>Cached input</th><th>Output</th></tr>"
+        "<tr><td><a href='/models/outer'>Outer</a></td><td>$1</td><td>$0.1</td>"
+        "<td><table><tr><td><a href='/models/nested'>Nested</a></td>"
+        "<td>$9</td><td>$9</td><td>$9</td></tr></table></td></tr>"
+        "</table></section></body></html>"
+    )
+    serve(monkeypatch, mistral_scraper, {PRICING_URL: html})
+    assert mistral_scraper.scrape(make_cfg(), "nested") is None
+
+
 def test_scrape_accepts_stored_spellings(live_pricing):
     # the detector emits raw slugs; scrape still matches the stored spellings
     # through dedup_keys

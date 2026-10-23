@@ -25,7 +25,7 @@ from collections.abc import Iterator
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup
+from ai_pricelog.web import FetchError, fetch_soup, own_cells, own_table_rows
 
 _PAID_HEADER = "Paid Tier, per 1M tokens in USD"
 
@@ -57,14 +57,14 @@ def _slugs(h2: Tag) -> list[str]:
 
 
 def _is_token_table(table: Tag) -> bool:
-    header_row = table.find("tr")
-    if header_row is None:
+    rows = list(own_table_rows(table))
+    if not rows:
         return False
-    header_cells = [cell.get_text(" ", strip=True) for cell in header_row.find_all(["th", "td"])]
+    header_cells = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0])]
     if not any(_PAID_HEADER in cell for cell in header_cells):
         return False
-    for row in table.find_all("tr"):
-        cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+    for row in rows:
+        cells = [cell.get_text(" ", strip=True) for cell in own_cells(row)]
         if cells and "input price" in cells[0].lower():
             return True
     return False

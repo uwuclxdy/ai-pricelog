@@ -72,6 +72,19 @@ def test_detect_serverless_models(monkeypatch):
     assert detector.detect(cfg()) == EXPECTED_IDS
 
 
+def test_detect_ignores_a_row_nested_in_a_cell(monkeypatch):
+    # a nested rate table's row is not a model row of the serverless table
+    html = (
+        "<table><thead><tr><th>Model</th><th>Standard</th><th>Priority</th></tr></thead>"
+        "<tbody><tr><td>kimi-k3</td><td>$1</td><td>$2</td></tr>"
+        "<tr><td>junk-cell</td>"
+        "<td><table><tr><td>nested-model</td><td>$1</td><td>$2</td></tr></table></td>"
+        "<td>$3</td></tr></tbody></table>"
+    )
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: BeautifulSoup(html, "html.parser"))
+    assert detector.detect(cfg()) == ["kimi-k3", "junk-cell"]
+
+
 def test_scrape_kimi_k3(monkeypatch):
     # cell order input / cached-input / output, verified against the
     # first-party kimi-k3 rate 3.0 / 0.3 / 15.0

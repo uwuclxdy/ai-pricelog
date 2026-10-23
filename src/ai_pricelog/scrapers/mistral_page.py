@@ -25,7 +25,14 @@ from bs4 import Tag
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.mistral_page import _GENERATION_SEGMENT, SLUG_RE, _compact
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    own_cells,
+    own_table_rows,
+    unreadable_rate_error,
+)
 
 _HEADER = ["Model", "Input", "Cached input", "Output"]
 _TOKEN_UNIT_LINE = "Prices /M Tokens"
@@ -89,15 +96,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         section = table.find_parent("section")
         if section is None or _TOKEN_UNIT_LINE not in section.get_text(" ", strip=True):
             continue
-        rows = table.find_all("tr")
+        rows = list(own_table_rows(table))
         if not rows:
             continue
-        header = [cell.get_text(" ", strip=True) for cell in rows[0].find_all(["th", "td"])]
+        header = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0])]
         if header != _HEADER:
             continue
         found_token_table = True
         for row in rows[1:]:
-            cells = row.find_all(["th", "td"])
+            cells = own_cells(row)
             if len(cells) < 4:
                 continue
             link = cells[0].find("a", href=True)

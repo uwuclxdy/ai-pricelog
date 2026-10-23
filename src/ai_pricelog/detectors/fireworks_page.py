@@ -18,7 +18,7 @@ import re
 from bs4 import BeautifulSoup
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_cells, own_table_rows
 
 _ID_SPLIT_RE = re.compile(r"[\s()]+")
 _FOLDED_HEADER = [fold_heading(cell) for cell in ("Model", "Standard", "Priority")]
@@ -36,8 +36,8 @@ def _serverless_table(soup: BeautifulSoup, url: str) -> list[list[str]]:
     """the Model | Standard | Priority table; missing -> FetchError."""
     for table in soup.find_all("table"):
         rows = [
-            [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
-            for row in table.find_all("tr")
+            [cell.get_text(" ", strip=True) for cell in own_cells(row)]
+            for row in own_table_rows(table)
         ]
         if rows and [fold_heading(cell) for cell in rows[0][:3]] == _FOLDED_HEADER:
             return rows

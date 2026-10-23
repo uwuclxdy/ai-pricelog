@@ -602,6 +602,19 @@ def test_header_labels_tolerate_a_grouped_header():
     assert web.header_labels(soup.find("table")) == ("hardware", "on-demand")
 
 
+def test_own_table_rows_include_the_thead_and_skip_a_nested_table():
+    # a reader that finds its header as the table's first own row needs the
+    # thead rows in; a nested table's rows still never are
+    soup = BeautifulSoup(
+        "<table><thead><tr><td>head</td></tr></thead><tbody>"
+        "<tr><td>body</td><td><table><tr><td>nested</td></tr></table></td></tr>"
+        "</tbody></table>",
+        "html.parser",
+    )
+    rows = [web.own_cells(row)[0].get_text() for row in web.own_table_rows(soup.find("table"))]
+    assert rows == ["head", "body"]
+
+
 def test_own_cells_skip_a_chained_rows_cells():
     # an omitted </tr> nests the next row inside this one: its cells stay its
     # own, so the chained rows read one row each instead of one wide row

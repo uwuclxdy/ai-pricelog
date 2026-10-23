@@ -49,7 +49,14 @@ from ai_pricelog.detectors.google_page import (
     _slugs,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    own_cells,
+    own_table_rows,
+    unreadable_rate_error,
+)
 
 _CONTEXT_WINDOW_RE = re.compile(r"(\d[\d,]*)\s*([KkMm])\s+token context window")
 _LONG_TIER_RE = re.compile(r">\s*(\d[\d,]*)\s*([KkMm])\b")
@@ -99,19 +106,19 @@ def _standard_table(h2: Tag, model_id: str, url: str) -> Tag:
 
 
 def _rows(table: Tag, model_id: str, url: str) -> dict[str, str]:
-    header_row = table.find("tr")
-    if header_row is None:
+    rows = list(own_table_rows(table))
+    if not rows:
         raise FetchError(f"malformed pricing table for {model_id} on {url}: no header row")
-    header = [cell.get_text(" ", strip=True) for cell in header_row.find_all(["th", "td"])]
+    header = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0])]
     paid_index = next((index for index, cell in enumerate(header) if _PAID_HEADER in cell), None)
     if paid_index is None:
         raise FetchError(f"malformed pricing table for {model_id} on {url}: no Paid Tier column")
-    rows: dict[str, str] = {}
-    for row in table.find_all("tr")[1:]:
-        cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+    priced: dict[str, str] = {}
+    for row in rows[1:]:
+        cells = [cell.get_text(" ", strip=True) for cell in own_cells(row)]
         if cells and cells[0] and len(cells) > paid_index:
-            rows[cells[0]] = cells[paid_index]
-    return rows
+            priced[cells[0]] = cells[paid_index]
+    return priced
 
 
 def _cell_value(rows: dict[str, str], prefix: str) -> str | None:
