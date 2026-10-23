@@ -202,14 +202,16 @@ def _model_tables(soup: BeautifulSoup, url: str) -> list[tuple[Tag, bool]]:
 
 def _structural_pin(table: Tag) -> bool:
     """whether the table pins: an own row, a two-row thead, and a second
-    header row folding to Input | Output | Cache read."""
+    header row whose own <th> cells fold to Input | Output | Cache read."""
     thead = table.find("thead", recursive=False)
     if thead is None or next(own_rows(table), None) is None:
         return False
     header_rows = thead.find_all("tr", recursive=False)
     if len(header_rows) != 2:
         return False
-    cells = [cell.get_text(" ", strip=True) for cell in header_rows[1].find_all("th")]
+    cells = [
+        cell.get_text(" ", strip=True) for cell in own_cells(header_rows[1]) if cell.name == "th"
+    ]
     return tuple(fold_heading(cell) for cell in cells[:3]) == _FOLDED_TABLE_HEADERS
 
 
@@ -226,14 +228,15 @@ def _pinned_span(table: Tag) -> str | None:
 
 
 def _one_row_thead(table: Tag) -> bool:
-    """whether the table's thead is the one-row Model | Input | Output | Cache read shape."""
+    """whether the thead's one row carries the Model | Input | Output | Cache
+    read shape as its own <th> cells."""
     thead = table.find("thead", recursive=False)
     if thead is None:
         return False
     rows = thead.find_all("tr", recursive=False)
     if len(rows) != 1:
         return False
-    cells = [cell.get_text(" ", strip=True) for cell in rows[0].find_all("th")]
+    cells = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0]) if cell.name == "th"]
     return len(cells) == 4 and tuple(fold_heading(cell) for cell in cells) == _FOLDED_ONE_ROW_HEADER
 
 
@@ -290,11 +293,14 @@ def _names_sub_header(table: Tag) -> bool:
 
 
 def _folded_span(table: Tag) -> str | None:
-    """the table's first row's second cell, folded; th or td, wherever the row sits."""
-    first_row = table.find("tr")
+    """the second own cell of the first row whose nearest table is this table,
+    folded; th or td, wherever that row sits."""
+    first_row = next(
+        (row for row in table.find_all("tr") if row.find_parent("table") is table), None
+    )
     if first_row is None:
         return None
-    cells = first_row.find_all(["th", "td"])
+    cells = own_cells(first_row)
     return fold_heading(cells[1].get_text(" ", strip=True)) if len(cells) >= 2 else None
 
 

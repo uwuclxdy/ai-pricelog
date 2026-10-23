@@ -1075,20 +1075,25 @@ _REWORDED_PRIORITY = _PRIORITY_HEADER.replace(_PRIORITY_SPAN, "Priority tier (DB
         f"<table class='table'><tbody>{_ONE_ROW_HEADER}{_PRIORITY_BODY}</tbody></table>",
         f"<table class='table'><thead>{_REWORDED_PRIORITY}<tr><th>note</th></tr></thead>"
         f"<tbody>{_PRIORITY_BODY}</tbody></table>",
+        f"<table class='table'><caption>{_PRIORITY_SPAN}</caption><thead>"
+        f"{_ONE_ROW_HEADER.replace('<th', '<td').replace('</th>', '</td>')}</thead>"
+        f"<tbody>{_PRIORITY_BODY}</tbody></table>",
     ],
     ids=[
         "reworded-two-row-header-in-tbody",
         "one-row-thead-without-a-span",
         "one-row-header-in-tbody",
         "three-row-thead-reworded-span",
+        "td-cells-in-a-one-row-thead",
     ],
 )
 def test_detect_unpinned_table_naming_the_sub_header_and_a_model_raises(
     monkeypatch: pytest.MonkeyPatch, priority: str
 ):
-    # the table pins nothing and carries no pinned span, but its own cells
-    # (thead rows included) still name Input | Output | Cache read and a
-    # mapped model, so it raises instead of vanishing with every "-priority" id
+    # the table pins nothing and never reads a tier span (none present, or one
+    # the header shape cannot use), but its own cells (thead rows included)
+    # still name Input | Output | Cache read and a mapped model, so it raises
+    # instead of vanishing with every "-priority" id
     assert _detect_error(monkeypatch, [_STANDARD_TABLE, priority]) == (
         f"unpinned table naming Input | Output | Cache read and a mapped model on {PAGE_URL}"
     )
@@ -1303,6 +1308,67 @@ def test_detect_nested_table_rows_stay_out_of_the_outer_table(monkeypatch: pytes
     )
     _detect_serve(monkeypatch, [standard, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
     assert "bge-large" not in detector.detect(make_cfg())
+
+
+def test_detect_folded_span_reads_the_own_row_past_a_nested_first_row(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # a legend table's row ahead of the table's own rows is no tier span row:
+    # reading it flipped the standard table to priority and raised
+    legend = f"<div><table><tr><td>Legend</td><td>{_PRIORITY_SPAN}</td></tr></table></div>"
+    standard = _STANDARD_TABLE.replace("<thead>", legend + "<thead>", 1)
+    _detect_serve(monkeypatch, [standard, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_folded_span_skips_a_nested_cell_in_the_first_row(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # a nested cell inside the first header cell is no second cell of the
+    # row: reading it flipped the standard table to priority and raised
+    nested = f"<table><tr><td>{_PRIORITY_SPAN}</td><td>x</td></tr></table>"
+    header = (
+        f"<tr><th>{nested}Model</th>"
+        f"<th>Standard Pay Per Token (DBU Per 1M Tokens)</th></tr>"
+        f"<tr><th>Input</th><th>Output</th><th>Cache read</th></tr>"
+    )
+    standard = table(
+        header,
+        row("Kimi K3 ⌖", "42.857", "214.286", "4.286"),
+        row("GTE", "1.857", "-", "-"),
+    )
+    _detect_serve(monkeypatch, [standard, table(_PRIORITY_HEADER, _PRIORITY_BODY)])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_structural_pin_ignores_a_nested_sub_header_row(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # the second header row's nested table is no cell of that row: pinning on
+    # its cells made the table a second priority table and raised
+    sub = "<table><tr><th>Input</th><th>Output</th><th>Cache read</th></tr></table>"
+    header = (
+        f"<tr><th rowspan='2'>Model</th><th colspan='3'>{_PRIORITY_SPAN}</th></tr><tr>{sub}</tr>"
+    )
+    bogus = table(header, row("Bespoke 1", "1.000", "2.000", "3.000"))
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), bogus])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
+
+
+def test_detect_one_row_thead_ignores_nested_header_cells(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # thead row cells nested in another table are no cells of the row: they
+    # completed the one-row header and the caption span made a second
+    # priority table
+    nested = "<table><tr><th>Input</th><th>Output</th><th>Cache read</th></tr></table>"
+    legend = (
+        f"<table class='table'><caption>{_PRIORITY_SPAN}</caption>"
+        f"<thead><tr><th>Model</th>{nested}</tr></thead>"
+        f"<tbody>{row('Bespoke 1', '1.000', '2.000', '3.000')}</tbody></table>"
+    )
+    _detect_serve(monkeypatch, [_STANDARD_TABLE, table(_PRIORITY_HEADER, _PRIORITY_BODY), legend])
+    assert detector.detect(make_cfg()) == _TWO_TABLE_IDS
 
 
 def test_scrape_kimi_k3(live_page):
