@@ -46,8 +46,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "f3d4dd7e0763d76939fde618fb378993a5f7ea9ecdcdc3a879f876a8e1022315",
-      "fetched": "2026-10-20T18:00:14Z"
+      "sha256": "13ae7f89df561dd3d66833b74bd162bd08e4404b80f7f60d910e8780e28f6ae6",
+      "fetched": "2026-10-23T18:00:16Z"
     }
   },
   "minimax": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "4fc7e5bfecd0885330f22f7ea00ffff611baa3e38b8e2aca8fe454e3f6fcca3d",
-      "fetched": "2026-10-23T17:00:15Z"
+      "sha256": "a237dbdb738264e55d44562029dfb005d2428da4d8350961a93d2b4338e66cde",
+      "fetched": "2026-10-23T18:00:16Z"
     }
   },
   "scaleway": {
