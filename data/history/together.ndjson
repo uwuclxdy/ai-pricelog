@@ -54,6 +54,7 @@
 {"schema":4,"source":"together","model_id":"minimax-m2.7","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"minimax-m3","observed_at":"2026-06-12","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":524288},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"minimax-m3","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"minimax-m3.1-flash","observed_at":"2026-10-23","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"muse-glimmer-30b","observed_at":"2026-08-11","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"limits":{"context":131072},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"muse-glimmer-30b","observed_at":"2026-08-26","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"muse-spark-open","observed_at":"2026-10-15","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}

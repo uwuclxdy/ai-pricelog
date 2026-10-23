@@ -9595,6 +9595,15 @@
       },
       "vendor": "meta"
     },
+    "together/minimax-m3.1-flash": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "minimax-m3.1-flash"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "together/muse-spark-open": {
       "curated": false,
       "sources": {
