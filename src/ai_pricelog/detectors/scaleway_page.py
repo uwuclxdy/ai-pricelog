@@ -29,7 +29,7 @@ from functools import cache
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, header_labels, own_cells, own_rows
 
 log = logging.getLogger(__name__)
 
@@ -59,13 +59,14 @@ def _model_table(soup: BeautifulSoup, url: str) -> Tag:
             None,
         )
         if caption is not None and caption.get_text(strip=True) == _TABLE_CAPTION:
-            header = table.find("thead")
-            if header is None or next(own_rows(table), None) is None:
+            labels = header_labels(table)
+            if not labels or next(own_rows(table), None) is None:
+                if table.find("table") is not None:
+                    raise FetchError(f"pricing table nested in another table on {url}")
                 raise FetchError(f"pricing table outside the row shape on {url}")
-            header_cells = header.find_all("th")
-            if len(header_cells) != 5 or not all(
-                fold_heading(cell.get_text(" ", strip=True)).startswith(prefix)
-                for cell, prefix in zip(header_cells[:4], _FOLDED_PREFIXES, strict=True)
+            if len(labels) != 5 or not all(
+                label.startswith(prefix)
+                for label, prefix in zip(labels[:4], _FOLDED_PREFIXES, strict=True)
             ):
                 raise FetchError(f"pricing table headers drifted on {url}")
             return table
@@ -73,7 +74,7 @@ def _model_table(soup: BeautifulSoup, url: str) -> Tag:
 
 
 def _row_cells(row: Tag, url: str) -> list[Tag]:
-    cells = row.find_all(["th", "td"])
+    cells = own_cells(row)
     if len(cells) != 5:
         raise FetchError(
             f"row outside the pricing shape on {url}: {row.get_text(' ', strip=True)!r}"

@@ -559,3 +559,58 @@ def test_markdown_pipe_blocks_groups_consecutive_pipe_lines():
         ["| a | b |", "|---|---|", "| x | y |"],
         ["  | c |", "| d |"],
     ]
+
+
+def test_header_labels_fold_the_own_header_row():
+    soup = BeautifulSoup(
+        "<table><thead><tr><th>Model</th><th>Input &amp; Output</th></tr></thead></table>",
+        "html.parser",
+    )
+    assert web.header_labels(soup.find("table")) == ("model", "input and output")
+
+
+def test_header_labels_ignore_a_nested_tables_thead():
+    # the nearest table owns its thead: a layout table's label read must never
+    # borrow the header of the pricing table nested inside it
+    soup = BeautifulSoup(
+        "<table><tbody><tr><td><table><thead><tr><th>Model</th></tr></thead></table>"
+        "</td></tr></tbody></table>",
+        "html.parser",
+    )
+    assert web.header_labels(soup.find("table")) == ()
+
+
+def test_header_labels_refuse_a_body_row_in_the_thead():
+    # a body row swallowed into the header is dropped by own_rows without a
+    # trace, so the label read raises instead of hiding the model
+    soup = BeautifulSoup(
+        "<table><thead><tr><th>Model</th></tr><tr><td>glm-5.2</td></tr></thead></table>",
+        "html.parser",
+    )
+    with pytest.raises(web.FetchError, match="header holds 2 rows"):
+        web.header_labels(soup.find("table"))
+
+
+def test_header_labels_tolerate_a_grouped_header():
+    # a real grouped header is header rows, not a swallowed body row: the
+    # first row still supplies the labels
+    soup = BeautifulSoup(
+        "<table><thead><tr><th>Hardware</th><th>On-demand</th></tr>"
+        "<tr><th>Pay as you go</th><th>7-30 days</th></tr></thead></table>",
+        "html.parser",
+    )
+    assert web.header_labels(soup.find("table")) == ("hardware", "on-demand")
+
+
+def test_own_cells_skip_a_chained_rows_cells():
+    # an omitted </tr> nests the next row inside this one: its cells stay its
+    # own, so the chained rows read one row each instead of one wide row
+    soup = BeautifulSoup(
+        "<table><tbody><tr><td>a</td><td>b</td><tr><td>c</td></tr></tbody></table>",
+        "html.parser",
+    )
+    rows = list(web.own_rows(soup.find("table")))
+    assert [[cell.get_text() for cell in web.own_cells(row)] for row in rows] == [
+        ["a", "b"],
+        ["c"],
+    ]

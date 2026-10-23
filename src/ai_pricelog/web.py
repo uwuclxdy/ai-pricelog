@@ -332,3 +332,36 @@ def own_rows(table: Tag) -> Iterator[Tag]:
         group = row.find_parent(["thead", "tbody", "tfoot", "table"])
         if group is not None and group.name != "thead":
             yield row
+
+
+def own_cells(row: Tag) -> list[Tag]:
+    """the row's own cells: the th/td cells whose nearest tr is this row.
+
+    a cell under a wrapper element still counts; a nested table's cells
+    never do (their nearest tr is the nested row).
+    """
+    return [cell for cell in row.find_all(["th", "td"]) if cell.find_parent("tr") is row]
+
+
+def header_labels(table: Tag) -> tuple[str, ...]:
+    """the table's own header labels, folded with fold_heading.
+
+    the own thead only, so a layout table never borrows a nested table's
+    header. a thead row after the first that carries no own <th> cell is a
+    body row swallowed into the header: own_rows drops such a row silently,
+    so the label read raises instead of hiding the model. the labels come
+    from the first own row's own <th> cells, or from the thead's own <th>
+    cells when the thead holds no <tr>.
+    """
+    thead = table.find("thead", recursive=False)
+    if thead is None:
+        return ()
+    rows = thead.find_all("tr", recursive=False)
+    for row in rows[1:]:
+        if not any(cell.name == "th" for cell in own_cells(row)):
+            raise FetchError(f"table header holds {len(rows)} rows")
+    if rows:
+        cells = [cell for cell in own_cells(rows[0]) if cell.name == "th"]
+    else:
+        cells = thead.find_all("th", recursive=False)
+    return tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)

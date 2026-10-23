@@ -33,7 +33,7 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, header_labels, own_rows
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +56,7 @@ def _model_tables(soup: BeautifulSoup) -> list[tuple[Tag, int]]:
     for table in soup.find_all("table"):
         if table.find_parent("table") is not None:
             continue
-        thead = table.find("thead")
-        if thead is None:
-            continue
-        headers = tuple(fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th"))
+        headers = header_labels(table)
         for pinned in _FOLDED_MODEL_HEADERS:
             if len(headers) == len(pinned) and all(
                 cell.startswith(pin) for cell, pin in zip(headers, pinned, strict=True)

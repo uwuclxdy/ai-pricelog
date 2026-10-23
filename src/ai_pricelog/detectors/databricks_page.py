@@ -57,7 +57,7 @@ from functools import cache
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_rows
+from ai_pricelog.web import FetchError, fetch_soup, fold_heading, own_cells, own_rows
 
 log = logging.getLogger(__name__)
 
@@ -262,22 +262,13 @@ def _caption_heading_span(table: Tag) -> str | None:
     return fold_heading(text) if text is not None else None
 
 
-def _own_cells(row: Tag) -> list[Tag]:
-    """the row's own cells: the th/td cells whose nearest tr is this row.
-
-    a cell under a wrapper element still counts; a nested table's cells
-    never do (their nearest tr is the nested row).
-    """
-    return [cell for cell in row.find_all(["th", "td"]) if cell.find_parent("tr") is row]
-
-
 def _names_known_model(table: Tag) -> bool:
     """whether one of the table's own rows (own thead rows included) has a first
     cell naming a mapped display."""
     for row in table.find_all("tr"):
         if row.find_parent("table") is not table:
             continue
-        cells = _own_cells(row)
+        cells = own_cells(row)
         if cells and _display_name(cells[0]) in _KNOWN_DISPLAYS:
             return True
     return False
@@ -291,7 +282,7 @@ def _names_sub_header(table: Tag) -> bool:
     rows: list[Tag] = thead.find_all("tr", recursive=False) if thead is not None else []
     rows.extend(own_rows(table))
     for row in rows:
-        cells = _own_cells(row)
+        cells = own_cells(row)
         folded = tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)
         if any(folded[i : i + 3] == _FOLDED_TABLE_HEADERS for i in range(len(folded) - 2)):
             return True
@@ -340,7 +331,7 @@ def _guard_standard(table: Tag, url: str) -> None:
     priority and prices the "-priority" ids at standard rates.
     """
     for row in own_rows(table):
-        cells = _own_cells(row)
+        cells = own_cells(row)
         if len(cells) != 4 or _try_rate(cells[1]) is None:
             continue
         if _display_name(cells[0]) in _STANDARD_ONLY_NAMES:
@@ -352,7 +343,7 @@ def _guard_standard(table: Tag, url: str) -> None:
 
 
 def _row_cells(row: Tag, url: str) -> list[Tag]:
-    cells = _own_cells(row)
+    cells = own_cells(row)
     if len(cells) != 4:
         raise FetchError(
             f"row outside the pricing shape on {url}: {row.get_text(' ', strip=True)!r}"
@@ -488,7 +479,7 @@ def detect(cfg: ProviderCfg) -> list[str]:
     seen: set[str] = set()
     for table, priority in _model_tables(soup, cfg.detector_url):
         for row in own_rows(table):
-            cells = _own_cells(row)
+            cells = own_cells(row)
             if len(cells) != 4 or (
                 _try_rate(cells[1]) is None and cells[1].get_text(" ", strip=True) != _DASH
             ):

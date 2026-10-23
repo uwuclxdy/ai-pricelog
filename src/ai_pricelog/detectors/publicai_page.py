@@ -27,6 +27,7 @@ from ai_pricelog.web import (
     amount_scan,
     fetch_soup,
     fold_heading,
+    header_labels,
     own_rows,
     unreadable_rate_error,
 )
@@ -71,13 +72,7 @@ def _models_table(soup: BeautifulSoup, url: str) -> Tag:
     for table in soup.find_all("table"):
         if table.find_parent("table") is not None:
             continue
-        thead = table.find("thead")
-        headers = (
-            [fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th")]
-            if thead
-            else []
-        )
-        if tuple(headers) == _FOLDED_HEADERS:
+        if header_labels(table) == _FOLDED_HEADERS:
             return table
     raise FetchError(f"no models table on {url}")
 

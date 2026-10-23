@@ -31,6 +31,7 @@ from ai_pricelog.web import (
     amount_scan,
     fetch_soup,
     fold_heading,
+    header_labels,
     own_rows,
     unreadable_rate_error,
 )
@@ -102,11 +103,7 @@ def _section_tables(soup: BeautifulSoup, url: str) -> list[Tag]:
 
 
 def _header_matches(table: Tag) -> bool:
-    thead = table.find("thead")
-    if thead is None:
-        return False
-    headers = tuple(fold_heading(th.get_text(" ", strip=True)) for th in thead.find_all("th"))
-    return headers == _HEADER
+    return header_labels(table) == _HEADER
 
 
 def _table_rows(table: Tag) -> list[list[Tag]]:

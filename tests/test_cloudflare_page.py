@@ -281,3 +281,16 @@ def test_detect_and_scrape_read_a_second_tbody(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
     for model_id in EXPECTED_IDS:
         assert scraper.scrape(cfg(), model_id) is not None
+
+
+def test_a_model_row_in_the_thead_raises(monkeypatch):
+    # a model row swallowed into the header vanishes from detect, so the model
+    # would delist after two absent runs: the reader raises instead
+    soup = load_soup()
+    table = soup.find(id="llm-model-pricing").find_all_next("table")[0]
+    body_row = table.find("tbody").find("tr")
+    body_row.extract()
+    table.find("thead").append(body_row)
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
+    with pytest.raises(FetchError, match="header holds 2 rows"):
+        detector.detect(cfg())

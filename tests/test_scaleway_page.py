@@ -418,10 +418,55 @@ def test_live_page_detects_without_a_skip(live_page, caplog):
     assert caplog.records == []
 
 
-def test_thead_row_is_never_read(monkeypatch: pytest.MonkeyPatch):
+def test_a_model_row_in_the_thead_raises(monkeypatch: pytest.MonkeyPatch):
+    # a model row swallowed into the header vanishes from detect, so the model
+    # would delist after two absent runs: the reader raises instead
     serve(monkeypatch, table(_GLM_5_2).replace("</thead>", _GLM_5_3 + "</thead>"))
-    assert detector.detect(make_cfg()) == ["glm-5.2"]
-    assert scraper.scrape(make_cfg(), "glm-5.3") is None
+    with pytest.raises(FetchError, match="header holds 2 rows"):
+        detector.detect(make_cfg())
+    with pytest.raises(FetchError, match="header holds 2 rows"):
+        scraper.scrape(make_cfg(), "glm-5.2")
+
+
+def test_rows_chained_by_omitted_end_tags_each_read_their_own_cells(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # an omitted </tr> nests the next row inside this one; each row still owns
+    # its five cells, so all three models detect
+    chained = (
+        _GLM_5_2.removesuffix("</tr>")
+        + _GLM_5_3.removesuffix("</tr>")
+        + row("glm-5.4", "€1.80 / million tokens", "€5.50 / million tokens")
+    )
+    serve(monkeypatch, table(chained))
+    assert detector.detect(make_cfg()) == ["glm-5.2", "glm-5.3", "glm-5.4"]
+
+
+def test_a_pricing_table_nested_in_a_captioned_layout_table_raises(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # the caption sits on a layout table with the pricing table nested inside
+    # it: the error names the nesting, not "no per-token model rows"
+    serve(
+        monkeypatch,
+        '<table><caption class="sr-only">Generative API</caption>'
+        f"<tr><td>{table(_GLM_5_2)}</td></tr></table>",
+    )
+    with pytest.raises(FetchError, match="nested in another table"):
+        detector.detect(make_cfg())
+
+
+def test_a_nested_tables_thead_is_never_read(monkeypatch: pytest.MonkeyPatch):
+    # the captioned table has no header of its own; the nested table's header
+    # must not stand in for it
+    uncaptioned = table(_GLM_5_2).replace('<caption class="sr-only">Generative API</caption>', "")
+    serve(
+        monkeypatch,
+        '<table><caption class="sr-only">Generative API</caption>'
+        f"<tr><td>{uncaptioned}</td></tr></table>",
+    )
+    with pytest.raises(FetchError, match="nested in another table"):
+        detector.detect(make_cfg())
 
 
 def test_nested_table_row_is_never_read(monkeypatch: pytest.MonkeyPatch):

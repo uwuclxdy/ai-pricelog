@@ -323,3 +323,17 @@ def test_detect_and_scrape_read_a_second_tbody(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: soup)
     for model_id in EXPECTED_IDS:
         assert scraper.scrape(cfg(), model_id) is not None
+
+
+def test_a_model_row_in_the_thead_raises(monkeypatch):
+    # a model row swallowed into the header vanishes from detect, so the model
+    # would delist after two absent runs: the reader raises instead
+    soup = BeautifulSoup(
+        "<table><thead><tr><th>Model</th><th>Input</th><th>output</th></tr>"
+        "<tr><td>Kimi K3</td><td>$3</td><td>$15</td></tr></thead>"
+        "<tbody><tr><td>GLM 5.2</td><td>$1</td><td>$2</td></tr></tbody></table>",
+        "html.parser",
+    )
+    monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
+    with pytest.raises(FetchError, match="header holds 2 rows"):
+        detector.detect(cfg())
