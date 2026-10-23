@@ -5169,6 +5169,15 @@
       },
       "vendor": "minimax"
     },
+    "novita/minimax/minimax-m3.1-flash": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "minimax/minimax-m3.1-flash"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "novita/minimaxai/minimax-m1-80k": {
       "curated": false,
       "sources": {
