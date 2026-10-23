@@ -431,6 +431,35 @@ def test_a_fenced_example_table_contributes_no_doc(monkeypatch):
     assert CHAT_URL in str(exc.value)
 
 
+def test_a_tab_after_the_closing_fence_closes_it(monkeypatch):
+    # CommonMark lets a closing run be followed by spaces OR tabs. a reader
+    # that takes spaces only never closes, blanks the rest of the page and
+    # raises on a table it should have priced
+    _chat_page(monkeypatch, "```\n" + _HTML_TABLE + "\n```\t\n" + _HTML_TABLE)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(1.20 / 1e6)
+
+
+def test_a_backtick_in_a_backtick_fence_info_string_opens_no_fence(monkeypatch):
+    # CommonMark forbids a backtick in a backtick fence's info string, so the
+    # line is prose and the table under it is real
+    _chat_page(monkeypatch, "```kimi `k3` example\n" + _HTML_TABLE + "\n")
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+
+
+def test_a_tilde_fence_info_string_may_hold_a_backtick(monkeypatch):
+    # tildes carry no such restriction: this still opens, so the example table
+    # inside stays prose and the page has no pricing table
+    _chat_page(monkeypatch, "~~~kimi `k3` example\n" + _HTML_TABLE + "\n~~~\n")
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert CHAT_URL in str(exc.value)
+
+
 _INCIDENTAL_TABLE = """
 <table>
   <thead><tr><th>Model</th><th>Context Window</th></tr></thead>

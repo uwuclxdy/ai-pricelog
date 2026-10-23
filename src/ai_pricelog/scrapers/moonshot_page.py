@@ -12,9 +12,11 @@ the resolved page carries one pricing table per model series (a K3 series
 table and a K2 series table since 2026-09-19), written either as a
 <DocTable columns={...} rows={...} /> block or, since 2026-10, as a plain
 html <table>. a markdown code fence (CommonMark: up to three leading
-spaces, a run of three or more backticks or tildes, closed by a run of the
-same character at least as long) is stripped before the tables are read, so
-a docs example contributes no table. DocTable columns are objects with a
+spaces, a run of three or more backticks or tildes, a backtick fence's
+info string holding no backtick, closed by up to three leading spaces
+and a run of the same character at least as long followed only by spaces
+or tabs) is stripped before the tables are read, so a docs example
+contributes no table. DocTable columns are objects with a
 `title` key; rows are arrays of strings, price cells written as JSX
 fragments (<>{"$"}0.30</>) and the context window as "1,048,576 tokens". an
 html table's first own row gives the column titles through web.header_grid,
@@ -72,7 +74,7 @@ _LINK_PATTERN = re.compile(r"^\s*-\s*\[([^\]]+)\]\(([^)]+)\)")
 _FRAGMENT_PATTERN = re.compile(r'<>\{"([^"]*)"\}([^<]*)</>')
 _BARE_KEY_PATTERN = re.compile(r'(?<![A-Za-z0-9_"])([A-Za-z_][A-Za-z0-9_]*)(\s*):')
 _CONTEXT_PATTERN = re.compile(r"\d[\d,]*")
-_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}(?!.*`)|~{3,})")
 
 
 @functools.lru_cache(maxsize=1)
@@ -104,14 +106,16 @@ def _strip_code_fences(text: str) -> str:
     or DocTable inside one reads as prose, never a pricing table.
 
     a fence opens on up to three leading spaces and a run of at least three
-    backticks or tildes, and closes on a run of the same character at least
-    as long with only spaces after it; an unclosed fence runs to the end.
+    backticks or tildes (a backtick fence's info string holds no backtick),
+    and closes on up to three leading spaces and a run of the same
+    character at least as long followed only by spaces or tabs; an
+    unclosed fence runs to the end.
     """
     kept: list[str] = []
     fence = ""
     for line in markdown_lines(text):
         if fence:
-            closes = re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}} *", line)
+            closes = re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line)
             if closes is not None:
                 fence = ""
             kept.append("")
