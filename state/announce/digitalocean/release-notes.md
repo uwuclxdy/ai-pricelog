@@ -54,9 +54,8 @@ For more information, see Use Prompt Caching .
 7 October Managed databases are available in Memphis ( mem1 ) on AMDv5 plans only.
 Storage-Optimized plans are now available for Kafka and OpenSearch clusters in mem1 only.
 See the regional availability matrix for current coverage by engine.
-The Cost Analysis tab of the Billing page now includes Serverless Inference Live Usage, which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
+The Cost Analysis tab of the Billing page now includes Serverless Inference Live Usage , which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
 Data refreshes every 10 minutes and covers the last 30 days.
-For more information, see View Serverless Inference Live Usage .
 6 October PostgreSQL Advanced Edition clusters now support 20 additional extensions beyond the pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions, including pg_trgm , pgcrypto , citext , and uuid-ossp .
 You can enable them with CREATE EXTENSION .
 See Supported PostgreSQL Extensions .

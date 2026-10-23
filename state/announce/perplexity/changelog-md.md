@@ -2,6 +2,12 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**October 2026** **Agent API: `preset` renamed to `effort`** This is a naming change only.
+Effort levels keep the same models, prompts, tools, limits, and pricing.
+Version pinning and frozen configurations continue to work as before.
+`preset` is still accepted as a deprecated alias, and responses return both fields.
+See [Effort](/docs/agent-api/effort.md).
+The Python SDK 0.46.0 and TypeScript SDK 0.41.0 add the `effort` parameter.
 **October 2026** **Tool approvals for MCP and connector calls** Set `require_approval` on an `mcp` or `connector` tool to review calls before they run.
 A call that needs approval returns an `mcp_approval_request` item and does not run.
 To approve or deny it, send an `mcp_approval_response` with `previous_response_id`.

@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "a1a71272b3ab8a5fc0bb1a5d6e5805a7735c8142580d19083b3436fcb152256b",
-      "fetched": "2026-10-22T19:00:21Z"
+      "sha256": "fa5256bac7982b92999fc734f157d8478dc7f7f251f140d16d1498c6ddf7495c",
+      "fetched": "2026-10-23T00:00:15Z"
     }
   },
   "together": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "18825d98a9217ed54700be0e9bec8b4b433a29ce321a38e9006be65b6a1342d3",
-      "fetched": "2026-10-22T17:22:18Z"
+      "sha256": "03162201e554373e3c9071d1ce69bd3acc6f0ec08886ceaeaa40e5de5c9f6b84",
+      "fetched": "2026-10-23T00:00:15Z"
     }
   },
   "cloudflare": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "b226716773e46dcf3d3278b5607f931cee02d991e041221e5a0b298271ac6374",
-      "fetched": "2026-10-22T18:00:15Z"
+      "sha256": "2ed8835cefab81e8a63067b6518cc5c1dcc2c6fd5464d88f6b0e54eb53837d76",
+      "fetched": "2026-10-23T00:00:15Z"
     }
   },
   "scaleway": {
