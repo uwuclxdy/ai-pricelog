@@ -19,13 +19,13 @@
   "zai": {
     "https://docs.z.ai/release-notes/new-released.md": {
       "file": "state/announce/zai/new-released-md.md",
-      "sha256": "c1f680796afc071c426d82998f0354d81e5a28068b93148f49d008fa88f5e1ec",
-      "fetched": "2026-10-22T19:00:21Z"
+      "sha256": "2f0f0ff3cd6efe9d417f758cf016175f82e2fa74d4eeecca3c0e20c2c98dd29d",
+      "fetched": "2026-10-23T19:00:14Z"
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "65b96a4027a0f72dedc1032c0eee5baf244621682cea2a1e4c94dc8fab41b714",
-      "fetched": "2026-10-22T19:00:21Z"
+      "sha256": "2276de203d2dc2f7ce466b68c20d852d52e132a486abc3817a34beea1f889aa8",
+      "fetched": "2026-10-23T19:00:14Z"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
@@ -41,8 +41,8 @@
   "moonshot": {
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
-      "sha256": "dd7fefc950f196301852e645a345acefd7f923fed54df9e72134bd3ca164a2fe",
-      "fetched": "2026-10-22T19:00:21Z"
+      "sha256": "bf5ed7f985b31c7750afd7c924a4eb1d8c0927238bb78226a4469f4bcde0d610",
+      "fetched": "2026-10-23T19:00:14Z"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
@@ -84,15 +84,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "fa5256bac7982b92999fc734f157d8478dc7f7f251f140d16d1498c6ddf7495c",
-      "fetched": "2026-10-23T00:00:15Z"
+      "sha256": "da487d887bc90da0bcf2ab79bdef9ef89a58b8c8ba45d1accb392c776dfc6231",
+      "fetched": "2026-10-23T19:00:14Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "fdaff2b8d5f3689753bfe33932e9213761cc506a17c6c026d0ca5c6d14c5ef4d",
-      "fetched": "2026-10-23T05:00:16Z"
+      "sha256": "b08bc74d89725c733b15ffba1530e1d95b61954e570d31b3811893805c749a84",
+      "fetched": "2026-10-23T19:00:14Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",

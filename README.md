@@ -13,9 +13,9 @@ detectors scrape provider pricing pages and the openrouter api hourly. every obs
 <!-- stats:start -->
 | metric | value |
 |---|---|
-| models tracked | **1,347** |
+| models tracked | **1,348** |
 | sources | 30 |
-| dated rows | 3,279 |
+| dated rows | 3,281 |
 | canonical models | 202 |
 | history | since 2023-03-01 (1,333 days) |
 <!-- stats:end -->
@@ -141,7 +141,7 @@ deepseek rows carry `overrides`: the base `rates` are the off-peak default, and 
 | what | dated price history repo | generated pricing dataset for python/js packages |
 | updates | automation + human review per change | human PRs into provider ymls |
 | history | every observed change since the first sighting | dated conditional entries where contributors add them |
-<!-- stats-row:start -->| models | **1,347** tracked across 30 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
+<!-- stats-row:start -->| models | **1,348** tracked across 30 sources, history back to 2023-03-01 | ~1.5k models, 36 providers in the generated dataset (measured 2026-08-26) |<!-- stats-row:end -->
 
 ## Development
 
