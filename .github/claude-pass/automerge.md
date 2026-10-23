@@ -6,12 +6,12 @@ the claude pass judges the draft PRs and posts a merge disposition on each; it n
 
 | verdict | action |
 |---|---|
-| verified | post the marker `automerge: yes` |
-| flip-flop | post `automerge: yes`; the next run appends the correction |
-| deprecation/retirement confirmed | write the billing rule + bump its test pin, then post `automerge: yes` |
-| everything else | `needs human` comment, post `automerge: no` |
+| verified | post the marker `automerge: yes <head sha>` |
+| flip-flop | post `automerge: yes <head sha>`; the next run appends the correction |
+| deprecation/retirement confirmed | write the billing rule + bump its test pin, then post `automerge: yes <head sha>` |
+| everything else | `needs human` comment, post `automerge: no <head sha>` |
 
-every PR comment the pass posts ends with exactly one machine line — `automerge: yes` or `automerge: no` — as the last line of the body. a PR with no comment or no marker line is never merged: the merge step's conservative default.
+every PR comment the pass posts ends with exactly one machine line — `automerge: yes <head sha>` or `automerge: no <head sha>`, `<head sha>` = the PR's head oid read at review time (`gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid`) — as the last line of the body. the verdict names the head it judged, nothing else: a disposition without the head sha is not merge-eligible, the merge step compares the stamp to the PR's current head oid and merges only a branch whose head still equals the head the stamp names, and a moved head re-queues the PR for review. a PR with no comment or no marker line is never merged: the merge step's conservative default.
 
 ## what counts as verified
 
@@ -48,7 +48,7 @@ a confirmed deprecation or retirement of priced models (the channel prose names 
 - append ONE entry at the END of the `rules` array in `data/catalog/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
 - read every statement off the channel's snapshot on the newest branch that carries it (`git show origin/<branch>:state/announce/<source>/<slug>.md`) before writing it, never off an older PR's copy
 - in the SAME commit bump the count pin: `tests/test_billing_rules.py` `test_committed_billing_rules_pass_schema` asserts `len(rules) == N`. the rules and the pin land atomically, or the next CI run reds
-- edit the file on the PR branch, name the rule in your comment, then mark the PR `automerge: yes`
+- edit the file on the PR branch, name the rule in your comment, then mark the PR `automerge: yes <head sha>`
 
 ## the merge
 
@@ -74,7 +74,7 @@ when the script fails: the merge step reds the run, every PR stays open, and the
 
 - never push the default branch except through `ai-pricelog-automerge` or the workflow's `merge verified PRs` step
 - never delete a branch ref by hand while its PR is open; a ref whose PR is closed may be deleted
-- never mark a seed PR, a code PR, or a PR with unverified rows `automerge: yes`
+- never mark a seed PR, a code PR, or a PR with unverified rows `automerge: yes <head sha>`
 - never comment on a PR outside the `## PRs awaiting review` list
 - never edit rows on a branch except a row error you re-verified against the page (prompt.md step 5)
 
@@ -98,4 +98,4 @@ every needs-human PR gets a comment opening with the ping line, posted as cloudy
 <what to decide>
 ```
 
-the mention is what reaches the human; the rest is for the thread. end on the disposition line `automerge: no` (the merge step reads it); no sign-off.
+the mention is what reaches the human; the rest is for the thread. end on the disposition line `automerge: no <head sha>` (the merge step reads it); no sign-off.
