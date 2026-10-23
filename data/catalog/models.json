@@ -2391,6 +2391,15 @@
       },
       "vendor": "meta"
     },
+    "digitalocean/minimax-m3.1-flash": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "minimax-m3.1-flash"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "digitalocean/ministral-3-14b-instruct": {
       "curated": false,
       "sources": {
