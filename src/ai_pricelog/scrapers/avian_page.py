@@ -10,7 +10,7 @@ shown, the human verifier reconciles it). mode is chat; no peak fields.
 None = the model id is not on the page, or its Input/Output cells carry no
 amount (a row without usable rates is never a candidate). zero rates scrape
 as 0.0 (free is a price). FetchError = the fetch failed, the page has no
-pricing grid, or a cell carries an unreadable amount.
+pricing grid, or a cell carries an unreadable amount or context count.
 
 no dedup_keys hook: the page models (deepseek, minimax, glm, kimi, mimo
 cards) map to none of the stored avian ids (four stale Meta-Llama
@@ -24,9 +24,10 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.avian_page import _cards, _slug
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import amount_scan, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
 _CONTEXT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([KM])\s*context")
+_MAX_COUNT_DIGITS = 12
 
 _CONTEXT_FACTORS = {"K": 1_000, "M": 1_000_000}
 
@@ -42,7 +43,10 @@ def _context_tokens(meta: str) -> int:
     match = _CONTEXT_PATTERN.search(meta)
     if match is None:
         return 0
-    return int(float(match.group(1)) * _CONTEXT_FACTORS[match.group(2)])
+    count = match.group(1)
+    if len(count.replace(".", "")) > _MAX_COUNT_DIGITS:
+        raise FetchError(f"unreadable context {meta!r}")
+    return int(float(count) * _CONTEXT_FACTORS[match.group(2)])
 
 
 def _rate(prices: dict[str, str], name: str, model_id: str, url: str) -> float | None:

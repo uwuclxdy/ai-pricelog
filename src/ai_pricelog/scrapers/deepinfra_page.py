@@ -27,7 +27,7 @@ from ai_pricelog.detectors.deepinfra_page import _model_tables, _row_id, _table_
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
 
-_CONTEXT_RE = re.compile(r"^(\d+)k$")
+_CONTEXT_RE = re.compile(r"^(\d{1,12})k$")
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

@@ -234,3 +234,10 @@ def test_scrape_no_grid_raises(monkeypatch):
     )
     with pytest.raises(FetchError, match="model grid"):
         scraper.scrape(cfg(), "mimo-v2.5-small")
+
+
+def test_a_huge_context_value_raises_a_fetch_error():
+    # a 4300+ digit count overflows int(); the reader must bound the run and
+    # name the cell instead of raising ValueError/OverflowError
+    with pytest.raises(FetchError):
+        scraper._context_tokens("9" * 5000 + "K context")

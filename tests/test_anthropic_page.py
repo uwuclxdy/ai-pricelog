@@ -2581,3 +2581,128 @@ def test_huge_number_in_a_fast_name_never_crashes_a_scrape(
     _fast_scrapes(monkeypatch, joint)
     _scrape_every_model()
     assert scraper.scrape(cfg(), "claude-sonnet-4-5") is not None
+
+
+@pytest.mark.parametrize(
+    "paren",
+    [
+        "(for prompts over<br>200K tokens)",
+        "(for prompts over<em>200K</em> tokens)",
+        "(for prompts up<br>to 200K)",
+        "(for prompts more<br>than 200K)",
+    ],
+    ids=["br", "em", "up-to", "more-than"],
+)
+def test_a_tag_between_a_comparison_and_its_neighbour_keeps_the_wording_error(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, paren: str
+):
+    # a tag deleted to "" glues "over" to "200K", so the comparison word is
+    # lost and a drifted tier wording reads as a model qualifier; the parse
+    # reads a tag as either an empty or a one-space separation
+    name = f"Claude Haiku 5.5 {paren}"
+    drifted = FIXTURE.read_text().replace(_OVER_NAME, name, 1)
+    assert drifted != FIXTURE.read_text()
+    feed(monkeypatch, drifted)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {_wording_error(paren, name)}"]
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "claude-haiku-5-5")
+    assert str(exc.value) == _wording_error(paren, name)
+
+
+@pytest.mark.parametrize(
+    ("paren", "wording"),
+    [
+        ("(for prompts <M tokens, >N tokens)", True),
+        ('(1M token <span title="a>b">context</span>)', False),
+        ("(1M token context <!-- note -->)", False),
+    ],
+    ids=["too-wide", "quoted-gt", "comment"],
+)
+def test_the_tag_grammar_is_the_raw_html_one(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, paren: str, wording: bool
+):
+    # the tag pattern must be CommonMark's raw-HTML grammar: a "<letter ... >"
+    # span it wrongly accepts hides a real comparison, and a ">" inside an
+    # attribute or a comment it wrongly stops at leaves markup in the scan
+    name = f"Claude Haiku 5.5 {paren}"
+    drifted = FIXTURE.read_text().replace(_OVER_NAME, name, 1)
+    assert drifted != FIXTURE.read_text()
+    feed(monkeypatch, drifted)
+    expected = _wording_error(paren, name) if wording else _qualifier_error(paren, name)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {expected}"]
+
+
+@pytest.mark.parametrize(
+    ("written", "quoted"),
+    [
+        (
+            "(for prompts above (*x*&#41; 100K tokens&#41;",
+            "(for prompts above (*x*&#41; 100K tokens&#41;",
+        ),
+        ("(for prompts above 100K tokens&#41", "(for prompts above 100K tokens&#41"),
+        ("&#40;for prompts above 100K tokens)", "&#40;for prompts above 100K tokens)"),
+        (
+            "&lpar;for prompts above 100K tokens &rpar;",
+            "&lpar;for prompts above 100K tokens &rpar;",
+        ),
+        ("(for prompts above 100K tokens)&nbsp", "(for prompts above 100K tokens)"),
+    ],
+    ids=["inner-entity-close", "unterminated-close", "entity-opener", "legacy-pair", "nbsp-tail"],
+)
+def test_the_tier_wording_quote_balances_decoded_parens(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, written: str, quoted: str
+):
+    # a paren closed (or opened, or closed without ";") by an entity is the
+    # paren the reader sees; the quote must run from the "(" through the
+    # entity instead of printing a fragment or the decoded spelling
+    name = f"Claude Haiku 5.5 {written}"
+    drifted = FIXTURE.read_text().replace(_OVER_NAME, name, 1)
+    assert drifted != FIXTURE.read_text()
+    feed(monkeypatch, drifted)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == EXPECTED_IDS
+    assert _skip_lines(caplog) == [f"detect skip for anthropic: {_wording_error(quoted, name)}"]
+
+
+def test_a_paren_naming_a_token_only_in_markup_stays_in_the_stem():
+    # the mention test must read untagged text: a span whose class says
+    # "tokens" renders "(new)", naming no prompt or token, so the paren stays
+    # in the stem and the name fails the shape check instead of splitting off
+    name = 'Claude Sonnet 4.5 (<span class="tokens">new</span>)'
+    with pytest.raises(FetchError) as exc:
+        detector.split_name(name, PAGE_URL)
+    assert str(exc.value) == (
+        f"unreadable model name {name!r} on {PAGE_URL}; "
+        "fix: teach the anthropic name parse this spelling"
+    )
+
+
+def test_trailing_link_group_drop_is_linear():
+    # re-slicing the whole name per dropped group is quadratic: the base tree
+    # took 6.2 s per parse at this size, the linear walk 0.76 s
+    name = "Claude Opus 5 (for prompts above 100,000 tokens)" + " (x [y](z))" * 128000
+    start = time.perf_counter()
+    with pytest.raises(FetchError):
+        detector.split_name(name, PAGE_URL)
+    assert time.perf_counter() - start < 1.0
+
+
+@pytest.mark.parametrize("tail", [" #9", " ٩", " &#٩;"], ids=["hash", "arabic-digit", "entity"])
+def test_a_name_tail_of_a_non_ascii_digit_or_hash_run_raises(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, tail: str
+):
+    # the row detect-skips, but the scrape of the model its leading shape
+    # names must fail loud instead of reading "not on page"
+    name = "Claude Opus 5" + tail
+    fixture = FIXTURE.read_text()
+    drifted = fixture.replace("| Claude Opus 5 ", f"| {name} ", 1)
+    assert drifted != fixture
+    feed(monkeypatch, drifted)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == _without("claude-opus-5")
+    with pytest.raises(FetchError, match="unreadable model name"):
+        scraper.scrape(cfg(), "claude-opus-5")

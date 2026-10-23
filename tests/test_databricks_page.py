@@ -699,75 +699,254 @@ def test_detect_one_cell_row_naming_a_model_still_freezes(
     ]
 
 
+def _row_shape_message(reason: str) -> str:
+    """the detect-skip message a row outside the pricing shape produces."""
+    return f"row outside the pricing shape on {PAGE_URL}: {reason!r}"
+
+
+def _rate_cell_message(text: str) -> str:
+    """the detect-skip message an unreadable rate cell produces."""
+    return f"unreadable dbu rate cell {text!r} on {PAGE_URL}"
+
+
 @pytest.mark.parametrize(
-    "odd_row",
+    ("odd_row", "message"),
     [
-        "<tr><td colspan='4'>BGE Large (new)</td></tr>",
-        "<tr><td colspan='4'>BGE\xa0Large</td></tr>",
-        "<tr><td colspan='4'><div>BGE Large ⌖</div><div>1.429</div>"
-        "<div>-</div><div>-</div></td></tr>",
-        "<tr><td colspan='4'><table><tbody>"
-        + row("BGE Large", "9.999", "-", "-")
-        + "</tbody></table></td></tr>",
-        "<tr><td colspan='4'>Foundation 9B 2.143</td></tr>",
-        "<tr><td colspan='4'>BGE Large</td></tr>",
-        "<tr><td colspan='4'>BGE  Large</td></tr>",
-        "<tr><td colspan='4'>BGE\n    Large</td></tr>",
-        "<tr><td colspan='4'>BGE LARGE</td></tr>",
-        "<tr><td colspan='4'><table><tbody>"
-        + row("BGE Large (new)", "9.999", "-", "-")
-        + "</tbody></table></td></tr>",
-        "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>BGE Large</td></tr>"
-        "</tbody></table></td></tr>",
-        "<tr><td colspan='4'><table><thead><tr><th>BGE Large</th></tr></thead>"
-        "<tbody><tr><td>note</td></tr></tbody></table></td></tr>",
-        "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>-</td></tr>"
-        "</tbody></table></td></tr>",
-        "<tr><td colspan='4'>see footnote 4</td></tr>",
-        "<tr><td colspan='4'>Generation 2 embedding models</td></tr>",
-        "<tr><td>Embedding</td><td>models</td></tr>",
-        "<tr><td>BGE-Large</td><td>Contact us</td><td>-</td><td>-</td></tr>",
-        "<tr><td>BGE-Large</td><td>1,429</td><td>-</td><td>-</td></tr>",
-        "<tr><td>Embedding models</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>",
-        "<tr><td colspan='4'>BGE-Large 1 - -</td></tr>",
-        "<tr><td colspan='4'><b>BG</b>E Large</td></tr>",
-        "<tr><td colspan='4'>BGE-Large $1.43 / - / -</td></tr>",
-        "<tr><td colspan='4'>GTE family</td></tr>",
-        "<tr><td>Llama⁴ Maverick</td><td></td><td></td><td></td></tr>",
-        "<tr><td colspan='4'>Llama⁴ Maverick</td></tr>",
-        "<tr><td colspan='4'>BGE-Large ①</td></tr>",
-        "<tr>BGE Large 1.429 - -</tr>",
-        "<tr><table><tbody>" + row("BGE Large", "1.429", "-", "-") + "</tbody></table></tr>",
-        "<tr><td></td>BGE Large 1.429<td></td><td></td><td></td></tr>",
-        "<tr><td>Embedding models</td><span><td>BGE Large</td><td>1.429</td></span></tr>",
-        "<tr><td colspan='4'>BGE-Large</td></tr>",
-        "<tr><td colspan='4'>BGE_Large</td></tr>",
-        "<tr><td colspan='4'>B<b>GE</b> <i>Lar</i>ge</td></tr>",
-        "<tr><td colspan='4'><img src='bge.png' alt='model'></td></tr>",
-        "<tr><td colspan='4'>Embedding models<table><tbody><tr><td>BGE-Large</td>"
-        "<td>contact sales</td></tr></tbody></table></td></tr>",
-        "<tr><td colspan='4'>BGE-Large contact sales</td></tr>",
-        "<tr><td colspan='4'>BGE&amp;Large</td></tr>",
-        "<tr><td colspan='4'>New: BGE-Large</td></tr>",
-        "<tr><td colspan='4'>BGE-Large (preview)</td></tr>",
-        "<tr><td colspan='4'>BGE_Large embedding</td></tr>",
-        "<tr><td colspan='4'>B.G.E. Large models</td></tr>",
-        "<tr><td>Embedding models</td>BGE-Large</tr>",
-        "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>BGE Large 1.429</tr>",
-        "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>BGE-Large</tr>",
-        "<tr><td colspan='4'><svg role='img' aria-label='BGE Large'><use href='#bge'></use>"
-        "</svg></td></tr>",
-        "<tr><td colspan='4'><picture><source srcset='bge.webp'></picture></td></tr>",
-        "<tr><td colspan='4'><object data='bge.svg'></object></td></tr>",
-        "<tr><td colspan='4'><input type='image' alt='BGE Large'></td></tr>",
-        "<tr><td colspan='4'><span class='icon-bge' title='BGE Large'></span></td></tr>",
-        "<tr><td>Embedding models</td>BGE Large 1.429</tr>",
-        "<tr><td colspan='4'><img src='bge-large.png'></td></tr>",
-        "<tr><td colspan='4'><svg><use href='#bge-large'></use></svg></td></tr>",
-        "<tr><td colspan='4'><embed src='bge-large.svg'></td></tr>",
-        "<tr><td colspan='4'><canvas></canvas></td></tr>",
-        "<tr><td colspan='4'><iframe src='bge-large.html'></iframe></td></tr>",
-        "<tr><td colspan='4'><video src='bge-large.mp4'></video></td></tr>",
+        (
+            "<tr><td colspan='4'>BGE Large (new)</td></tr>",
+            _row_shape_message("BGE Large (new)"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE\xa0Large</td></tr>",
+            _row_shape_message("BGE\xa0Large"),
+        ),
+        (
+            "<tr><td colspan='4'><div>BGE Large ⌖</div><div>1.429</div>"
+            "<div>-</div><div>-</div></td></tr>",
+            _row_shape_message("BGE Large ⌖ 1.429 - -"),
+        ),
+        (
+            "<tr><td colspan='4'><table><tbody>"
+            + row("BGE Large", "9.999", "-", "-")
+            + "</tbody></table></td></tr>",
+            _row_shape_message("BGE Large 9.999 - -"),
+        ),
+        (
+            "<tr><td colspan='4'>Foundation 9B 2.143</td></tr>",
+            _row_shape_message("Foundation 9B 2.143"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE Large</td></tr>",
+            _row_shape_message("BGE Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE  Large</td></tr>",
+            _row_shape_message("BGE  Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE\n    Large</td></tr>",
+            _row_shape_message("BGE\n    Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE LARGE</td></tr>",
+            _row_shape_message("BGE LARGE"),
+        ),
+        (
+            "<tr><td colspan='4'><table><tbody>"
+            + row("BGE Large (new)", "9.999", "-", "-")
+            + "</tbody></table></td></tr>",
+            _row_shape_message("BGE Large (new) 9.999 - -"),
+        ),
+        (
+            "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>BGE Large</td></tr>"
+            "</tbody></table></td></tr>",
+            _row_shape_message("9.999 BGE Large"),
+        ),
+        (
+            "<tr><td colspan='4'><table><thead><tr><th>BGE Large</th></tr></thead>"
+            "<tbody><tr><td>note</td></tr></tbody></table></td></tr>",
+            _row_shape_message("BGE Large note"),
+        ),
+        (
+            "<tr><td colspan='4'><table><tbody><tr><td>9.999</td><td>-</td></tr>"
+            "</tbody></table></td></tr>",
+            _row_shape_message("9.999 -"),
+        ),
+        (
+            "<tr><td colspan='4'>see footnote 4</td></tr>",
+            _row_shape_message("see footnote 4"),
+        ),
+        (
+            "<tr><td colspan='4'>Generation 2 embedding models</td></tr>",
+            _row_shape_message("Generation 2 embedding models"),
+        ),
+        (
+            "<tr><td>Embedding</td><td>models</td></tr>",
+            _row_shape_message("Embedding models"),
+        ),
+        (
+            "<tr><td>BGE-Large</td><td>Contact us</td><td>-</td><td>-</td></tr>",
+            _rate_cell_message("Contact us"),
+        ),
+        (
+            "<tr><td>BGE-Large</td><td>1,429</td><td>-</td><td>-</td></tr>",
+            _rate_cell_message("1,429"),
+        ),
+        (
+            "<tr><td>Embedding models</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>",
+            _rate_cell_message("n/a"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large 1 - -</td></tr>",
+            _row_shape_message("BGE-Large 1 - -"),
+        ),
+        (
+            "<tr><td colspan='4'><b>BG</b>E Large</td></tr>",
+            _row_shape_message("BG E Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large $1.43 / - / -</td></tr>",
+            _row_shape_message("BGE-Large $1.43 / - / -"),
+        ),
+        (
+            "<tr><td colspan='4'>GTE family</td></tr>",
+            _row_shape_message("GTE family"),
+        ),
+        (
+            "<tr><td>Llama⁴ Maverick</td><td></td><td></td><td></td></tr>",
+            _rate_cell_message(""),
+        ),
+        (
+            "<tr><td colspan='4'>Llama⁴ Maverick</td></tr>",
+            _row_shape_message("Llama⁴ Maverick"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large ①</td></tr>",
+            _row_shape_message("BGE-Large ①"),
+        ),
+        (
+            "<tr>BGE Large 1.429 - -</tr>",
+            _row_shape_message("BGE Large 1.429 - -"),
+        ),
+        (
+            "<tr><table><tbody>" + row("BGE Large", "1.429", "-", "-") + "</tbody></table></tr>",
+            _row_shape_message("BGE Large 1.429 - -"),
+        ),
+        (
+            "<tr><td></td>BGE Large 1.429<td></td><td></td><td></td></tr>",
+            _rate_cell_message(""),
+        ),
+        (
+            "<tr><td>Embedding models</td><span><td>BGE Large</td><td>1.429</td></span></tr>",
+            _row_shape_message("Embedding models BGE Large 1.429"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large</td></tr>",
+            _row_shape_message("BGE-Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE_Large</td></tr>",
+            _row_shape_message("BGE_Large"),
+        ),
+        (
+            "<tr><td colspan='4'>B<b>GE</b> <i>Lar</i>ge</td></tr>",
+            _row_shape_message("B GE Lar ge"),
+        ),
+        (
+            "<tr><td colspan='4'><img src='bge.png' alt='model'></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'>Embedding models<table><tbody><tr><td>BGE-Large</td>"
+            "<td>contact sales</td></tr></tbody></table></td></tr>",
+            _row_shape_message("Embedding models BGE-Large contact sales"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large contact sales</td></tr>",
+            _row_shape_message("BGE-Large contact sales"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE&amp;Large</td></tr>",
+            _row_shape_message("BGE&Large"),
+        ),
+        (
+            "<tr><td colspan='4'>New: BGE-Large</td></tr>",
+            _row_shape_message("New: BGE-Large"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE-Large (preview)</td></tr>",
+            _row_shape_message("BGE-Large (preview)"),
+        ),
+        (
+            "<tr><td colspan='4'>BGE_Large embedding</td></tr>",
+            _row_shape_message("BGE_Large embedding"),
+        ),
+        (
+            "<tr><td colspan='4'>B.G.E. Large models</td></tr>",
+            _row_shape_message("B.G.E. Large models"),
+        ),
+        (
+            "<tr><td>Embedding models</td>BGE-Large</tr>",
+            _row_shape_message("Embedding models BGE-Large"),
+        ),
+        (
+            "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>"
+            "BGE Large 1.429</tr>",
+            _rate_cell_message("Input"),
+        ),
+        (
+            "<tr><td>Model</td><td>Input</td><td>Output</td><td>Cache read</td>BGE-Large</tr>",
+            _rate_cell_message("Input"),
+        ),
+        (
+            "<tr><td colspan='4'><svg role='img' aria-label='BGE Large'><use href='#bge'></use>"
+            "</svg></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><picture><source srcset='bge.webp'></picture></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><object data='bge.svg'></object></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><input type='image' alt='BGE Large'></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><span class='icon-bge' title='BGE Large'></span></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td>Embedding models</td>BGE Large 1.429</tr>",
+            _row_shape_message("Embedding models BGE Large 1.429"),
+        ),
+        (
+            "<tr><td colspan='4'><img src='bge-large.png'></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><svg><use href='#bge-large'></use></svg></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><embed src='bge-large.svg'></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><canvas></canvas></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><iframe src='bge-large.html'></iframe></td></tr>",
+            _row_shape_message(""),
+        ),
+        (
+            "<tr><td colspan='4'><video src='bge-large.mp4'></video></td></tr>",
+            _row_shape_message(""),
+        ),
     ],
     ids=[
         "renamed-model",
@@ -829,20 +1008,20 @@ def test_detect_one_cell_row_naming_a_model_still_freezes(
     ],
 )
 def test_detect_one_cell_row_that_may_be_a_model_row_freezes(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, odd_row: str
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    odd_row: str,
+    message: str,
 ):
     # anything that is not plainly a label may be a broken model row and keeps
-    # the counter-freezing detect skip (cloudy, 2026-10-19: a wrong soft call
-    # delists a live model, a wrong freeze only pauses delistings): a mapped
-    # display (as a word or letter by letter), any digit, a nested table, a
-    # graphic or a name attribute, a header row with extra text, or more than
-    # one non-empty cell
+    # the counter-freezing detect skip (a wrong soft call delists a live
+    # model, a wrong freeze only pauses delistings): a mapped display (letter
+    # by letter), any digit, a nested table, a graphic or a name attribute, a
+    # header row with extra text, or more than one non-empty cell
     _lone_standard_with(monkeypatch, odd_row)
     with caplog.at_level(logging.WARNING):
         assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
-    lines = _warning_lines(caplog)
-    assert any(health.DETECT_SKIP.search(line) for line in lines)
-    assert not any(line.startswith("parse skip for databricks:") for line in lines)
+    assert _warning_lines(caplog) == [f"detect skip for databricks: {message}"]
 
 
 @pytest.mark.parametrize(
@@ -876,7 +1055,7 @@ def test_detect_row_naming_no_model_warns_without_freezing(
 ):
     # a section row is plainly a label: no graphic, name attribute or nested
     # table anywhere, and blank, a repeated header row, or one non-empty cell
-    # with no digit and no mapped display (as a word or letter by letter); it
+    # with no digit and no mapped display (letter by letter); it
     # warns on the soft line and never freezes the counters
     _lone_standard_with(monkeypatch, odd_row)
     with caplog.at_level(logging.WARNING):
@@ -1706,3 +1885,99 @@ def test_build_row_converts_dbu_quote_via_provider_rate(live_page):
     assert row["rates"]["output"] == pytest.approx(214.286 * 0.07)
     assert row["rates"]["cache_read"] == pytest.approx(4.286 * 0.07)
     assert row["provenance"]["url"] == PAGE_URL
+
+
+def _captioned_and_headed(caption: str, heading: str, body: str) -> str:
+    return (
+        f"<h3>{heading}</h3><table class='table'><caption>{caption}</caption>"
+        f"<thead>{_ONE_ROW_HEADER}</thead><tbody>{body}</tbody></table>"
+    )
+
+
+def test_a_caption_and_heading_naming_different_tiers_raise(monkeypatch: pytest.MonkeyPatch):
+    # a table carrying both signals reads the caption's tier silently when
+    # they disagree, so one of its rows prices under the wrong id set
+    tables = [
+        _captioned_and_headed(_PRIORITY_SPAN, _STANDARD_SPAN, _PRIORITY_BODY),
+        _one_row_table(_STANDARD_BODY),
+    ]
+    assert "different tiers" in _detect_error(monkeypatch, tables)
+
+
+def test_a_label_row_with_omitted_end_tag_judges_its_own_subtree(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # </tr> is optional html: a label row holding the next row reads that
+    # row's digits as its own and freezes the counters for as long as the
+    # page stands
+    _lone_standard_with(
+        monkeypatch,
+        "<tr><td colspan='4'>Embedding models</td><tr>"
+        "<td>BGE Large</td><td>1.429</td><td>-</td><td>-</td></tr></tr>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["bge-large", "kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"parse skip for databricks: section row 'Embedding models' on {PAGE_URL}"
+    ]
+
+
+def test_a_role_img_span_freezes(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture):
+    # an element whose ARIA role is img is an image to assistive tech: a model
+    # drawn that way must freeze the counters, never read as a blank label
+    # (twice, and the model delists)
+    _lone_standard_with(
+        monkeypatch,
+        "<tr><td colspan='4'><span role='img' aria-labelledby='bge'></span></td></tr>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"detect skip for databricks: row outside the pricing shape on {PAGE_URL}: ''"
+    ]
+
+
+@pytest.mark.parametrize(
+    "display",
+    ["ＢＧＥ Ｌａｒｇｅ", "BGÉ Large", "BGE Large Ⅳ"],
+    ids=["fullwidth", "accented", "roman-numeral"],
+)
+def test_a_homoglyph_display_freezes(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, display: str
+):
+    # a compatibility or accented spelling of a mapped display names that
+    # model, so the row is no plain label: it froze on the pre-2026-10-19
+    # reader and must freeze again
+    _lone_standard_with(monkeypatch, f"<tr><td colspan='4'>{display}</td></tr>")
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"detect skip for databricks: row outside the pricing shape on {PAGE_URL}: {display!r}"
+    ]
+
+
+def test_an_image_input_element_freezes(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # <input type="image"> renders an image; dropping "input" from the graphic
+    # list must red this test
+    _lone_standard_with(
+        monkeypatch,
+        "<tr><td colspan='4'><input type='image' src='bge-large.png'></td></tr>",
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"detect skip for databricks: row outside the pricing shape on {PAGE_URL}: ''"
+    ]
+
+
+def test_a_nameless_dash_row_skip_warns(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a row with no model name and an unpriced "-" input cell stops before the
+    # section test and stays silent; a drifted row must warn so it is visible
+    _lone_standard_with(monkeypatch, "<tr><td></td><td>-</td><td></td><td></td></tr>")
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [f"parse skip for databricks: section row '' on {PAGE_URL}"]

@@ -51,10 +51,11 @@ def check_pricing(pricing: Pricing | None, model_id: str) -> Pricing:
 
 
 def check_pricing_pages(index_url: str) -> str:
-    """the resolved chat page fetches and carries a DocTable; its url."""
+    """the resolved chat page fetches and carries a model pricing table; its url."""
     page_url = scraper._load_index(index_url)
-    if not scraper._doc_tables(scraper.fetch_text(page_url)):
-        raise ValueError(f"no DocTable block on pricing page {page_url}")
+    docs = scraper._doc_tables(scraper.fetch_text(page_url))
+    if not any(scraper._column_index(titles, "Model") is not None for titles, _ in docs):
+        raise ValueError(f"no model pricing table on pricing page {page_url}")
     return page_url
 
 

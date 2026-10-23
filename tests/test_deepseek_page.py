@@ -552,3 +552,11 @@ def test_guide_fees_unrecognized_unit_raises():
     )
     with pytest.raises(FetchError, match="unit"):
         scraper._guide_fees(BeautifulSoup(guide, "html.parser"), GUIDE_URL)
+
+
+def test_a_huge_window_value_raises_a_fetch_error():
+    # a 4300+ digit value overflows int(); the reader must bound the run and
+    # name the cell instead of raising ValueError/OverflowError
+    rows = [["MAX OUTPUT", "9" * 5000 + "K"]]
+    with pytest.raises(FetchError):
+        scraper._window_tokens(rows, ["m"], "m", "MAX OUTPUT", scraper._K_PATTERN, 1024)

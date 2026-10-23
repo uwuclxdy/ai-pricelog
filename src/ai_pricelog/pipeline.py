@@ -98,7 +98,7 @@ class _DetectSkipWatch(logging.Handler):
         self.count = 0
 
     def emit(self, record: logging.LogRecord) -> None:
-        match = health.DETECT_SKIP.search(record.getMessage())
+        match = health.DETECT_SKIP.match(record.getMessage())
         if match is not None and match.group(1) == self._key:
             self.count += 1
 
@@ -497,7 +497,7 @@ def _add_candidates(
         try:
             pricing = scraper.scrape(pcfg, model_id)
         except Exception as exc:
-            log.exception("scraper %s failed for %s", pcfg.key, model_id)
+            log.exception("scraper %s failed for %r", pcfg.key, model_id)
             provider_report.errors.append(_describe(exc))
             continue
         if pricing is None:
@@ -510,7 +510,7 @@ def _add_candidates(
             )
             validate.validate_row(row, keys)
         except validate.ValidationError as exc:
-            log.warning("entry %s failed validation for %s: %s", model_id, pcfg.key, exc)
+            log.warning("entry %r failed validation for %s: %s", model_id, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
             continue
         group = plan.setdefault(
@@ -548,13 +548,13 @@ def _refresh_drift(
         if stored is None or (pcfg.key, stored) in plan:
             continue  # nothing stored yet, or the row is fresh from this run
         if (pcfg.key, stored) in held_keys:
-            log.info("refresh for %s skipped: pending pr", stored)
+            log.info("refresh for %r skipped: pending pr", stored)
             provider_report.skipped_pending.append(stored)
             continue
         try:
             pricing = scraper.scrape(pcfg, page_id)
         except Exception as exc:
-            log.exception("refresh scrape failed for %s (%s)", stored, pcfg.key)
+            log.exception("refresh scrape failed for %r (%s)", stored, pcfg.key)
             provider_report.errors.append(_describe(exc))
             continue
         if pricing is None:
@@ -566,7 +566,7 @@ def _refresh_drift(
             )
             validate.validate_row(row, keys)
         except validate.ValidationError as exc:
-            log.warning("refresh for %s skipped in %s: %s", stored, pcfg.key, exc)
+            log.warning("refresh for %r skipped in %s: %s", stored, pcfg.key, exc)
             provider_report.errors.append(_describe(exc))
             continue
         newest = store.newest(rows, pcfg.key, stored)
@@ -614,7 +614,7 @@ def _openrouter_rows(
         try:
             row = openrouter.build_row(model, today, keys.version)
         except (TypeError, ValueError, OverflowError) as exc:
-            log.warning("entry %s failed row build for openrouter: %s", model.id, exc)
+            log.warning("entry %r failed row build for openrouter: %s", model.id, exc)
             or_report.errors.append(_describe(exc))
             continue
         if row is None:
@@ -624,7 +624,7 @@ def _openrouter_rows(
         try:
             validate.validate_row(row, keys)
         except validate.ValidationError as exc:
-            log.warning("entry %s failed validation for openrouter: %s", model.id, exc)
+            log.warning("entry %r failed validation for openrouter: %s", model.id, exc)
             or_report.errors.append(_describe(exc))
             continue
         model_id = row["model_id"]
@@ -789,7 +789,7 @@ def _track_absence(
             # a last stored row the contract refuses (say a hand-edited branch
             # row that landed) leaks its shape into the removal: skip and
             # report, the entry stays at 2 and the next run retries
-            log.warning("removal for %s failed validation in %s: %s", model_id, source, exc)
+            log.warning("removal for %r failed validation in %s: %s", model_id, source, exc)
             errors.append(_describe(exc))
             continue
         if store.row_recorded(rows, row):

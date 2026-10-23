@@ -8,11 +8,16 @@ and limits are pricing pages but not model-inference ones). the index is
 fetched once per run (lru-cached); no such link, or more than one, is a
 FetchError naming the index url, loud enough for the weekly smoke to catch.
 
-the resolved page carries one <DocTable columns={...} rows={...} /> block per
-model series (a K3 series table and a K2 series table since 2026-09-19).
-columns are objects with a `title` key; rows are arrays of strings, price
-cells written as JSX fragments (<>{"$"}0.30</>) and the context window as
-"1,048,576 tokens". the Model column is matched exactly against the model id
+the resolved page carries one pricing table per model series (a K3 series
+table and a K2 series table since 2026-09-19), written either as a
+<DocTable columns={...} rows={...} /> block or, since 2026-10, as a plain
+html <table>. DocTable columns are objects with a `title` key; rows are
+arrays of strings, price cells written as JSX fragments (<>{"$"}0.30</>)
+and the context window as "1,048,576 tokens". an html table's first own row
+gives the column titles and its remaining rows the data; a table with no
+data row carrying printable text is no pricing table, so the empty
+<thead><tr /></thead><tbody /> shell raises instead of reading every model
+absent. the Model column is matched exactly against the model id
 and the model is searched across every table; Input Price (Cache Miss) ->
 input_cost (the K3 series table titles the column plain "Input Price"),
 Input Price (Cache Hit) or Cached Input Price (the K3 spelling) ->
@@ -25,25 +30,36 @@ the Pricing url names the page the rate was read from (the resolved chat
 page, never the index); build_row stamps it as the row's url.
 
 None = no row for the model. FetchError = the fetch failed, the index
-resolves no (or an ambiguous) chat page, the page's DocTable does not parse,
-or a price cell carries an unreadable amount.
+resolves no (or an ambiguous) chat page, the page's DocTable props or html
+tables do not parse, no pricing table is on the page, a price cell carries
+an unreadable amount, or a context cell carries an oversized digit run.
 """
 
 from __future__ import annotations
 
 import ast
 import functools
+import math
 import re
 from urllib.parse import urljoin, urlsplit
 
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, amount_scan, fetch_text, unreadable_rate_error
+from ai_pricelog.web import (
+    FetchError,
+    amount_scan,
+    fetch_text,
+    own_cells,
+    own_table_rows,
+    parse_html,
+    unreadable_rate_error,
+)
 
 _LINK_PATTERN = re.compile(r"^\s*-\s*\[([^\]]+)\]\(([^)]+)\)")
 _FRAGMENT_PATTERN = re.compile(r'<>\{"([^"]*)"\}([^<]*)</>')
 _BARE_KEY_PATTERN = re.compile(r'(?<![A-Za-z0-9_"])([A-Za-z_][A-Za-z0-9_]*)(\s*):')
 _CONTEXT_PATTERN = re.compile(r"\d[\d,]*")
+_MAX_CONTEXT_DIGITS = 32
 
 
 @functools.lru_cache(maxsize=1)
@@ -74,7 +90,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     page_url = _load_index(cfg.scraper_url)
     docs = _doc_tables(fetch_text(page_url))
     if not docs:
-        raise FetchError(f"no DocTable block on {page_url}")
+        raise FetchError(f"no pricing table (DocTable or html) on {page_url}")
     if not any(_column_index(titles, "Model") is not None for titles, _ in docs):
         raise FetchError(f"no Model pricing table on {page_url}")
     for doc in docs:
@@ -85,9 +101,11 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
 
 
 def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
-    """parse every <DocTable> block's columns/rows props; [] when the page
-    carries none. each block's prop scan is bounded at the next <DocTable>,
-    so a block missing a prop raises instead of borrowing a later block's."""
+    """every pricing table on the page as (column titles, rows) pairs: each
+    <DocTable> block's columns/rows props plus each plain html <table>; []
+    when the page carries neither. each block's prop scan is bounded at the
+    next <DocTable>, so a block missing a prop raises instead of borrowing a
+    later block's."""
     docs: list[tuple[list[str], list[list[str]]]] = []
     start = 0
     while True:
@@ -112,7 +130,38 @@ def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
         if not all(isinstance(row, list) for row in rows):
             raise FetchError("DocTable rows are not arrays")
         docs.append((titles, rows))
+    docs.extend(_html_docs(text))
     return docs
+
+
+def _html_docs(text: str) -> list[tuple[list[str], list[list[str]]]]:
+    """the page's plain html tables as (header titles, data rows) pairs.
+
+    the first own row gives the titles and the rest the data; a table whose
+    rows carry no printable text contributes nothing, so the empty
+    <thead><tr /></thead><tbody /> shell the docs platform served on
+    2026-10-23 stays a page with no pricing table instead of a pricing
+    table with zero models."""
+    soup = parse_html(text)
+    docs: list[tuple[list[str], list[list[str]]]] = []
+    for table in soup.find_all("table"):
+        if table.find_parent("table") is not None:
+            continue
+        rows = list(own_table_rows(table))
+        if not rows:
+            continue
+        titles = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0])]
+        data = [[cell.get_text(" ", strip=True) for cell in own_cells(row)] for row in rows[1:]]
+        if not any(_carries_data(row) for row in data):
+            continue
+        docs.append((titles, data))
+    return docs
+
+
+def _carries_data(row: list[str]) -> bool:
+    """whether a row holds a printable character; a placeholder row of
+    zero-width cells is a shell, not data."""
+    return any(char.isprintable() for cell in row for char in cell)
 
 
 def _jsx_prop(block: str, name: str) -> str | None:
@@ -205,7 +254,11 @@ def _pricing(
             if write_1h_col is not None
             else None
         )
-        max_tokens_in = _token_count(str(row[context_col])) if context_col is not None else 0
+        max_tokens_in = (
+            _token_count(str(row[context_col]), model_id, page_url)
+            if context_col is not None
+            else 0
+        )
         return Pricing(
             input_cost_per_token=input_cost / 1e6,
             output_cost_per_token=output_cost / 1e6,
@@ -232,11 +285,24 @@ def _dollars(text: str, model_id: str, url: str) -> float | None:
     amounts, malformed = amount_scan(text, before="$")
     if malformed:
         raise unreadable_rate_error(text, model_id, url)
-    return float(amounts[0].replace(",", "")) if amounts else None
+    if not amounts:
+        return None
+    amount = float(amounts[0].replace(",", ""))
+    if not math.isfinite(amount):
+        raise unreadable_rate_error(text, model_id, url)
+    return amount
 
 
-def _token_count(cell: str) -> int:
+def _token_count(cell: str, model_id: str, url: str) -> int:
+    """a context-window cell's token count; a cell with no digit run is 0.
+
+    a digit run past _MAX_CONTEXT_DIGITS is no context length, and the bound
+    keeps the conversion far from int()'s 4300-digit limit, so the parse
+    fails as a FetchError instead of a raw ValueError."""
     match = _CONTEXT_PATTERN.search(cell)
     if match is None:
         return 0
-    return int(match.group(0).replace(",", ""))
+    digits = match.group(0).replace(",", "")
+    if len(digits) > _MAX_CONTEXT_DIGITS:
+        raise FetchError(f"unreadable context window {cell!r} for {model_id} on {url}")
+    return int(digits)

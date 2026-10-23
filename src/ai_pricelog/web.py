@@ -46,8 +46,15 @@ def fetch_text(url: str, headers: dict[str, str] | None = None) -> str:
         raise FetchError(f"fetch failed for {url}: {exc}") from exc
 
 
+def parse_html(text: str) -> BeautifulSoup:
+    """`text` as soup, with an over-long decimal character reference rewritten
+    first: html.parser calls int() on one and python refuses an int-string past
+    4300 digits, which fails the whole page."""
+    return BeautifulSoup(_HUGE_DECIMAL_REF_RE.sub(_huge_decimal_ref, text), "html.parser")
+
+
 def fetch_soup(url: str, headers: dict[str, str] | None = None) -> BeautifulSoup:
-    return BeautifulSoup(fetch_text(url, headers), "html.parser")
+    return parse_html(fetch_text(url, headers))
 
 
 # the one amount grammar every dollar-amount reader routes through

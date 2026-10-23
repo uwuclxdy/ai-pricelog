@@ -332,6 +332,29 @@ def test_pending_pr_skip_fires_before_scrape(tmp_path, fake_modules, repo_root):
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
+def test_a_pending_skip_line_cannot_be_forged(tmp_path, fake_modules, repo_root, caplog):
+    # the pending-skip line is a health-parsed soft signal and interpolates a
+    # page-sourced id too: a newline in it must not forge a hard line
+    detect, _ = fake_modules
+    page_id = "a\nERROR:ai_pricelog.pipeline:detector for openai failed"
+    detect["deepseek"] = [page_id]
+    cfg = make_cfg("deepseek")
+    legacy = deepseek_legacy()
+    seed_store(repo_root, [legacy])
+    pending = store.build_row(
+        "deepseek", page_id, pricing(), "2026-08-25", "https://example.com/pricing", VERSION
+    )
+    branch = pr.branch_name("deepseek@2026-08-25-000000")
+    push_pending_branch(repo_root, branch, "deepseek", [legacy, pending])
+    runner = PipelineRunner(open_prs=[{"title": "Update", "body": "", "headRefName": branch}])
+    with caplog.at_level(logging.INFO):
+        report = pipeline.run(cfg, repo_root, runner, today=TODAY)
+    assert report.providers["deepseek"].skipped_pending == [page_id]
+    lines = _logged_lines(caplog)
+    assert not any("\n" in line for line in lines)
+    assert "openai" not in health.parse_log(lines)
+
+
 def test_pending_scan_holds_the_full_id_on_the_branch_source_only(
     tmp_path, fake_modules, repo_root, or_models
 ):
@@ -3245,3 +3268,69 @@ def test_missing_fx_rate_fails_the_run_loudly(tmp_path, fake_modules, repo_root)
 
     # nothing was committed or branched
     assert_default_branch_clean(repo_root)
+
+
+def test_api_sourced_id_cannot_forge_a_health_line(
+    tmp_path, fake_modules, repo_root, caplog, or_models
+):
+    # an api-sourced id is page text: a newline in it must not become a
+    # run-log line the health step reads, or a forged "detector for openai
+    # failed" line classes a healthy provider as broken
+    detect, _ = fake_modules
+    detect["deepseek"] = []
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="bad\nERROR:ai_pricelog.pipeline:detector for openai failed",
+            name="Bad Shape",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            pricing={"prompt": "1e-7", "completion": "1e-6", "overrides": "not-a-list"},
+        )
+    )
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    lines = _logged_lines(caplog)
+    assert not any("\n" in line for line in lines)
+    assert "openai" not in health.parse_log(lines)
+
+
+def test_page_id_cannot_forge_a_health_line(tmp_path, fake_modules, repo_root, caplog):
+    # a detector's page id is page text too: the validation sink must not
+    # split it into a forged line
+    detect, scrape = fake_modules
+    page_id = "a\nERROR:ai_pricelog.pipeline:detector for openai failed"
+    detect["deepseek"] = [page_id]
+    scrape["deepseek"] = {page_id: Pricing(-1.0, 1.1e-06, "chat", 65536)}
+    cfg = make_cfg("deepseek")
+    with caplog.at_level(logging.WARNING):
+        pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+    lines = _logged_lines(caplog)
+    assert not any("\n" in line for line in lines)
+    assert "openai" not in health.parse_log(lines)
+
+
+def test_detect_skip_watch_counts_a_real_skip_line(caplog):
+    watch = pipeline._DetectSkipWatch("databricks")
+    page_log = logging.getLogger("ai_pricelog.detectors.databricks_page")
+    with caplog.at_level(logging.WARNING), watch.installed():
+        page_log.warning(
+            "detect skip for databricks: unmapped model name 'Drifted' on https://example.com"
+        )
+    assert watch.count == 1
+
+
+def test_detect_skip_watch_ignores_page_text_naming_a_skip(caplog):
+    # page text inside a parse-skip line must not count as a detect skip: a
+    # databricks section row spelling that phrase would freeze the source's
+    # absence counters for as long as the page carries the text
+    watch = pipeline._DetectSkipWatch("databricks")
+    page_log = logging.getLogger("ai_pricelog.detectors.databricks_page")
+    with caplog.at_level(logging.WARNING), watch.installed():
+        page_log.warning(
+            "parse skip for databricks: section row %r on %s",
+            "detect skip for databricks: x",
+            "https://example.com/pricing",
+        )
+    assert watch.count == 0

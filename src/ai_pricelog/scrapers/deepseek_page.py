@@ -31,8 +31,8 @@ unrecognized unit, is a scrape failure.
 
 None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed, the page has no MODEL header table, a
-price cell carries an amount the grammar cannot read, or the guide fee or
-its unit is missing or unreadable.
+price cell carries an amount the grammar cannot read, a token-count cell
+is unreadable, or the guide fee or its unit is missing or unreadable.
 """
 
 from __future__ import annotations
@@ -60,6 +60,7 @@ _MARKERS = ("OFF-PEAK", "PEAK")
 _GUIDE_URL = "https://api-docs.deepseek.com/guides/search"
 _K_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
 _M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
+_MAX_COUNT_DIGITS = 12
 _FOOTNOTE_PATTERN = re.compile(
     r"Peak hours are (\d{2}:\d{2}) - (\d{2}:\d{2}) and (\d{2}:\d{2}) - (\d{2}:\d{2}) UTC"
 )
@@ -210,16 +211,27 @@ def _window_tokens(
         if len(cells) == len(ids):
             # one cell per model column: the model takes its own cell's value;
             # a cell without a matching value yields 0, never another model's
-            match = pattern.search(cells[ids.index(model_id)])
-            return int(float(match.group(1))) * multiplier if match else 0
+            cell = cells[ids.index(model_id)]
+            match = pattern.search(cell)
+            if match is None:
+                return 0
+            return _scaled_tokens(match.group(1), multiplier, cell, model_id)
         # merged cell(s) spanning the model columns: the first value applies
         # to every model
         for cell in cells:
             match = pattern.search(cell)
-            if match:
-                return int(float(match.group(1))) * multiplier
+            if match is not None:
+                return _scaled_tokens(match.group(1), multiplier, cell, model_id)
         return 0
     return 0
+
+
+def _scaled_tokens(value: str, multiplier: int, cell: str, model_id: str) -> int:
+    """a K/M count as tokens; a digit run past the bound is a page-shape
+    break, never an int() failure."""
+    if len(value.replace(".", "")) > _MAX_COUNT_DIGITS:
+        raise FetchError(f"unreadable token count {cell!r} for {model_id}")
+    return int(float(value)) * multiplier
 
 
 def _dollars(text: str | None, model_id: str, url: str) -> float | None:

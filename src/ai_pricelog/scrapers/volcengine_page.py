@@ -16,8 +16,9 @@ max_tokens_out comes from the card's 最大输出 label and max_tokens_in from
 yield 0 for that field.
 
 None = the model id is not on the page or its card carries no parseable
-price (skip-and-retry). FetchError = the fetch failed, or the page text
-carries no doubao-seed id at all (page redesigned).
+price (skip-and-retry). FetchError = the fetch failed, the page text
+carries no doubao-seed id at all (page redesigned), or a card's window
+value is unreadable.
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from ai_pricelog.web import FetchError
 
 CNY_PER_USD = 7.2
 _WINDOW_CHARS = 400
+_MAX_COUNT_DIGITS = 12
 
 _ID_RE = re.compile(r"doubao-seed(?!ream|ance)[a-z0-9.-]+")
 _INPUT_LABELS = ("输入价格", "推理输入")
@@ -114,4 +116,9 @@ def _window_value(window: str, label: str) -> int:
     next_label = [pos for pos in next_label if pos != -1]
     span_end = min(next_label) if next_label else len(window)
     match = _K_RE.search(window[span_start:span_end])
-    return int(float(match.group(1))) * 1024 if match else 0
+    if match is None:
+        return 0
+    value = match.group(1)
+    if len(value.replace(".", "")) > _MAX_COUNT_DIGITS:
+        raise FetchError(f"unreadable {label} value {value!r}")
+    return int(float(value)) * 1024

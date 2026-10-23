@@ -21,8 +21,9 @@ and code marks (`*`, `_`, `` ` ``), every Unicode format (Cf) character
 and U+034F: a maximal run of them between two ASCII letters joins the
 letters (the run drops), and a run touching a non-letter on either side
 reads as one space, except U+200B, U+200C, U+200D, U+2060 and U+FEFF, which
-always read as a space and split a run. a trailing link-less paren
-mentioning prompts or tokens then splits off as a prompt-length tier
+always read as a space and split a run. a trailing link-less paren whose
+untagged text mentions prompts or tokens then splits off as a
+prompt-length tier
 qualifier, dropped off the id and read (FetchError when its wording or
 threshold is unreadable); such a paren holding a comparison (up to, over,
 above, under, below, beyond, more/less than, exceed..., <, >, ≤, ≥, read
@@ -31,15 +32,16 @@ comparison) is a drifted tier wording and raises the wording error, and
 any other prompt/token paren names a model variant and raises the
 qualifier error, still blamed on the stem's model. the tier-wording
 message quotes the paren as the page writes it, whatever follows it
-(whitespace, marks, entities, or a link annotation) and however its
-close is spelled (an entity close included).
+(whitespace, marks, entities, or a link annotation) and however its open
+and close are spelled (a paren entity, with or without its `;`, or an
+entity-closed inner paren included).
 the remaining name must have a model name's
 shape — "Claude", one or more words of ASCII letters, a version, then
 optionally "(Fast)" — and a name without it raises FetchError carrying
 the id its leading shape names (no id when no leading shape is present,
-or when the version is followed by another digit group after any run of
-characters that are not a word character, `(` or `[`), so detection skips
-that row with a warning. names
+or when the version is followed by another ASCII digit group after any run
+of characters that are not a word character, `(`, `[` or `#`), so
+detection skips that row with a warning. names
 slug lowercase with non-alphanumeric runs collapsed to dashes ("Claude
 Opus 4.1" -> claude-opus-4-1).
 """
@@ -81,24 +83,32 @@ _COMPARISON_RE = re.compile(
     r"|\bmore\s+than\b|\bless\s+than\b|\bexceed\w*|[<>≤≥]",
     re.IGNORECASE,
 )
-# an HTML tag's < and > are markup, not a comparison: drop tags before the
-# comparison search, so "(1M token <em>context</em>)" reads as no comparison
-_TAG_RE = re.compile(r"<[a-zA-Z/][^<>]*>")
+# an HTML tag's < and > are markup, not a comparison: a CommonMark-style
+# raw-HTML open/close tag and comment grammar, so a bare < or > stays a
+# comparison, a ">" inside a quoted attribute never ends the tag, and a
+# comment is markup
+_TAG_RE = re.compile(
+    r"<!--(?:(?!<!--).)*?-->"
+    r"|</?[A-Za-z][A-Za-z0-9-]*"
+    r"(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?)*\s*/?>",
+    re.DOTALL,
+)
 # the name shape the guard accepts: "Claude", one or more words of ASCII
 # letters, a version, then optionally "(Fast)". one pattern serves both
 # checks: `fullmatch` pins the whole stem, `match` reads the same front as
 # a prefix, so a name the guard rejects for its tail still names the model
 # its leading shape does; the version ends at a version boundary, so a
-# version followed by another digit group after any run of characters that
-# are not a word character, `(` or `[` names no model. `(?a:...)` keeps
-# the letters, the digits and the
-# "(Fast)" literal ASCII while IGNORECASE folds only ASCII letters, so no
-# case fold maps a non-ASCII letter onto an ASCII one; the whitespace
-# stays unicode, so a run holding NBSP still counts as one space between
-# words.
+# version followed by another ASCII digit group after any run of
+# characters that are not a word character, `(`, `[` or `#` names no
+# model, while a non-ASCII digit or a `#` run cannot continue the version
+# and leaves the leading shape naming the model. `(?a:...)` keeps the
+# letters, the digits and the "(Fast)" literal ASCII while IGNORECASE
+# folds only ASCII letters, so no case fold maps a non-ASCII letter onto
+# an ASCII one; the whitespace stays unicode, so a run holding NBSP still
+# counts as one space between words.
 _SHAPE_RE = re.compile(
     r"Claude(?:\s+(?a:[a-zA-Z]+))+\s+(?a:\d+(?:\.\d+)*)"
-    r"(?![^\w(\[]*\d)(?:\s*(?a:\(Fast\)))?",
+    r"(?![^\w(\[#]*(?a:\d))(?:\s*(?a:\(Fast\)))?",
     re.IGNORECASE,
 )
 # the five invisible characters that always read as a space (one may stand
@@ -206,12 +216,14 @@ def _drop_sup(name: str) -> str:
 
 def _drop_trailing_link_groups(base: str) -> str:
     """`base` with every trailing paren group carrying a link dropped,
-    repeated while the new trailing group still carries one."""
-    paren = _trailing_paren(base)
-    while paren is not None and "](" in paren:
-        base = base[: -len(paren)].strip()
-        paren = _trailing_paren(base)
-    return base
+    repeated while the new trailing group still carries one; the end index
+    walks back over each dropped group, so the name is sliced once."""
+    end = len(base)
+    while (paren := _trailing_paren(base, end)) is not None and "](" in paren:
+        end -= len(paren)
+        while end > 0 and base[end - 1].isspace():
+            end -= 1
+    return base[:end]
 
 
 def _prepared(name: str) -> str:
@@ -225,19 +237,21 @@ def _prepared(name: str) -> str:
     return _drop_trailing_link_groups(base)
 
 
-def _trailing_paren(name: str) -> str | None:
-    """the trailing parenthesized group, or None when the name has no
-    trailing `)` or its parens do not balance."""
-    if not name.endswith(")"):
+def _trailing_paren(name: str, end: int | None = None) -> str | None:
+    """the trailing parenthesized group within `name[:end]`, or None when it
+    has no trailing `)` or its parens do not balance."""
+    if end is None:
+        end = len(name)
+    if end == 0 or name[end - 1] != ")":
         return None
     depth = 0
-    for i in range(len(name) - 1, -1, -1):
+    for i in range(end - 1, -1, -1):
         if name[i] == ")":
             depth += 1
         elif name[i] == "(":
             depth -= 1
             if depth == 0:
-                return name[i:]
+                return name[i:end]
     return None
 
 
@@ -246,34 +260,108 @@ def _mentions_prompts_or_tokens(paren: str) -> bool:
 
 
 def _trailing_tier_paren(base: str) -> str | None:
-    """the trailing link-less paren whose text mentions prompts or tokens."""
+    """the trailing link-less paren whose untagged text mentions prompts or
+    tokens."""
     paren = _trailing_paren(base)
-    if paren is not None and _mentions_prompts_or_tokens(paren):
+    if paren is not None and _mentions_prompts_or_tokens(_TAG_RE.sub(" ", paren)):
         return paren
     return None
 
 
 def _trailing_entity_start(name: str, end: int) -> int | None:
-    """the index of the `&` starting the entity whose `;` sits at `end - 1`,
-    or None when the trailing `;` starts no entity."""
-    i = end - 2
+    """the index of the `&` starting the entity ending at `end`, its `;`
+    included when it has one and a legacy no-';' form when it does not, or
+    None when no entity ends there."""
+    i = end - 1
+    if i >= 0 and name[i] == ";":
+        i -= 1
+    name_end = i
     while i >= 0 and ((name[i].isascii() and name[i].isalnum()) or name[i] == "#"):
         i -= 1
-    return i if i >= 0 and name[i] == "&" else None
+    if i < 0 or name[i] != "&" or i == name_end:
+        return None
+    return i
+
+
+def _entity_end(name: str, start: int) -> int:
+    """the end index (exclusive) of the charref starting at `start`, by
+    html.unescape's grammar (a numeric ref with any digit run or a named
+    ref of 1-32 name characters, either with an optional `;`), or `start`
+    when no entity starts there."""
+    i = start + 1
+    if i < len(name) and name[i] == "#":
+        i += 1
+        if i < len(name) and name[i] in "xX":
+            i += 1
+            first = i
+            while i < len(name) and name[i] in "0123456789abcdefABCDEF":
+                i += 1
+        else:
+            first = i
+            while i < len(name) and name[i] in "0123456789":
+                i += 1
+        if i == first:
+            return start
+        if i < len(name) and name[i] == ";":
+            i += 1
+        return i
+    end = min(len(name), i + 32)
+    while i < end and name[i] not in "\t\n\f <&#;":
+        i += 1
+    if i == start + 1:
+        return start
+    if i < len(name) and name[i] == ";":
+        i += 1
+    return i
+
+
+def _paren_entity_at(name: str, i: int) -> tuple[int, str] | None:
+    """the paren entity whose `;` ends at `i` or whose `&` starts at `i`,
+    as (start, decoded paren), or None when `name[i]` opens no such
+    entity."""
+    if name[i] == ";":
+        start = _trailing_entity_start(name, i + 1)
+        if start is not None:
+            decoded = unescape(name[start : i + 1])
+            if decoded == "(" or decoded == ")":
+                return start, decoded
+        return None
+    if name[i] == "&":
+        end = _entity_end(name, i)
+        if end > i + 1:
+            decoded = unescape(name[i:end])
+            if decoded == "(" or decoded == ")":
+                return i, decoded
+    return None
 
 
 def _trailing_entity_paren(name: str, close_start: int) -> str | None:
-    """the trailing paren group whose close is the entity at `close_start`,
-    from the matching `(` through the entity's end, or None when its parens
-    do not balance."""
+    """the trailing paren group whose close starts at `close_start` (the
+    `&` of an entity or a literal `)`), from the matching opener (a literal
+    `(` or a paren entity's `&`) through the group's end, or None when its
+    parens do not balance."""
     depth = 0
-    for i in range(close_start - 1, -1, -1):
-        if name[i] == ")":
+    i = close_start - 1
+    while i >= 0:
+        token = _paren_entity_at(name, i)
+        if token is not None:
+            start, decoded = token
+            if decoded == ")":
+                depth += 1
+            elif depth == 0:
+                return name[start:]
+            else:
+                depth -= 1
+            i = start - 1
+            continue
+        ch = name[i]
+        if ch == ")":
             depth += 1
-        elif name[i] == "(":
+        elif ch == "(":
             if depth == 0:
                 return name[i:]
             depth -= 1
+        i -= 1
     return None
 
 
@@ -281,7 +369,8 @@ def _page_tier_paren(name: str) -> str | None:
     """the trailing tier paren as the page writes it (sup markup and link
     annotations dropped, entities and marks intact inside the paren,
     trailing whitespace, marks and space-or-mark entities after the
-    closing paren stripped, a close spelled as an entity kept), or None."""
+    closing paren stripped, a close or open spelled as an entity kept), or
+    None."""
     dropped = _drop_trailing_link_groups(_drop_sup(_drop_link_annotations(name)))
     end = len(dropped)
     while end > 0:
@@ -298,11 +387,14 @@ def _page_tier_paren(name: str) -> str | None:
                     continue
         break
     dropped = dropped[:end]
-    if dropped.endswith(";"):
-        start = _trailing_entity_start(dropped, len(dropped))
-        if start is not None and unescape(dropped[start:]) == ")":
-            return _trailing_entity_paren(dropped, start)
-    return _trailing_tier_paren(dropped)
+    start = _trailing_entity_start(dropped, len(dropped))
+    if start is not None and unescape(dropped[start:]) == ")":
+        return _trailing_entity_paren(dropped, start)
+    if dropped.endswith(")"):
+        paren = _trailing_entity_paren(dropped, len(dropped) - 1)
+        if paren is not None and _mentions_prompts_or_tokens(_TAG_RE.sub(" ", paren)):
+            return paren
+    return None
 
 
 def _threshold(token: str, name: str) -> int:
@@ -329,7 +421,9 @@ def _read_tier(paren: str, name: str) -> tuple[str, int]:
     match = _TIER_RE.fullmatch(paren)
     if match is None:
         page_paren = _page_tier_paren(name) or paren
-        if _COMPARISON_RE.search(_TAG_RE.sub("", paren)) is None:
+        # a tag deletes to nothing between two letters and reads as a space
+        # between two words, so a comparison word split by one still reads
+        if not any(_COMPARISON_RE.search(_TAG_RE.sub(sep, paren)) for sep in ("", " ")):
             raise FetchError(
                 f"unread model qualifier {page_paren!r} in {name!r}: the paren names a"
                 " model variant, not a prompt-length tier; fix: teach the anthropic"

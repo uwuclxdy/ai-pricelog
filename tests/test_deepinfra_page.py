@@ -368,3 +368,17 @@ def test_a_model_row_in_the_thead_raises(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
     with pytest.raises(FetchError, match="header holds 2 rows"):
         detector.detect(cfg())
+
+
+def test_a_huge_context_cell_raises_a_fetch_error(monkeypatch):
+    # a 4300+ digit context reaches int() and raises ValueError, which is no
+    # FetchError: the reader must bound the run and name the cell
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: token_table_soup(
+            model_row("Kimi K3", "/moonshotai/Kimi-K3", "9" * 5000 + "k", "$2.85", "$14.25")
+        ),
+    )
+    with pytest.raises(FetchError, match="unreadable context"):
+        scraper.scrape(cfg(), "kimi-k3")

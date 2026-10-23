@@ -273,3 +273,11 @@ def test_a_model_row_in_the_thead_raises(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
     with pytest.raises(FetchError, match="header holds 2 rows"):
         detector.detect(cfg())
+
+
+def test_a_huge_context_cell_raises_a_fetch_error():
+    # a 4300+ digit count reaches int() and raises ValueError, which is no
+    # FetchError: a reader must bound the run and name the cell
+    cell = BeautifulSoup("<td>" + "9" * 5000 + "K</td>", "html.parser").find("td")
+    with pytest.raises(FetchError, match="context"):
+        scraper._context_tokens(cell, "swiss-ai/apertus-v1.5-8b", "https://example.com/pricing")

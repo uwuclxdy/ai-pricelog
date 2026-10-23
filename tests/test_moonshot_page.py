@@ -298,3 +298,74 @@ def test_pricing_tolerates_non_string_context_cell():
     assert pricing is not None
     assert pricing.max_tokens_in == 262_144
     assert pricing.cache_read_cost_per_token is None
+
+
+_HTML_TABLE = """
+<table>
+  <thead>
+    <tr>
+      <th>Model</th><th>Input Price</th><th>Cached Input Price</th>
+      <th>Output Price</th><th>Context Window</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>kimi-k3</td><td>$0.30</td><td>$0.03</td><td>$1.20</td><td>1,048,576 tokens</td></tr>
+  </tbody>
+</table>
+"""
+
+_EMPTY_SHELL = """
+<table>
+  <thead>
+    <tr />
+  </thead>
+
+  <tbody />
+</table>
+"""
+
+
+def _chat_page(monkeypatch: pytest.MonkeyPatch, page_text: str) -> None:
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return page_text
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+
+
+def test_scrape_reads_the_html_table_shape(monkeypatch):
+    # the docs platform writes plain HTML tables instead of <DocTable> props
+    # since 2026-10; when the rows come back, they must price through the
+    # same reader. web.py already owns the html-table helpers
+    # (own_table_rows / own_cells / header_labels)
+    _chat_page(monkeypatch, _HTML_TABLE)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(1.20 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.03 / 1e6)
+    assert pricing.max_tokens_in == 1_048_576
+
+
+def test_an_empty_html_table_shell_still_raises(monkeypatch):
+    # the page as observed 2026-10-23: every series table ships a self-closed
+    # header row and an empty body. that must stay a loud shape break, never
+    # a silent "model absent" (which would read as a delisting half)
+    _chat_page(monkeypatch, _EMPTY_SHELL)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert CHAT_URL in str(exc.value)
+
+
+def test_a_huge_context_cell_raises_a_fetch_error():
+    # a 4300+ digit count reaches int() and raises ValueError, which is no
+    # FetchError: the reader must bound the run and name the cell
+    doc = (
+        ["Model", "Input Price", "Output Price", "Context Window"],
+        [["kimi-k3", "$0.30", "$1.20", "9" * 5000]],
+    )
+    with pytest.raises(FetchError, match="kimi-k3"):
+        scraper._pricing(doc, "kimi-k3", CHAT_URL)

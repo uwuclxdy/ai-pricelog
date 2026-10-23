@@ -803,3 +803,16 @@ def test_own_cells_skip_a_chained_rows_cells():
         ["a", "b"],
         ["c"],
     ]
+
+
+def test_fetch_soup_survives_a_huge_decimal_char_ref(monkeypatch):
+    # bs4's html.parser calls int() on a charref, and python refuses an
+    # int-string of 4300+ digits: one such ref anywhere on any page fails that
+    # provider hard. a decimal ref that long is past U+10FFFF and reads as
+    # U+FFFD anyway, so the page parses, and a zero-padded in-range ref keeps
+    # its character.
+    page = "<html><body><p>&#" + "9" * 5000 + ";</p><p>&#0000000065;</p></body></html>"
+    monkeypatch.setattr(web, "fetch_text", lambda url, headers=None: page)
+    text = web.fetch_soup("https://example.com/page").get_text()
+    assert "�" in text
+    assert "A" in text

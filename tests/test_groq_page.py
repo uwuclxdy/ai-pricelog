@@ -451,3 +451,10 @@ def test_scrape_missing_table_raises(monkeypatch: pytest.MonkeyPatch):
     feed(monkeypatch, "no tables at all here")
     with pytest.raises(FetchError, match="no per-token pricing table"):
         scraper.scrape(cfg(), "openai/gpt-oss-120b")
+
+
+def test_a_huge_token_count_raises_a_fetch_error():
+    # a 4300+ digit count reaches int() and raises ValueError, which is no
+    # FetchError: a reader must bound the run and name the cell
+    with pytest.raises(FetchError, match="token count"):
+        scraper._token_count("9" * 5000, "openai/gpt-oss-20b", "https://example.com/pricing")

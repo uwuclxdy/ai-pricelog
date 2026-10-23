@@ -463,3 +463,10 @@ def test_committed_index_round_trips_over_the_real_tree():
         path.relative_to(root).as_posix() for path in (root / announce.ANNOUNCE_DIR).rglob("*.md")
     }
     assert on_disk == named
+
+
+def test_extract_prose_survives_a_huge_decimal_char_ref():
+    # the announce reader parses third-party pages with the same html.parser:
+    # a 4300+ digit decimal ref must not fail the channel
+    text = "<html><body><p>&#" + "9" * 5000 + ";</p></body></html>"
+    assert announce.extract_prose("https://example.com/updates", text) == "�"

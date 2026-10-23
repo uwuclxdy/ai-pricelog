@@ -92,6 +92,22 @@ def test_check_pricing_pages_requires_doctable(monkeypatch):
         smoke.check_pricing_pages(INDEX_URL)
 
 
+def test_check_pricing_pages_requires_a_model_table(monkeypatch):
+    # a page carrying only a non-pricing table (no Model column) holds no rate:
+    # the smoke's shape check must red on it, not pass it
+    base = fixture_fetch("llms")
+    page = '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
+
+    def fake(url: str) -> str:
+        if url == CHAT_URL:
+            return page
+        return base(url)
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(ValueError, match="chat.md"):
+        smoke.check_pricing_pages(INDEX_URL)
+
+
 def test_check_pricing_pages_propagates_fetch_failure(monkeypatch):
     llms_text = (FIXTURES / "llms.txt").read_text()
 

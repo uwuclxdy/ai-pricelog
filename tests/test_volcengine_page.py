@@ -193,3 +193,11 @@ def test_page_fetched_once_per_url(monkeypatch: pytest.MonkeyPatch) -> None:
     assert scraper.scrape(cfg, "doubao-seed-2-1-pro-260628") is not None
     assert detector.detect(cfg) == ALL_MODELS
     assert fetches["count"] == 1
+
+
+def test_a_huge_window_value_raises_a_fetch_error():
+    # a 4300+ digit value overflows int(); the reader must bound the run and
+    # name the cell instead of raising ValueError/OverflowError
+    window = "上下文窗口 " + "9" * 5000 + "k"
+    with pytest.raises(FetchError):
+        scraper._window_value(window, "上下文窗口")

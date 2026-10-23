@@ -26,7 +26,7 @@ from datetime import date
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+from bs4 import XMLParsedAsHTMLWarning
 
 from ai_pricelog import web
 from ai_pricelog.config import Config
@@ -77,7 +77,7 @@ def extract_prose(url: str, text: str) -> str:
         return " ".join(text.split())
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", XMLParsedAsHTMLWarning)
-        soup = BeautifulSoup(text, "html.parser")
+        soup = web.parse_html(text)
     for tag in soup(["script", "style", "noscript"]):
         tag.decompose()
     root = soup.find()
