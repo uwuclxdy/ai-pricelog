@@ -13,7 +13,13 @@ import httpx
 from bs4 import BeautifulSoup, Tag
 
 _LINE_BREAKS = str.maketrans(
-    {"\n": "\\n", "\r": "\\r", "\x85": "\\x85", " ": "\\u2028", " ": "\\u2029"}
+    {
+        "\n": "\\n",
+        "\r": "\\r",
+        chr(0x85): "\\x85",
+        chr(0x2028): "\\u2028",
+        chr(0x2029): "\\u2029",
+    }
 )
 
 
