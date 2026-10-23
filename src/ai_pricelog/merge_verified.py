@@ -1,23 +1,32 @@
 """Merge the PRs the claude pass marked `automerge: yes`.
 
 the pass posts one machine-readable disposition per PR comment (the marker
-line `automerge: yes` / `automerge: no`, the last line of the body) and never
-merges. the workflow's merge step runs this script after the pass: it reads
-every open `pricelog/` PR's comments for the pass's marker and hands the
-eligible branches to ai-pricelog-automerge in PR-number order (the merge
-order). a pass killed after posting its verdicts (observed 2026-09-11, run
-34592012203: verdict comment 11:24, timeout kill 11:35, automerge never ran,
-the run green) stranded its verified PRs, and a failed merge step strands
-them too (observed 2026-09-18: the 11:00 run's merge push rejected
-`fetch first`, its 8 yes-marked PRs merged by hand) — reading dispositions
-of every open pricelog PR, whatever run posted them, lets a later
-run's merge step pick the stranded ones up. the workflow's list
-step also runs this script with `--awaiting-review` to print the pricelog
-PRs the claude pass must judge — the unjudged ones, plus a no-marked PR whose
-every carried announce channel is settled: the base already holds it, or its
-newest carrier's verdict is yes (a verdict's recency is the comment's edit
-time, `updated_at or created_at`) — oldest first. the pure halves are
-network-free; main() owns the network, health.py's shape.
+line `automerge: yes <sha>` / `automerge: no <sha>`, the last line of the
+body, the sha naming the head the pass judged) and never merges. the
+workflow's merge step runs this script after the pass: it reads every open
+`pricelog/` PR's comments for the pass's marker and hands the eligible
+branches to ai-pricelog-automerge in PR-number order (the merge order). a
+verdict binds only to the head it stamps, so a branch pushed after the
+verdict is never merged: the merge step skips it by name and the queue
+lists it for a fresh pass. main() folds the raw dispositions through
+`_bound_dispositions` once, so a stale verdict reads as unjudged for every
+consumer — the queue, the merge, the announce hold and the settle question
+— and only the stale-yes skip diagnostic sees the raw pair. a pass killed
+after posting its verdicts
+(observed 2026-09-11, run 34592012203: verdict comment 11:24, timeout kill
+11:35, automerge never ran, the run green) stranded its verified PRs, and a
+failed merge step strands them too (observed 2026-09-18: the 11:00 run's
+merge push rejected `fetch first`, its 8 yes-marked PRs merged by hand) —
+reading dispositions of every open pricelog PR, whatever run posted them,
+lets a later run's merge step pick the stranded ones up. the workflow's
+list step also runs this script with `--awaiting-review` to print the
+pricelog PRs the claude pass must judge — the unjudged ones, a verdict
+whose stamped sha no longer names the branch's head (the new head is
+unjudged), plus a no-marked PR whose every carried announce channel is
+settled: the base already holds it, or its newest carrier's verdict is a
+bound yes (a verdict's recency is the comment's edit time, `updated_at or
+created_at`) — oldest first. the pure halves are network-free; main() owns
+the network, health.py's shape.
 """
 
 from __future__ import annotations
@@ -31,8 +40,10 @@ from typing import TextIO
 
 from ai_pricelog import announce, automerge, health, pr
 
-# the marker the pass ends every PR comment with: one whole line
-_DISPOSITION_LINE = re.compile(r"automerge: (yes|no)")
+# the marker the pass ends every PR comment with: one whole line, the
+# verdict optionally stamped with the head sha it judged (7..64 lowercase
+# hex, the git oid spelling)
+_DISPOSITION_LINE = re.compile(r"automerge: (yes|no)(?: ([0-9a-f]{7,64}))?")
 
 
 def parse_disposition(comments: Iterable[tuple[str, str]], bot_login: str) -> bool | None:
@@ -42,36 +53,39 @@ def parse_disposition(comments: Iterable[tuple[str, str]], bot_login: str) -> bo
 
 def parse_disposition_at(
     comments: Iterable[tuple[str, str, str]], bot_login: str
-) -> tuple[bool | None, str | None]:
-    """The last bot marker's verdict and its comment's edit time; (None, None) = no marker.
+) -> tuple[bool | None, str | None, str | None]:
+    """The last bot marker's verdict, its stamped head sha, and its comment's edit time.
 
-    The edit time is `updated_at or created_at`: github never moves
-    `created_at` on an edit, and the pass edits its existing verdict comment
-    on a re-queued PR.
+    The sha is None on a marker posted without one — a verdict bound to no
+    head, never merged. The edit time is `updated_at or created_at`: github
+    never moves `created_at` on an edit, and the pass edits its existing
+    verdict comment on a re-queued PR.
     """
     return _last_marker(comments, bot_login)
 
 
 def _last_marker(
     comments: Iterable[tuple[str, str, str]], bot_login: str
-) -> tuple[bool | None, str | None]:
+) -> tuple[bool | None, str | None, str | None]:
     disposition: bool | None = None
+    stamped: str | None = None
     at: str | None = None
     for author, body, edited_at in comments:
         if author != bot_login:
             continue
         marker = _marker_line(body)
         if marker is not None:
-            disposition, at = marker, edited_at or None
-    return disposition, at
+            disposition, stamped = marker
+            at = edited_at or None
+    return disposition, stamped, at
 
 
-def _marker_line(body: str) -> bool | None:
-    marker: bool | None = None
+def _marker_line(body: str) -> tuple[bool | None, str | None] | None:
+    marker: tuple[bool | None, str | None] | None = None
     for line in body.splitlines():
         match = _DISPOSITION_LINE.fullmatch(line.strip())
         if match is not None:
-            marker = match.group(1) == "yes"
+            marker = (match.group(1) == "yes", match.group(2))
     return marker
 
 
@@ -105,18 +119,45 @@ def _present_refs(
     return present, gone
 
 
+def _bound(binding: tuple[str, str | None] | None) -> bool:
+    """The verdict's stamp names the PR's current head; missing info never binds."""
+    if binding is None:
+        return False
+    head_oid, stamped = binding
+    return bool(head_oid) and stamped is not None and stamped == head_oid
+
+
+def _bound_dispositions(
+    dispositions: Mapping[int, bool | None], binding: Mapping[int, tuple[str, str | None]]
+) -> dict[int, bool | None]:
+    """The verdicts bound to their PR's current head; everything else reads None.
+
+    A verdict whose stamp does not name the current head — a sha-less marker
+    included — judged an earlier head, so the new head is unjudged: the
+    verdict reads None wherever the queue, the merge, the hold or the settle
+    question consumes it. main() builds the map once and every consumer
+    takes it; only the stale-yes skip diagnostic reads the raw pair.
+    """
+    return {
+        number: disposition if _bound(binding.get(number)) else None
+        for number, disposition in dispositions.items()
+    }
+
+
 def eligible_branches(
     open_prs: Iterable[tuple[int, str]],
     dispositions: Mapping[int, bool | None],
 ) -> list[str]:
-    """The merge order: open pricelog PRs the pass marked yes, oldest first.
+    """The merge order: open pricelog PRs the pass marked bound yes, oldest first.
 
-    a PR is eligible when its head ref is a `pricelog/` branch that is not
-    the seed and the pass's disposition is True — which run posted the
-    marker is irrelevant, so a yes-marked PR a failed merge step stranded
-    still merges on a later run's merge step. no comment, no marker, or
-    `automerge: no` all leave it out: the conservative default is to never
-    merge.
+    `dispositions` is the bound map (`_bound_dispositions`): a verdict whose
+    stamp does not name its PR's current head already reads None here. a PR
+    is eligible when its head ref is a `pricelog/` branch that is not the
+    seed and its disposition is True — which run posted the marker is
+    irrelevant, so a yes-marked PR a failed merge step stranded still merges
+    on a later run's merge step while its head stays put. no comment, no
+    marker, `automerge: no`, or an unbound yes all leave it out: the
+    conservative default is to never merge.
     """
     eligible = sorted(
         (number, head_ref)
@@ -124,6 +165,22 @@ def eligible_branches(
         if _pricelog_head(head_ref) and dispositions.get(number) is True
     )
     return [head_ref for _number, head_ref in eligible]
+
+
+def _stale_yeses(
+    open_prs: Iterable[tuple[int, str]],
+    dispositions: Mapping[int, bool | None],
+    binding: Mapping[int, tuple[str, str | None]],
+) -> list[tuple[str, str | None, str]]:
+    """Pricelog yes-marked heads whose stamp does not name the current head."""
+    stale: list[tuple[str, str | None, str]] = []
+    for number, head_ref in open_prs:
+        if not (_pricelog_head(head_ref) and dispositions.get(number) is True):
+            continue
+        head_oid, stamped = binding.get(number, ("", None))
+        if not _bound((head_oid, stamped)):
+            stale.append((head_ref, stamped, head_oid))
+    return stale
 
 
 def awaiting_review(
@@ -134,13 +191,16 @@ def awaiting_review(
 ) -> list[tuple[int, str]]:
     """The pricelog PRs the pass must judge, oldest first, capped at `limit`.
 
-    a PR queues when its head is a `pricelog/` branch that is not the seed and
-    the pass's disposition is None — no marker at all, or only bot comments
-    the pass never finished — or when its number sits in `requeue`: a
-    no-marked PR whose every carried announce channel is settled, the base
-    holding it or a newest carrier's verdict being yes.
-    `automerge: no` otherwise waits on a human, so it stays out of the pass's
-    queue.
+    `dispositions` is the bound map (`_bound_dispositions`): a verdict whose
+    stamp no longer names its PR's current head (a sha-less marker included)
+    already reads None — the head judged no longer exists, so the new head is
+    unjudged. a PR queues when its head is a `pricelog/` branch that is not
+    the seed and its disposition is None — no marker at all, only bot
+    comments the pass never finished, or an unbound verdict — or its number
+    sits in `requeue`: a no-marked PR whose every carried announce channel is
+    settled, the base holding it or a newest carrier's verdict being a bound
+    yes. a bound yes and a bound no outside `requeue` stay out: the merge
+    step owns the one, a human the other.
     """
     queued = sorted(
         (number, head_ref)
@@ -150,14 +210,24 @@ def awaiting_review(
     return queued[:limit]
 
 
-def _open_prs(runner: pr.PrRunner, repo_root: Path) -> list[tuple[int, str]]:
-    """(number, head ref) for every open PR, one gh call.
+def _open_prs(runner: pr.PrRunner, repo_root: Path) -> list[tuple[int, str, str]]:
+    """(number, head ref, head oid) for every open PR, one gh call.
 
     the limit is the stranded-pickup completeness bound: an open PR beyond
     it is never re-read.
     """
     out = runner.run(
-        ["gh", "pr", "list", "--state", "open", "--limit", "1000", "--json", "number,headRefName"],
+        [
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--limit",
+            "1000",
+            "--json",
+            "number,headRefName,headRefOid",
+        ],
         cwd=repo_root,
     )
     try:
@@ -166,11 +236,17 @@ def _open_prs(runner: pr.PrRunner, repo_root: Path) -> list[tuple[int, str]]:
         raise pr.PrError(f"gh pr list returned invalid json: {exc.msg}") from exc
     if not isinstance(entries, list):
         raise pr.PrError("gh pr list returned a non-list json value")
-    open_prs: list[tuple[int, str]] = []
+    open_prs: list[tuple[int, str, str]] = []
     for entry in entries:
         if not isinstance(entry, dict) or not isinstance(entry.get("number"), int):
             continue
-        open_prs.append((entry["number"], str(entry.get("headRefName") or "")))
+        open_prs.append(
+            (
+                entry["number"],
+                str(entry.get("headRefName") or ""),
+                str(entry.get("headRefOid") or ""),
+            )
+        )
     return open_prs
 
 
@@ -223,35 +299,54 @@ def _pr_comments(runner: pr.PrRunner, repo_root: Path, number: int) -> list[tupl
 
 def _listing(
     runner: pr.PrRunner, repo_root: Path, diag: TextIO
-) -> tuple[list[tuple[int, str]], dict[int, bool | None], dict[int, str], list[str]]:
-    """Open pricelog PRs whose refs still resolve, plus their dispositions.
+) -> tuple[
+    list[tuple[int, str]],
+    dict[int, bool | None],
+    dict[int, str],
+    dict[int, tuple[str, str | None]],
+    list[str],
+]:
+    """Open pricelog PRs whose refs still resolve, plus their dispositions and head binding.
 
     The listing both mains share: the open list, the deleted-ref skip, the
     bot login and the per-PR comment reads. returns (candidates,
-    dispositions, marker_times, gone), candidates in gh list order; the maps
-    are empty when no live pricelog PR remains, and marker_times holds the
-    last bot marker comment's edit time (`updated_at or created_at`) per
-    judged PR, the pass's recency. `diag` receives the skipped-ref lines, so
-    the queue mode keeps stdout a machine list.
+    dispositions, marker_times, binding, gone), candidates in gh list order;
+    the maps are empty when no live pricelog PR remains. marker_times holds
+    the last bot marker comment's edit time (`updated_at or created_at`)
+    per judged PR, the pass's recency, and binding each candidate's pair of
+    current head oid and stamped head sha — what the merge step compares to
+    the verdict. `diag` receives the skipped-ref lines, so the queue mode
+    keeps stdout a machine list.
     """
     open_prs = _open_prs(runner, repo_root)
-    candidates = [(number, head_ref) for number, head_ref in open_prs if _pricelog_head(head_ref)]
+    heads = {number: head_oid for number, _head_ref, head_oid in open_prs}
+    candidates = [
+        (number, head_ref) for number, head_ref, _head_oid in open_prs if _pricelog_head(head_ref)
+    ]
     if not candidates:
-        return [], {}, {}, []
+        return [], {}, {}, {}, []
     present, gone = _present_refs(runner, repo_root, [head for _number, head in candidates])
     for head in gone:
         print(f"skipping {head}: branch ref deleted, PR mid-close", file=diag)
     candidates = [c for c in candidates if c[1] in present]
     if not candidates:
-        return [], {}, {}, gone
+        return [], {}, {}, {}, gone
     bot_login = runner.run(["gh", "api", "user", "--jq", ".login"], cwd=repo_root).strip()
     readings = {
         number: parse_disposition_at(_pr_comments(runner, repo_root, number), bot_login)
         for number, _head_ref in candidates
     }
-    dispositions = {number: disposition for number, (disposition, _at) in readings.items()}
-    marker_times = {number: at for number, (_disposition, at) in readings.items() if at is not None}
-    return candidates, dispositions, marker_times, gone
+    dispositions = {
+        number: disposition for number, (disposition, _stamped, _at) in readings.items()
+    }
+    marker_times = {
+        number: at for number, (_disposition, _stamped, at) in readings.items() if at is not None
+    }
+    binding = {
+        number: (heads[number], stamped)
+        for number, (_disposition, stamped, _at) in readings.items()
+    }
+    return candidates, dispositions, marker_times, binding, gone
 
 
 def _index_readings(
@@ -356,18 +451,21 @@ def _held_channels(
     dispositions: Mapping[int, bool | None],
     marker_times: Mapping[int, str] | None = None,
 ) -> frozenset[tuple[str, str]]:
-    """(source, url) channels whose newest carrier's verdict is not yes.
+    """(source, url) channels whose newest carrier's verdict is not a bound yes.
 
-    The newest pass settles the ruling: a channel's carriers are the open
-    pricelog PRs the merge would let win it (the base lacks it, or their
-    snapshot is newer than the base's), and the carrier whose marker comment is
-    newest decides — the PR number only when `marker_times` is not given. A
-    yes-marked carrier releases the channel (the ruling landed, so the base's
-    copy moves with the merge); a no-marked or unjudged one keeps the channel
-    held at the base copy, so the owed ruling is not dropped by a sibling merge
-    landing the same snapshot. Holding the whole carried set keeps channels a
-    PR never flagged conservative too, and self-heals at the newest carrier's
-    verdict. When every candidate is yes-marked no channel can be held, so the
+    `dispositions` is the bound map (`_bound_dispositions`): a yes whose
+    stamp no longer names the branch's head reads None here, so the stale
+    verdict releases nothing. The newest pass settles the ruling: a
+    channel's carriers are the open pricelog PRs the merge would let win it
+    (the base lacks it, or their snapshot is newer than the base's), and the
+    carrier whose marker comment is newest decides — the PR number only when
+    `marker_times` is not given. A bound-yes-marked carrier releases the
+    channel (the ruling landed, so the base's copy moves with the merge); a
+    no-marked or unjudged one keeps the channel held at the base copy, so the
+    owed ruling is not dropped by a sibling merge landing the same snapshot.
+    Holding the whole carried set keeps channels a PR never flagged
+    conservative too, and self-heals at the newest carrier's verdict. When
+    every candidate is bound-yes-marked no channel can be held, so the
     indexes are not read at all.
     """
     if not any(dispositions.get(number) is not True for number, _head_ref in candidates):
@@ -389,16 +487,18 @@ def _settled_no_heads(
 ) -> frozenset[int]:
     """No-marked PR numbers whose every carried channel is settled.
 
-    Carried means the branch's own commit range changed the announce file,
-    never what it would win now (a sibling merge can already hold the branch's
-    snapshot, and that must still settle the no). Each carried channel settles
-    when the base already holds it — the same sha, or a same-or-newer fetched
-    instant, the merge keeps the base on a tie — or when the newest carrier of
-    the channel, ranked by marker time, is yes-marked: that ruling landed. A
-    PR whose branch index or diff could not be read is never settled (what it
-    carries is unknown), and neither is one carrying no channel: its no is not
-    an announce ruling, so re-queueing it would churn the slots a human's PR
-    needs.
+    `dispositions` is the bound map (`_bound_dispositions`): only a bound no
+    settles, a stale verdict reads None and settles nothing. Carried means
+    the branch's own commit range changed the announce file, never what it
+    would win now (a sibling merge can already hold the branch's snapshot,
+    and that must still settle the no). Each carried channel settles when
+    the base already holds it — the same sha, or a same-or-newer fetched
+    instant, the merge keeps the base on a tie — or when the newest carrier
+    of the channel, ranked by marker time, is bound-yes-marked: that ruling
+    landed. A PR whose branch index or diff could not be read is never
+    settled (what it carries is unknown), and neither is one carrying no
+    channel: its no is not an announce ruling, so re-queueing it would churn
+    the slots a human's PR needs.
     """
     base_index, indexes, unread = _index_readings(runner, repo_root, candidates)
     carriers = _carriers(base_index, indexes)
@@ -469,9 +569,11 @@ def _channel_settled(
 ) -> bool:
     """Whether one carried channel's owed ruling is settled.
 
-    Settled when the base already holds it — its entry exists and carries the
-    same sha or a same-or-newer fetched instant, so the branch's copy lands
-    nothing — or when the newest carrier of the channel is yes-marked.
+    `dispositions` is the bound map (`_bound_dispositions`): a stale yes
+    settles nothing. Settled when the base already holds it — its entry
+    exists and carries the same sha or a same-or-newer fetched instant, so
+    the branch's copy lands nothing — or when the newest carrier of the
+    channel is bound-yes-marked.
     """
     source, url = channel
     entry = branch_index[source][url]
@@ -553,18 +655,19 @@ def main(argv: list[str] | None = None) -> int:
     runner = pr.PrRunner()
     repo_root = Path.cwd()
     try:
-        candidates, dispositions, marker_times, gone = _listing(
+        candidates, dispositions, marker_times, binding, gone = _listing(
             runner, repo_root, sys.stderr if limit is not None else sys.stdout
         )
+        bound_dispositions = _bound_dispositions(dispositions, binding)
         if limit is not None:
             requeue: frozenset[int] = frozenset()
-            if any(dispositions.get(number) is not True for number, _head_ref in candidates):
+            if any(bound_dispositions.get(number) is not True for number, _head_ref in candidates):
                 _fetch_pricelog_refs(runner, repo_root)
                 requeue = _settled_no_heads(
-                    runner, repo_root, candidates, dispositions, marker_times
+                    runner, repo_root, candidates, bound_dispositions, marker_times
                 )
             for number, head_ref in awaiting_review(
-                candidates, dispositions, limit, requeue=requeue
+                candidates, bound_dispositions, limit, requeue=requeue
             ):
                 print(f"{number} {head_ref}")
             return 0
@@ -574,12 +677,16 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print("no open pricelog PRs; nothing to merge")
             return 0
-        branches = eligible_branches(candidates, dispositions)
+        branches = eligible_branches(candidates, bound_dispositions)
+        for head_ref, stamped, head_oid in _stale_yeses(candidates, dispositions, binding):
+            stamp7 = stamped[:7] if stamped else "none"
+            current7 = head_oid[:7] or "none"
+            print(f"skipping {head_ref}: head moved since the verdict ({stamp7} -> {current7})")
         if not branches:
-            print("no PR marked automerge: yes; nothing to merge")
+            print("no PR with a bound automerge: yes; nothing to merge")
             return 0
         base = pr.default_branch(runner, repo_root)
-        held = _held_channels(runner, repo_root, candidates, dispositions, marker_times)
+        held = _held_channels(runner, repo_root, candidates, bound_dispositions, marker_times)
         sha, results = automerge.merge_branches(
             branches, repo_root, runner, base, push=True, held_channels=held
         )

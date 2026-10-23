@@ -72,11 +72,15 @@ def test_prompt_names_the_automerge_surface() -> None:
 
 def test_prompt_carries_the_disposition_markers() -> None:
     # the merge-verified step reads these exact machine lines off the pass's
-    # PR comments; a reworded marker silently strands every verified PR
+    # PR comments; a reworded marker silently strands every verified PR, and a
+    # marker without the head sha cannot bind the verdict to what was judged
     text = PROMPT.read_text()
-    assert "automerge: yes" in text
-    assert "automerge: no" in text
+    assert "automerge: yes <head sha>" in text
+    assert "automerge: no <head sha>" in text
     assert "merge verified PRs" in text
+    manual = (ROOT / ".github" / "claude-pass" / "automerge.md").read_text()
+    assert "automerge: yes <head sha>" in manual
+    assert "automerge: no <head sha>" in manual
 
 
 def test_needs_human_comment_pings_the_owner() -> None:

@@ -49,6 +49,18 @@ def test_parse_disposition_requires_a_marker_line():
     assert merge_verified.parse_disposition([("cldbot", body)], "cldbot") is None
 
 
+def test_parse_disposition_at_reads_the_stamped_head():
+    # a verdict is bound to the head it judged; the merge step compares the
+    # stamp to the PR's current head
+    head = "0123456789abcdef0123456789abcdef01234567"
+    comments = [("cldbot", f"**verified**\n\nautomerge: yes {head}", "2026-10-24T10:00:00Z")]
+    assert merge_verified.parse_disposition_at(comments, "cldbot") == (
+        True,
+        head,
+        "2026-10-24T10:00:00Z",
+    )
+
+
 def test_eligible_branches_gates_every_refusal():
     open_prs = [
         (191, "pricelog/deepseek-abc12345"),
@@ -101,18 +113,21 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
     # the wiring half of the stranded fix: dispositions must be read for
     # pricelog PRs this run did not open, and a yes-marked one handed to
     # the automerge script
+    head = "a" * 40
     runner = FakeRunner()
     runner.on(
         "pr list",
-        output=json.dumps([{"number": 197, "headRefName": "pricelog/stale-99999999"}]),
+        output=json.dumps(
+            [{"number": 197, "headRefName": "pricelog/stale-99999999", "headRefOid": head}]
+        ),
     )
     runner.on("api user", output="cldbot\n")
     runner.on(
         "issues/197/comments",
-        output=_comments(("cldbot", "automerge: yes", "2026-09-18T11:00:00Z")),
+        output=_comments(("cldbot", f"automerge: yes {head}", "2026-09-18T11:00:00Z")),
     )
     runner.on("repo view", output="mommy\n")
-    runner.on("pricelog/stale-99999999", output="a" * 40 + "\n")
+    runner.on("pricelog/stale-99999999", output=head + "\n")
     runner.on("workflow run publish.yml", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
@@ -126,33 +141,91 @@ def test_main_merges_a_stranded_older_run_pr(monkeypatch):
     assert calls == [(["pricelog/stale-99999999"], "mommy", True)]
 
 
-def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
-    # a sibling run merged a PR and deleted its branch while github has not
-    # closed it yet: the open list still names it, but there is nothing to
-    # merge. the run must skip it, never red on the dangling ref (observed
-    # 2026-09-20: the 19:00 run red'd on an 18:55 PR mid-close)
+def test_main_skips_a_branch_whose_head_moved_after_the_verdict(monkeypatch, capsys):
+    # a yes authorizes the head it judged, never a later push to the branch
+    reviewed_head = "b" * 40
+    current_head = "c" * 40
     runner = FakeRunner()
     runner.on(
         "pr list",
         output=json.dumps(
             [
-                {"number": 278, "headRefName": "pricelog/gone-12345678"},
-                {"number": 279, "headRefName": "pricelog/live-87654321"},
+                {
+                    "number": 660,
+                    "headRefName": "pricelog/moved-12345678",
+                    "headRefOid": current_head,
+                },
+                {
+                    "number": 661,
+                    "headRefName": "pricelog/bound-87654321",
+                    "headRefOid": reviewed_head,
+                },
+            ]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on(
+        "issues/660/comments",
+        output=_comments(
+            ("cldbot", f"verified\n\nautomerge: yes {reviewed_head}", "2026-10-24T10:00:00Z")
+        ),
+    )
+    runner.on(
+        "issues/661/comments",
+        output=_comments(
+            ("cldbot", f"verified\n\nautomerge: yes {reviewed_head}", "2026-10-24T10:00:00Z")
+        ),
+    )
+    runner.on("HEAD:state/announce/index.json", output="{}")
+    runner.on("origin/pricelog/moved-12345678:state/announce/index.json", output="{}")
+    runner.on("origin/pricelog/bound-87654321:state/announce/index.json", output="{}")
+    runner.on("repo view", output="mommy\n")
+    runner.on("pricelog/moved-12345678", output=current_head + "\n")
+    runner.on("pricelog/bound-87654321", output=reviewed_head + "\n")
+    runner.on("workflow run publish.yml", output="")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    calls: list[list[str]] = []
+
+    def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
+        calls.append(branches)
+        return ("f" * 40, [])
+
+    monkeypatch.setattr(automerge, "merge_branches", _fake_merge)
+    assert merge_verified.main([]) == 0
+    assert calls == [["pricelog/bound-87654321"]]
+    out = capsys.readouterr().out
+    assert "pricelog/moved-12345678" in out
+    assert "head moved" in out
+
+
+def test_main_skips_an_open_pr_whose_ref_is_deleted(monkeypatch, capsys):
+    # a sibling run merged a PR and deleted its branch while github has not
+    # closed it yet: the open list still names it, but there is nothing to
+    # merge. the run must skip it, never red on the dangling ref (observed
+    # 2026-09-20: the 19:00 run red'd on an 18:55 PR mid-close)
+    head = "a" * 40
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [
+                {"number": 278, "headRefName": "pricelog/gone-12345678", "headRefOid": head},
+                {"number": 279, "headRefName": "pricelog/live-87654321", "headRefOid": head},
             ]
         ),
     )
     runner.on("api user", output="cldbot\n")
     runner.on(
         "issues/278/comments",
-        output=_comments(("cldbot", "automerge: yes", "2026-09-20T19:05:00Z")),
+        output=_comments(("cldbot", f"automerge: yes {head}", "2026-09-20T19:05:00Z")),
     )
     runner.on(
         "issues/279/comments",
-        output=_comments(("cldbot", "automerge: yes", "2026-09-20T19:05:00Z")),
+        output=_comments(("cldbot", f"automerge: yes {head}", "2026-09-20T19:05:00Z")),
     )
     runner.on("repo view", output="mommy\n")
     runner.on("pricelog/gone-12345678", output="")
-    runner.on("pricelog/live-87654321", output="a" * 40 + "\trefs/heads/pricelog/live-87654321\n")
+    runner.on("pricelog/live-87654321", output=head + "\trefs/heads/pricelog/live-87654321\n")
     runner.on("workflow run publish.yml", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     calls: list[tuple[list[str], str, bool]] = []
@@ -285,6 +358,74 @@ def test_held_channels_holds_an_unjudged_newest_carrier(tmp_path):
     assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset(
         {channel}
     )
+
+
+def test_main_holds_a_channel_a_stale_yes_carries(monkeypatch, tmp_path):
+    # a yes for an old head neither merges nor releases the announce channel
+    # it carries: the newest carrier is unjudged for the current head, so the
+    # owed ruling stays held at the base copy
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    channel = ("perplexity", url)
+    old_head = "a" * 40
+    stale_head = "b" * 40
+    stale_now = "c" * 40
+    bound_head = "d" * 40
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [
+                {"number": 552, "headRefName": "pricelog/older-no", "headRefOid": old_head},
+                {"number": 553, "headRefName": "pricelog/newer-yes", "headRefOid": stale_now},
+                {"number": 554, "headRefName": "pricelog/bound-yes", "headRefOid": bound_head},
+            ]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on(
+        "issues/552/comments",
+        output=_comments(
+            ("cldbot", f"needs human\n\nautomerge: no {old_head}", "2026-10-24T10:00:00Z")
+        ),
+    )
+    runner.on(
+        "issues/553/comments",
+        output=_comments(
+            ("cldbot", f"verified\n\nautomerge: yes {stale_head}", "2026-10-24T12:00:00Z")
+        ),
+    )
+    runner.on(
+        "issues/554/comments",
+        output=_comments(
+            ("cldbot", f"verified\n\nautomerge: yes {bound_head}", "2026-10-24T11:00:00Z")
+        ),
+    )
+    runner.on("HEAD:state/announce/index.json", output=_channel_index("a", url, file, "2026-10-15"))
+    runner.on(
+        "origin/pricelog/older-no:state/announce/index.json", output=_channel_index("b", url, file)
+    )
+    runner.on(
+        "origin/pricelog/newer-yes:state/announce/index.json", output=_channel_index("b", url, file)
+    )
+    runner.on("origin/pricelog/bound-yes:state/announce/index.json", output="{}")
+    runner.on("git diff --name-only HEAD...origin/pricelog/older-no", output=f"{file}\n")
+    runner.on("git diff --name-only HEAD...origin/pricelog/newer-yes", output=f"{file}\n")
+    runner.on("git diff --name-only HEAD...origin/pricelog/bound-yes", output="")
+    for head in ("pricelog/older-no", "pricelog/newer-yes", "pricelog/bound-yes"):
+        runner.on(head, output=old_head + "\n")
+    runner.on("repo view", output="mommy\n")
+    runner.on("workflow run publish.yml", output="")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    calls: list[tuple[list[str], frozenset[tuple[str, str]]]] = []
+
+    def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
+        calls.append((branches, held_channels))
+        return ("f" * 40, [])
+
+    monkeypatch.setattr(automerge, "merge_branches", _fake_merge)
+    assert merge_verified.main([]) == 0
+    assert calls == [(["pricelog/bound-yes"], frozenset({channel}))]
 
 
 def test_settled_no_heads_requeues_a_no_pr_whose_channel_a_newer_yes_carries(tmp_path):
@@ -595,6 +736,59 @@ def test_awaiting_review_caps_the_queue_at_the_oldest():
     ]
 
 
+def test_main_awaiting_review_does_not_requeue_a_bound_yes(monkeypatch, capsys):
+    # a yes stamped with the branch's current head is a finished review: the
+    # merge step owns it, so the pass must not judge it again
+    head = "b" * 40
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [{"number": 660, "headRefName": "pricelog/bound-12345678", "headRefOid": head}]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
+    runner.on("git fetch", output="")
+    runner.on("git show", output="{}\n")
+    runner.on("git diff", output="")
+    runner.on(
+        "issues/660/comments",
+        output=_comments(("cldbot", f"verified\n\nautomerge: yes {head}", "2026-10-24T10:00:00Z")),
+    )
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_main_awaiting_review_requeues_a_stale_verdict(monkeypatch, capsys):
+    # the branch moved after the verdict, so the yes no longer applies and the
+    # pass must judge the new head
+    reviewed_head = "a" * 40
+    current_head = "b" * 40
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [{"number": 660, "headRefName": "pricelog/stale-12345678", "headRefOid": current_head}]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on("ls-remote", output=current_head + "\trefs/heads/x\n")
+    runner.on("git fetch", output="")
+    runner.on("git show", output="{}\n")
+    runner.on("git diff", output="")
+    runner.on(
+        "issues/660/comments",
+        output=_comments(
+            ("cldbot", f"verified\n\nautomerge: yes {reviewed_head}", "2026-10-24T10:00:00Z")
+        ),
+    )
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    assert capsys.readouterr().out == "660 pricelog/stale-12345678\n"
+
+
 def _comments(*entries: tuple[str, ...]) -> str:
     """The `gh api --paginate --slurp` payload: one page of (login, body[, created[, updated]]).
 
@@ -634,7 +828,7 @@ def test_listing_ranks_a_marker_by_its_edit_time(tmp_path):
             ("cldbot", "automerge: no", "2026-10-20T11:00:00Z", "2026-10-20T11:00:00Z"),
         ),
     )
-    candidates, dispositions, marker_times, _gone = merge_verified._listing(
+    candidates, dispositions, marker_times, _binding, _gone = merge_verified._listing(
         runner, tmp_path, io.StringIO()
     )
     assert candidates == [(552, "pricelog/openrouter-552")]
@@ -676,6 +870,7 @@ def test_pr_comments_reads_every_page(tmp_path):
     ]
     assert merge_verified.parse_disposition_at(triples, "cldbot") == (
         True,
+        None,
         "2026-10-20T11:00:00Z",
     )
     assert any(
@@ -694,29 +889,32 @@ def test_pr_comments_refuses_a_non_list_page(tmp_path):
 
 
 def test_main_awaiting_review_prints_the_queue(monkeypatch, capsys):
+    head = "a" * 40
     runner = FakeRunner()
     runner.on(
         "pr list",
         output=json.dumps(
             [
-                {"number": 488, "headRefName": "pricelog/openrouter-488"},
-                {"number": 460, "headRefName": "pricelog/anthropic-460"},
-                {"number": 414, "headRefName": "pricelog/anthropic-414"},
-                {"number": 400, "headRefName": "pricelog/openrouter-400"},
-                {"number": 399, "headRefName": "feature/human"},
+                {"number": 488, "headRefName": "pricelog/openrouter-488", "headRefOid": head},
+                {"number": 460, "headRefName": "pricelog/anthropic-460", "headRefOid": head},
+                {"number": 414, "headRefName": "pricelog/anthropic-414", "headRefOid": head},
+                {"number": 400, "headRefName": "pricelog/openrouter-400", "headRefOid": head},
+                {"number": 399, "headRefName": "feature/human", "headRefOid": head},
             ]
         ),
     )
     runner.on("api user", output="cldbot\n")
     runner.on("issues/488/comments", output=_comments())
-    runner.on("issues/460/comments", output=_comments(("cldbot", "needs human\n\nautomerge: no")))
+    runner.on(
+        "issues/460/comments", output=_comments(("cldbot", f"needs human\n\nautomerge: no {head}"))
+    )
     # a bot comment with no marker line is an unfinished review: it queues
     runner.on(
         "issues/414/comments", output=_comments(("cldbot", "**claude pass review** (partial)"))
     )
     # a human's marker is not the pass's disposition: it queues
-    runner.on("issues/400/comments", output=_comments(("uwuclxdy", "automerge: yes")))
-    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("issues/400/comments", output=_comments(("uwuclxdy", f"automerge: yes {head}")))
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
     runner.on("git fetch", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     monkeypatch.setattr(merge_verified, "_settled_no_heads", lambda *a, **k: frozenset())
@@ -733,20 +931,23 @@ def test_main_awaiting_review_prints_the_queue(monkeypatch, capsys):
 
 def test_main_awaiting_review_requeues_a_settled_no_pr(monkeypatch, capsys):
     # a no PR whose channel a newer yes pass settled prints in the queue
+    head = "a" * 40
     runner = FakeRunner()
     runner.on(
         "pr list",
         output=json.dumps(
             [
-                {"number": 488, "headRefName": "pricelog/openrouter-488"},
-                {"number": 460, "headRefName": "pricelog/anthropic-460"},
+                {"number": 488, "headRefName": "pricelog/openrouter-488", "headRefOid": head},
+                {"number": 460, "headRefName": "pricelog/anthropic-460", "headRefOid": head},
             ]
         ),
     )
     runner.on("api user", output="cldbot\n")
     runner.on("issues/488/comments", output=_comments())
-    runner.on("issues/460/comments", output=_comments(("cldbot", "needs human\n\nautomerge: no")))
-    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on(
+        "issues/460/comments", output=_comments(("cldbot", f"needs human\n\nautomerge: no {head}"))
+    )
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
     runner.on("git fetch", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     monkeypatch.setattr(merge_verified, "_settled_no_heads", lambda *a, **k: frozenset({460}))
@@ -756,6 +957,7 @@ def test_main_awaiting_review_requeues_a_settled_no_pr(monkeypatch, capsys):
 
 def _edit_time_queue(edited_at: str) -> FakeRunner:
     """552 no + 553 yes on one channel, 552's verdict comment edited at `edited_at`."""
+    head = "a" * 40
     url = "https://example.com/changelog"
     file = announce.channel_files("perplexity", [url])[url]
     runner = FakeRunner()
@@ -763,8 +965,8 @@ def _edit_time_queue(edited_at: str) -> FakeRunner:
         "pr list",
         output=json.dumps(
             [
-                {"number": 552, "headRefName": "pricelog/older-no"},
-                {"number": 553, "headRefName": "pricelog/newer-yes"},
+                {"number": 552, "headRefName": "pricelog/older-no", "headRefOid": head},
+                {"number": 553, "headRefName": "pricelog/newer-yes", "headRefOid": head},
             ]
         ),
     )
@@ -772,16 +974,21 @@ def _edit_time_queue(edited_at: str) -> FakeRunner:
     runner.on(
         "issues/552/comments",
         output=_comments(
-            ("cldbot", "needs human\n\nautomerge: no", "2026-10-20T10:00:00Z", edited_at)
+            ("cldbot", f"needs human\n\nautomerge: no {head}", "2026-10-20T10:00:00Z", edited_at)
         ),
     )
     runner.on(
         "issues/553/comments",
         output=_comments(
-            ("cldbot", "verified\n\nautomerge: yes", "2026-10-21T10:00:00Z", "2026-10-21T10:00:00Z")
+            (
+                "cldbot",
+                f"verified\n\nautomerge: yes {head}",
+                "2026-10-21T10:00:00Z",
+                "2026-10-21T10:00:00Z",
+            )
         ),
     )
-    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
     runner.on("git fetch", output="")
     runner.on("HEAD:state/announce/index.json", output=json.dumps({"perplexity": {}}))
     runner.on(
@@ -815,8 +1022,12 @@ def test_main_requeues_a_no_pr_whose_later_yes_settled_it(monkeypatch, capsys):
     assert capsys.readouterr().out == "552 pricelog/older-no\n"
 
 
-def _held_merge_fixture(no_verdict_at: str) -> tuple[FakeRunner, tuple[str, str]]:
-    """A yes PR and a no PR on one channel, in merge mode; the no's verdict at `no_verdict_at`."""
+def test_main_a_stale_yes_settles_no_sibling(monkeypatch, capsys):
+    # the settling yes judged an old head, so it rules nothing for the
+    # current one: the no PR stays out of the settle requeue (its own
+    # verdict is a bound no) and the stale yes queues instead
+    head = "a" * 40
+    moved_head = "b" * 40
     url = "https://example.com/changelog"
     file = announce.channel_files("perplexity", [url])[url]
     runner = FakeRunner()
@@ -824,8 +1035,8 @@ def _held_merge_fixture(no_verdict_at: str) -> tuple[FakeRunner, tuple[str, str]
         "pr list",
         output=json.dumps(
             [
-                {"number": 552, "headRefName": "pricelog/older-no"},
-                {"number": 553, "headRefName": "pricelog/newer-yes"},
+                {"number": 552, "headRefName": "pricelog/older-no", "headRefOid": head},
+                {"number": 553, "headRefName": "pricelog/newer-yes", "headRefOid": moved_head},
             ]
         ),
     )
@@ -833,16 +1044,70 @@ def _held_merge_fixture(no_verdict_at: str) -> tuple[FakeRunner, tuple[str, str]
     runner.on(
         "issues/552/comments",
         output=_comments(
-            ("cldbot", "needs human\n\nautomerge: no", "2026-10-20T10:00:00Z", no_verdict_at)
+            ("cldbot", f"needs human\n\nautomerge: no {head}", "2026-10-20T10:00:00Z")
+        ),
+    )
+    runner.on(
+        "issues/553/comments",
+        output=_comments(("cldbot", f"verified\n\nautomerge: yes {head}", "2026-10-21T10:00:00Z")),
+    )
+    runner.on("ls-remote", output=moved_head + "\trefs/heads/x\n")
+    runner.on("git fetch", output="")
+    runner.on("HEAD:state/announce/index.json", output=json.dumps({"perplexity": {}}))
+    runner.on(
+        "origin/pricelog/older-no:state/announce/index.json",
+        output=_channel_index("b", url, file),
+    )
+    runner.on(
+        "origin/pricelog/newer-yes:state/announce/index.json",
+        output=_channel_index("b", url, file),
+    )
+    runner.on("git diff --name-only HEAD...origin/pricelog/older-no", output=f"{file}\n")
+    runner.on("git diff --name-only HEAD...origin/pricelog/newer-yes", output=f"{file}\n")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    assert merge_verified.main(["--awaiting-review", "10"]) == 0
+    assert capsys.readouterr().out == "553 pricelog/newer-yes\n"
+
+
+def _held_merge_fixture(no_verdict_at: str) -> tuple[FakeRunner, tuple[str, str]]:
+    """A yes PR and a no PR on one channel, in merge mode; the no's verdict at `no_verdict_at`."""
+    head = "a" * 40
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [
+                {"number": 552, "headRefName": "pricelog/older-no", "headRefOid": head},
+                {"number": 553, "headRefName": "pricelog/newer-yes", "headRefOid": head},
+            ]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on(
+        "issues/552/comments",
+        output=_comments(
+            (
+                "cldbot",
+                f"needs human\n\nautomerge: no {head}",
+                "2026-10-20T10:00:00Z",
+                no_verdict_at,
+            )
         ),
     )
     runner.on(
         "issues/553/comments",
         output=_comments(
-            ("cldbot", "verified\n\nautomerge: yes", "2026-10-21T10:00:00Z", "2026-10-21T10:00:00Z")
+            (
+                "cldbot",
+                f"verified\n\nautomerge: yes {head}",
+                "2026-10-21T10:00:00Z",
+                "2026-10-21T10:00:00Z",
+            )
         ),
     )
-    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
     runner.on("repo view", output="mommy\n")
     runner.on("HEAD:state/announce/index.json", output=json.dumps({"perplexity": {}}))
     runner.on(
@@ -910,14 +1175,17 @@ def test_main_awaiting_review_survives_a_failed_ref_fetch(monkeypatch, capsys):
 
 def test_main_awaiting_review_skips_the_fetch_when_every_pr_is_judged(monkeypatch, capsys):
     # no no-marked candidate means nothing to settle: no ref fetch, empty list
+    head = "a" * 40
     runner = FakeRunner()
     runner.on(
         "pr list",
-        output=json.dumps([{"number": 553, "headRefName": "pricelog/yes-553"}]),
+        output=json.dumps([{"number": 553, "headRefName": "pricelog/yes-553", "headRefOid": head}]),
     )
     runner.on("api user", output="cldbot\n")
-    runner.on("issues/553/comments", output=_comments(("cldbot", "verified\n\nautomerge: yes")))
-    runner.on("ls-remote", output="a" * 40 + "\trefs/heads/x\n")
+    runner.on(
+        "issues/553/comments", output=_comments(("cldbot", f"verified\n\nautomerge: yes {head}"))
+    )
+    runner.on("ls-remote", output=head + "\trefs/heads/x\n")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
     assert merge_verified.main(["--awaiting-review", "10"]) == 0
     assert capsys.readouterr().out == ""
@@ -991,14 +1259,17 @@ def test_main_awaiting_review_rejects_a_bad_limit(argv, monkeypatch):
 
 
 def _yes_marked_pr(runner: FakeRunner) -> None:
+    head = "a" * 40
     runner.on(
         "pr list",
-        output=json.dumps([{"number": 197, "headRefName": "pricelog/stale-99999999"}]),
+        output=json.dumps(
+            [{"number": 197, "headRefName": "pricelog/stale-99999999", "headRefOid": head}]
+        ),
     )
     runner.on("api user", output="cldbot\n")
-    runner.on("issues/197/comments", output=_comments(("cldbot", "automerge: yes")))
+    runner.on("issues/197/comments", output=_comments(("cldbot", f"automerge: yes {head}")))
     runner.on("repo view", output="mommy\n")
-    runner.on("pricelog/stale-99999999", output="a" * 40 + "\n")
+    runner.on("pricelog/stale-99999999", output=head + "\n")
 
 
 def _dispatches(runner: FakeRunner) -> list[list[str]]:
