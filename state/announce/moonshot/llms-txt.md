@@ -1,12 +1,13 @@
 # Kimi API Platform > Kimi K3 is our flagship model for long-horizon coding and end-to-end knowledge work, with a 1M-token context window and industry-leading intelligence.
 The Kimi API Platform provides K3, K2.7 Code, K2.6 and other large language model APIs, supporting long context, multimodal understanding, and Tool Calling.
-- [Quickstart](https://platform.kimi.ai/docs/overview.md): Create an API Key and complete your first Kimi API call.
-- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
+- [Quickstart](https://platform.kimi.ai/docs/get-your-api-key.md): Create an API Key and complete your first Kimi API call.
+- [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
 - [Kimi K2.7 Code](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md): Explore Kimi K2.7 Code and its high-speed variant for coding, multimodal input, thinking, tool calling, and 256K-token contexts.
 - [Kimi K2.6](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md): Explore Kimi K2.6 text, image, and video understanding, thinking mode, tool calling, and its 256K-token context window.
+- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Thinking Models](https://platform.kimi.ai/docs/guide/use-thinking-models.md): Understand Kimi thinking modes, model selection, `reasoning_content`, multi-turn retention, tool calling, and reasoning-token billing.
-- [Reasoning Effort](https://platform.kimi.ai/docs/guide/use-reasoning-effort.md): Use `reasoning_effort` values `low`, `high`, and `max` to balance Kimi K3 reasoning depth, latency, and token usage.
+- [Reasoning Effort](https://platform.kimi.ai/docs/guide/use-reasoning-effort.md): Use `reasoning_effort` values `low`, `high`, and `max` to balance Kimi K3.1 Pro reasoning depth, latency, and token usage.
 - [Set Parameters for Multi-turn Chat](https://platform.kimi.ai/docs/guide/engage-in-multi-turn-conversations-using-kimi-api.md): Maintain message history, control context length, and construct multi-turn conversations with the stateless Kimi API.
 - [Use the Streaming Feature of the Kimi API](https://platform.kimi.ai/docs/guide/utilize-the-streaming-output-feature-of-kimi-api.md): Use Kimi API server-sent events to reduce time to first token, parse incremental output, and capture final usage data.
 - [Use Kimi API's JSON Mode](https://platform.kimi.ai/docs/guide/use-json-mode-feature-of-kimi-api.md): Enable Kimi API JSON Mode with `response_format` and safely prompt for, receive, and parse structured JSON output.
@@ -25,7 +26,7 @@ The Kimi API Platform provides K3, K2.7 Code, K2.6 and other large language mode
 - [Use Kimi API for File-Based Q&A](https://platform.kimi.ai/docs/guide/use-kimi-api-for-file-based-qa.md): Upload files, extract their contents, and add them to Kimi API conversations for single-file or multi-file question answering.
 - [Using Batch API for Bulk Processing](https://platform.kimi.ai/docs/guide/use-batch-api.md): Upload JSONL requests, create and monitor Batch API jobs, and download results for large-scale asynchronous inference.
 - [Use Kimi API Platform with Kimi Code CLI](https://platform.kimi.ai/docs/guide/kimi-code-cli.md): Connect, switch, and update Kimi Code CLI with a Kimi API Platform API Key.
-- [Use Kimi K3 in Codex](https://platform.kimi.ai/docs/guide/codex-kimi.md): Connect Codex directly to Kimi K3 through the Kimi Responses API: set an API key, edit `~/.codex/config.toml`, and verify the connection in both Codex Desktop and the CLI.
+- [Use Kimi K3.1 Pro in Codex](https://platform.kimi.ai/docs/guide/codex-kimi.md): Connect Codex directly to Kimi K3.1 Pro through the Kimi Responses API: set an API key, edit `~/.codex/config.toml`, and verify the connection in both Codex Desktop and the CLI.
 - [Use Kimi in OpenClaw](https://platform.kimi.ai/docs/guide/use-kimi-in-openclaw.md): Build a cross-platform AI agent with OpenClaw and the Kimi API.
 Install OpenClaw and configure your Kimi API key.
 - [Use Kimi in Claude Code](https://platform.kimi.ai/docs/guide/claude-code-kimi.md): Learn how to integrate the Kimi API into Claude Code and verify your configuration.
@@ -64,10 +65,11 @@ Supports text-based formats such as pdf, doc, and txt.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/websearch.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
-- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
+- [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
 - [Kimi K2.7 Code](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md): Explore Kimi K2.7 Code and its high-speed variant for coding, multimodal input, thinking, tool calling, and 256K-token contexts.
 - [Kimi K2.6](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md): Explore Kimi K2.6 text, image, and video understanding, thinking mode, tool calling, and its 256K-token context window.
+- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Account and Billing](https://platform.kimi.ai/docs/guide/account-and-payments.md): Find answers about Kimi Open Platform recharge, balances, credits, invoices, billing, and organization verification.
 - [Main Concepts](https://platform.kimi.ai/docs/introduction.md): Learn the core Kimi API concepts behind models, prompts, tokens, context windows, streaming, tool calling, and multimodal input.

@@ -9,7 +9,10 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 22 October We have updated the following buildpacks for App Platform: PHP buildpack : We updated the buildpack to version 298 and added PHP versions 8.5.3 - 8.5.12 , 8.4.18 - 8.4.27 , 8.3.31 - 8.3.33 , 8.3.35 - 8.3.36 , and 8.2.31 - 8.2.35 .
+October 2026 23 October The Your usage graph on the Cost Analysis page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
+The available grouping options depend on the selected spend category.
+Use these filters to break down spend over a selected date range, for example to track AI spend by model or monitor resources by tag.
+22 October We have updated the following buildpacks for App Platform: PHP buildpack : We updated the buildpack to version 298 and added PHP versions 8.5.3 - 8.5.12 , 8.4.18 - 8.4.27 , 8.3.31 - 8.3.33 , 8.3.35 - 8.3.36 , and 8.2.31 - 8.2.35 .
 PHP 8.5.12 , 8.4.27 , 8.3.36 , 8.2.35 , and 8.1.34 include fixes for two security vulnerabilities (CVE-2026-109618 and CVE-2026-109619).
 To use a patched runtime, force rebuild and deploy your app .
 If your composer.json pins an exact PHP version, update it to a range such as ^8.5.0 so a patched version can be selected.
