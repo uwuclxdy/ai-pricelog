@@ -1,5 +1,13 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **October 22, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
+# Changelog **October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
+> [!WARNING] > > 3.0 is a major release with breaking changes.
+The `beta` paths for dedicated model inference and GPU clusters no longer work, the SDK base URL drops `/v1`, and `whoami` returns a new response shape.
+Read [SDK v3 migration](https://docs.together.ai/docs/sdk-v3-migration-guide.md) before you upgrade.
+**What's new:** * **Dedicated model inference and GPU clusters out of `beta`:** Manage [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/overview.md) and [GPU clusters](https://docs.together.ai/docs/gpu-clusters-overview.md) with `client.endpoints`, `client.models`, and `client.clusters`, or with `tg endpoints`, `tg models`, and `tg clusters` in the CLI.
+* **Faster chat completions:** The SDKs send chat completions directly to the inference host, `https://api-inference.together.ai`, by default.
+* **Identity for any credential:** [`client.whoami()`](https://docs.together.ai/reference/whoami) returns a typed identity for project API keys, organization API keys, and user sessions, including credentials that aren't scoped to a project.
+* **Billing usage in the SDK:** `client.organization.usage.costs.list()` returns your organization's cost line items by day or hour from the [billing usage API](https://docs.together.ai/reference/billing-usage.md), which is in beta and enabled per organization.
+## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.15 input / \$0.60 output / \$0.015 cached input (per 1M tokens).
 **October 18, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
@@ -244,7 +252,7 @@ The message appears in the console **Events** tab and in [`GET /fine-tunes/{id}/
 See [Download the tokenized dataset](https://docs.together.ai/docs/fine-tuning/monitoring.md#download-the-tokenized-dataset).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `deepseek-ai/DeepSeek-V4-Flash-0731`.
 ## Endpoint events in the CLI `tg beta endpoints events` lists a [dedicated endpoint's](https://docs.together.ai/docs/dedicated-endpoints/overview.md) audit and lifecycle events from the terminal: replica scaling, traffic shifts, status changes, and pauses across every deployment under the endpoint.
-See [Monitoring endpoint events](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md#events) and the [`tg beta endpoints events` CLI command](https://docs.together.ai/reference/cli/endpoints-beta#events).
+See [Monitoring endpoint events](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md#events) and the [`tg beta endpoints events` CLI command](https://docs.together.ai/reference/cli/endpoints#events).
 ## Fine-tuning limits and tokenized datasets in the CLI Two new fine-tuning commands are available: * `tg ft model-limits <model>` prints a model's fine-tuning constraints, including sequence-length, batch-size, and LoRA rank limits.
 * `tg ft download-tokenized-dataset <ft_id>` downloads the tokenized dataset a job trained on, so you can audit exactly what the model saw.
 See the [fine-tuning CLI reference](https://docs.together.ai/reference/cli/finetune.md).
@@ -419,11 +427,11 @@ See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration 
 The flag takes percentage from or returns it to the control only.
 Other variants stay unchanged.
 The control must remain at least 1%, and `--percent` on `tg beta endpoints ab` is limited to 1–99.
-See [Ramp the variant](https://docs.together.ai/docs/dedicated-endpoints/ab-tests.md#ramp-the-variant) and the [endpoints CLI reference](https://docs.together.ai/reference/cli/endpoints-beta.md#update).
+See [Ramp the variant](https://docs.together.ai/docs/dedicated-endpoints/ab-tests.md#ramp-the-variant) and the [endpoints CLI reference](https://docs.together.ai/reference/cli/endpoints.md#update).
 ## Deploy replica bound inference `tg beta endpoints deploy` now infers a missing replica bound: `--min-replicas` alone mirrors into the max (including `0` to create a deployment stopped), and `--max-replicas 0` alone lowers the min to `0`.
 On `tg beta endpoints update`, stopping a deployment still requires both `--min-replicas 0` and `--max-replicas 0`.
 Passing a single zero bound is an error.
-See the [endpoints CLI reference](https://docs.together.ai/reference/cli/endpoints-beta.md#deploy).
+See the [endpoints CLI reference](https://docs.together.ai/reference/cli/endpoints.md#deploy).
 ## CLI upgrade notices The Together CLI now detects when a newer release is available and prints an upgrade notice at most once per day.
 Interactive sessions offer to run the upgrade in place, using the command that matches your install (`uv`, `pipx`, or `pip`).
 Set `TOGETHER_DISABLE_VERSION_CHECK=1` to turn the check off.
@@ -440,7 +448,7 @@ See [Error codes](https://docs.together.ai/docs/error-codes.md) and [Troubleshoo
 ## CLI get by endpoint or deployment name `tg beta endpoints get` now accepts endpoint and deployment names in addition to IDs (`ep_...`, `dep_...`).
 You can also pass the name or ID directly as `tg beta endpoints <name_or_id>`.
 If a bare deployment name matches more than one deployment, the CLI asks for a deployment ID or a fully qualified name.
-See [Get](https://docs.together.ai/reference/cli/endpoints-beta.md#get).
+See [Get](https://docs.together.ai/reference/cli/endpoints.md#get).
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3`: 1,000,000 context length.
 Pricing: \$3.00 input / \$15.00 output / \$0.30 cached input (per 1M tokens).
 Supports function calling, structured outputs, and vision inputs.
