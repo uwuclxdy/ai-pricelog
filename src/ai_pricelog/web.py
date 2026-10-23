@@ -283,15 +283,19 @@ def markdown_pipe_blocks(text: str) -> list[list[str]]:
     return blocks
 
 
+def markdown_row_cells(line: str) -> list[str]:
+    """split a markdown table line into stripped cells.
+
+    one edge pipe per side, so `|| x |` opens with an empty cell.
+    """
+    return [cell.strip() for cell in line.strip().removeprefix("|").removesuffix("|").split("|")]
+
+
 def extract_markdown_tables(text: str) -> list[list[list[str]]]:
     """split markdown pipe tables into row lists: header, separator, data rows."""
     tables: list[list[list[str]]] = []
     for lines in markdown_pipe_blocks(text):
-        # one edge pipe per side: `|| x |` opens with an empty cell
-        rows = [
-            [cell.strip() for cell in line.strip().removeprefix("|").removesuffix("|").split("|")]
-            for line in lines
-        ]
+        rows = [markdown_row_cells(line) for line in lines]
         if len(rows) >= 2 and all(re.fullmatch(r":?-+:?", cell) for cell in rows[1]):
             tables.append(rows)
     return tables

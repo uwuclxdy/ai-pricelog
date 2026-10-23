@@ -188,6 +188,11 @@ def _pricing_page_with(old: str, new: str) -> str:
             "| **MiniMax-M2.7** | \\$0.3 / M tokens | \\$1.2 / M tokens |",
             f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: 3 cells",
         ),
+        (
+            "| **MiniMax-M2.7** |",
+            "| | **MiniMax-M2.7** |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: '**MiniMax-M2.7**'",
+        ),
     ],
     ids=[
         "unbolded-name",
@@ -195,6 +200,7 @@ def _pricing_page_with(old: str, new: str) -> str:
         "lowercase-unbolded-name",
         "row-missing-cells",
         "row-missing-cache-cell",
+        "name-in-the-second-cell",
     ],
 )
 def test_scrape_unreadable_model_row_raises(minimax_cfg, monkeypatch, old, new, message):
@@ -219,6 +225,28 @@ def test_scrape_row_naming_the_id_inside_a_longer_token_does_not_raise(minimax_c
     page = _page_with_line("pricing-paygo.md", 35, "| **MiniMax-M2.7** |", "| X-MiniMax-M2.7 |")
     monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
     assert minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7") is None
+
+
+def test_scrape_row_with_an_underscore_suffix_does_not_name_the_id(minimax_cfg, monkeypatch):
+    # an underscore between two word characters joins a longer token, so the
+    # row never reads as the shorter id
+    page = _page_with_line(
+        "pricing-paygo.md", 35, "| **MiniMax-M2.7** |", "| MiniMax-M2.7_highspeed |"
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    assert minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7") is None
+
+
+def test_scrape_unreadable_row_in_italic_names_the_id(minimax_cfg, monkeypatch):
+    # a markdown emphasis marker is no part of an id, so an italic name cell
+    # still names the row it cannot price
+    page = _page_with_line("pricing-paygo.md", 35, "| **MiniMax-M2.7** |", "| _MiniMax-M2.7_ |")
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    with pytest.raises(FetchError) as excinfo:
+        minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7")
+    assert str(excinfo.value) == (
+        f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: '_MiniMax-M2.7_'"
+    )
 
 
 def test_scrape_link_target_naming_the_model_does_not_raise(minimax_cfg, monkeypatch):
@@ -303,6 +331,8 @@ _ALL_IDS = [
         (49, "| [speech-2.8-hd](", "|| [speech-2.8-hd]("),
         # a spacer row inside the first language table
         (17, "| [MiniMax-M2.7](", "| | | |\n| [MiniMax-M2.7]("),
+        # an underscore joining a word character is no emphasis marker
+        (17, "| [MiniMax-M2.7](", "| x_M2.7 | | |\n| [MiniMax-M2.7]("),
         # readable non-language rows whose description mentions a MiniMax-M token
         (
             34,
@@ -336,6 +366,7 @@ _ALL_IDS = [
         "empty-name-video-row",
         "empty-name-audio-row",
         "spacer-row",
+        "underscore-joined-to-a-word",
         "video-description-naming-an-id",
         "audio-description-linking-a-music-repo",
         "audio-description-naming-mcp",
@@ -384,6 +415,11 @@ _DETECT_URL = "https://platform.minimax.io/docs/guides/models-intro.md"
         ("MiniMax-M2.7 | see [MiniMax-M2.5](/docs/x)", "MiniMax-M2.7"),
         ("[minimax-m2.7](/docs/api-reference/text-anthropic-api)", "minimax-m2.7"),
         ("[M2.7](/docs/api-reference/text-anthropic-api)", "M2.7"),
+        ("_MiniMax-M2.7_", "MiniMax-M2.7"),
+        ("_M2.7_", "M2.7"),
+        ("[_MiniMax-M2.7_](/docs/api-reference/text-anthropic-api)", "MiniMax-M2.7"),
+        ("[_M2.7_](/docs/api-reference/text-anthropic-api)", "M2.7"),
+        ("M2.7_highspeed", "M2.7_highspeed"),
     ],
     ids=[
         "unlinked-name",
@@ -392,6 +428,11 @@ _DETECT_URL = "https://platform.minimax.io/docs/guides/models-intro.md"
         "bare-name-beside-a-linked-id",
         "lowercase-link-name",
         "prefix-less-link-name",
+        "italic-name",
+        "italic-prefix-less-name",
+        "italic-linked-name",
+        "italic-prefix-less-linked-name",
+        "underscore-suffixed-longer-token",
     ],
 )
 def test_detect_row_whose_name_cannot_be_read_skips_naming_the_id(
@@ -410,6 +451,24 @@ def test_detect_row_whose_name_cannot_be_read_skips_naming_the_id(
     assert "MiniMax-M2.5" in ids
     assert _detect_skips(caplog) == [
         f"detect skip for minimax: unreadable model row naming {named!r} on {_DETECT_URL}"
+    ]
+
+
+def test_detect_skip_scan_reads_the_table_parsers_cell_split(minimax_cfg, monkeypatch, caplog):
+    # the skip scan shares the table parser's cell split, so a change to that
+    # shared split reaches the scan; a private copy of it would ignore this patch
+    page = _detect_page_with(33, "| :- | :- | :- | :- |", "|| :- | :- | :- | :- |")
+    monkeypatch.setattr(
+        minimax_detect,
+        "markdown_row_cells",
+        lambda line: ["[MiniMax-M5.1](/docs/x)"],
+        raising=False,
+    )
+    monkeypatch.setattr(minimax_detect, "fetch_text", lambda url: page)
+    with caplog.at_level(logging.WARNING):
+        assert minimax_detect.detect(minimax_cfg) == _ALL_IDS
+    assert _detect_skips(caplog) == [
+        f"detect skip for minimax: unreadable table block naming 'MiniMax-M5.1' on {_DETECT_URL}"
     ]
 
 

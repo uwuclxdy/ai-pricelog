@@ -318,6 +318,7 @@ def _large_4_row(input_cell: str) -> str:
     [
         ("<del>$8 /1000 Pages</del><ins>$4 /1000 Pages</ins>", None),
         ("<del>$0.10</del><ins>Sale price: Free</ins>", 0.0),
+        ("<del>$1,36</del><ins>$0.68</ins>", 0.68e-6),
         ("<del>$1.36</del><ins>Sale price:&nbsp;$0.68</ins>", 0.68e-6),
         ("<del>$1.36</del><ins>Sale price:\xa0$0.68</ins>", 0.68e-6),
         ("<del>$1.36</del><ins>Sale price:\t$0.68</ins>", 0.68e-6),
@@ -336,6 +337,7 @@ def _large_4_row(input_cell: str) -> str:
     ids=[
         "non-token-unit-on-sale",
         "free-on-sale",
+        "malformed-struck-rate-stays-priced",
         "nbsp-entity-before-rate",
         "nbsp-char-before-rate",
         "tab-before-rate",
@@ -375,6 +377,9 @@ def test_scrape_sale_cell_follows_the_bare_cell_rule_on_its_rate(monkeypatch, in
         "<del>$1.36</del><ins>$0.68 $0.50</ins>",
         "<del>$1.36</del><ins>Sale price: $0,68</ins>",
         "<span><del>$1.36</del><ins>$0.68</ins></span> $0.50 batch",
+        "<span><del>$1.36</del><ins>$0.68</ins></span> ＄0.50 batch",
+        "<span><del>$1.36</del><ins>$0.68</ins></span> $0,50 batch",
+        "<del>$1.36<del>$0.50</del></del><ins>$0.68</ins> $0.50",
     ],
     ids=[
         "two-ins-elements",
@@ -382,6 +387,9 @@ def test_scrape_sale_cell_follows_the_bare_cell_rule_on_its_rate(monkeypatch, in
         "two-amounts-in-ins",
         "malformed-amount",
         "third-amount-outside-sale-markup",
+        "unreadable-third-amount-outside-sale-markup",
+        "comma-decimal-third-amount-outside-sale-markup",
+        "nested-del-masking-a-surplus",
     ],
 )
 def test_scrape_sale_cell_without_one_readable_rate_raises(monkeypatch, input_cell):

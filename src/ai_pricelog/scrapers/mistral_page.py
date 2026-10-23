@@ -10,11 +10,12 @@ cells are USD per 1M tokens in the default static html (the EUR tab is
 client-side; the fixture pins the USD variant) -> /1e6. a ``Free`` cell is
 a zero rate (free is a price); non-dollar cells (``$4 /1000 Pages``,
 ``$0.003 /Min``, ``—``) have no token pricing -> None, and a cell whose
-amount the grammar cannot read raises. a cell written as sale markup (an
+rate text the grammar cannot read raises. a cell written as sale markup (an
 ``<ins>`` beside a ``<del>``) prices the ``<ins>`` text after its first
 run of ``:``/U+200B separators, or the whole text when neither appears,
-and raises when the cell names more dollar amounts than its ``<del>`` and
-outermost ``<ins>`` texts; ``_price`` states the exact rule. the ``Cached input``
+and raises when its text outside the sale markup (outside its ``<del>``
+texts and outermost ``<ins>`` texts) names any dollar amount, readable or
+not; ``_price`` states the exact rule. the ``Cached input``
 cell emits as cache-read cost when it carries a bare dollar amount
 (zai-glm-5-2: $0.14); other cached cells leave it None. the page carries
 no context window -> the max_tokens fields 0. mode is chat.
@@ -71,10 +72,13 @@ def _price(cell: Tag, model_id: str, url: str) -> float | None:
     text when none appears. the rate follows the bare-cell rule: a
     non-token unit stays unpriced, `Free` is 0.0 only when no dollar
     amount is named, and exactly one bare dollar amount prices. every
-    other cell keeps the bare-cell rule; a cell whose amount the grammar
-    cannot read raises, as does a sale cell naming more than one amount in
-    its `<ins>` texts or holding more dollar amounts than its `<del>` and
-    outermost `<ins>` texts.
+    other cell keeps the bare-cell rule. a cell whose rate text (the whole
+    cell text, or the joined `<ins>` texts on a sale) the grammar cannot
+    read raises, as does a sale cell naming more than one amount in its
+    `<ins>` texts or whose text outside the sale markup (its `<del>` texts
+    and outermost `<ins>` texts) names any amount the grammar can read or
+    any malformed amount; a `<del>` text never reaches the grammar check,
+    so a malformed amount there stays priced.
     """
     outer = cell.find_parent("ins")
     ins_tags = [tag for tag in cell.find_all("ins") if tag.find_parent("ins") is outer]
@@ -85,10 +89,8 @@ def _price(cell: Tag, model_id: str, url: str) -> float | None:
     if malformed or (sale and len(amounts) > 1):
         raise unreadable_rate_error(text, model_id, url)
     if sale:
-        struck = " ".join(tag.get_text(" ", strip=True) for tag in cell.find_all("del"))
-        struck_amounts, _ = amount_scan(struck, before="$")
-        cell_amounts, _ = amount_scan(cell_text, before="$")
-        if len(cell_amounts) > len(struck_amounts) + len(amounts):
+        outside_amounts, outside_malformed = amount_scan(_outside_sale_text(cell), before="$")
+        if outside_amounts or outside_malformed:
             raise unreadable_rate_error(cell_text, model_id, url)
     rate = _SALE_LABEL_END_RE.split(text, maxsplit=1)[-1].strip() if sale else text
     if rate == "Free" and not amounts:
@@ -96,6 +98,23 @@ def _price(cell: Tag, model_id: str, url: str) -> float | None:
     if len(amounts) == 1 and rate == "$" + amounts[0]:
         return float(amounts[0].replace(",", "")) / 1e6
     return None
+
+
+def _outside_sale_text(cell: Tag) -> str:
+    """the cell's text outside the sale markup.
+
+    every text node whose nearest `<del>`/`<ins>` ancestor is the cell's
+    parent-level bound, the same bound the rate-carrying `<ins>` side
+    already uses: markup text drops out, and a wrapper around the whole
+    cell is not the cell's markup and drops nothing.
+    """
+    del_bound = cell.find_parent("del")
+    ins_bound = cell.find_parent("ins")
+    return " ".join(
+        text
+        for text in cell.strings
+        if text.find_parent("del") is del_bound and text.find_parent("ins") is ins_bound
+    ).strip()
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

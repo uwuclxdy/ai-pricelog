@@ -22,12 +22,17 @@ cell does not fold to `Model` is skipped only when its row carries no `$` and
 its header names no rate heading (folded text holding `input`, `output`
 or `cach`); any other such table raises a FetchError naming the model,
 the missing column and the url. when a pricing table holds no readable row
-for the requested model, a row whose first cell displays the requested id as
-a whole id - an unbolded name, a badge before it - raises naming that cell,
-and a matched row shorter than the resolved columns raises naming its cell
-count. that name read takes the cell's visible text (markdown links reduced
-to their text, html tags removed, never a link target) and matches
-case-insensitively. dollars
+for the requested model, a row whose first non-empty cell - an empty first
+cell from a doubled edge pipe shifts the name right - displays the requested
+id as a whole id - an unbolded name, a badge before it, an italic name -
+raises naming that cell, and a matched row shorter than the resolved columns
+raises naming its cell count. that name read takes the cell's visible text
+(markdown links reduced to their text, html tags removed, never a link
+target) and matches case-insensitively; a markdown emphasis marker is no
+part of an id - an `_` at a word edge is a boundary, an `_` between two
+word characters is not - so `_MiniMax-M2.7_` names the row while
+`MiniMax-M2.7_highspeed` reads as one longer token, never the requested id.
+dollars
 per 1M tokens -> divided by 1e6. the page carries no context window, so the
 max_tokens fields stay 0 (the entry builder omits them).
 """
@@ -37,7 +42,7 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
-from ai_pricelog.detectors.minimax_page import _LINK_RE, _TAG_RE
+from ai_pricelog.detectors.minimax_page import _ID_LEFT_EDGE, _ID_RIGHT_EDGE, _LINK_RE, _TAG_RE
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import (
     FetchError,
@@ -74,10 +79,19 @@ def _model_row(table: list[list[str]], model_id: str) -> list[str] | None:
     return None
 
 
+def _name_cell(row: list[str]) -> str:
+    """the row's first non-empty cell (a doubled edge pipe shifts the name right)."""
+    return next((cell for cell in row if cell), "")
+
+
 def _names_id(cell: str, model_id: str) -> bool:
-    """whether the cell's visible text spells `model_id` whole, never in a link target."""
+    """whether the cell's visible text spells `model_id` whole, never in a link target.
+
+    a markdown emphasis marker is no part of an id: `_MiniMax-M2.7_` spells
+    the id, `MiniMax-M2.7_highspeed` is one longer token.
+    """
     visible = _TAG_RE.sub(" ", _LINK_RE.sub(r"\1", cell))
-    pattern = rf"(?<![\w.-]){re.escape(model_id)}(?![\w.-])"
+    pattern = _ID_LEFT_EDGE + re.escape(model_id) + _ID_RIGHT_EDGE
     return re.search(pattern, visible, re.IGNORECASE) is not None
 
 
@@ -128,12 +142,16 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         if row is None:
             if _is_pricing_table(table):
                 unreadable = next(
-                    (candidate for candidate in table[2:] if _names_id(candidate[0], model_id)),
+                    (
+                        candidate
+                        for candidate in table[2:]
+                        if _names_id(_name_cell(candidate), model_id)
+                    ),
                     None,
                 )
                 if unreadable is not None:
                     raise FetchError(
-                        f"unreadable model row for {model_id} on {url}: {unreadable[0]!r}"
+                        f"unreadable model row for {model_id} on {url}: {_name_cell(unreadable)!r}"
                     )
             continue
         folded = [_fold_header(cell) for cell in table[0]]
