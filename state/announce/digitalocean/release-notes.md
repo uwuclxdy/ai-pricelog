@@ -9,7 +9,21 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 21 October The following DeepSeek model is now available on DigitalOcean Inference for serverless inference : DeepSeek V4.1 Flash 1017 For more information, see the Available Models page .
+October 2026 22 October We have updated the following buildpacks for App Platform: PHP buildpack : We updated the buildpack to version 298 and added PHP versions 8.5.3 - 8.5.12 , 8.4.18 - 8.4.27 , 8.3.31 - 8.3.33 , 8.3.35 - 8.3.36 , and 8.2.31 - 8.2.35 .
+PHP 8.5.12 , 8.4.27 , 8.3.36 , 8.2.35 , and 8.1.34 include fixes for two security vulnerabilities (CVE-2026-109618 and CVE-2026-109619).
+To use a patched runtime, force rebuild and deploy your app .
+If your composer.json pins an exact PHP version, update it to a range such as ^8.5.0 so a patched version can be selected.
+If you have an existing PHP app that uses v1, we recommend upgrading to v2 .
+Node.js buildpack : We updated the buildpack to version 375 and added the following Node.js versions.
+Visit the Node.js buildpack to learn more about specifying a Node.js engine version.
+Node.js 25.x reached end-of-life and is deprecated.
+Node.js 22.22.3-22.23.4 Node.js 24.16.0-24.22.1 Node.js 26.0.0-26.12.1 Python buildpack : We updated the buildpack to version 358 and updated supported Python aliases and package tooling.
+Apps that do not specify a Python version now use Python 3.14 instead of 3.13.
+If you are on Ubuntu-22 and have an existing Python app that is on v4, v3, v2, v1, or v0, we recommend upgrading to v5 .
+Added Python 3.15.0-3.15.1 Python 3.14 alias now resolves to 3.14.9 Python 3.13 alias now resolves to 3.13.17 Python 3.12 alias now resolves to 3.12.15 Python 3.11 alias now resolves to 3.11.17 Python 3.10 alias now resolves to 3.10.22 Updated pip to 26.2.2 Updated Pipenv to 2026.10.2 Updated uv to 0.13.4 Go buildpack : We updated the buildpack to version 238 and added the following Go versions.
+The buildpack no longer supports the dep, Godep, govendor, Glide, or GB dependency managers; Go modules ( go.mod ) is now the only supported option.
+If you have an existing Go app that uses v0, we recommend upgrading to v1 .
+go1.25.9-go1.25.14 go1.26.2-go1.26.10 go1.27.0-go1.27.3 21 October The following DeepSeek model is now available on DigitalOcean Inference for serverless inference : DeepSeek V4.1 Flash 1017 For more information, see the Available Models page .
 20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
 13 October In public preview , you can now create spend alerts for Serverless Inference model access keys .
