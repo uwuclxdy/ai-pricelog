@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **October 18, 2026** ## New serverless models The following models are now available on [serverless](/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
+# Changelog **October 22, 2026** ## New serverless models The following models are now available on [serverless](/docs/serverless/models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
+Pricing: \$0.15 input / \$0.60 output / \$0.015 cached input (per 1M tokens).
+**October 18, 2026** ## New serverless models The following models are now available on [serverless](/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
 **October 16, 2026** ## New serverless models The following models are now available on [serverless](/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.40 input / \$1.20 output / \$0.04 cached input (per 1M tokens).

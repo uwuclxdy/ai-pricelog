@@ -9404,6 +9404,15 @@
       },
       "vendor": "meta"
     },
+    "sambanova/minimax-m3.1-flash": {
+      "curated": false,
+      "sources": {
+        "sambanova": [
+          "minimax-m3.1-flash"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "scaleway/bge-multilingual-gemma2": {
       "curated": false,
       "sources": {
