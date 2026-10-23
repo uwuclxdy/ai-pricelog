@@ -455,7 +455,7 @@ def _when(entry: dict[str, object]) -> str:
         parts.append(f"{_hhmm(window[0])}-{_hhmm(window[1])}")
     min_tokens = when.get("min_tokens")
     if isinstance(min_tokens, int):
-        parts.append(f"min {min_tokens} tokens")
+        parts.append(f"over {min_tokens} tokens")
     mode = when.get("mode")
     if isinstance(mode, str):
         parts.append(f"{mode} mode")

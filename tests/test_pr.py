@@ -250,7 +250,7 @@ def test_spec_body_overrides_table_renders_timezone_and_threshold():
         ],
     }
     body = spec(rows=(row,)).body
-    assert "| `deepseek-v4-pro` | min 128000 tokens UTC | 0.5 | — | — | — | — |" in body
+    assert "| `deepseek-v4-pro` | over 128000 tokens UTC | 0.5 | — | — | — | — |" in body
 
 
 def test_spec_body_overrides_table():

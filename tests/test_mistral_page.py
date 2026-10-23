@@ -326,6 +326,12 @@ def _large_4_row(input_cell: str) -> str:
         ("<del>$0.10</del><ins>was $0.10, now Free</ins>", None),
         ("<del>$1.36</del><ins><ins>$0.68</ins></ins>", 0.68e-6),
         ("<ins>Sale price: $0.68</ins>", None),
+        ("<del>$1.36</del><ins>per page $4</ins>", None),
+        ("<del>$1.36</del><ins>per&nbsp;page&nbsp;$4</ins>", None),
+        ("<del>$1.36</del><ins>Free&nbsp;$0.10</ins>", None),
+        ("<del>$1.36</del><ins>Sale price $0.68</ins>", None),
+        ("<del>$1.36</del><ins>Sale:$0.68</ins>", 0.68e-6),
+        ("<del>$1.36</del><ins>Sale:​$0.68</ins>", 0.68e-6),
     ],
     ids=[
         "non-token-unit-on-sale",
@@ -338,13 +344,20 @@ def _large_4_row(input_cell: str) -> str:
         "amount-then-now-free",
         "ins-nested-in-ins",
         "ins-without-del",
+        "words-before-the-rate",
+        "nbsp-words-before-the-rate",
+        "free-then-amount",
+        "label-without-colon",
+        "colon-glued-label",
+        "zwsp-glued-label",
     ],
 )
 def test_scrape_sale_cell_follows_the_bare_cell_rule_on_its_rate(monkeypatch, input_cell, expected):
     # the sale's rate in force follows the same rule as a bare cell: a
     # non-token unit stays unpriced, Free is a zero rate only when the rate
-    # in force names no amount; any whitespace separates the label from the rate, a
-    # nested <ins> is one rate, and an <ins> with no <del> beside it is no sale
+    # in force names no amount; a rate is taken only after a colon-ended
+    # label (a colon or U+200B splits the label from the rate), a nested
+    # <ins> is one rate, and an <ins> with no <del> beside it is no sale
     serve(monkeypatch, mistral_scraper, {PRICING_URL: _pricing_with_row(_large_4_row(input_cell))})
     pricing = mistral_scraper.scrape(make_cfg(), "mistral-large-4-0")
     if expected is None:
@@ -361,8 +374,15 @@ def test_scrape_sale_cell_follows_the_bare_cell_rule_on_its_rate(monkeypatch, in
         "<del>$1.36</del><ins>Sale price: $0.68 ＄0.5</ins>",
         "<del>$1.36</del><ins>$0.68 $0.50</ins>",
         "<del>$1.36</del><ins>Sale price: $0,68</ins>",
+        "<span><del>$1.36</del><ins>$0.68</ins></span> $0.50 batch",
     ],
-    ids=["two-ins-elements", "second-dollar-spelling", "two-amounts-in-ins", "malformed-amount"],
+    ids=[
+        "two-ins-elements",
+        "second-dollar-spelling",
+        "two-amounts-in-ins",
+        "malformed-amount",
+        "third-amount-outside-sale-markup",
+    ],
 )
 def test_scrape_sale_cell_without_one_readable_rate_raises(monkeypatch, input_cell):
     # a sale that names no single rate in force fails loud

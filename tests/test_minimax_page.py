@@ -12,6 +12,7 @@ from ai_pricelog.scrapers import minimax_page as minimax_scrape
 from ai_pricelog.web import FetchError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "minimax_page"
+_PRICING_URL = "https://platform.minimax.io/docs/guides/pricing-paygo.md"
 
 
 @pytest.fixture
@@ -121,8 +122,9 @@ def test_scrape_table_without_cache_column_leaves_cache_unset(minimax_cfg, monke
 
 def test_detect_malformed_page_raises_fetch_error(minimax_cfg, monkeypatch):
     monkeypatch.setattr(minimax_detect, "fetch_text", lambda url: "no tables here")
-    with pytest.raises(FetchError):
+    with pytest.raises(FetchError) as excinfo:
         minimax_detect.detect(minimax_cfg)
+    assert str(excinfo.value) == f"no pipe lines found on {minimax_cfg.detector_url}"
 
 
 def test_detect_tables_without_model_ids_raise_fetch_error(minimax_cfg, monkeypatch):
@@ -154,6 +156,82 @@ def _pricing_page_with(old: str, new: str) -> str:
     # line 33 heads the table whose first row is MiniMax-M2.7; line 39 repeats
     # the header for the highspeed tab
     return _page_with_line("pricing-paygo.md", 33, old, new)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "| **MiniMax-M2.7** |",
+            "| MiniMax-M2.7 |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: 'MiniMax-M2.7'",
+        ),
+        (
+            "| **MiniMax-M2.7** |",
+            "| **New** **MiniMax-M2.7** |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: '**New** **MiniMax-M2.7**'",
+        ),
+        (
+            "| **MiniMax-M2.7** |",
+            "| minimax-m2.7 |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: 'minimax-m2.7'",
+        ),
+        (
+            "| **MiniMax-M2.7** | \\$0.3 / M tokens | \\$1.2 / M tokens | "
+            "\\$0.06 / M tokens | \\$0.375 / M tokens |",
+            "| **MiniMax-M2.7** | \\$0.3 / M tokens |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: 2 cells",
+        ),
+        (
+            "| **MiniMax-M2.7** | \\$0.3 / M tokens | \\$1.2 / M tokens | "
+            "\\$0.06 / M tokens | \\$0.375 / M tokens |",
+            "| **MiniMax-M2.7** | \\$0.3 / M tokens | \\$1.2 / M tokens |",
+            f"unreadable model row for MiniMax-M2.7 on {_PRICING_URL}: 3 cells",
+        ),
+    ],
+    ids=[
+        "unbolded-name",
+        "badge-before-name",
+        "lowercase-unbolded-name",
+        "row-missing-cells",
+        "row-missing-cache-cell",
+    ],
+)
+def test_scrape_unreadable_model_row_raises(minimax_cfg, monkeypatch, old, new, message):
+    page = _page_with_line("pricing-paygo.md", 35, old, new)
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    with pytest.raises(FetchError) as excinfo:
+        minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7")
+    assert str(excinfo.value) == message
+
+
+def test_scrape_m2_never_reads_the_longer_m27_row_as_its_own(minimax_cfg, feed_fixtures):
+    # the unreadable-row scan matches a whole id: MiniMax-M2.7 is not MiniMax-M2
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M2")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.3 / 1e6
+    assert pricing.output_cost_per_token == 1.2 / 1e6
+    assert pricing.cache_read_cost_per_token == 0.03 / 1e6
+
+
+def test_scrape_row_naming_the_id_inside_a_longer_token_does_not_raise(minimax_cfg, monkeypatch):
+    # the whole-id boundary also holds on the left: X-MiniMax-M2.7 names no row
+    page = _page_with_line("pricing-paygo.md", 35, "| **MiniMax-M2.7** |", "| X-MiniMax-M2.7 |")
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    assert minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.7") is None
+
+
+def test_scrape_link_target_naming_the_model_does_not_raise(minimax_cfg, monkeypatch):
+    # the unreadable-row scan reads the cell's visible text, never a link target
+    page = _page_with_line(
+        "pricing-paygo.md", 35, "| **MiniMax-M2.7** |", "| [M2.7](/docs/MiniMax-M2.5) |"
+    )
+    monkeypatch.setattr(minimax_scrape, "fetch_text", lambda url: page)
+    pricing = minimax_scrape.scrape(minimax_cfg, "MiniMax-M2.5")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == 0.3 / 1e6
+    assert pricing.output_cost_per_token == 1.2 / 1e6
+    assert pricing.cache_read_cost_per_token == 0.03 / 1e6
 
 
 def test_scrape_reads_a_fold_equal_recased_header(minimax_cfg, monkeypatch):
@@ -243,6 +321,12 @@ _ALL_IDS = [
             "[MiniMax H3](/docs/api-reference/video-generation-v2-create)",
             "[MiniMax H3](https://huggingface.co/MiniMaxAI/MiniMax-M3-video)",
         ),
+        # a video name cell holding a longer token whose tail is an id
+        (
+            34,
+            "[MiniMax H3](/docs/api-reference/video-generation-v2-create)",
+            "[Hailuo-M2.7](/docs/x)",
+        ),
         # an audio name cell spelling a MiniMax-M token with no version digit
         (49, "[speech-2.8-hd](/docs/api-reference/speech-t2a-http)", "**MiniMax-MCP**"),
         # a music row named like a MiniMax-M id with no version digit
@@ -256,6 +340,7 @@ _ALL_IDS = [
         "audio-description-linking-a-music-repo",
         "audio-description-naming-mcp",
         "video-link-target-naming-an-id",
+        "video-name-holding-a-longer-token-tail",
         "audio-name-cell-naming-mcp",
         "music-row-named-music3",
     ],
@@ -272,6 +357,21 @@ def test_detect_row_naming_no_model_id_never_skips(
     assert _detect_skips(caplog) == []
 
 
+def test_detect_ignores_an_id_named_only_in_a_broken_block_description(
+    minimax_cfg, monkeypatch, caplog
+):
+    # the skip scan reads each line's first cell only, so an id linked only
+    # from a description cell never freezes the counters
+    page = _detect_page_with(33, "| :- | :- | :- | :- |", "|| :- | :- | :- | :- |")
+    anchor = "| Next-gen open general-purpose"
+    assert page.count(anchor) == 1
+    page = page.replace(anchor, "| [MiniMax-M2.7](/docs/x) Next-gen open general-purpose")
+    monkeypatch.setattr(minimax_detect, "fetch_text", lambda url: page)
+    with caplog.at_level(logging.WARNING):
+        assert minimax_detect.detect(minimax_cfg) == _ALL_IDS
+    assert _detect_skips(caplog) == []
+
+
 _DETECT_URL = "https://platform.minimax.io/docs/guides/models-intro.md"
 
 
@@ -282,8 +382,17 @@ _DETECT_URL = "https://platform.minimax.io/docs/guides/models-intro.md"
         ("**MiniMax-M2.7**", "MiniMax-M2.7"),
         ("[MiniMax M2.7](/docs/api-reference/text-anthropic-api)", "MiniMax M2.7"),
         ("MiniMax-M2.7 | see [MiniMax-M2.5](/docs/x)", "MiniMax-M2.7"),
+        ("[minimax-m2.7](/docs/api-reference/text-anthropic-api)", "minimax-m2.7"),
+        ("[M2.7](/docs/api-reference/text-anthropic-api)", "M2.7"),
     ],
-    ids=["unlinked-name", "bold-name", "spaced-link-name", "bare-name-beside-a-linked-id"],
+    ids=[
+        "unlinked-name",
+        "bold-name",
+        "spaced-link-name",
+        "bare-name-beside-a-linked-id",
+        "lowercase-link-name",
+        "prefix-less-link-name",
+    ],
 )
 def test_detect_row_whose_name_cannot_be_read_skips_naming_the_id(
     minimax_cfg, monkeypatch, caplog, name_cell, named
@@ -302,9 +411,6 @@ def test_detect_row_whose_name_cannot_be_read_skips_naming_the_id(
     assert _detect_skips(caplog) == [
         f"detect skip for minimax: unreadable model row naming {named!r} on {_DETECT_URL}"
     ]
-
-
-_PRICING_URL = "https://platform.minimax.io/docs/guides/pricing-paygo.md"
 
 
 @pytest.mark.parametrize(

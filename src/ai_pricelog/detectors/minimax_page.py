@@ -8,19 +8,23 @@ ids matching ^MiniMax-M\\d[\\w.-]*$ qualify: a version digit must follow
 as written on the page: the docs spell some legacy models with `-highspeed`
 where litellm's file has `-lightning`; the human verifier reconciles that drift.
 
-a pipe block that names a MiniMax-M id but fails table recognition (a broken
-separator) is additive drift: detection skips it with a warning naming the id
-(plan #22). a data row whose name cell - the first non-empty cell, a leading
-`||` shifting it right - spells a MiniMax-M id the detector could not read as a
-language link (the name cell's visible text: markdown links reduced to their
-text, html tags removed, never a link target; a spaced `MiniMax M2.7` reads,
-`MiniMax-Music3` and `MiniMax-MCP` never) skips with a warning naming
-that id, so a dropped id spelled `MiniMax-M<digit>` or `MiniMax M<digit>`
-never runs its absence counter silently (a lowercase `minimax-m2.7` or a
-prefix-less `M2.7` link still drops silently); description
-and features cells never name a skip, and a row whose name cell spells no such
-id (an empty name cell in the video/audio/music tables, a spacer row) stays
-silent. a page with no markdown tables or no model ids still raises.
+a pipe block that links a MiniMax-M id in a line's first non-empty cell but
+fails table recognition (a broken separator) is additive drift: detection
+skips it with a warning naming the id (plan #22); an id linked only from a
+description cell never names a skip. a data row whose name cell - the first
+non-empty cell, a leading `||` shifting it right - spells a MiniMax-M id the
+detector could not read as a language link (the name cell's visible text:
+markdown links reduced to their text, html tags removed, never a link target;
+the id is case-insensitive and its `MiniMax[-\\s]` prefix optional, so a spaced
+`MiniMax M2.7`, a lowercase `minimax-m2.7` and a prefix-less `M2.7` read,
+while `MiniMax-Music3`, `MiniMax-MCP` and a longer token's tail
+(`Hailuo-M2.7`) never read) skips with a warning naming
+that id as the page spells it, so a dropped id in one of those shapes never
+runs its absence counter silently (a zero-width space or a space between `M`
+and the version digit still drops silently); a description or features cell
+after the name cell never names a skip, and a row whose name cell spells no
+such id (an empty name cell in the video/audio/music tables, a spacer row)
+stays silent. a page with no pipe lines or no model ids still raises.
 """
 
 from __future__ import annotations
@@ -41,7 +45,7 @@ log = logging.getLogger(__name__)
 _ID_RE = re.compile(r"^MiniMax-M\d[\w.-]*$")
 _LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _ANCHOR_RE = re.compile(r"<a\s[^>]*>([^<]+)</a>")
-_BARE_ID_RE = re.compile(r"MiniMax[-\s]M\d[\w.-]*")
+_BARE_ID_RE = re.compile(r"(?<![\w.-])(?:MiniMax[-\s])?M\d[\w.-]*", re.IGNORECASE)
 _TAG_RE = re.compile(r"<[^>]*>")
 
 
@@ -52,10 +56,12 @@ def _model_name(cell: str) -> str:
 
 
 def _first_model_name(block: list[str]) -> str | None:
-    """the first MiniMax-M id a pipe block names, or None."""
+    """the first MiniMax-M id a pipe block names in a line's first non-empty cell, or None."""
     for line in block:
+        cells = line.strip().removeprefix("|").removesuffix("|").split("|")
+        cell = next((cell.strip() for cell in cells if cell.strip()), "")
         for pattern in (_LINK_RE, _ANCHOR_RE):
-            for match in pattern.finditer(line):
+            for match in pattern.finditer(cell):
                 if _ID_RE.fullmatch(match.group(1)):
                     return match.group(1)
     return None
@@ -80,7 +86,7 @@ def detect(cfg: ProviderCfg) -> list[str]:
     text = fetch_text(cfg.detector_url)
     blocks = markdown_pipe_blocks(text)
     if not blocks:
-        raise FetchError(f"no markdown tables found on {cfg.detector_url}")
+        raise FetchError(f"no pipe lines found on {cfg.detector_url}")
     ids: list[str] = []
     seen: set[str] = set()
     for block in blocks:

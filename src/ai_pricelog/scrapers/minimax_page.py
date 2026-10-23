@@ -21,7 +21,13 @@ scraper reads - `Input`, `Output`, or `Prompt caching Read` - or whose first
 cell does not fold to `Model` is skipped only when its row carries no `$` and
 its header names no rate heading (folded text holding `input`, `output`
 or `cach`); any other such table raises a FetchError naming the model,
-the missing column and the url. dollars
+the missing column and the url. when a pricing table holds no readable row
+for the requested model, a row whose first cell displays the requested id as
+a whole id - an unbolded name, a badge before it - raises naming that cell,
+and a matched row shorter than the resolved columns raises naming its cell
+count. that name read takes the cell's visible text (markdown links reduced
+to their text, html tags removed, never a link target) and matches
+case-insensitively. dollars
 per 1M tokens -> divided by 1e6. the page carries no context window, so the
 max_tokens fields stay 0 (the entry builder omits them).
 """
@@ -31,6 +37,7 @@ from __future__ import annotations
 import re
 
 from ai_pricelog.config import ProviderCfg
+from ai_pricelog.detectors.minimax_page import _LINK_RE, _TAG_RE
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import (
     FetchError,
@@ -65,6 +72,13 @@ def _model_row(table: list[list[str]], model_id: str) -> list[str] | None:
         if match and match.group(1) == model_id:
             return row
     return None
+
+
+def _names_id(cell: str, model_id: str) -> bool:
+    """whether the cell's visible text spells `model_id` whole, never in a link target."""
+    visible = _TAG_RE.sub(" ", _LINK_RE.sub(r"\1", cell))
+    pattern = rf"(?<![\w.-]){re.escape(model_id)}(?![\w.-])"
+    return re.search(pattern, visible, re.IGNORECASE) is not None
 
 
 def _drop_bold_pair(folded: str) -> str:
@@ -112,6 +126,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     for table in tables:
         row = _model_row(table, model_id)
         if row is None:
+            if _is_pricing_table(table):
+                unreadable = next(
+                    (candidate for candidate in table[2:] if _names_id(candidate[0], model_id)),
+                    None,
+                )
+                if unreadable is not None:
+                    raise FetchError(
+                        f"unreadable model row for {model_id} on {url}: {unreadable[0]!r}"
+                    )
             continue
         folded = [_fold_header(cell) for cell in table[0]]
         missing = _missing_column(folded)
@@ -130,14 +153,15 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_idx = folded.index(_FOLDED_INPUT)
         output_idx = folded.index(_FOLDED_OUTPUT)
         cache_idx = folded.index(_FOLDED_CACHE_READ) if _FOLDED_CACHE_READ in folded else None
-        if len(row) <= max(input_idx, output_idx):
-            return None
+        resolved_columns = [input_idx, output_idx] + ([cache_idx] if cache_idx is not None else [])
+        if len(row) <= max(resolved_columns):
+            raise FetchError(f"unreadable model row for {model_id} on {url}: {len(row)} cells")
         input_amount = _last_amount(row[input_idx], model_id, url)
         output_amount = _last_amount(row[output_idx], model_id, url)
         if input_amount is None or output_amount is None:
             return None
         cache_amount = None
-        if cache_idx is not None and len(row) > cache_idx:
+        if cache_idx is not None:
             cache_amount = _last_amount(row[cache_idx], model_id, url)
         return Pricing(
             input_amount / 1e6,
