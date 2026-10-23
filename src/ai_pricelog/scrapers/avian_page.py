@@ -24,10 +24,15 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.avian_page import _cards, _slug
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import (
+    MAX_COUNT_DIGITS,
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    unreadable_rate_error,
+)
 
 _CONTEXT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([KM])\s*context")
-_MAX_COUNT_DIGITS = 12
 
 _CONTEXT_FACTORS = {"K": 1_000, "M": 1_000_000}
 
@@ -44,7 +49,7 @@ def _context_tokens(meta: str) -> int:
     if match is None:
         return 0
     count = match.group(1)
-    if len(count.replace(".", "")) > _MAX_COUNT_DIGITS:
+    if len(count.replace(".", "")) > MAX_COUNT_DIGITS:
         raise FetchError(f"unreadable context {meta!r}")
     return int(float(count) * _CONTEXT_FACTORS[match.group(2)])
 

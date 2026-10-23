@@ -31,9 +31,9 @@ from ai_pricelog.detectors.publicai_page import (
     _table_rows,
 )
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import MAX_COUNT_DIGITS, FetchError, fetch_soup, unreadable_rate_error
 
-_CONTEXT_RE = re.compile(r"^(\d{1,12})K$", re.IGNORECASE)
+_CONTEXT_RE = re.compile(rf"^(\d{{1,{MAX_COUNT_DIGITS}}})K$", re.IGNORECASE)
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

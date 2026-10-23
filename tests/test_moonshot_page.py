@@ -380,3 +380,101 @@ def test_a_huge_context_cell_raises_a_fetch_error():
     )
     with pytest.raises(FetchError, match="kimi-k3"):
         scraper._pricing(doc, "kimi-k3", CHAT_URL)
+
+
+def test_a_context_cell_past_the_shared_count_bound_raises():
+    # the reader uses web.MAX_COUNT_DIGITS, the same bound the other count
+    # readers share, so a 13-digit run is no context length
+    doc = (
+        ["Model", "Input Price", "Output Price", "Context Window"],
+        [["kimi-k3", "$0.30", "$1.20", "9" * 13 + " tokens"]],
+    )
+    with pytest.raises(FetchError, match="kimi-k3"):
+        scraper._pricing(doc, "kimi-k3", CHAT_URL)
+
+
+_COLSPAN_TABLE = """
+<table>
+  <thead>
+    <tr>
+      <th>Model</th><th>Input Price</th><th colspan="2">Cache Write</th>
+      <th>Output Price</th><th>Context Window</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>kimi-k3</td><td>$0.30</td><td>$0.06</td><td>$0.03</td>
+      <td>$1.20</td><td>1,048,576 tokens</td>
+    </tr>
+  </tbody>
+</table>
+"""
+
+
+def test_scrape_reads_a_colspan_header_grid(monkeypatch):
+    # a spanned header shifts every later title: without the grid, output
+    # prices the third cell ($0.03) and context reads $1.20
+    _chat_page(monkeypatch, _COLSPAN_TABLE)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(1.20 / 1e6)
+    assert pricing.cache_read_cost_per_token is None
+    assert pricing.max_tokens_in == 1_048_576
+
+
+def test_a_fenced_example_table_contributes_no_doc(monkeypatch):
+    # a docs example inside a markdown code fence is prose, not a pricing table
+    _chat_page(monkeypatch, "```\n" + _HTML_TABLE + "\n```\n")
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert CHAT_URL in str(exc.value)
+
+
+_INCIDENTAL_TABLE = """
+<table>
+  <thead><tr><th>Model</th><th>Context Window</th></tr></thead>
+  <tbody><tr><td>kimi-k3</td><td>1,048,576 tokens</td></tr></tbody>
+</table>
+"""
+
+
+def test_an_incidental_model_table_does_not_block_a_priced_one(monkeypatch):
+    # a Model-headed table without Input/Output columns names no rate; the
+    # priced table after it still prices
+    _chat_page(monkeypatch, _INCIDENTAL_TABLE + _HTML_TABLE)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(1.20 / 1e6)
+
+
+def test_a_page_with_only_an_incidental_model_table_raises(monkeypatch):
+    _chat_page(monkeypatch, _INCIDENTAL_TABLE)
+    with pytest.raises(FetchError, match="Model pricing table"):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_a_tfoot_summary_row_is_no_data(monkeypatch):
+    # a summary row under <tfoot> is no model row, so a shell carrying only
+    # one is still a loud shape break
+    shell = (
+        "<table><thead><tr><th>Model</th><th>Input Price</th><th>Output Price</th>"
+        "</tr></thead><tbody /><tfoot><tr><td>Total</td><td>$1.00</td><td>$2.00</td>"
+        "</tr></tfoot></table>"
+    )
+    _chat_page(monkeypatch, shell)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert CHAT_URL in str(exc.value)
+    # a tfoot beside a priced body row never stands in for it
+    _chat_page(
+        monkeypatch,
+        _HTML_TABLE.replace(
+            "</tbody>",
+            "</tbody><tfoot><tr><td>Total</td><td>$9.00</td><td>$9.00</td></tr></tfoot>",
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)

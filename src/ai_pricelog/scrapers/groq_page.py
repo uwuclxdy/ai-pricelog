@@ -28,11 +28,10 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.groq_page import _price_amounts, check_row, model_tables, parse_id
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, fetch_text
+from ai_pricelog.web import MAX_COUNT_DIGITS, FetchError, fetch_text
 
 _COUNT_RE = re.compile(r"^[\d,]+$")
 _ABSENT_COUNTS = ("-", "\\-")
-_MAX_COUNT_DIGITS = 12
 
 
 def _token_count(cell: str, model_id: str, url: str) -> int:
@@ -41,7 +40,7 @@ def _token_count(cell: str, model_id: str, url: str) -> int:
     if cell in _ABSENT_COUNTS:
         return 0
     digits = cell.replace(",", "")
-    if _COUNT_RE.fullmatch(cell) and digits and len(digits) <= _MAX_COUNT_DIGITS:
+    if _COUNT_RE.fullmatch(cell) and digits and len(digits) <= MAX_COUNT_DIGITS:
         return int(digits)
     raise FetchError(f"unreadable token count {cell!r} for {model_id} on {url}")
 

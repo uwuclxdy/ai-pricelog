@@ -45,6 +45,7 @@ from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.deepseek_page import _model_table, header_ids
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import (
+    MAX_COUNT_DIGITS,
     FetchError,
     amount_scan,
     extract_tables,
@@ -60,7 +61,6 @@ _MARKERS = ("OFF-PEAK", "PEAK")
 _GUIDE_URL = "https://api-docs.deepseek.com/guides/search"
 _K_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*K\b", re.IGNORECASE)
 _M_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*M\b", re.IGNORECASE)
-_MAX_COUNT_DIGITS = 12
 _FOOTNOTE_PATTERN = re.compile(
     r"Peak hours are (\d{2}:\d{2}) - (\d{2}:\d{2}) and (\d{2}:\d{2}) - (\d{2}:\d{2}) UTC"
 )
@@ -229,7 +229,7 @@ def _window_tokens(
 def _scaled_tokens(value: str, multiplier: int, cell: str, model_id: str) -> int:
     """a K/M count as tokens; a digit run past the bound is a page-shape
     break, never an int() failure."""
-    if len(value.replace(".", "")) > _MAX_COUNT_DIGITS:
+    if len(value.replace(".", "")) > MAX_COUNT_DIGITS:
         raise FetchError(f"unreadable token count {cell!r} for {model_id}")
     return int(float(value)) * multiplier
 

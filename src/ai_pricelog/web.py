@@ -22,6 +22,10 @@ _LINE_BREAKS = str.maketrans(
     }
 )
 
+# a context or token count past this many digits is no window a page means,
+# and the bound keeps int() away from its 4300-digit limit
+MAX_COUNT_DIGITS = 12
+
 
 class FetchError(Exception):
     """a fetch failed after retries; the message names the url.
@@ -90,8 +94,16 @@ def fetch_soup(url: str, headers: dict[str, str] | None = None) -> BeautifulSoup
 # a non-ASCII separator between digits ("$0．30", "$1，000") also continues
 # the number, so its leading digits never read alone, and a digit-hyphen-
 # digit run ("$1-2") is a range, never a number, like the en-dash form.
+# the whole-dollar part and the fraction are bounded: a run past either
+# bound is malformed, never an amount, so a 3,000+ digit cell cannot float
+# silently to inf at the dollar-reading sites.
+_AMOUNT_WHOLE_DIGITS = 12
+_AMOUNT_FRACTION_DIGITS = 32
 _AMOUNT_NUMBER = (
-    r"(?:[1-9]\d{0,2}(?:,\d{3})+|\d+)(?:\.\d+)?(?!(?u:[\d,.]*\d))"
+    r"(?:[1-9]\d{0,2}(?:,\d{3}){1,3}"
+    rf"|\d{{1,{_AMOUNT_WHOLE_DIGITS}}})"
+    rf"(?:\.\d{{1,{_AMOUNT_FRACTION_DIGITS}}})?"
+    r"(?!(?u:[\d,.]*\d))"
     r"(?!(?u:[^\x00-\x7f\s]\d))(?!-\d)"
 )
 
@@ -112,14 +124,34 @@ _SPACED_COMMA_AFTER_RE = re.compile(r",\s*(\d[\d,.]*)")
 # measured); tests/test_web.py re-derives the Pd set so a Unicode upgrade
 # that adds a dash reds there instead of going silent
 _PD_DASHES = "-֊־᐀᠆‐‑‒–—―⸗⸚⸺⸻⹀⹝〜〰゠︱︲﹘﹣－𐺭"
-_DASH_LIKE = _PD_DASHES + "~～−∼⁓"
+_NON_PD_DASHES = "~～−∼⁓"
+_DASH_LIKE = _PD_DASHES + _NON_PD_DASHES
 _DASH_CLASS = "[" + re.escape(_DASH_LIKE) + "]"
-_PD_DASH_CLASS = "[" + re.escape(_PD_DASHES) + "]"
 # a range separator: one or more dash characters, whitespace allowed between
-# consecutive dashes ("--", "- -", "——"), or the word "to" case-insensitively
-# with whitespace on both sides. only a Pd dash repeats: a doubled tilde is a
-# strikethrough fence ("~~$0.60~~ $0.30"), never a range
-_SEPARATOR = _DASH_CLASS + r"(?:\s*" + _PD_DASH_CLASS + r")*|(?<=\s)(?i:to)(?=\s)"
+# consecutive dashes ("--", "- -", "——", "~~"), or the word "to"
+# case-insensitively with whitespace on both sides. every dash-like repeats,
+# so a doubled or mixed run ("-~", "⁓⁓") is a separator; a run made only of
+# the non-Pd dash-likes that also opens the amount before it is a
+# strikethrough's closing fence, never a range (see `_closing_fence`)
+_SEPARATOR = _DASH_CLASS + r"(?:\s*" + _DASH_CLASS + r")*|(?<=\s)(?i:to)(?=\s)"
+
+
+def _closing_fence(separator: str, preceding: str) -> bool:
+    """whether `separator` closes a strikethrough instead of opening a range.
+
+    `preceding` is the text immediately before the amount the separator
+    follows. a run of two or more non-Pd dash-likes is a closing fence only
+    where the same run opens the amount, and a longer opening run is no
+    match ("~~~$0.60~~ $0.30"); a single dash-like, a run holding a Pd dash
+    ("$0.3 -~ 0.6"), or a run with no matching opener ("$0.3 ~~ 0.6") stays
+    a range.
+    """
+    run = "".join(char for char in separator if not char.isspace())
+    if len(run) < 2 or not all(char in _NON_PD_DASHES for char in run):
+        return False
+    head = preceding.rstrip()
+    return head.endswith(run) and not head[: -len(run)].endswith(run[0])
+
 
 # a "$"-marker reader also refuses the other dollar spellings a cell can
 # carry beside its real "$" amount. amount_scan applies it once to the
@@ -170,6 +202,14 @@ def _spaced_comma_continues(before_run: str, after_run: str) -> bool:
     )
 
 
+def _run_start(text: str, position: int) -> int:
+    """the start index of the number run containing `position`."""
+    start = position
+    for run in _RUN_START_RE.finditer(text, 0, position + 1):
+        start = run.start()
+    return start
+
+
 def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
     """the readable amount numbers in `text` under one marker mode, and
     whether an amount-shaped token the grammar cannot read is present.
@@ -185,9 +225,10 @@ def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
         # shape matches the amount's (both carry a "." or neither, trailing
         # punctuation stripped: a sentence end is not a decimal part), so a
         # dash before a count, a year or a token size reads as prose; a
-        # bound followed by a percent sign or an x multiplier is prose too
+        # bound followed by a percent sign or an x multiplier is prose too,
+        # and a separator that closes a strikethrough opens no range
         range_after = re.compile(
-            r"\s*(?:"
+            r"\s*("
             + _SEPARATOR
             + r")\s*(?:"
             + re.escape(before)
@@ -202,8 +243,10 @@ def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
                     malformed = True
                 continue
             bound = range_after.match(text, token.end())
-            if bound is not None and ("." in token.group(1)) == (
-                "." in bound.group(1).rstrip(",.")
+            if (
+                bound is not None
+                and not _closing_fence(bound.group(1), text[: match.start()])
+                and ("." in token.group(1)) == ("." in bound.group(2).rstrip(",."))
             ):
                 malformed = True
             # after a marker, a comma + optional spaces + a digit continues
@@ -221,9 +264,13 @@ def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
         # the after-marker half of the range check: the text before an
         # adjacent amount ends with "digit, optional marker, separator"
         # ("0.30 - 0.60 USD", "0.30 USD - 0.60 USD"), so a range bound or a
-        # re-marked bound never reads as a rate. built per call, because the
-        # marker repeat is the reader's own
-        range_before = re.compile(r"\d(?:" + re.escape(after) + r")?\s*(?:" + _SEPARATOR + r")\s*$")
+        # re-marked bound never reads as a rate. whitespace may sit between
+        # the digit and the marker ("0.30  USD - 0.60 USD"), and a separator
+        # that closes a strikethrough opens no range. built per call, because
+        # the marker repeat is the reader's own
+        range_before = re.compile(
+            r"\d\s*(?:" + re.escape(after) + r")?\s*(" + _SEPARATOR + r")\s*$"
+        )
         readable = []
         malformed = False
         for marker in re.finditer(re.escape(after), text):
@@ -240,8 +287,15 @@ def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
                 # a number that ends short of the marker has no adjacent
                 # amount; the marker contributes nothing
                 continue
-            if range_before.search(text[:start]):
-                malformed = True
+            range_bound = range_before.search(text[:start])
+            if range_bound is not None:
+                head = text[: _run_start(text, range_bound.start())].rstrip()
+                if head and head[-1] not in _DASH_LIKE:
+                    # a "$" can sit between an opening fence and a
+                    # suffix-marked amount ("~~$0.60 USD~~ 0.30 USD")
+                    head = head[:-1]
+                if not _closing_fence(range_bound.group(1), head):
+                    malformed = True
             before_run = _SPACED_COMMA_BEFORE_RE.search(text[:start])
             if before_run is not None and _spaced_comma_continues(
                 before_run.group(1), token.group(0)
@@ -268,10 +322,12 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
     `before`/`after` are the currency-marker strings sitting immediately on
     either side of each number ("$0.14" -> before="$"; "0.60 USD" ->
     after=" USD"; "USD 0.0636" -> before="USD "; a bare numeric cell -> both
-    ""). a malformed amount reads no number and sets the second result True;
-    a cell with no amount-shaped token returns ([], False); a suffix marker
-    with no adjacent number contributes nothing. at most one of
-    `before`/`after` may be set.
+    ""). a malformed amount reads no number and sets the second result True:
+    a whole-dollar run past `_AMOUNT_WHOLE_DIGITS` digits or a fraction past
+    `_AMOUNT_FRACTION_DIGITS` is malformed, never an inf amount. a cell with
+    no amount-shaped token returns ([], False); a suffix marker with no
+    adjacent number contributes nothing. at most one of `before`/`after` may
+    be set.
     the scan reads the raw text; when the html entities decode to a
     different reading, the decoded text is scanned too and a differing
     reading flags malformed, so an entity-spelled range or second amount
@@ -400,6 +456,31 @@ def own_cells(row: Tag) -> list[Tag]:
     never do (their nearest tr is the nested row).
     """
     return [cell for cell in row.find_all(["th", "td"]) if cell.find_parent("tr") is row]
+
+
+# a header spanning past this many columns is no table a page means, and the
+# bound keeps a malformed span from expanding the grid without limit
+_MAX_COLSPAN = 1000
+
+
+def header_grid(header_row: Tag) -> list[str]:
+    """one label per grid position: each own header cell expands by its colspan.
+
+    a multi-column span shifts every later title, so a data row's cells line
+    up against the grid, never the raw cells. a colspan that is not a
+    positive integer no greater than `_MAX_COLSPAN` is a page-shape break
+    naming the value.
+    """
+    grid: list[str] = []
+    for cell in own_cells(header_row):
+        raw = cell.get("colspan", "1")
+        if not isinstance(raw, str) or re.fullmatch(r"[0-9]{1,4}", raw) is None:
+            raise FetchError(f"unreadable header colspan {raw!r}")
+        colspan = int(raw)
+        if not 1 <= colspan <= _MAX_COLSPAN:
+            raise FetchError(f"unreadable header colspan {raw!r}")
+        grid.extend([cell.get_text(" ", strip=True)] * colspan)
+    return grid
 
 
 def header_labels(table: Tag) -> tuple[str, ...]:

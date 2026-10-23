@@ -83,14 +83,24 @@ _COMPARISON_RE = re.compile(
     r"|\bmore\s+than\b|\bless\s+than\b|\bexceed\w*|[<>≤≥]",
     re.IGNORECASE,
 )
-# an HTML tag's < and > are markup, not a comparison: a CommonMark-style
-# raw-HTML open/close tag and comment grammar, so a bare < or > stays a
-# comparison, a ">" inside a quoted attribute never ends the tag, and a
-# comment is markup
+# an HTML tag's < and > are markup, not a comparison: the CommonMark 0.31.2
+# raw-HTML grammar for an open tag (attributes whose names are
+# [A-Za-z_:][A-Za-z0-9_.:-]*, values quoted or unquoted, optional "/"), a
+# closing tag (a name and optional whitespace, never attributes) and a
+# comment (<!-->, <!--->, or "<!--" + text without "-->" + "-->"). the
+# whitespace is CommonMark's (Zs plus tab, LF, FF, CR) and an unquoted value
+# excludes space and the C0 controls, so a bare < or > stays a comparison, a
+# ">" inside a quoted attribute never ends the tag, and a non-ASCII
+# attribute-name tail ends it
+_HTML_WHITESPACE = r"[^\S\x0b\x85\u2028\u2029]"
 _TAG_RE = re.compile(
-    r"<!--(?:(?!<!--).)*?-->"
-    r"|</?[A-Za-z][A-Za-z0-9-]*"
-    r"(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?)*\s*/?>",
+    rf"<!-->|<!--->|<!--(?:[^-]|-(?!->))*-->"
+    rf"|</[A-Za-z][A-Za-z0-9-]*{_HTML_WHITESPACE}*>"
+    rf"|<[A-Za-z][A-Za-z0-9-]*"
+    rf"(?:{_HTML_WHITESPACE}+[A-Za-z_:][A-Za-z0-9_.:-]*(?:"
+    rf"{_HTML_WHITESPACE}*={_HTML_WHITESPACE}*"
+    rf"(?:\"[^\"]*\"|'[^']*'|[^\"'=<>`\x00-\x20]+))?)*"
+    rf"{_HTML_WHITESPACE}*/?>",
     re.DOTALL,
 )
 # the name shape the guard accepts: "Claude", one or more words of ASCII
@@ -256,14 +266,16 @@ def _trailing_paren(name: str, end: int | None = None) -> str | None:
 
 
 def _mentions_prompts_or_tokens(paren: str) -> bool:
-    return _PROMPT_OR_TOKEN_RE.search(paren) is not None
+    """whether the paren's untagged text mentions prompts or tokens, a tag
+    reading as either an empty or a one-space separation between words."""
+    return any(_PROMPT_OR_TOKEN_RE.search(_TAG_RE.sub(sep, paren)) for sep in ("", " "))
 
 
 def _trailing_tier_paren(base: str) -> str | None:
     """the trailing link-less paren whose untagged text mentions prompts or
     tokens."""
     paren = _trailing_paren(base)
-    if paren is not None and _mentions_prompts_or_tokens(_TAG_RE.sub(" ", paren)):
+    if paren is not None and _mentions_prompts_or_tokens(paren):
         return paren
     return None
 
@@ -392,7 +404,7 @@ def _page_tier_paren(name: str) -> str | None:
         return _trailing_entity_paren(dropped, start)
     if dropped.endswith(")"):
         paren = _trailing_entity_paren(dropped, len(dropped) - 1)
-        if paren is not None and _mentions_prompts_or_tokens(_TAG_RE.sub(" ", paren)):
+        if paren is not None and _mentions_prompts_or_tokens(paren):
             return paren
     return None
 

@@ -25,9 +25,15 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.deepinfra_page import _model_tables, _row_id, _table_rows
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError, amount_scan, fetch_soup, unreadable_rate_error
+from ai_pricelog.web import (
+    MAX_COUNT_DIGITS,
+    FetchError,
+    amount_scan,
+    fetch_soup,
+    unreadable_rate_error,
+)
 
-_CONTEXT_RE = re.compile(r"^(\d{1,12})k$")
+_CONTEXT_RE = re.compile(rf"^(\d{{1,{MAX_COUNT_DIGITS}}})k$")
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:

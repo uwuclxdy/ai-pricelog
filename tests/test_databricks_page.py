@@ -1981,3 +1981,19 @@ def test_a_nameless_dash_row_skip_warns(
     with caplog.at_level(logging.WARNING):
         assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
     assert _warning_lines(caplog) == [f"parse skip for databricks: section row '' on {PAGE_URL}"]
+
+
+def test_a_dash_filled_label_row_warns_soft(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    # a label row whose spare cells are "-" placeholders is plainly a label:
+    # the placeholder cells count for nothing, so it warns on the soft line
+    # instead of skipping silently
+    _lone_standard_with(
+        monkeypatch, "<tr><td>Embedding models</td><td>-</td><td>-</td><td>-</td></tr>"
+    )
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(make_cfg()) == ["kimi-k3", "gte"]
+    assert _warning_lines(caplog) == [
+        f"parse skip for databricks: section row 'Embedding models' on {PAGE_URL}"
+    ]

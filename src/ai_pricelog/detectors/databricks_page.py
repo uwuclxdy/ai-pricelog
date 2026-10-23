@@ -39,9 +39,10 @@ picture, object, embed, input, canvas, iframe, video) nor an element whose
 ARIA role is img, no element carrying an alt, aria-label, aria-labelledby
 or title, and no nested table, and either its own visible text is empty,
 it repeats the Model | Input | Output | Cache read header row (its own
-cells and its own text both fold to it), or it has exactly one non-empty
-own cell and its own text holds no Unicode digit and names no mapped
-display; every other odd row keeps the detect skip. a row's own subtree
+cells and its own text both fold to it), or it has at most one own cell
+whose text is neither empty nor the "-" placeholder and its own text holds
+no Unicode digit and names no mapped display; every other odd row keeps the
+detect skip. a row's own subtree
 leaves out a nested row an omitted </tr> leaves inside it, so such a label
 stays soft while the nested row prices.
 the scraper stays strict for the matched row, so a drifted price column
@@ -416,10 +417,11 @@ def _section_row(row: Tag, cells: list[Tag]) -> str | None:
     element nor an element whose ARIA role is img, no element carrying an
     alt, aria-label, aria-labelledby or title, and no nested table, and
     either its own visible text is empty, its own cells and its own text
-    both fold to the Model | Input | Output | Cache read header, or exactly
-    one own cell has non-empty text and its own text holds no Unicode digit
-    and names no mapped display. a nested row an omitted </tr> leaves
-    inside this one is no part of its own subtree. the label is the row's
+    both fold to the Model | Input | Output | Cache read header, or at most
+    one own cell has text that is neither empty nor the "-" placeholder and
+    its own text holds no Unicode digit and names no mapped display. a
+    nested row an omitted </tr> leaves inside this one is no part of its own
+    subtree. the label is the row's
     name cell (its first own cell's text, so a rate cell never names it),
     a repeated header row's own text, or blank when the row has no cells.
     everything else returns None and keeps the detect skip.
@@ -438,9 +440,9 @@ def _section_row(row: Tag, cells: list[Tag]) -> str | None:
     folded = tuple(fold_heading(cell.get_text(" ", strip=True)) for cell in cells)
     if folded == _FOLDED_ONE_ROW_HEADER and fold_heading(text) == " ".join(_FOLDED_ONE_ROW_HEADER):
         return text
-    non_empty = [cell for cell in cells if _cell_text(cell).strip()]
+    non_empty = [cell for cell in cells if _cell_text(cell).strip() not in ("", _DASH)]
     if (
-        len(non_empty) == 1
+        len(non_empty) <= 1
         and not any(char.isdigit() for char in text)
         and not _names_stripped_display(text)
     ):

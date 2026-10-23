@@ -28,11 +28,10 @@ import re
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.volcengine_page import _page
 from ai_pricelog.pricing import Pricing
-from ai_pricelog.web import FetchError
+from ai_pricelog.web import MAX_COUNT_DIGITS, FetchError
 
 CNY_PER_USD = 7.2
 _WINDOW_CHARS = 400
-_MAX_COUNT_DIGITS = 12
 
 _ID_RE = re.compile(r"doubao-seed(?!ream|ance)[a-z0-9.-]+")
 _INPUT_LABELS = ("输入价格", "推理输入")
@@ -119,6 +118,6 @@ def _window_value(window: str, label: str) -> int:
     if match is None:
         return 0
     value = match.group(1)
-    if len(value.replace(".", "")) > _MAX_COUNT_DIGITS:
+    if len(value.replace(".", "")) > MAX_COUNT_DIGITS:
         raise FetchError(f"unreadable {label} value {value!r}")
     return int(float(value)) * 1024

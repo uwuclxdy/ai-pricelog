@@ -2617,8 +2617,20 @@ def test_a_tag_between_a_comparison_and_its_neighbour_keeps_the_wording_error(
         ("(for prompts <M tokens, >N tokens)", True),
         ('(1M token <span title="a>b">context</span>)', False),
         ("(1M token context <!-- note -->)", False),
+        ("(1M token context </a b>)", True),
+        ("(1M token <!--> context)", False),
+        ("(1M token <!---> context)", False),
+        ('(1M token <span tök="x">context</span>)', True),
     ],
-    ids=["too-wide", "quoted-gt", "comment"],
+    ids=[
+        "too-wide",
+        "quoted-gt",
+        "comment",
+        "closing-tag-attribute",
+        "empty-comment",
+        "short-empty-comment",
+        "non-ascii-attribute-name",
+    ],
 )
 def test_the_tag_grammar_is_the_raw_html_one(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, paren: str, wording: bool
@@ -2707,3 +2719,17 @@ def test_a_name_tail_of_a_non_ascii_digit_or_hash_run_raises(
         assert detector.detect(cfg()) == _without("claude-opus-5")
     with pytest.raises(FetchError, match="unreadable model name"):
         scraper.scrape(cfg(), "claude-opus-5")
+
+
+def test_the_mention_test_reads_both_tag_separations():
+    # a tag deleted to "" joins "tok" and "en" into the token word, so the
+    # paren splits off as a tier; the one-space reading alone leaves the paren
+    # in the stem and reports the name shape instead
+    broken = "Claude Sonnet 4.5 (tok<b>en</b> count)"
+    with pytest.raises(FetchError) as exc:
+        detector.split_name(broken, PAGE_URL)
+    assert str(exc.value) == _qualifier_error("(tok<b>en</b> count)", broken)
+    split = "Claude Sonnet 4.5 (tokens<b>x</b> over 200K)"
+    with pytest.raises(FetchError) as exc:
+        detector.split_name(split, PAGE_URL)
+    assert str(exc.value) == _wording_error("(tokens<b>x</b> over 200K)", split)

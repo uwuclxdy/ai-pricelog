@@ -29,6 +29,7 @@ from ai_pricelog.web import (
     FetchError,
     amount_scan,
     fetch_soup,
+    header_grid,
     own_cells,
     own_table_rows,
     unreadable_rate_error,
@@ -56,16 +57,6 @@ def _first_amount(cell: str, model_id: str, url: str) -> float | None:
     return float(amounts[0].replace(",", "")) if amounts else None
 
 
-def _grid(header_row: Tag) -> list[str]:
-    """one label per grid position: each header cell expands by its colspan."""
-    grid: list[str] = []
-    for cell in own_cells(header_row):
-        colspan = int(cell.get("colspan", 1) or 1)
-        label = cell.get_text(" ", strip=True)
-        grid.extend([label] * colspan)
-    return grid
-
-
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     soup = fetch_soup(cfg.scraper_url)
     tables = [table for table in soup.find_all("table") if table.find_parent("table") is None]
@@ -74,7 +65,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         rows = list(own_table_rows(table))
         if not rows:
             continue
-        grid = _grid(rows[0])
+        grid = header_grid(rows[0])
         if not grid or not grid[0].startswith("Model ID"):
             continue
         pricing_tables.append((rows, grid))

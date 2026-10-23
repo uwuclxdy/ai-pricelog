@@ -36,6 +36,7 @@ table, or a matched matrix carries an unexpected shape.
 
 from __future__ import annotations
 
+import math
 import re
 
 from ai_pricelog.config import ProviderCfg
@@ -129,7 +130,11 @@ def _row_rates(
 def _cell_amount(
     labels: tuple[str, ...], row: tuple[str, ...], label: str, model_id: str, url: str
 ) -> float | None:
-    """one rate cell's per-1M dollars; a missing column or an N/A cell is None."""
+    """one rate cell's per-1M dollars; a missing column or an N/A cell is None.
+
+    a cell outside the "$X" shape, or one whose amount floats to a
+    non-finite value (an over-long digit run the grammar never bounds), is
+    a page-shape break naming the cell."""
     try:
         text = row[labels.index(label)]
     except ValueError:
@@ -139,7 +144,10 @@ def _cell_amount(
     match = _AMOUNT_RE.fullmatch(text)
     if match is None:
         raise FetchError(f"unparseable rate cell {text!r} for {model_id} on {url}")
-    return float(match.group(1))
+    amount = float(match.group(1))
+    if not math.isfinite(amount):
+        raise FetchError(f"unparseable rate cell {text!r} for {model_id} on {url}")
+    return amount
 
 
 def _prompt_length(labels: tuple[str, ...], row: tuple[str, ...]) -> str | None:

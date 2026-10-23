@@ -816,3 +816,56 @@ def test_fetch_soup_survives_a_huge_decimal_char_ref(monkeypatch):
     text = web.fetch_soup("https://example.com/page").get_text()
     assert "�" in text
     assert "A" in text
+
+
+def test_amount_scan_rejects_an_over_long_digit_run():
+    # an unbounded run reads one amount and floats to inf at the dollar-reading
+    # sites; the grammar bounds the whole-dollar part and the fraction, so an
+    # over-long cell reads malformed instead
+    five_thousand = "9" * 5000
+    for text, kwargs in [
+        ("$" + five_thousand, {"before": "$"}),
+        ("$" + five_thousand + " USD", {"after": " USD"}),
+        (five_thousand, {}),
+        ("$0." + five_thousand, {"before": "$"}),
+        ("$1,000,000,000,000", {"before": "$"}),
+    ]:
+        readable, malformed = web.amount_scan(text, **kwargs)
+        assert malformed is True
+        assert readable == []
+    # the bound sits past every amount a page means and stays far from inf
+    assert web.amount_scan("$" + "9" * 12, before="$") == (["9" * 12], False)
+    assert web.amount_scan("$0." + "9" * 32, before="$") == (["0." + "9" * 32], False)
+    assert web.amount_scan("$0." + "9" * 33, before="$") == ([], True)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["$0.3 -~ 0.6", "$0.3 -− 0.6", "$0.3 ⁓⁓ 0.6", "$0.3 ~- 0.6", "$0.3 ~ ~ 0.6"],
+    ids=[
+        "dash-then-tilde",
+        "dash-then-minus",
+        "doubled-tilde",
+        "tilde-then-dash",
+        "spaced-tilde-run",
+    ],
+)
+def test_amount_scan_rejects_a_mixed_dash_run(text):
+    assert web.amount_scan(text, before="$")[1] is True
+
+
+def test_amount_scan_tells_a_strikethrough_fence_from_a_range():
+    # the doubled tilde is a separator only when no opening fence sits right
+    # before the first amount
+    assert web.amount_scan("~~$0.60~~ $0.30", before="$") == (["0.60", "0.30"], False)
+    assert web.amount_scan("~~0.60 USD~~ 0.30 USD", after=" USD") == (["0.60", "0.30"], False)
+    assert web.amount_scan("$0.3 ~~ 0.6", before="$")[1] is True
+    assert web.amount_scan("0.30 USD ~~ 0.60 USD", after=" USD")[1] is True
+
+
+def test_amount_scan_tolerates_marker_spacing_in_after_mode():
+    # the reader's marker repeat must see a range drawn with extra spacing, or
+    # the upper bound reads as the rate
+    assert web.amount_scan("0.30  USD - 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30  USD – 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 USD, 0.60 USD", after=" USD") == (["0.30", "0.60"], False)

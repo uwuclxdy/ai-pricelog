@@ -576,3 +576,27 @@ def test_a_model_row_in_the_thead_raises(monkeypatch):
     monkeypatch.setattr(detector, "fetch_soup", lambda url: soup)
     with pytest.raises(FetchError, match="header holds 2 rows"):
         detector.detect(cfg())
+
+
+def test_an_over_long_rate_cell_raises_instead_of_inf(monkeypatch):
+    # this reader keeps its own "$X" fullmatch, so the shared amount grammar's
+    # digit bound never sees the cell: a 3,000+ digit run floats to inf and
+    # would ship as a price unless the reader refuses it
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: matrix_page(
+            body='<span class="gen-ai-pricing-matrix-row gen-ai-pricing-matrix-header" role="row">'
+            '<span role="columnheader">Processing mode</span>'
+            '<span role="columnheader">Prompt length</span>'
+            '<span role="columnheader">Input</span>'
+            '<span role="columnheader">Output</span></span>'
+            '<span class="gen-ai-pricing-matrix-row" role="row">'
+            '<span role="rowheader">Standard</span>'
+            '<span role="rowheader">All prompts</span>'
+            '<span role="cell">$' + "9" * 5000 + "</span>"
+            '<span role="cell">$15.00</span></span>'
+        ),
+    )
+    with pytest.raises(FetchError, match="unparseable rate cell"):
+        scraper.scrape(cfg(), "kimi-k3")
