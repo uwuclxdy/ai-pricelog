@@ -153,6 +153,31 @@ def test_price_cell_without_one_amount_per_side_fails_loud(
     assert str(exc.value).startswith("unreadable rate ")
 
 
+@pytest.mark.parametrize(
+    "price",
+    ["$0,111 per hour", "$TBD per hour"],
+    ids=["comma-decimal", "no-amount"],
+)
+def test_unreadable_per_hour_cell_warns_and_raises(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, price: str
+):
+    # a per-hour cell whose amount the grammar cannot read is no known
+    # unpriced form: skipping it silently would let a drifted per-token row
+    # open an absence count instead of failing loud
+    text = table(
+        row("[Whisper](/docs/model/whisper-large-v3)whisper-large-v3", price),
+        row(_KIMI_CELL, "$1.00 input$3.00 output"),
+    )
+    feed(monkeypatch, text)
+    with caplog.at_level(logging.WARNING):
+        assert detector.detect(cfg()) == ["moonshotai/kimi-k3"]
+    assert any(
+        line.startswith("detect skip for groq: unreadable price cell") for line in caplog.messages
+    )
+    with pytest.raises(FetchError, match="unreadable price cell"):
+        scraper.scrape(cfg(), "whisper-large-v3")
+
+
 def test_detect_priced_row_without_link_skips_with_warning(monkeypatch: pytest.MonkeyPatch, caplog):
     # a priced row whose model cell carries no link is additive drift: the
     # run skips it with a warning and keeps the well-shaped rows

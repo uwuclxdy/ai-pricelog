@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ssl
+import unicodedata
 from pathlib import Path
 
 import certifi
@@ -305,6 +306,175 @@ def test_amount_scan_rejects_a_spaced_or_re_dollared_range(text):
 def test_amount_scan_rejects_a_range_in_every_marker_mode():
     assert web.amount_scan("USD 0.0636 – USD 0.1", before="USD ")[1] is True
     assert web.amount_scan("0.30 - 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 – 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 to 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 ~ 0.60 USD", after=" USD")[1] is True
+
+
+def test_amount_scan_rejects_a_re_marked_range_in_after_mode():
+    # sambanova prices amounts[0], so a repeated marker on both bounds hides
+    # the range and the lower bound is stored as the rate
+    assert web.amount_scan("0.30 USD - 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 USD – 0.60 USD", after=" USD")[1] is True
+    assert web.amount_scan("0.30 USD, 0.60 USD", after=" USD") == (["0.30", "0.60"], False)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "$0.3--0.6",
+        "$0.3 -- $0.6",
+        "$0.3 —— 0.6",
+        "$0.3 - - 0.6",
+        "$0.3 ∼ 0.9",
+        "$0.3 ⁓ 0.9",
+        "$0.3 To $0.9",
+    ],
+    ids=[
+        "double-hyphen",
+        "spaced-double-hyphen",
+        "doubled-em-dash",
+        "spaced-dash-run",
+        "u223c-tilde",
+        "u2053-tilde",
+        "title-case-to",
+    ],
+)
+def test_amount_scan_rejects_a_wider_range_separator(text):
+    assert web.amount_scan(text, before="$")[1] is True
+
+
+@pytest.mark.parametrize(
+    ("text", "kwargs"),
+    [
+        ("$0.3&ndash;0.6", {"before": "$"}),
+        ("$0.3 &ndash; 0.6", {"before": "$"}),
+        ("$0.3&#8211;0.6", {"before": "$"}),
+        ("$0.3&nbsp;&ndash;&nbsp;0.6", {"before": "$"}),
+        ("$0.30 &mdash; $0.60", {"before": "$"}),
+        ("$0&#46;30", {"before": "$"}),
+        ("$1&#44;000", {"before": "$"}),
+        ("$5 (was $&nbsp;10)", {"before": "$"}),
+        ("$5 (was &#36;&nbsp;10)", {"before": "$"}),
+        ("$5 (was &#36;&#49;0)", {"before": "$"}),
+        ("$&#49;0", {"before": "$"}),
+        ("0.3&ndash;0.6 USD", {"after": " USD"}),
+    ],
+    ids=[
+        "named-en-dash",
+        "spaced-named-en-dash",
+        "decimal-en-dash",
+        "space-entity-dash",
+        "named-em-dash",
+        "entity-decimal-point",
+        "entity-thousands-comma",
+        "entity-space-after-dollar",
+        "escaped-dollar-entity-space",
+        "escaped-dollar-and-digit",
+        "entity-digit-after-dollar",
+        "after-mode-en-dash",
+    ],
+)
+def test_amount_scan_rejects_an_entity_spelled_range_or_amount(text, kwargs):
+    # a markdown page keeps its entities undecoded, so a range or a second
+    # amount spelled through them passed the raw-text scan silently
+    assert web.amount_scan(text, **kwargs)[1] is True
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("AT&T $0.30", (["0.30"], False)),
+        ("$5 &amp;#36;10", (["5"], False)),
+        ("&lt;$0.30", (["0.30"], False)),
+        ("$0.30&nbsp;$0.15", (["0.30", "0.15"], False)),
+    ],
+    ids=["ampersand-word", "escaped-entity-text", "escaped-lt", "spaced-second-dollar"],
+)
+def test_amount_scan_entity_check_spares_real_cells(text, expected):
+    assert web.amount_scan(text, before="$") == expected
+
+
+def test_amount_scan_decodes_an_entity_once():
+    # a twice-escaped marker is literal text ("10 &#36;" renders as-is), so the
+    # decoded reading is compared against the raw one and never decoded again
+    assert web.amount_scan("10 &amp;#36;", before="$") == ([], False)
+    assert web.amount_scan("0.30 &amp;ndash; 0.60 USD", after=" USD") == (["0.60"], False)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "$0.30 - 24h",
+        "$0.30 - 2 hours free",
+        "$0.30 – 2026 rate",
+        "$0.30 - 3 images",
+        "$0.30 - 1 month free",
+        "$0.30 — 1st tier",
+        "$0.30 — 128 000 tokens",
+        "$0.30 ‐ 4o mini",
+        "$0.30 ゠ 2",
+        "$0.30 ⸺ 2 seats",
+        "$0.30 to 1 million tokens",
+        "$0.30 to 200 requests",
+    ],
+    ids=[
+        "hours-suffix",
+        "spaced-hours",
+        "year",
+        "image-count",
+        "month-count",
+        "ordinal",
+        "spaced-count",
+        "model-name",
+        "kana-double-hyphen",
+        "two-em-dash",
+        "million-words",
+        "request-count",
+    ],
+)
+def test_amount_scan_reads_a_digit_led_note_after_a_dash_as_prose(text):
+    # a dash before a digit-led note is prose, not a range: the bound's
+    # decimal shape has to match the amount's for the dash to open a bound
+    assert web.amount_scan(text, before="$") == (["0.30"], False)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "$0.3 - 0.6M",
+        "$0.3 - 0.6 M tokens",
+        "$0.30 - 0.60 K",
+        "$0.30 - 0.60,128K",
+        "$5 – 10 / MTok",
+        "$2 - 4 MTok",
+        "$12,345 - 20,000",
+    ],
+    ids=[
+        "m-suffix",
+        "spaced-m-suffix",
+        "k-suffix",
+        "k-suffix-after-comma",
+        "slash-unit",
+        "m-unit",
+        "integer-pair",
+    ],
+)
+def test_amount_scan_rejects_a_bound_shaped_like_its_first_amount(text):
+    assert web.amount_scan(text, before="$")[1] is True
+
+
+def test_amount_scan_reads_a_sentence_period_after_a_prose_note():
+    # a period with no digit after it is a sentence end, not a decimal part
+    assert web.amount_scan("$0.30 - 2026.", before="$") == (["0.30"], False)
+    assert web.amount_scan("$0.30 - 0.60.", before="$") == (["0.30"], True)
+
+
+def test_dash_like_is_every_unicode_dash_plus_the_hand_tail():
+    # the literal keeps the import free of a 1.1M-codepoint scan; a Unicode
+    # upgrade that adds a Pd character reds here instead of going silent
+    derived = {chr(cp) for cp in range(0x110000) if unicodedata.category(chr(cp)) == "Pd"}
+    assert set(web._DASH_LIKE) == derived | set("~～−∼⁓")
 
 
 @pytest.mark.parametrize(
@@ -316,6 +486,9 @@ def test_amount_scan_rejects_a_range_in_every_marker_mode():
         ("$0.30 −50% batch", "0.30"),
         ("$0.3 to 1M tokens", "0.3"),
         ("$0.30 ~128K", "0.30"),
+        ("$0.3 - 0.6%", "0.3"),
+        ("$1 - 2x", "1"),
+        ("$1 - 2X speed", "1"),
         ("$3.00 / $0.30 / $15.00", None),
         ("~~$0.60~~ $0.30", None),
     ],
@@ -326,6 +499,9 @@ def test_amount_scan_rejects_a_range_in_every_marker_mode():
         "minus-then-percent",
         "to-then-token-count",
         "tilde-then-token-count",
+        "decimal-bound-then-percent",
+        "integer-bound-then-multiplier",
+        "integer-bound-then-uppercase-multiplier",
         "slash-list",
         "strikethrough",
     ],

@@ -96,6 +96,24 @@ def test_scrape_malformed_input_cell_raises(monkeypatch):
         scraper.scrape(cfg(), "minimax-m2.7")
 
 
+def test_scrape_re_marked_input_range_raises(monkeypatch):
+    # both bounds carry the marker: the cell is a range, never the lower bound
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: BeautifulSoup(
+            "<table><tr><th>Model</th><th>Cached Input Tokens</th>"
+            "<th>Input (per 1M tokens)</th><th>Output (per 1M tokens)</th></tr>"
+            "<tr><td>MiniMax-M2.7</td><td>N/A</td>"
+            "<td>0.30 USD - 0.60 USD</td><td>2.40 USD</td></tr>"
+            "</table>",
+            "html.parser",
+        ),
+    )
+    with pytest.raises(FetchError, match="unreadable rate"):
+        scraper.scrape(cfg(), "minimax-m2.7")
+
+
 def test_scrape_malformed_cached_cell_raises(monkeypatch):
     monkeypatch.setattr(
         scraper,

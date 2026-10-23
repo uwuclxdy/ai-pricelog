@@ -6,7 +6,6 @@ import html
 import re
 import sys
 import time
-import unicodedata
 import urllib.parse
 from collections.abc import Iterator
 
@@ -82,28 +81,31 @@ _MALFORMED_AFTER_RE = re.compile(r"\s*[.,]?\d")
 # only where the comma could be a decimal comma ("0.30, 0.60 USD" is a list)
 _SPACED_COMMA_BEFORE_RE = re.compile(r"([\d,.]*\d),\s*$")
 _SPACED_COMMA_AFTER_RE = re.compile(r",\s*(\d[\d,.]*)")
-# every Unicode dash (category Pd) plus the non-Pd dash-likes a page can
-# spell a range with (~, ～, −): a dash-like between two numbers opens a range
-_DASH_LIKE = (
-    "".join(chr(cp) for cp in range(0x110000) if unicodedata.category(chr(cp)) == "Pd") + "~～−"
-)
+# every Unicode dash (category Pd, the 26 characters of Unicode 15.0 in
+# codepoint order) plus the non-Pd dash-likes a page can spell a range with
+# (~, ～, −, ∼, ⁓): a dash-like between two numbers opens a range. a literal,
+# not an import-time scan over the 0x110000 codepoints (~65 ms per process,
+# measured); tests/test_web.py re-derives the Pd set so a Unicode upgrade
+# that adds a dash reds there instead of going silent
+_PD_DASHES = "-֊־᐀᠆‐‑‒–—―⸗⸚⸺⸻⹀⹝〜〰゠︱︲﹘﹣－𐺭"
+_DASH_LIKE = _PD_DASHES + "~～−∼⁓"
 _DASH_CLASS = "[" + re.escape(_DASH_LIKE) + "]"
-
-# the after-marker half of the range check: a run start that follows
-# "digit dash-like" ("0.30 - 0.60 USD") is a range bound. the before-marker
-# half carries the reader's own marker, so amount_scan builds it per call
-_RANGE_BEFORE_RE = re.compile(r"\d\s*(?:" + _DASH_CLASS + r"|(?<=\s)to(?=\s))\s*$")
+_PD_DASH_CLASS = "[" + re.escape(_PD_DASHES) + "]"
+# a range separator: one or more dash characters, whitespace allowed between
+# consecutive dashes ("--", "- -", "——"), or the word "to" case-insensitively
+# with whitespace on both sides. only a Pd dash repeats: a doubled tilde is a
+# strikethrough fence ("~~$0.60~~ $0.30"), never a range
+_SEPARATOR = _DASH_CLASS + r"(?:\s*" + _PD_DASH_CLASS + r")*|(?<=\s)(?i:to)(?=\s)"
 
 # a "$"-marker reader also refuses the other dollar spellings a cell can
-# carry beside its real "$" amount. html.unescape folds every entity
-# spelling of "$", "＄" or "﹩" into its character first, then the scan
-# flags a "＄" or "﹩" before digits, or a "$"/"＄"/"﹩" after digits with
-# no amount after it ("10$", "10 $", "10 ＄")
+# carry beside its real "$" amount. amount_scan applies it once to the
+# decoded text: every entity spelling of "$", "＄" or "﹩" folds into its
+# character first, while a twice-escaped spelling ("10 &amp;#36;") stays
+# literal text, never a dollar. it flags a "＄" or "﹩" before digits, or a
+# "$"/"＄"/"﹩" after digits with no amount after it ("10$", "10 $", "10 ＄");
+# an entity-decoded "$" before a digit is the entity path's job, where the
+# decoded reading differs from the raw one
 _OTHER_DOLLAR_RE = re.compile(r"[＄﹩]\s*[.,]?\d|\d\s*[$＄﹩](?!\s*[.,]?\d)")
-
-# the entity shape html.unescape decodes; a "$" one sitting before a digit
-# is a second amount the raw-text reader never saw ("&#36;10", "&#36 10")
-_ENTITY_RE = re.compile(r"&(?:#[0-9]+;?|#[xX][0-9a-fA-F]+;?|[^\t\n\f <&#;]{1,32};?)")
 
 # Python's int-string conversion limit (sys.get_int_max_str_digits(), 4300)
 # makes html.unescape raise ValueError on a decimal character reference whose
@@ -144,46 +146,28 @@ def _spaced_comma_continues(before_run: str, after_run: str) -> bool:
     )
 
 
-def _decoded_dollar_before_digit(text: str) -> bool:
-    """an entity that html.unescape folds into "$" and that sits before a
-    digit: the second amount the raw-text reader never saw."""
-    for match in _ENTITY_RE.finditer(text):
-        if unescape(match.group(0)) == "$" and _MALFORMED_AFTER_RE.match(text, match.end()):
-            return True
-    return False
+def _scan(text: str, *, before: str, after: str) -> tuple[list[str], bool]:
+    """the readable amount numbers in `text` under one marker mode, and
+    whether an amount-shaped token the grammar cannot read is present.
 
-
-def _other_dollar_malformed(text: str) -> bool:
-    """a dollar spelling beside a digit that is not the reader's own marker."""
-    unescaped = unescape(text)
-    return _OTHER_DOLLAR_RE.search(unescaped) is not None or _decoded_dollar_before_digit(text)
-
-
-def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[str], bool]:
-    """the readable amount numbers in `text`, and whether an amount-shaped
-    token the grammar cannot read is present.
-
-    `before`/`after` are the currency-marker strings sitting immediately on
-    either side of each number ("$0.14" -> before="$"; "0.60 USD" ->
-    after=" USD"; "USD 0.0636" -> before="USD "; a bare numeric cell -> both
-    ""). a malformed amount reads no number and sets the second result True;
-    a cell with no amount-shaped token returns ([], False); a suffix marker
-    with no adjacent number contributes nothing. at most one of
-    `before`/`after` may be set.
+    the body of amount_scan, split off so the entity check can compare the
+    raw text's reading with the html-unescaped text's.
     """
-    if before and after:
-        raise ValueError("amount_scan takes at most one of `before` and `after`")
     if before:
         full = re.compile(re.escape(before) + "(" + _AMOUNT_NUMBER + ")", re.ASCII)
-        # a readable amount, then a dash-like, then optionally the reader's
-        # own marker and a number opens a range ("$0.3 - 0.6", "$0.3-$0.6");
-        # a number that is a percent or a K/M/B/x unit is prose, not a bound
+        # a readable amount, then a range separator, then optionally the
+        # reader's own marker and a number opens a range ("$0.3 - 0.6",
+        # "$0.3-$0.6"). the dash-number is a bound only where its decimal
+        # shape matches the amount's (both carry a "." or neither, trailing
+        # punctuation stripped: a sentence end is not a decimal part), so a
+        # dash before a count, a year or a token size reads as prose; a
+        # bound followed by a percent sign or an x multiplier is prose too
         range_after = re.compile(
             r"\s*(?:"
-            + _DASH_CLASS
-            + r"|(?<=\s)to(?=\s))\s*(?:"
+            + _SEPARATOR
+            + r")\s*(?:"
             + re.escape(before)
-            + r")?\s*[.,]?\d(?![\d,.]*\s*(?:%|[KkMmBb]\b|x\b))"
+            + r")?\s*([.,]?\d[\d,.]*)(?![\d,.]*\s*(?:%|[xX]\b))"
         )
         readable: list[str] = []
         malformed = False
@@ -193,11 +177,14 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
                 if _MALFORMED_AFTER_RE.match(text, match.end()):
                     malformed = True
                 continue
+            bound = range_after.match(text, token.end())
+            if bound is not None and ("." in token.group(1)) == (
+                "." in bound.group(1).rstrip(",.")
+            ):
+                malformed = True
             # after a marker, a comma + optional spaces + a digit continues
             # the number only where it could be a decimal comma: "$0, 30" is
             # a spaced comma-decimal, never 0, while "$0.30, 1M" reads 0.30
-            if range_after.match(text, token.end()):
-                malformed = True
             after_run = _SPACED_COMMA_AFTER_RE.match(text, token.end())
             if after_run is not None and _spaced_comma_continues(
                 token.group(1), after_run.group(1)
@@ -205,11 +192,15 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
                 malformed = True
             else:
                 readable.append(token.group(1))
-        if before == "$" and _other_dollar_malformed(text):
-            malformed = True
         return readable, malformed
     if after:
-        readable: list[str] = []
+        # the after-marker half of the range check: the text before an
+        # adjacent amount ends with "digit, optional marker, separator"
+        # ("0.30 - 0.60 USD", "0.30 USD - 0.60 USD"), so a range bound or a
+        # re-marked bound never reads as a rate. built per call, because the
+        # marker repeat is the reader's own
+        range_before = re.compile(r"\d(?:" + re.escape(after) + r")?\s*(?:" + _SEPARATOR + r")\s*$")
+        readable = []
         malformed = False
         for marker in re.finditer(re.escape(after), text):
             start = None
@@ -225,7 +216,7 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
                 # a number that ends short of the marker has no adjacent
                 # amount; the marker contributes nothing
                 continue
-            if _RANGE_BEFORE_RE.search(text[:start]):
+            if range_before.search(text[:start]):
                 malformed = True
             before_run = _SPACED_COMMA_BEFORE_RE.search(text[:start])
             if before_run is not None and _spaced_comma_continues(
@@ -243,6 +234,36 @@ def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[s
             readable.append(token.group(0))
         else:
             malformed = True
+    return readable, malformed
+
+
+def amount_scan(text: str, *, before: str = "", after: str = "") -> tuple[list[str], bool]:
+    """the readable amount numbers in `text`, and whether an amount-shaped
+    token the grammar cannot read is present.
+
+    `before`/`after` are the currency-marker strings sitting immediately on
+    either side of each number ("$0.14" -> before="$"; "0.60 USD" ->
+    after=" USD"; "USD 0.0636" -> before="USD "; a bare numeric cell -> both
+    ""). a malformed amount reads no number and sets the second result True;
+    a cell with no amount-shaped token returns ([], False); a suffix marker
+    with no adjacent number contributes nothing. at most one of
+    `before`/`after` may be set.
+    the scan reads the raw text; when the html entities decode to a
+    different reading, the decoded text is scanned too and a differing
+    reading flags malformed, so an entity-spelled range or second amount
+    ("$0.3&ndash;0.6", "$0&#46;30") never passes silently, while a decoding
+    that reads the same ("AT&T $0.30", "&lt;$0.30") stays clean.
+    """
+    if before and after:
+        raise ValueError("amount_scan takes at most one of `before` and `after`")
+    readable, malformed = _scan(text, before=before, after=after)
+    decoded = unescape(text)
+    if decoded != text:
+        decoded_readable, decoded_malformed = _scan(decoded, before=before, after=after)
+        if (decoded_readable, decoded_malformed) != (readable, malformed):
+            malformed = True
+    if before == "$" and _OTHER_DOLLAR_RE.search(decoded):
+        malformed = True
     return readable, malformed
 
 
