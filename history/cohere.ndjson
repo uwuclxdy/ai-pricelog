@@ -1,0 +1,16 @@
+{"schema":4,"source":"cohere","model_id":"command","observed_at":"2023-08-12","rates":{"input":15.0,"output":15.0},"limits":{"context":4096},"provenance":{"url":"https://arquivo.pt/wayback/20230812022834/https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command","observed_at":"2023-11-08","rates":{"input":1.5,"output":2.0},"limits":{"context":4096},"provenance":{"url":"https://arquivo.pt/wayback/20231108044432/https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command","observed_at":"2024-02-12","rates":{"input":1.0,"output":2.0},"limits":{"context":4096},"provenance":{"url":"https://arquivo.pt/wayback/20240212221041/https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command","observed_at":"2026-08-26","rates":{"input":1.0,"output":2.0},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-a-plus","observed_at":"2026-08-30","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-light","observed_at":"2024-02-12","rates":{"input":0.3,"output":0.6},"limits":{"context":4096},"provenance":{"url":"https://arquivo.pt/wayback/20240212221041/https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-light","observed_at":"2026-08-26","rates":{"input":0.3,"output":0.6},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-r","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.6},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-r-03-2024","observed_at":"2024-08-09","rates":{"input":0.5,"output":1.5},"provenance":{"url":"https://arquivo.pt/wayback/20240809165341/https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"command-r-08-2024","observed_at":"2024-08-30","rates":{"input":0.15,"output":0.6},"provenance":{"url":"https://docs.cohere.com/v2/changelog/command-gets-refreshed"}}
+{"schema":4,"source":"cohere","model_id":"command-r-08-2024","observed_at":"2026-08-28","removed":true}
+{"schema":4,"source":"cohere","model_id":"command-r-plus-04-2024","observed_at":"2024-04-06","rates":{"input":3.0,"output":15.0},"provenance":{"url":"https://the-decoder.com/cohere-improves-its-rag-optimized-command-series-llms/"}}
+{"schema":4,"source":"cohere","model_id":"command-r-plus-08-2024","observed_at":"2024-08-30","rates":{"input":2.5,"output":10.0},"provenance":{"url":"https://docs.cohere.com/v2/changelog/command-gets-refreshed"}}
+{"schema":4,"source":"cohere","model_id":"command-r7b","observed_at":"2026-08-29","rates":{"input":0.0375,"output":0.15},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"embed-4","observed_at":"2026-08-29","rates":{"input":0.12,"output":0.0},"provenance":{"url":"https://cohere.com/pricing"}}
+{"schema":4,"source":"cohere","model_id":"north-mini-code","observed_at":"2026-08-30","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://cohere.com/pricing"}}
