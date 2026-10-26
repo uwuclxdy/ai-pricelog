@@ -3203,7 +3203,7 @@ th.num-col .th-sort { flex-direction: row-reverse; }
 /* the row is the target: anywhere on a selection row toggles it, the JS
    guard skips clicks that landed on another control. Text does not select,
    so a click cannot double as a drag. */
-.table-wrap tbody tr:has(.cell-select) { cursor: pointer; user-select: none; }
+.table-wrap tbody tr:has(td.cell-select input[data-name]) { cursor: pointer; user-select: none; }
 
 /* ---- Pagination ----
    The count line states the slice; the strip scrolls inside itself, so at

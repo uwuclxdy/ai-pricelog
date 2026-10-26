@@ -165,6 +165,7 @@ DIST_PATHS = sorted(
         "index/alpha.json",
         "index/beta.json",
         "flat-v2.json",
+        "flat-v3.json",
         "flat/alpha.json",
         "flat/beta.json",
         "history.ndjson",
@@ -341,7 +342,7 @@ def _build_flat(tmp_path, rows):
     out = tmp_path / "out"
     publish.build_dist(rows, root, out, 4)
     return (
-        json.loads((out / "flat-v2.json").read_text()),
+        json.loads((out / "flat-v3.json").read_text()),
         json.loads((out / "flat" / "alpha.json").read_text()),
         json.loads((out / "flat" / "beta.json").read_text()),
         json.loads((out / "index.json").read_text()),
@@ -447,7 +448,7 @@ def test_flat_export_updated_at_is_the_newest_observed_at(tmp_path):
     # the whole tree's newest observed_at, including removal rows
     assert flat["updated_at"] == "2026-08-06"
     assert flat["version"] == 4
-    assert flat["flat_version"] == 2
+    assert flat["flat_version"] == 3
     # the per-source twin carries its own source's newest observed_at
     assert alpha_flat["updated_at"] == "2026-08-03"
     assert beta_flat["updated_at"] == "2026-08-06"
@@ -463,6 +464,38 @@ def test_flat_export_is_sorted_deterministically(tmp_path):
     flat, _, _, _ = _build_flat(tmp_path, _flat_rows())
     keys = [(e["source"], e["model_id"]) for e in flat["entries"]]
     assert keys == sorted(keys)
+
+
+def test_flat_v3_carries_modality_and_v2_does_not(tmp_path):
+    rows = [
+        *_flat_rows(),
+        {
+            "schema": 4,
+            "source": "alpha",
+            "model_id": "m-image",
+            "observed_at": "2026-08-07",
+            "modality": "image",
+            "rates": {"image": 40.0},
+        },
+    ]
+    root = _fixture_root(tmp_path, rows=rows)
+    out = tmp_path / "out"
+    publish.build_dist(rows, root, out, 4)
+    v3 = json.loads((out / "flat-v3.json").read_text())
+    v2 = json.loads((out / "flat-v2.json").read_text())
+    assert v3["flat_version"] == 3
+    assert v2["flat_version"] == 2
+    v3_entry = next(e for e in v3["entries"] if e["model_id"] == "m-image")
+    assert v3_entry["modality"] == "image"
+    # v2 stays chat-only: a modality row has no key a v2 consumer could read,
+    # so it never enters the old shape
+    assert all(e["model_id"] != "m-image" for e in v2["entries"])
+    assert all("modality" not in entry for entry in v2["entries"])
+    assert len(v2["entries"]) == len(v3["entries"]) - 1
+    # the unversioned twin is the current shape
+    twin = json.loads((out / "flat" / "alpha.json").read_text())
+    assert twin["flat_version"] == 3
+    assert any(entry.get("modality") == "image" for entry in twin["entries"])
 
 
 # validity intervals: the oracle is the prose consumer rule, implemented from
@@ -593,7 +626,7 @@ def test_flat_export_over_the_real_tree(tmp_path):
     rows = store.load_shards(ROOT / "data" / "history")
     out = tmp_path / "out"
     publish.build_dist(rows, ROOT, out, validate.load_schema_keys(ROOT).version)
-    flat = json.loads((out / "flat-v2.json").read_text())
+    flat = json.loads((out / "flat-v3.json").read_text())
     index = json.loads((out / "index.json").read_text())
     index_keys = {
         (source, model_id) for source, models in index["sources"].items() for model_id in models
@@ -638,7 +671,7 @@ def test_intervals_over_the_real_tree_match_the_oracle(tmp_path):
     rows = store.load_shards(ROOT / "data" / "history")
     out = tmp_path / "out"
     publish.build_dist(rows, ROOT, out, validate.load_schema_keys(ROOT).version)
-    flat = json.loads((out / "flat-v2.json").read_text())
+    flat = json.loads((out / "flat-v3.json").read_text())
     index = json.loads((out / "index.json").read_text())
     rows_by_key: dict[tuple[str, str], list[dict[str, object]]] = {}
     for row in rows:

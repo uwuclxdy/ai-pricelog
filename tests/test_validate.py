@@ -385,3 +385,23 @@ def test_non_usd_row_without_provenance_is_refused():
             provenance={"fx_rate": 1.1643, "fx_rate_date": "2026-08-28"},
         )
     )
+
+
+MODALITIES = frozenset(
+    {"image", "embeddings", "speech", "transcription", "video", "rerank", "decisions"}
+)
+
+
+def test_schema_lists_the_seven_modalities():
+    assert KEYS.modalities == MODALITIES
+
+
+@pytest.mark.parametrize("modality", sorted(MODALITIES))
+def test_non_text_row_carries_one_modality(modality):
+    check(row(modality=modality))
+
+
+@pytest.mark.parametrize("bad", ["text", "chat", "", 5, True, None, ["image"]])
+def test_bad_modality_rejected(bad):
+    with pytest.raises(ValidationError, match="row field 'modality'"):
+        check(row(modality=bad))

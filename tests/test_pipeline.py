@@ -1535,6 +1535,7 @@ def test_openrouter_parse_failure_skips_entry_and_continues(
                     "id": "deepseek/deepseek-chat",
                     "name": "DeepSeek Chat",
                     "pricing": {"prompt": "2.7e-7", "completion": "1.1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
                 },
             ]
         }
@@ -1579,6 +1580,7 @@ def test_parse_skip_line_is_health_parseable(
                     "id": "deepseek/deepseek-chat",
                     "name": "DeepSeek Chat",
                     "pricing": {"prompt": "2.7e-7", "completion": "1.1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
                 },
             ]
         }
@@ -1608,6 +1610,7 @@ def test_openrouter_malformed_stored_entry_does_not_fake_delisting(
                     "id": "good/model",
                     "name": "Good",
                     "pricing": {"prompt": "1e-7", "completion": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
                 },
             ]
         }

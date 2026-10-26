@@ -19,11 +19,12 @@ from ai_pricelog.store import _atomic_write
 _ORDER_KEYS = ("source", "model_id", "observed_at")
 
 # the flat export's own shape version, stamped inside the file: a shape
-# change ships a -v2 file beside the current one instead of breaking
-# readers of the -v1 file. v2 (2026-09-10) adds the entry's `intervals`
-# chain. the `version` field beside it stays the row schema version, same
-# as index.json.
-FLAT_VERSION = 2
+# change ships a new -vN file beside the current one instead of breaking
+# readers of the old file. v2 (2026-09-10) adds the entry's `intervals`
+# chain; v3 adds the entry's `modality` key and ships beside v2, whose
+# entries drop the key. the `version` field beside it stays the row schema
+# version, same as index.json.
+FLAT_VERSION = 3
 
 # the flat entry's own fields, in emit order, from the row the partition
 # picked: the row's pricing fields, then the view stamps. provenance and
@@ -39,6 +40,7 @@ _FLAT_ROW_FIELDS = (
     "fees",
     "currency",
     "observed_at",
+    "modality",
 )
 
 
@@ -192,6 +194,20 @@ def build_flat(
     all_keys = sorted(newest)
     root_payload = _payload(all_keys)
     _atomic_write(flat_text(root_payload), out / f"flat-v{FLAT_VERSION}.json")
+    # v2 keeps the documented url and its pre-non-text contract: chat rows
+    # only, in the old shape. a modality row with the key stripped would let a
+    # v2 consumer price its zero axes as free chat, so it never enters v2
+    v2_payload = {
+        "version": root_payload["version"],
+        "flat_version": 2,
+        "updated_at": root_payload["updated_at"],
+        "entries": [
+            {key: value for key, value in entry.items() if key != "modality"}
+            for entry in root_payload["entries"]
+            if "modality" not in entry
+        ],
+    }
+    _atomic_write(flat_text(v2_payload), out / "flat-v2.json")
     for source in sorted({key[0] for key in all_keys}):
         source_keys = [key for key in all_keys if key[0] == source]
         # the twin path runs through the same shard guard the index twins do,

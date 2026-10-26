@@ -45,6 +45,13 @@ def validate_row(row: dict[str, Any], keys: SchemaKeys) -> None:
         value = row[field]
         if not isinstance(value, str) or not value:
             raise ValidationError(f"row field '{field}' must be a non-empty string")
+    if "modality" in row:
+        modality = row["modality"]
+        if not isinstance(modality, str) or modality not in keys.modalities:
+            raise ValidationError(
+                f"row field 'modality' has bad value {modality!r};"
+                f" fix: use one of {sorted(keys.modalities)!r}"
+            )
     observed = row["observed_at"]
     if not isinstance(observed, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", observed) is None:
         raise ValidationError(
@@ -342,6 +349,7 @@ class SchemaKeys(NamedTuple):
     when: frozenset[str]
     override: frozenset[str]
     days: frozenset[str]
+    modalities: frozenset[str]
 
 
 # keyed by root, and a process sees one or two of those; an unbounded cache
@@ -413,6 +421,19 @@ def load_schema_keys(root: Path) -> SchemaKeys:
             f"schema file '{path}': '$defs/when/properties/days/items/enum' must be a"
             " non-empty list of weekday names; fix: restore the file"
         )
+    modality_node = properties.get("modality")
+    modality_enum: Any = None
+    if isinstance(modality_node, dict):
+        modality_enum = modality_node.get("enum")
+    if (
+        not isinstance(modality_enum, list)
+        or not modality_enum
+        or not all(isinstance(value, str) for value in modality_enum)
+    ):
+        raise ValidationError(
+            f"schema file '{path}': 'properties.modality.enum' must be a"
+            " non-empty list of modality names; fix: restore the file"
+        )
     return SchemaKeys(
         version=version,
         required=frozenset(required),
@@ -424,4 +445,5 @@ def load_schema_keys(root: Path) -> SchemaKeys:
         when=when_keys,
         override=key_set(defs.get("override"), "$defs/override"),
         days=frozenset(days_enum),
+        modalities=frozenset(modality_enum),
     )

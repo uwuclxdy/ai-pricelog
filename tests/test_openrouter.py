@@ -66,7 +66,10 @@ def test_fetch_models_free_model_and_missing_cache_read(fake_fetch: list[str]) -
 
 def test_fetch_models_empty_pricing_mapping_is_all_none(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake(url: str) -> str:
-        return '{"data": [{"id": "x/y", "name": "X", "pricing": {}}]}'
+        return (
+            '{"data": [{"id": "x/y", "name": "X", "pricing": {},'
+            ' "architecture": {"output_modalities": ["text"]}}]}'
+        )
 
     monkeypatch.setattr(openrouter, "fetch_text", fake)
     assert fetch_models() == [OpenrouterModel("x/y", "X", None, None, None)]
@@ -83,14 +86,109 @@ def test_fetch_models_uses_default_url_and_passes_custom_through(
 
     monkeypatch.setattr(openrouter, "fetch_text", fake)
     fetch_models()
-    assert seen == ["https://openrouter.ai/api/v1/models"]
+    assert seen == ["https://openrouter.ai/api/v1/models?output_modalities=all"]
     fetch_models("https://example.test/models")
     assert seen[-1] == "https://example.test/models"
 
 
+def test_fetch_models_reads_output_modalities(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {
+                    "id": "t/text",
+                    "name": "T",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text"]},
+                },
+                {
+                    "id": "i/image",
+                    "name": "I",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["image"]},
+                },
+                {
+                    "id": "ti/mixed",
+                    "name": "M",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text", "image"]},
+                },
+                {
+                    "id": "s/speech",
+                    "name": "S",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["speech"]},
+                },
+                {
+                    "id": "ta/audio",
+                    "name": "A",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text", "audio"]},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    by_id = {model.id: model for model in fetch_models()}
+    assert by_id["t/text"].modality is None
+    assert by_id["i/image"].modality == "image"
+    assert by_id["ti/mixed"].modality is None
+    assert by_id["s/speech"].modality == "speech"
+    assert by_id["ta/audio"].modality is None
+
+
+def test_fetch_models_skips_unreadable_modality_shapes(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {
+                    "id": "ok/text",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text"]},
+                },
+                {"id": "missing", "pricing": {}},
+                {"id": "empty", "pricing": {}, "architecture": {"output_modalities": []}},
+                {
+                    "id": "unknown",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["hologram"]},
+                },
+                {
+                    "id": "multi",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["image", "video"]},
+                },
+                {
+                    "id": "text-unknown",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text", "hologram"]},
+                },
+                {
+                    "id": "audio-only",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["audio"]},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    errors: list[str] = []
+    assert [model.id for model in fetch_models(errors=errors)] == ["ok/text"]
+    assert len(errors) == 6
+    for model_id in ("missing", "empty", "unknown", "multi", "text-unknown", "audio-only"):
+        assert any(model_id in error for error in errors), model_id
+
+
 def test_fetch_models_rounds_to_six_decimals(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake(url: str) -> str:
-        return '{"data": [{"id": "a/b", "name": "A", "pricing": {"prompt": "0.0000001234567"}}]}'
+        return (
+            '{"data": [{"id": "a/b", "name": "A", "pricing": {"prompt": "0.0000001234567"},'
+            ' "architecture": {"output_modalities": ["text"]}}]}'
+        )
 
     monkeypatch.setattr(openrouter, "fetch_text", fake)
     (model,) = fetch_models()
@@ -121,8 +219,18 @@ def test_fetch_models_skips_malformed_entries(monkeypatch: pytest.MonkeyPatch) -
                 {"id": "bad/name", "name": ["x", ": "], "pricing": {}},
                 {"id": "bad/name2", "name": 5, "pricing": {}},
                 {"id": "bad/empty", "name": "B", "pricing": []},
-                {"id": "a/one", "name": "A", "pricing": {"prompt": "0.000001"}},
-                {"id": "b/two", "name": "B", "pricing": {}},
+                {
+                    "id": "a/one",
+                    "name": "A",
+                    "pricing": {"prompt": "0.000001"},
+                    "architecture": {"output_modalities": ["text"]},
+                },
+                {
+                    "id": "b/two",
+                    "name": "B",
+                    "pricing": {},
+                    "architecture": {"output_modalities": ["text"]},
+                },
             ]
         }
     )
@@ -149,7 +257,12 @@ def test_fetch_models_listed_includes_skipped_and_alias_ids(
     payload = json.dumps(
         {
             "data": [
-                {"id": "a/one", "name": "A", "pricing": {"prompt": "1e-6"}},
+                {
+                    "id": "a/one",
+                    "name": "A",
+                    "pricing": {"prompt": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
+                },
                 {"id": "~alias/old", "name": "Old", "alias_target": "a/one", "pricing": {}},
                 {"id": "bad/pricing", "name": "B", "pricing": ["x"]},
                 {"name": "No Id", "pricing": {}},
@@ -186,6 +299,7 @@ def test_fetch_models_variant_of_malformed_target_stays_variant(
                     "name": "AB Batch",
                     "canonical_slug": "a/b",
                     "pricing": {"prompt": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
                 },
             ]
         }
@@ -382,7 +496,8 @@ def test_build_row_skips_negative_pricing_strings():
 def test_fetch_models_parses_negative_pricing_as_none(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = (
         '{"data": [{"id": "openrouter/auto", "name": "Auto",'
-        ' "pricing": {"prompt": "-1", "completion": "-1"}}]}'
+        ' "pricing": {"prompt": "-1", "completion": "-1"},'
+        ' "architecture": {"output_modalities": ["text"]}}]}'
     )
     monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
     (model,) = fetch_models()
@@ -395,10 +510,11 @@ def test_fetch_models_marks_variants_that_redirect_to_a_listed_id(
 ) -> None:
     payload = (
         '{"data": ['
-        '{"id": "a/b", "name": "A", "pricing": {"prompt": "0.000001", "completion": "0.000002"}},'
+        '{"id": "a/b", "name": "A", "pricing": {"prompt": "0.000001", "completion": "0.000002"},'
+        ' "architecture": {"output_modalities": ["text"]}},'
         '{"id": "a/b:batch", "name": "A Batch",'
         ' "pricing": {"prompt": "0.0000005", "completion": "0.000001"},'
-        ' "canonical_slug": "a/b"}'
+        ' "canonical_slug": "a/b", "architecture": {"output_modalities": ["text"]}}'
         "]}"
     )
     monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
@@ -871,3 +987,30 @@ def test_build_row_names_non_string_override_pricing_values():
     )
     with pytest.raises(ValueError, match="per-token string"):
         build_row(model, "2026-08-26", VERSION)
+
+
+def test_build_row_carries_modality_on_a_non_text_row():
+    model = OpenrouterModel(
+        "v/video", "V", None, None, None, modality="video", pricing={"prompt": "0"}
+    )
+    row = build_row(model, "2026-08-26", VERSION)
+    assert row is not None
+    assert row["modality"] == "video"
+    # zero is a price: a non-text row keeps its zero axes and its modality
+    assert row["rates"] == {"input": 0.0}
+    assert list(row) == [
+        "schema",
+        "source",
+        "model_id",
+        "observed_at",
+        "modality",
+        "rates",
+        "provenance",
+    ]
+
+
+def test_build_row_omits_modality_on_a_text_row():
+    model = OpenrouterModel("t/text", "T", 1.0, 2.0, None, pricing={"prompt": "0.000001"})
+    row = build_row(model, "2026-08-26", VERSION)
+    assert row is not None
+    assert "modality" not in row

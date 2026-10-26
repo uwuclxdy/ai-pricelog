@@ -122,9 +122,15 @@ def _static_row(entry: Mapping[str, object]) -> str:
     name = name if isinstance(name, str) and name else str(entry.get("model_id"))
     removed = entry.get("removed_at")
     tag = f' <span class="tag tag-danger">removed {_esc(removed)}</span>' if removed else ""
+    modality = entry.get("modality")
+    mod_tag = (
+        f' <span class="tag tag-info">{_esc(modality)}</span>'
+        if isinstance(modality, str) and modality
+        else ""
+    )
     vendor = entry.get("vendor")
     cells = (
-        f'<td><span class="table-name">{_esc(name)}</span>{tag}'
+        f'<td><span class="table-name">{_esc(name)}</span>{tag}{mod_tag}'
         f'<div class="td-sub">{_esc(entry.get("model_id"))}</div></td>',
         f"<td>{_esc(vendor) if vendor else _DASH}</td>",
         f"<td>{_esc(entry.get('source'))}</td>",

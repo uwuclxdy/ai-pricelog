@@ -19,7 +19,7 @@ from ai_pricelog.web import FetchError, fetch_text
 
 log = logging.getLogger(__name__)
 
-OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
+OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models?output_modalities=all"
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,7 @@ class OpenrouterModel:
     input_mtok: float | None
     output_mtok: float | None
     cache_read_mtok: float | None
+    modality: str | None = field(default=None, compare=False)
     # build_row-only payload; compare=False keeps the existing mtok-focused equality
     alias_target: object | None = field(default=None, compare=False)
     canonical_slug: str | None = field(default=None, compare=False)
@@ -116,6 +117,14 @@ _WEEKDAYS = (
     "sunday",
 )
 
+# the non-text output modalities a row may carry; "text" among the values
+# makes the entry a text row, which carries no modality. "audio" beside text
+# is a chat output capability, not a row modality, so it is legal there only
+_NON_TEXT_MODALITIES = frozenset(
+    {"image", "embeddings", "speech", "transcription", "video", "rerank", "decisions"}
+)
+_TEXT_OUTPUT_COMPANIONS = _NON_TEXT_MODALITIES | {"text", "audio"}
+
 
 def map_typed_fields(
     source_pricing: Mapping[str, object], label: str
@@ -193,6 +202,8 @@ def build_row(
         "model_id": model.id,
         "observed_at": observed_at,
     }
+    if model.modality is not None:
+        row["modality"] = model.modality
     if rates:
         row["rates"] = rates
     if schedule_entries or volume_entries:
@@ -410,6 +421,9 @@ def _parse_models(
                     input_mtok=_price(pricing.get("prompt")),
                     output_mtok=_price(pricing.get("completion")),
                     cache_read_mtok=_price(pricing.get("input_cache_read")),
+                    # evaluated after name and the price fields, so a bad
+                    # name or price value keeps its own error message
+                    modality=_modality(entry),
                     canonical_slug=canonical_slug,
                     # a variant entry redirects to another listed id (":batch"
                     # spellings pointing at the plain model); the plain id keys
@@ -456,3 +470,47 @@ def _price(value: object) -> float | None:
         # strings parse as no price
         return None
     return to_mtok(per_token)
+
+
+def _modality(entry: dict) -> str | None:
+    """The row's modality from `architecture.output_modalities`, None for text.
+
+    A text-containing list is a text row whatever rides beside "text" (the
+    live list pairs it with "audio" and "image"); a lone non-text value is
+    the modality. Every other shape raises ValueError, which the per-entry
+    catch turns into a soft skip naming the model.
+    """
+    architecture = entry.get("architecture")
+    if not isinstance(architecture, dict):
+        raise ValueError(
+            "architecture.output_modalities must be a non-empty list of strings,"
+            f" got {architecture!r}"
+        )
+    output_modalities = architecture.get("output_modalities")
+    if (
+        not isinstance(output_modalities, list)
+        or not output_modalities
+        or not all(isinstance(value, str) for value in output_modalities)
+    ):
+        raise ValueError(
+            "architecture.output_modalities must be a non-empty list of strings,"
+            f" got {output_modalities!r}"
+        )
+    if "text" in output_modalities:
+        unknown = [value for value in output_modalities if value not in _TEXT_OUTPUT_COMPANIONS]
+        if unknown:
+            raise ValueError(
+                f"architecture.output_modalities value(s) {unknown!r} are not a known modality"
+            )
+        return None
+    unknown = [value for value in output_modalities if value not in _NON_TEXT_MODALITIES]
+    if unknown:
+        raise ValueError(
+            f"architecture.output_modalities value(s) {unknown!r} are not a known modality"
+        )
+    if len(output_modalities) == 1:
+        return output_modalities[0]
+    raise ValueError(
+        f"architecture.output_modalities has multiple non-text values"
+        f" {output_modalities!r}; a non-text row carries exactly one modality"
+    )

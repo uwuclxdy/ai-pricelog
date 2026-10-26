@@ -25,6 +25,11 @@
       "$ref": "#/$defs/date",
       "description": "The day the scraper saw it. Provenance, excluded from the comparable diff."
     },
+    "modality": {
+      "type": "string",
+      "enum": ["image", "embeddings", "speech", "transcription", "video", "rerank", "decisions"],
+      "description": "The non-text output modality of the row's model. A non-text row carries exactly one; a text row omits the key."
+    },
     "effective_at": {
       "$ref": "#/$defs/date",
       "description": "The day the rate applies from; absent means valid at observation."

@@ -46,6 +46,7 @@ out.encoded = app.encodeState(out.state);
 out.rate = probe.cases.peak ? app.priceAtRate(2.5, probe.cases.peak.tokens) : null;
 out.rates = (probe.rates ?? []).map(v => app.formatRate(v));
 out.matches = (probe.matches ?? []).map(m => app.whenMatches(m.when, m.ctx));
+out.chat = (probe.chat ?? []).map(entry => app.isChatPriced(entry));
 if (probe.reveal) {
   const run = marked => {
     const listeners = [];
@@ -140,6 +141,62 @@ if (probe.modeChanges) {
     // post-fire state; an empty list means the state never left its default
     out.modeChanges[value] = app.decodeState(hashes[hashes.length - 1]).mode;
   }
+  delete globalThis.document;
+  delete globalThis.window;
+}
+if (probe.rows) {
+  const make = (tag) => ({
+    tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
+    dataset: {}, checked: false,
+    append(...nodes) { this.children.push(...nodes); },
+    replaceChildren(...nodes) {
+      this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
+    },
+    setAttribute() {},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    addEventListener() {},
+  });
+  const wrap = make("div");
+  wrap.dataset.uiTable = "1";
+  const body = make("tbody");
+  const elements = new Map([["models", wrap], ["models-body", body]]);
+  const island = make("script");
+  island.textContent = JSON.stringify(probe.rows.island);
+  elements.set("flat-data", island);
+  for (const id of [
+    "q", "calc-input", "calc-cached", "calc-output", "calc-day", "calc-rate",
+    "calc-mode", "session-wrap", "session-body", "session-empty",
+    "session-note", "rate-line", "model-count",
+  ]) elements.set(id, make("input"));
+  globalThis.document = {
+    documentElement: { dataset: {} },
+    getElementById: (id) => elements.get(id) ?? null,
+    createElement: (tag) => make(tag),
+    createTextNode: () => ({ textContent: "", children: [] }),
+    createDocumentFragment: () => ({ ...make("fragment"), isFragment: true }),
+  };
+  globalThis.window = {
+    location: { hash: probe.rows.hash },
+    history: { replaceState() {} },
+  };
+  app.init();
+  const hasBox = (node) =>
+    node.type === "checkbox"
+    || (Array.isArray(node.children) && node.children.some(hasBox));
+  out.rows = {
+    session_rows: elements.get("session-body").children.length,
+    model_rows: body.children.map((tr) => {
+      const name = tr.children[1];
+      return {
+        has_box: hasBox(tr.children[0]),
+        name: name.children[0].textContent,
+        tags: name.children
+          .filter((node) => typeof node.className === "string" && node.className.startsWith("tag "))
+          .map((node) => node.textContent),
+      };
+    }),
+  };
   delete globalThis.document;
   delete globalThis.window;
 }
@@ -314,6 +371,25 @@ BATCH = {
 # 2026-09-07 02:00 UTC is a monday, 120 minutes in, inside the 100..400 window
 SESSION = {"input": 1000000, "cached": 200000, "output": 50000}
 
+# a non-text row: the export labels it and the calculator never prices it as chat
+MODALITY = {
+    "source": "fixture",
+    "model_id": "m6",
+    "vendor": "fixture",
+    "name": "Fixture Six",
+    "observed_at": "2026-08-01",
+    "modality": "image",
+    "rates": {"image": 40.0, "input": 1.0, "output": 4.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": None,
+            "observed_at": "2026-08-01",
+            "rates": {"image": 40.0, "input": 1.0, "output": 4.0},
+        }
+    ],
+}
+
 # a provenance name a scraper could hand back: interpolated raw it would close
 # the page's script island, and escaped it is just a name
 NASTY = "</script><script>alert(1)</script>"
@@ -323,6 +399,7 @@ def _rows() -> list[dict[str, object]]:
     """The shared fixture rows plus one carrying markup in its name."""
     return [
         *_flat_rows(),
+        MODALITY,
         {
             "schema": 4,
             "source": "alpha",
@@ -381,7 +458,7 @@ def test_the_flat_export_of_the_fixture_builds_the_expected_tree(tmp_path):
 
 def test_every_export_key_renders_in_the_static_table(tmp_path):
     out = _built(tmp_path)
-    export = json.loads((out / "flat-v2.json").read_text(encoding="utf-8"))
+    export = json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
     rows = _soup((out / "index.html").read_text(encoding="utf-8")).select("#models-static tbody tr")
 
     # equality of the whole key set, never a subset walk: a table missing one
@@ -402,6 +479,48 @@ def test_a_removed_entry_is_labelled_in_the_static_table(tmp_path):
         assert row.select_one("span.tag").get_text().startswith("removed ")
 
 
+def test_a_modality_entry_is_labelled_in_the_static_table(tmp_path):
+    out = _built(tmp_path)
+    rows = _soup((out / "index.html").read_text(encoding="utf-8")).select("#models-static tbody tr")
+    row = next(row for row in rows if row["data-key"] == "fixture/m6")
+    label = row.select_one("td span.tag")
+    assert label is not None
+    assert label.get_text() == "image"
+
+
+def test_the_calculator_neither_selects_nor_prices_a_modality_entry(tmp_path):
+    out = _built(tmp_path)
+    export = json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
+    modality = next(entry for entry in export["entries"] if entry.get("modality") == "image")
+    text = next(entry for entry in export["entries"] if "modality" not in entry)
+    result = _node(
+        tmp_path,
+        {"cases": {}, "fragment": "", "chat": [modality, text, {"modality": ""}]},
+    )
+    assert result["chat"] == [False, True, True]
+
+
+def test_a_modality_row_has_no_checkbox_and_never_prices_a_session(tmp_path):
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [ENTRY, MODALITY]},
+                "hash": "#sel=fixture%2Fm1,fixture%2Fm6",
+            },
+        },
+    )
+    rows = result["rows"]["model_rows"]
+    assert [row["name"] for row in rows] == ["Fixture One", "Fixture Six"]
+    assert [row["has_box"] for row in rows] == [True, False]
+    assert rows[1]["tags"] == ["image"]
+    # the fragment named both keys; the modality key is dropped, so only the
+    # chat entry prices a session
+    assert result["rows"]["session_rows"] == 1
+
+
 def test_every_key_of_the_real_export_renders(tmp_path):
     """The fixture cannot carry the shape of 1123 real entries; this one does."""
     rows = store.load_shards(ROOT / store.SHARD_DIR)
@@ -409,7 +528,7 @@ def test_every_key_of_the_real_export_renders(tmp_path):
     payload = publish.build_flat(rows, ROOT, out, 4)
     site.render_site(payload, out)
 
-    export = json.loads((out / "flat-v2.json").read_text(encoding="utf-8"))
+    export = json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
     rendered = _soup((out / "index.html").read_text(encoding="utf-8")).select(
         "#models-static tbody tr"
     )
@@ -423,7 +542,7 @@ def test_the_island_holds_the_export_payload_in_compact_form(tmp_path):
     out = _built(tmp_path)
     html = (out / "index.html").read_text(encoding="utf-8")
     island = re.search(r'id="flat-data">(.*?)</script>', html, re.S).group(1)
-    file_payload = json.loads((out / "flat-v2.json").read_text(encoding="utf-8"))
+    file_payload = json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
 
     # the exact shipped relation: the file's own payload, re-serialized by the
     # export's serializer with compact separators, its trailing newline
@@ -444,7 +563,7 @@ def test_a_name_carrying_markup_cannot_close_the_data_island(tmp_path):
     # `</script>`, so it cannot be the one that catches that shape
     assert NASTY not in html
     assert "<" not in island
-    assert json.loads(island) == json.loads((out / "flat-v2.json").read_text(encoding="utf-8"))
+    assert json.loads(island) == json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
 
     # and the escaping loses nothing: a reader still gets the export's name
     row = next(
@@ -717,6 +836,15 @@ def _node_cases() -> dict[str, dict[str, object]]:
             # matches a batch session, so the base rates price it — the same
             # walk that leaves a non-anthropic model's fast selection at base
             "expected": 1.0 * 5.0 + 0.2 * 5.0 + 0.05 * 25.0,
+        },
+        "a_modality_entry_is_not_chat_priced": {
+            "entry": MODALITY,
+            "day": "2026-08-01",
+            "tokens": SESSION,
+            "now": "2026-08-01T02:00:00Z",
+            # the row prices image output; a token session over its text
+            # axes must never count, since its rates are not chat rates
+            "expected": None,
         },
     }
 

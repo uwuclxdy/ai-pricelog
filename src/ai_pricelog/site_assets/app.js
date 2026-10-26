@@ -38,6 +38,12 @@ export function nameOf(entry) {
     : String(entry.name);
 }
 
+/** Whether the entry prices a chat session: a non-text row carries a
+    modality and never enters the token calculator. */
+export function isChatPriced(entry) {
+  return !(typeof entry.modality === "string" && entry.modality !== "");
+}
+
 /** A whole token count, or the fallback when the text is not one. */
 export function tokenCount(text, fallback) {
   const value = Number(text);
@@ -116,14 +122,16 @@ export function effectiveRates(item, ctx) {
 
 /**
  * The cost of a session on `day`, in USD, or null where the export prices it
- * with nothing: a day outside every interval, a removed span, or an axis the
- * entry has no rate for while the session uses it.
+ * with nothing: an entry the page treats as not chat-priced, a day outside
+ * every interval, a removed span, or an axis the entry has no rate for while
+ * the session uses it.
  *
  * `now` supplies the time of day, since a `when` window is a clock range and
  * only the date is a field of its own. `mode` is the request mode the session
  * runs under; the empty string is the standard, mode-less request.
  */
 export function priceSession(entry, day, tokens, now = new Date(), mode = "") {
+  if (!isChatPriced(entry)) return null;
   const item = pickInterval(entry, day);
   if (item === null || item.removed === true) return null;
   const rates = effectiveRates(item, {
@@ -360,6 +368,12 @@ export function init() {
   const entries = Array.isArray(payload.entries) ? payload.entries : [];
   const lookup = new Map(entries.map((entry) => [keyOf(entry), entry]));
   const state = decodeState(window.location.hash);
+  // a fragment can name a key no box can clear any more (a modality row, or a
+  // model that left the tree); drop it so the URL and the session agree
+  state.sel = state.sel.filter((key) => {
+    const entry = lookup.get(key);
+    return entry !== undefined && isChatPriced(entry);
+  });
 
   const qBox = document.getElementById("q");
   const tokenBoxes = {
@@ -401,15 +415,17 @@ export function init() {
 
     const pick = document.createElement("td");
     pick.className = "cell-select";
-    const label = document.createElement("label");
-    label.className = "checkbox-label";
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.dataset.name = key;
-    box.checked = state.sel.includes(key);
-    box.setAttribute("aria-label", `compare ${nameOf(entry)}`);
-    label.append(box);
-    pick.append(label);
+    if (isChatPriced(entry)) {
+      const label = document.createElement("label");
+      label.className = "checkbox-label";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.dataset.name = key;
+      box.checked = state.sel.includes(key);
+      box.setAttribute("aria-label", `compare ${nameOf(entry)}`);
+      label.append(box);
+      pick.append(label);
+    }
     tr.append(pick);
 
     const name = document.createElement("td");
@@ -417,6 +433,10 @@ export function init() {
     title.className = "table-name";
     title.textContent = nameOf(entry);
     name.append(title);
+    if (!isChatPriced(entry)) {
+      name.append(document.createTextNode(" "));
+      name.append(tag(entry.modality, "tag-info"));
+    }
     if (entry.removed_at) {
       name.append(document.createTextNode(" "));
       name.append(tag(`removed ${entry.removed_at}`, "tag-danger"));
@@ -462,7 +482,7 @@ export function init() {
     const rows = [];
     for (const key of state.sel) {
       const entry = lookup.get(key);
-      if (entry === undefined) continue;
+      if (entry === undefined || !isChatPriced(entry)) continue;
       rows.push({ entry, total: priceSession(entry, day, state.calc, new Date(), state.mode) });
     }
     rows.sort((a, b) => {
