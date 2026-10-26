@@ -787,6 +787,7 @@
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-09-10","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-09-11","rates":{"input":0.27,"output":1.08,"cache_read":0.027},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-10-15","rates":{"input":0.27,"output":0.95,"cache_read":0.03},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-10-24","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-09-27","rates":{"input":0.21,"output":0.84,"cache_read":0.042},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-10-15","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}

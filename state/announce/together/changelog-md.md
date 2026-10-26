@@ -1,5 +1,8 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
+# Changelog **October 23, 2026** ## Post-training: MiniMax M3.1 Flash `MiniMaxAI/MiniMax-M3.1-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 262,144-token context for both training and sampling, rank up to 32, and up to three adapter sessions per resource.
+The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the MiniMax codec.
+See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
+**October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
 > [!WARNING] > > 3.0 is a major release with breaking changes.
 The `beta` paths for dedicated model inference and GPU clusters no longer work, the SDK base URL drops `/v1`, and `whoami` returns a new response shape.
 Read [SDK v3 migration](https://docs.together.ai/docs/sdk-v3-migration-guide.md) before you upgrade.
