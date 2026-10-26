@@ -245,11 +245,6 @@ New clusters use Kafka 4.1 by default.
 For version support and Kafka 3.8 end of availability, see Kafka Limits .
 DigitalOcean Insights is now available in private preview with custom dashboards, metrics, logs, and metric alerts for supported resources and regions.
 For more information, see DigitalOcean Insights features .
-28 July DigitalOcean Kubernetes (DOKS) now includes an optional peer-to-peer OCI registry plugin in public preview .
-The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
-This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
-The plugin is disabled by default and is available on new clusters running Kubernetes 1.36 or later.
-27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit, and agents : Kimi K3 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
