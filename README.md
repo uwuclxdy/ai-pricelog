@@ -27,7 +27,7 @@ one repo holds the observations and one generated view of them:
 | file | contents |
 |---|---|
 | `data/history/<source>.ndjson` | one dated row per observed price change, plus a removal row per delisted model, appended forever, one file per source |
-| `dist` branch | the served views, rebuilt per publish: `index.json` (current price of every model), `flat-v3.json` (one flat entry per model with name, vendor, `modality` on non-text rows and its `intervals` validity chain; `flat-v2.json` stays the chat-only old shape), `history.ndjson`, per-source index/flat/history copies, the catalog, and `index.html` — a static pricing page: sortable table, search, cheapest-first comparison, token calculator, no build step |
+| `dist` branch | the served views, rebuilt per publish: `index.json` (current price of every model), `flat-v3.json` (one flat entry per model with name, vendor, `modality` on non-text rows and its `intervals` validity chain; `flat-v2.json` stays the chat-only old shape), `history.ndjson`, per-source index/flat/history copies, the catalog, and `index.html` — a static pricing page: sortable table, search, cheapest-first comparison, token calculator, a per-model detail card with its price-history chart, no build step |
 | `data/schema/row.v4.json` | the json-schema a row is checked against, and the contract a consumer can read |
 
 a row:
@@ -120,7 +120,7 @@ scraper_url = "https://api-docs.deepseek.com/quick_start/pricing"
 
 **where do i find the current price of a model?**
 
-`https://uwuclxdy.github.io/ai-pricelog/index.json` under `sources`, keyed by provider and model id (GitHub Pages over the `dist` branch: `application/json`, `cache-control: max-age=600`, cross-origin). one provider alone: `.../ai-pricelog/index/<source>.json`. a flat, consumer-friendly twin: `.../ai-pricelog/flat-v3.json`, one entry per model with display name and vendor resolved through the catalog, plus its `intervals` chain so pricing any past day is a containment test (`.../ai-pricelog/flat/<source>.json` per provider); the old `flat-v2.json` stays chat-only, so a row carrying `modality` never enters it. or read it as a page: the same host's root, the same data as a sortable, searchable table with a comparison and a token-count calculator. the raw `dist`-branch urls (`raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/...`) serve identical bytes but no content type, no cache headers and no stable host.
+`https://uwuclxdy.github.io/ai-pricelog/index.json` under `sources`, keyed by provider and model id (GitHub Pages over the `dist` branch: `application/json`, `cache-control: max-age=600`, cross-origin). one provider alone: `.../ai-pricelog/index/<source>.json`. a flat, consumer-friendly twin: `.../ai-pricelog/flat-v3.json`, one entry per model with display name and vendor resolved through the catalog, plus its `intervals` chain so pricing any past day is a containment test (`.../ai-pricelog/flat/<source>.json` per provider); the old `flat-v2.json` stays chat-only, so a row carrying `modality` never enters it. or read it as a page: the same host's root, the same data as a sortable, searchable table with a comparison, a token-count calculator and a per-model card that charts how its price moved. the raw `dist`-branch urls (`raw.githubusercontent.com/uwuclxdy/ai-pricelog/dist/...`) serve identical bytes but no content type, no cache headers and no stable host.
 
 **how do i see every price a model ever had?**
 
