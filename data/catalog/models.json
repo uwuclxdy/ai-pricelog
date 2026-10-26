@@ -5205,6 +5205,24 @@
       },
       "vendor": "moonshotai"
     },
+    "novita/moonshotai/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "moonshotai/kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshotai"
+    },
+    "novita/moonshotai/kimi-k3.1-pro-highspeed": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "moonshotai/kimi-k3.1-pro-highspeed"
+        ]
+      },
+      "vendor": "moonshotai"
+    },
     "novita/qwen/qwen3-235b-a22b-fp8": {
       "curated": false,
       "sources": {
