@@ -1,5 +1,5 @@
-# Kimi API Platform > Kimi K3 is our flagship model for long-horizon coding and end-to-end knowledge work, with a 1M-token context window and industry-leading intelligence.
-The Kimi API Platform provides K3, K2.7 Code, K2.6 and other large language model APIs, supporting long context, multimodal understanding, and Tool Calling.
+# Kimi API Platform > Kimi K3.1 Pro is our flagship model for long-horizon coding and end-to-end knowledge work, with a 1M-token context window and industry-leading intelligence.
+The Kimi API Platform provides K3.1 Pro, the previous-generation K3, K2.7 Code, K2.6 and other large language model APIs, supporting long context, multimodal understanding, and Tool Calling.
 - [Quickstart](https://platform.kimi.ai/docs/get-your-api-key.md): Create an API Key and complete your first Kimi API call.
 - [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.

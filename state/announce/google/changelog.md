@@ -5,6 +5,10 @@ Prompt engineering Logs and datasets Get started with logs Data logging and shar
 Playground Try out LearnLM Troubleshooting Access for Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 4 Argon is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
+October 26, 2026 Generate Content API storage on by default : New projects using the Generate Content API ( generateContent , streamGenerateContent , and batchGenerateContent ) on the paid tier now store requests by default ( store=true ), matching the Interactions API.
+Existing projects keep their current setting.
+To opt out, set store=false on individual requests or turn off Generate Content API logging in the Settings panel of the Logs and Datasets dashboard.
+See Logs and datasets for details.
 October 13, 2026 Gemini 4 Argon ( gemini-4-argon ) generally available (GA) : Released Gemini 4 Argon ( gemini-4-argon ), our most capable model built for complex coding, agentic, math, and science tasks.
 For API changes, pricing, and migration guidance, see What's new in Gemini 4 Argon .
 October 8, 2026 Gemini 3.7 Flash deprecation : gemini-3.7-flash is deprecated and has been replaced by gemini-3.8-flash .
@@ -374,5 +378,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-10-14 UTC.
+Last updated 2026-10-26 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
