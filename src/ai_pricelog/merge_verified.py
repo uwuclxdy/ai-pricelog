@@ -451,7 +451,9 @@ def _held_channels(
     dispositions: Mapping[int, bool | None],
     marker_times: Mapping[int, str] | None = None,
 ) -> frozenset[tuple[str, str]]:
-    """(source, url) channels whose newest carrier's verdict is not a bound yes.
+    """(source, url) channels whose newest carrier's verdict is not a bound yes,
+    or every channel a readable candidate carries while any candidate's index
+    is unread.
 
     `dispositions` is the bound map (`_bound_dispositions`): a yes whose
     stamp no longer names the branch's head reads None here, so the stale
@@ -464,13 +466,18 @@ def _held_channels(
     no-marked or unjudged one keeps the channel held at the base copy, so the
     owed ruling is not dropped by a sibling merge landing the same snapshot.
     Holding the whole carried set keeps channels a PR never flagged
-    conservative too, and self-heals at the newest carrier's verdict. When
-    every candidate is bound-yes-marked no channel can be held, so the
-    indexes are not read at all.
+    conservative too, and self-heals at the newest carrier's verdict. An
+    unread branch index may hide that branch as a channel's newest carrier,
+    so while any candidate is unread every channel a readable candidate
+    carries stays held: a channel is never released on incomplete
+    information. When every candidate is bound-yes-marked no channel can be
+    held, so the indexes are not read at all.
     """
     if not any(dispositions.get(number) is not True for number, _head_ref in candidates):
         return frozenset()
-    carriers, _unread = _channel_carriers(runner, repo_root, candidates)
+    carriers, unread = _channel_carriers(runner, repo_root, candidates)
+    if unread:
+        return frozenset(carriers)
     return frozenset(
         channel
         for channel, numbers in carriers.items()

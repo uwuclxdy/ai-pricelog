@@ -360,6 +360,31 @@ def test_held_channels_holds_an_unjudged_newest_carrier(tmp_path):
     )
 
 
+def test_held_channels_holds_a_readable_carrier_beside_an_unread_sibling(tmp_path):
+    # the unread branch may be the channel's newest carrier with its ruling
+    # unlanded, so a readable bound-yes sibling releases nothing
+    url = "https://example.com/changelog"
+    file = announce.channel_files("perplexity", [url])[url]
+    runner = FakeRunner()
+    runner.on(
+        "HEAD:state/announce/index.json",
+        output=_channel_index("a", url, file, "2026-10-15"),
+    )
+    runner.on(
+        "origin/pricelog/readable-yes:state/announce/index.json",
+        output=_channel_index("b", url, file, "2026-10-16"),
+    )
+    runner.on(
+        "origin/pricelog/unread:state/announce/index.json",
+        failure=pr.PrError("git show: bad object"),
+    )
+    candidates = [(552, "pricelog/readable-yes"), (553, "pricelog/unread")]
+    dispositions = {552: True, 553: None}
+    assert merge_verified._held_channels(runner, tmp_path, candidates, dispositions) == frozenset(
+        {("perplexity", url)}
+    )
+
+
 def test_main_holds_a_channel_a_stale_yes_carries(monkeypatch, tmp_path):
     # a yes for an old head neither merges nor releases the announce channel
     # it carries: the newest carrier is unjudged for the current head, so the
