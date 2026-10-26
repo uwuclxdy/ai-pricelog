@@ -11,7 +11,14 @@ Read [SDK v3 migration](https://docs.together.ai/docs/sdk-v3-migration-guide.md)
 Pricing: \$0.15 input / \$0.60 output / \$0.015 cached input (per 1M tokens).
 **October 18, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
-**October 16, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
+**October 16, 2026** ## Geo-specific inference You can now keep serverless inference processing in the United States or Canada.
+Set your client's base URL to `https://us-api.together.ai/v1` for the United States or `https://ca-api.together.ai/v1` for Canada, using your existing API key and model IDs.
+There are no GPUs to provision.
+* **United States:** `moonshotai/Kimi-K3`, `zai-org/GLM-5.3`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, `deepseek-ai/DeepSeek-V4-Pro-0813`, and `MiniMaxAI/MiniMax-M3`.
+* **Canada:** `zai-org/GLM-5.3`, `zai-org/GLM-5.3-Flash`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, and `deepseek-ai/DeepSeek-V4-Pro-0813`.
+Both geographies cost 1.25× standard serverless rates (a 25% premium) for input, cached input, and output tokens.
+See [Geo-specific inference](https://docs.together.ai/docs/serverless/geo-specific-inference.md) for details.
+## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.40 input / \$1.20 output / \$0.04 cached input (per 1M tokens).
 **October 15, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `meta-models/Muse-Spark-Open-816B-A42B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$1.25 input / \$4.25 output / \$0.15 cached input (per 1M tokens).
