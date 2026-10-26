@@ -47,7 +47,7 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "e2d5d2e5d0a070e0c561ba44e0d7ea6f295d08ba4cd9d91070c9da75d05e5fb7",
-      "fetched": "2026-10-25T01:32:00Z"
+      "fetched": "2026-10-25T16:00:14Z"
     }
   },
   "minimax": {
@@ -92,7 +92,7 @@
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
       "sha256": "a612344099e7a3d905ac9a7fd375421f5a77917732c07f395de192b8dded8d4d",
-      "fetched": "2026-10-25T01:32:00Z"
+      "fetched": "2026-10-25T16:00:14Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -144,7 +144,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "d686c4c752698769372f95decea53c33fdc250d53f766e71bd24fe0ee0fa028f",
-      "fetched": "2026-10-25T01:32:00Z"
+      "fetched": "2026-10-25T16:00:14Z"
     }
   },
   "scaleway": {
