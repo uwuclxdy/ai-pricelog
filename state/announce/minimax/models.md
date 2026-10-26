@@ -81,4 +81,4 @@ Start Building ​ Feb.
 11, 2025 T2V-01-Director / I2V-01-Director Released a video generation model with enhanced camera control, offering superior adherence to camera movement directives and enabling cinematic storytelling through its shot composition.
 Start Building ​ Jan.
 15, 2025 MiniMax-Text-01 / MiniMax-VL-01 Released the next-generation LLM, MiniMax-Text-01, and the vision-language model, MiniMax-VL-01.
-Learn More APIs MiniMax API Docs home page discord x linkedin github Research MiniMax M3 MiniMax M2-her MiniMax M2.1 MiniMax Speech 2.8 MiniMax H3 MiniMax Music 3.0 Product Agent MiniMax Design Audio Talkie API Developer Docs M Plan Pricing Console Login Developer Program Recommended Model Introduction Text Generation M3 for AI Coding Tools Text to Speech Video Generation
+Learn More APIs MiniMax API Docs home page discord x linkedin github Research MiniMax M3 MiniMax M2-her MiniMax M2.1 MiniMax Speech 2.8 MiniMax H3 MiniMax Music 3.0 Product MiniMax Code MiniMax Design Audio Talkie API Developer Docs M Plan Pricing Console Login Developer Program Recommended Model Introduction Text Generation M3 for AI Coding Tools Text to Speech Video Generation

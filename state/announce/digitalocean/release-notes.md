@@ -9,7 +9,14 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 23 October The following MiniMax model is now available in public preview on DigitalOcean Inference for serverless inference : MiniMax M3.1-Flash (Public Preview) For more information, see the Available Models page .
+October 2026 25 October DigitalOcean Harness Runtime platform templates have been rebuilt to address CVE-2026-111497 , a remote code execution vulnerability in the Brotli decoder affecting Node.js and other components.
+The updated templates are codex , claude-code , opencode , hermes , and openhands , along with the LangGraph and CrewAI base images.
+Sessions created after this update use the patched templates automatically.
+If you use a custom template (BYOT), rebuild it on the patched base template before creating new sessions.
+Existing running or paused sessions continue to use the image they were created from, and resuming, checkpointing, or forking a session does not apply the fix.
+To remediate, remove affected sessions and create new ones from your existing environment spec or Agent Config.
+For more information, see How to Manage Harness Runtime Sessions and How to Use a Custom Sandbox Template (BYOT) .
+codex , claude-code , opencode : Node.js 20 to Node.js 24.22.1 hermes : Hermes Agent v0.22.5, Node.js 26.12.1, Python 3.14 openhands : OpenHands agent server 1.58.2, Node.js 24.22.1 23 October The following MiniMax model is now available in public preview on DigitalOcean Inference for serverless inference : MiniMax M3.1-Flash (Public Preview) For more information, see the Available Models page .
 The Your usage graph on the Cost Analysis page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
 The available grouping options depend on the selected spend category.
 Use these filters to break down spend over a selected date range, for example to track AI spend by model or monitor resources by tag.

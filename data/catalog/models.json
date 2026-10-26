@@ -5481,6 +5481,15 @@
       },
       "vendor": "openai"
     },
+    "openai/gpt-6.1-terra": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-6.1-terra"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openai/gpt-image-1": {
       "curated": false,
       "sources": {
