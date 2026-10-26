@@ -56,6 +56,7 @@ def test_row_schema_carries_the_current_vocabulary() -> None:
         "fees",
         "limits",
         "provenance",
+        "modality",
         "final price snapshot",
         "zero price is a price",
     ):
