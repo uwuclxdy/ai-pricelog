@@ -3,7 +3,7 @@ Skip to main content 🎉 The new-generation MiniMax M3.1 Flash is now available
 ➔ View docs .
 MiniMax API Docs home page Search...
 ⌘ K Console Console Search...
-Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Oct.
+Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Back to top Oct.
 19, 2026 Jul.
 31, 2026 Jul.
 16, 2026 Jun.
