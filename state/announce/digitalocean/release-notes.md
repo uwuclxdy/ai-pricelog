@@ -9,7 +9,15 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 23 October The Your usage graph on the Cost Analysis page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
+October 2026 25 October DigitalOcean Harness Runtime platform templates have been rebuilt to address CVE-2026-111497 , a remote code execution vulnerability in the Brotli decoder affecting Node.js and other components.
+The updated templates are codex , claude-code , opencode , hermes , and openhands , along with the LangGraph and CrewAI base images.
+Sessions created after this update use the patched templates automatically.
+If you use a custom template (BYOT), rebuild it on the patched base template before creating new sessions.
+Existing running or paused sessions continue to use the image they were created from, and resuming, checkpointing, or forking a session does not apply the fix.
+To remediate, remove affected sessions and create new ones from your existing environment spec or Agent Config.
+For more information, see How to Manage Harness Runtime Sessions and How to Use a Custom Sandbox Template (BYOT) .
+codex , claude-code , opencode : Node.js 20 to Node.js 24.22.1 hermes : Hermes Agent v0.22.5, Node.js 26.12.1, Python 3.14 openhands : OpenHands agent server 1.58.2, Node.js 24.22.1 23 October The following MiniMax model is now available in public preview on DigitalOcean Inference for serverless inference : MiniMax M3.1-Flash (Public Preview) For more information, see the Available Models page .
+The Your usage graph on the Cost Analysis page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
 The available grouping options depend on the selected spend category.
 Use these filters to break down spend over a selected date range, for example to track AI spend by model or monitor resources by tag.
 22 October We have updated the following buildpacks for App Platform: PHP buildpack : We updated the buildpack to version 298 and added PHP versions 8.5.3 - 8.5.12 , 8.4.18 - 8.4.27 , 8.3.31 - 8.3.33 , 8.3.35 - 8.3.36 , and 8.2.31 - 8.2.35 .
@@ -244,11 +252,6 @@ New clusters use Kafka 4.1 by default.
 For version support and Kafka 3.8 end of availability, see Kafka Limits .
 DigitalOcean Insights is now available in private preview with custom dashboards, metrics, logs, and metric alerts for supported resources and regions.
 For more information, see DigitalOcean Insights features .
-28 July DigitalOcean Kubernetes (DOKS) now includes an optional peer-to-peer OCI registry plugin in public preview .
-The plugin uses Spegel to mirror container image layers across cluster nodes, so a node can pull layers from a peer that already has them instead of the origin registry.
-This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
-The plugin is disabled by default and is available on new clusters running Kubernetes 1.36 or later.
-27 July The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference , dedicated inference , Agent Development Kit, and agents : Kimi K3 For more information, see the Available Models page .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
