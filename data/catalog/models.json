@@ -6483,6 +6483,15 @@
       },
       "vendor": "kwaipilot"
     },
+    "openrouter/liquid/lfm-2.5-2.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/lfm-2.5-2.6b"
+        ]
+      },
+      "vendor": "liquid"
+    },
     "openrouter/liquid/lfm-2.5-2.6b:free": {
       "curated": false,
       "sources": {

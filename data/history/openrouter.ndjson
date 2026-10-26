@@ -679,6 +679,7 @@
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-08-26","rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":256000},"provenance":{"name":"KAT-Coder-Pro V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-08-29","rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"KAT-Coder-Pro V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-10-15","removed":true,"rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":262144}}
+{"schema":4,"source":"openrouter","model_id":"liquid/lfm-2.5-2.6b","observed_at":"2026-10-24","rates":{"input":0.35,"output":0.5,"cache_read":0.04},"limits":{"context":128000},"provenance":{"name":"LFM2.5-2.6B"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/lfm-2.5-2.6b:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":65536},"provenance":{"name":"LFM2.5-2.6B (free)"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/lfm-2.5-24b-a2b","observed_at":"2026-10-13","rates":{"input":0.1,"output":1.0,"cache_read":0.05},"limits":{"context":128000},"provenance":{"name":"LFM2.5-24B-A2B"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/lfm-2.5-24b-a2b","observed_at":"2026-10-15","rates":{"input":0.05,"output":0.7,"cache_read":0.025},"limits":{"context":128000},"provenance":{"name":"LFM2.5-24B-A2B"}}
