@@ -46,15 +46,16 @@ each source's rows live in `data/history/<source>.ndjson`, one json object per l
   - an absent rate axis inherits the base `rates` value; later entries override earlier matching ones. `timezone` rides inside the override's `when`, never the row.
   - deepseek peak rows map onto override entries: the base `rates` are the off-peak rates, one entry per peak window carries the peak rates plus the weekday day-set.
 - openrouter rows add `provenance.name` and keep only unmapped pricing keys verbatim under `unmapped`. alias entries and dated-canonical snapshots get no row. `web_search` is a per-request USD fee under `fees`, never per-token.
+  - a non-text entry carries a top-level `modality` read from its `architecture.output_modalities`, one of `image`, `embeddings`, `speech`, `transcription`, `video`, `rerank`, `decisions`; a text row omits the key. a non-text row's rate axes are not chat prices, so never price it as a chat session.
   - the api intermittently serves a renamed/aliased variant listing for minutes at a time (canonical ids absent, `anthropic/z-ai/glm-5.3[1m]`-style entries instead); retry the fetch and re-check the canonical ids before declaring rows unverifiable. OBSERVED 2026-09-20 (PR 269 and 273 reviews).
-- openrouter presence checks fetch the full body: `curl -fsSL https://openrouter.ai/api/v1/models -o /tmp/models.json`, then exact id equality over `.data[].id` with `jq` (or `uv run python -c` through `ai_pricelog.openrouter`, the repo's own parser — the strongest read).
+- openrouter presence checks fetch the full body: `curl -fsSL 'https://openrouter.ai/api/v1/models?output_modalities=all' -o /tmp/models.json`, then exact id equality over `.data[].id` with `jq` (or `uv run python -c` through `ai_pricelog.openrouter`, the repo's own parser — the strongest read).
   - a WebFetch of the api is a model extraction over a ~750KB payload that silently omits records: a lead, never absence evidence. OBSERVED 2026-09-22 (PR 333: four listed ids read absent through WebFetch while a sibling pass's same-minute fetch saw them; PR 337: a listed id read absent the same way).
   - never substring-match an id: `kwaipilot/kat-coder-pro-v2` matches inside `kwaipilot/kat-coder-pro-v2.5`. OBSERVED 2026-09-22 (PR 331: a delisted id read as still listed).
 - a family that looks renamed adjudicates off the api shape: both ids listed at once, each under its own dated `canonical_slug`, are distinct models and both get rows (openai/gpt-6-luna listed beside gpt-5.6-luna at different rates, 2026-09-22).
   - an `alias_target` entry or a canonical resolving to another listed id is the skip case the parser owns; an old id that vanishes is absence tracking's job, never a block on the new id's rows.
 - a removal row carries `{"removed": true}`; the final price snapshot (the last priced row's comparable fields) is optional and a bare row is valid. it means the source stopped listing the model. accept it as valid.
 - a zero price is a price: `0.0` rate fields are real rows, negative amounts read as unpriced.
-- `data/schema/row.v4.json` is the row-format contract; a new or renamed top-level row key bumps the version together with the validation key set.
+- `data/schema/row.v4.json` is the row-format contract; an additive optional top-level row key edits the contract in the same version, while a renamed, retyped or newly required key bumps the version in the same schema edit.
 - `data/catalog/billing-rules.json` is human-written billing-rule semantics per provider.
   - a channel diff confirming a deprecation or retirement of priced models changes when their rates apply: write the entry into `data/catalog/billing-rules.json` on the PR branch yourself and name it in your comment.
   - one entry per change, fields like the existing entries: `id` as `<provider>-<what>-<date>`, `provider`, `effective`, `timezone`, `statement` naming the models and their migrations, `citation` = the channel url.
@@ -62,7 +63,7 @@ each source's rows live in `data/history/<source>.ndjson`, one json object per l
 
 ## source urls
 
-`providers.toml` carries one section per watched provider: `detector_url` / `scraper_url` (the pages), `announce_urls` (the watched channels). openrouter rows come from `https://openrouter.ai/api/v1/models`.
+`providers.toml` carries one section per watched provider: `detector_url` / `scraper_url` (the pages), `announce_urls` (the watched channels). openrouter rows come from `https://openrouter.ai/api/v1/models?output_modalities=all`.
 
 ## domain quirks
 
