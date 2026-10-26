@@ -8,9 +8,9 @@
 # repo scope (repo secret): a GITHUB_TOKEN cannot answer `gh api user`, which
 # the list and merge steps read whenever an open non-seed pricelog PR's branch
 # still resolves, and the watchdog only on a runner with no git identity (through
-# pr.ensure_author). the claude pass reads ANTHROPIC_API_KEY from repo
-# secrets and the model/base URL from the repo variables ANTHROPIC_MODEL /
-# ANTHROPIC_BASE_URL.
+# pr.ensure_author). the claude pass reads ANTHROPIC_API_KEY and
+# ANTHROPIC_BASE_URL from repo secrets and the model from the repo variable
+# ANTHROPIC_MODEL.
 #
 # trigger model: this workflow is dispatch-only. the PRIMARY hourly trigger is
 # `gh workflow run autopr -f scheduled=true` fired by a systemd timer on the
@@ -149,7 +149,7 @@ jobs:
           # every healthy run too (a base-url model outside the client
           # catalog), so it is NOT a failure signature on its own
           if grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
-            echo "::warning::the claude pass failed to authenticate; the queued PRs went unjudged. rotate ANTHROPIC_API_KEY and fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo variables."
+            echo "::warning::the claude pass failed to authenticate; the queued PRs went unjudged. rotate ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL and fix the ANTHROPIC_MODEL repo variable."
           fi
           # a cancelled or crashed pass leaves the queue unjudged: the step
           # is continue-on-error, so the job reads green either way — the
@@ -159,7 +159,7 @@ jobs:
           fi
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           QUEUE_OUTCOME: ${{ steps.queue.outcome }}
           # GH_TOKEN holds the cloudybot PAT: every automation action (open

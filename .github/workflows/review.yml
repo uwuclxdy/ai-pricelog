@@ -96,7 +96,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           # GH_TOKEN holds the cloudybot PAT, so the review comment posts as
           # the bot and a @-mention would ping the owner (the prompt bans it)
@@ -123,7 +123,7 @@ jobs:
           fi
           # grep, never rg: the runner image ships no rg
           if [ -f /tmp/pass.log ] && grep -Eq "401 Authentication Fails|No available channel|API Error" /tmp/pass.log; then
-            echo "::warning::the claude review failed to authenticate; read the pass log in this run. rotate ANTHROPIC_API_KEY and fix the ANTHROPIC_MODEL / ANTHROPIC_BASE_URL repo variables."
+            echo "::warning::the claude review failed to authenticate; read the pass log in this run. rotate ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL and fix the ANTHROPIC_MODEL repo variable."
           fi
           head="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)" || {
             echo "::warning::could not verify the review comment landed: gh pr view failed; read the run log."

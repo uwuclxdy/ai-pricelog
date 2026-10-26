@@ -64,16 +64,14 @@ def test_pass_may_fetch_sources_full_body():
 
 
 @pytest.mark.parametrize("workflow", PASS_WORKFLOWS, ids=lambda path: path.name)
-def test_pass_reads_model_and_base_url_from_repo_variables(workflow: Path):
-    # a secret masks its value in every log line (the 2026-09 model secret
-    # turned `deepseek-v4-flash-0731` into `***-0731` in the watchdog log) and
-    # cannot be read back, so the 09-28 endpoint swap failed invisibly for
-    # 17 days; neither value is secret, so both live in repo variables
+def test_pass_reads_model_from_a_variable_and_base_url_from_a_secret(workflow: Path):
+    # the model stays a variable so its value stays readable in the logs; the
+    # base URL is a repo secret
     text = workflow.read_text()
     assert "CLAUDE_MODEL: ${{ vars.ANTHROPIC_MODEL }}" in text
-    assert "CLAUDE_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}" in text
+    assert "CLAUDE_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}" in text
     assert "secrets.ANTHROPIC_MODEL" not in text
-    assert "secrets.ANTHROPIC_BASE_URL" not in text
+    assert "vars.ANTHROPIC_BASE_URL" not in text
 
 
 @pytest.mark.parametrize("workflow", PASS_WORKFLOWS, ids=lambda path: path.name)
