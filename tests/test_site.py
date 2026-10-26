@@ -178,7 +178,7 @@ if (probe.rows) {
     documentElement: { dataset: {} },
     getElementById: (id) => elements.get(id) ?? null,
     createElement: (tag) => make(tag),
-    createTextNode: () => ({ textContent: "", children: [] }),
+    createTextNode: (text) => ({ textContent: String(text), children: [] }),
     createDocumentFragment: () => ({ ...make("fragment"), isFragment: true }),
   };
   globalThis.window = {
@@ -207,6 +207,7 @@ if (probe.rows) {
           .map((node) => node.textContent),
         vendor_class: tr.children[2].className,
         lines,
+        spark_text: spark && spark.className !== "stat-spark" ? spark.textContent : "",
       };
     }),
   };
@@ -669,6 +670,9 @@ def test_every_row_draws_its_price_history_sparkline(tmp_path):
     rows = result["rows"]["model_rows"]
     assert [row["lines"] is not None for row in rows] == [True, True, False]
     assert [len(row["lines"]) for row in rows[:2]] == [1, 1]
+    # the row with nothing to draw takes the table's dash: an empty cell reads
+    # as a bug, and the export's own no-reading convention is the en dash
+    assert [row["spark_text"] for row in rows] == ["", "", "–"]
     # the vendor column's own class is what the desktop hide rule targets, on
     # the row side; the header carries it beside this
     assert [row["vendor_class"] for row in rows] == ["col-vendor"] * 3

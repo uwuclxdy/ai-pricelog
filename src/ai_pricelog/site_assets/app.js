@@ -771,7 +771,9 @@ function sparkCell(entry) {
   const td = document.createElement("td");
   td.className = "spark-cell";
   const spark = sparkShape(entry);
-  if (spark !== null) td.append(spark);
+  // an entry whose history prices input nowhere (an auto-router) has no shape
+  // to draw, and an empty cell reads as a bug: it takes the table's own dash
+  td.append(spark ?? document.createTextNode(DASH));
   return td;
 }
 
