@@ -7698,6 +7698,24 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6.1-terra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.1-terra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.1-terra:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.1-terra:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-audio": {
       "curated": false,
       "sources": {
