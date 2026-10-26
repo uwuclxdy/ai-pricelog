@@ -308,6 +308,26 @@
         "https://docs.together.ai/docs/changelog.md",
         "https://docs.together.ai/docs/serverless/geo-specific-inference.md"
       ]
+    },
+    {
+      "id": "together-serverless-deprecation-2026-10-22",
+      "provider": "together",
+      "effective": "2026-10-22",
+      "timezone": "UTC",
+      "statement": "the October 22, 2026 changelog entry (its Model deprecations section, first observed 2026-10-26) removes meta-llama/Llama-3.3-70B-Instruct-Turbo and deepseek-ai/DeepSeek-V4-Flash-0731 from serverless, with migrations to meta-models/Muse-Glimmer-30B and deepseek-ai/DeepSeek-V4.1-Flash-1017; both remain available through on-demand dedicated endpoints, and Llama 3.3 70B can be deployed as meta-llama/Llama-3.3-70B-Instruct. the page names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.together.ai/docs/changelog.md"
+      ]
+    },
+    {
+      "id": "digitalocean-openai-model-deprecation-2026-10-26",
+      "provider": "digitalocean",
+      "effective": "2026-10-26",
+      "timezone": "UTC",
+      "statement": "the 26 October 2026 release note deprecates o1, o3-mini and GPT Image 1 from DigitalOcean Inference as of 26 October 2026, with migrations: o1 and o3-mini to GPT-5.6 Sol (openai-gpt-5.6-sol) and GPT Image 1 to GPT Image 2 (openai-gpt-image-2), to avoid service disruption. the page names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.digitalocean.com/release-notes/"
+      ]
     }
   ]
 }
