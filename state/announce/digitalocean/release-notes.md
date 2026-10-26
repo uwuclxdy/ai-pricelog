@@ -9,7 +9,9 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 25 October DigitalOcean Harness Runtime platform templates have been rebuilt to address CVE-2026-111497 , a remote code execution vulnerability in the Brotli decoder affecting Node.js and other components.
+October 2026 26 October The following OpenAI models are deprecated from DigitalOcean Inference as of 26 October 2026: o1 o3-mini GPT Image 1 Migrate o1 and o3-mini to GPT-5.6 Sol ( openai-gpt-5.6-sol ) and GPT Image 1 to GPT Image 2 ( openai-gpt-image-2 ) to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+25 October DigitalOcean Harness Runtime platform templates have been rebuilt to address CVE-2026-111497 , a remote code execution vulnerability in the Brotli decoder affecting Node.js and other components.
 The updated templates are codex , claude-code , opencode , hermes , and openhands , along with the LangGraph and CrewAI base images.
 Sessions created after this update use the patched templates automatically.
 If you use a custom template (BYOT), rebuild it on the patched base template before creating new sessions.
