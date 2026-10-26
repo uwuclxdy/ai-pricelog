@@ -17,6 +17,13 @@ Its `type` identifies the kind of credit that covers the usage: `CREDIT` (free c
 Line items for usage that no credit covers omit the object.
 Usage covered by different credits now appears as separate line items.
 See [Get billing usage](https://docs.together.ai/reference/billing-usage.md).
+## Model deprecations The following models have been deprecated and are no longer available on serverless: * `meta-llama/Llama-3.3-70B-Instruct-Turbo`.
+Use `meta-models/Muse-Glimmer-30B` instead.
+* `deepseek-ai/DeepSeek-V4-Flash-0731`.
+Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` instead.
+Both models remain available through on-demand [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints.md).
+For Llama 3.3 70B, deploy `meta-llama/Llama-3.3-70B-Instruct`.
+See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration options.
 **October 19, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `moonshotai/Kimi-K3`.
 ## Longer post-training context for Kimi K3 `moonshotai/Kimi-K3` on [post-training](https://docs.together.ai/docs/post-training/overview.md) now supports a 163,840-token training context (up from 65,536) and a 167,936-token generator context (up from 69,632).
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
