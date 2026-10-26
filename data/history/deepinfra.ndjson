@@ -54,6 +54,7 @@
 {"schema":4,"source":"deepinfra","model_id":"mistral-small-24b-instruct-2501","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.08},"limits":{"context":32768},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-small-3.2-24b-instruct-2506","observed_at":"2026-08-29","rates":{"input":0.075,"output":0.2},"limits":{"context":128000},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mythomax-l2-13b","observed_at":"2026-08-29","rates":{"input":0.4,"output":0.4},"limits":{"context":4096},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"mythomax-l2-13b","observed_at":"2026-10-26","removed":true,"rates":{"input":0.4,"output":0.4},"limits":{"context":4096}}
 {"schema":4,"source":"deepinfra","model_id":"nemotron-3-nano-30b-a3b","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.2,"cache_read":0.025},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"nemotron-3-nano-30b-a3b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.05,"output":0.2,"cache_read":0.025},"limits":{"context":262144}}
 {"schema":4,"source":"deepinfra","model_id":"nemotron-content-safety-3.5","observed_at":"2026-08-29","rates":{"input":0.2,"output":0.2},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
