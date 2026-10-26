@@ -22,6 +22,8 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 /* the request modes the calculator offers; "" is the standard request. the
    row schema keeps `mode` an open string, but the page never invents modes */
 export const MODES = ["fast", "batch"];
+/* the price axes the detail card's chart offers, in selector order */
+export const CHART_AXES = ["input", "output", "cache_read"];
 
 function axisRate(rates, axis) {
   const value = rates === undefined || rates === null ? undefined : rates[axis];
@@ -53,6 +55,92 @@ export function tokenCount(text, fallback) {
 /** Today in UTC, the calendar the export's own dated fields use. */
 export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
+}
+
+/**
+ * The price history one axis carries, split into the unbroken runs of the
+ * timeline: one point per interval that prices the axis, and a run ends where an
+ * interval stops pricing it or removes the model. A later era that prices the
+ * axis again opens a new run, so a gap never grows a price the source did not
+ * charge. `removed` is the model's own state today, which is the entry's, not
+ * any single era's.
+ */
+export function chartPoints(entry, axis) {
+  const runs = [];
+  let run = null;
+  const chain = Array.isArray(entry.intervals) ? entry.intervals : [];
+  for (const item of chain) {
+    if (item.valid_to === item.valid_from) continue;
+    const value = item.removed === true ? null : axisRate(item.rates, axis);
+    if (value === null) {
+      if (run !== null) {
+        run.end = item.valid_from ?? null;
+        runs.push(run);
+        run = null;
+      }
+      continue;
+    }
+    if (run === null) run = { points: [], end: null };
+    run.points.push({ date: item.valid_from, value });
+  }
+  if (run !== null) runs.push(run);
+  const removedAt = typeof entry.removed_at === "string" ? entry.removed_at : "";
+  return { runs, removed: removedAt !== "" };
+}
+
+function dayMs(day) {
+  return Date.parse(`${day}T00:00:00Z`);
+}
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+/** The span every run is drawn across: the first point of the oldest run to the
+    last run's own end, or today while that run is still open. */
+function chartDomain(runs) {
+  const finish = runs[runs.length - 1].end ?? todayUTC();
+  return { start: runs[0].points[0].date, finish };
+}
+
+function chartPeak(runs) {
+  return Math.max(
+    ...runs.flatMap((run) => run.points.map((point) => point.value)),
+    0,
+  );
+}
+
+/**
+ * One run's step polyline in the shared 0 0 100 100 box: each price holds from
+ * its own point to the next, so the vertices run
+ * `(x0,y0) (x1,y0) (x1,y1) ... (x_last,y_last)`, and the last tread holds to
+ * the domain end. y is inverted, and x is a percentage of the shared domain.
+ *
+ * A history that never moved draws through the middle of its box: pinned to the
+ * top it would read as the cell's own rule rather than as a flat price.
+ */
+export function stepPolyline(run, domain, peak, flat) {
+  const points = run.points;
+  if (points.length === 0) return "";
+  const start = dayMs(domain.start);
+  const span = Math.max(dayMs(domain.finish) - start, 1);
+  const last = Math.min(100, ((dayMs(run.end ?? domain.finish) - start) / span) * 100);
+  const x = (date) => Math.min(100, Math.max(0, ((dayMs(date) - start) / span) * 100));
+  const y = (value) => {
+    if (flat) return 50;
+    return peak > 0 ? 100 - (value / peak) * 100 : 100;
+  };
+  const coords = [];
+  let level = y(points[0].value);
+  coords.push(`${round2(x(points[0].date))},${round2(level)}`);
+  for (const point of points.slice(1)) {
+    const column = round2(x(point.date));
+    coords.push(`${column},${round2(level)}`);
+    level = y(point.value);
+    coords.push(`${column},${round2(level)}`);
+  }
+  coords.push(`${round2(last)},${round2(level)}`);
+  return coords.join(" ");
 }
 
 function weekdayOf(day) {
@@ -191,6 +279,7 @@ export function defaultState() {
     day: "",
     rate: "",
     mode: "",
+    model: "",
   };
 }
 
@@ -252,6 +341,7 @@ export function decodeState(hash) {
   if (rate !== "" && Number(rate) > 0 && Number.isFinite(Number(rate))) state.rate = rate;
   const mode = text("mode");
   if (MODES.includes(mode)) state.mode = mode;
+  state.model = text("model");
   return state;
 }
 
@@ -268,6 +358,9 @@ export function encodeState(state) {
   if (state.day) parts.push(`day=${encodeURIComponent(state.day)}`);
   if (state.rate) parts.push(`rate=${encodeURIComponent(state.rate)}`);
   if (state.mode) parts.push(`mode=${encodeURIComponent(state.mode)}`);
+  // the slash is the key's own separator, so it is the one character the
+  // fragment keeps literal; everything else still percent-encodes
+  if (state.model) parts.push(`model=${encodeURIComponent(state.model).replaceAll("%2F", "/")}`);
   return parts.join("&");
 }
 
@@ -353,6 +446,335 @@ export function reportReady(doc, wrap) {
   return true;
 }
 
+function svgNode(tag) {
+  // the node harness stubs a minimal document with no SVG factory
+  return typeof document.createElementNS === "function"
+    ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+    : document.createElement(tag);
+}
+
+function axisLabel(axis) {
+  return String(axis).replaceAll("_", " ");
+}
+
+function clockText(minutes) {
+  const whole = ((Math.floor(minutes) % 1440) + 1440) % 1440;
+  const hours = String(Math.floor(whole / 60)).padStart(2, "0");
+  return `${hours}:${String(whole % 60).padStart(2, "0")}`;
+}
+
+/** An override window as the UTC clock range every `when` is written in. */
+function whenText(when) {
+  if (when === null || typeof when !== "object") return "any request";
+  const parts = [];
+  if (Array.isArray(when.days) && when.days.length > 0) parts.push(when.days.join(", "));
+  if (
+    Array.isArray(when.window) &&
+    when.window.length === 2 &&
+    when.window.every((minute) => typeof minute === "number" && Number.isFinite(minute))
+  ) {
+    parts.push(`${clockText(when.window[0])} to ${clockText(when.window[1])} UTC`);
+  }
+  if (typeof when.min_tokens === "number" && Number.isFinite(when.min_tokens)) {
+    parts.push(`above ${when.min_tokens} tokens`);
+  }
+  if (typeof when.mode === "string" && when.mode !== "") parts.push(`mode ${when.mode}`);
+  // the window is UTC clock minutes whatever zone the schedule was written in,
+  // so the zone rides as the provenance it is and never beside the window
+  if (typeof when.timezone === "string" && when.timezone !== "") {
+    parts.push(`schedule zone ${when.timezone}`);
+  }
+  return parts.length > 0 ? parts.join(", ") : "any request";
+}
+
+function ratesText(rates) {
+  return Object.entries(rates)
+    .filter(([, value]) => typeof value === "number" && Number.isFinite(value))
+    .map(([axis, value]) => `${axisLabel(axis)} ${formatRate(value)}`)
+    .join(", ");
+}
+
+function overrideText(override) {
+  const when = whenText(override.when);
+  const rates =
+    override.rates !== null && typeof override.rates === "object" ? ratesText(override.rates) : "";
+  const quota =
+    typeof override.quota_multiplier === "number" && Number.isFinite(override.quota_multiplier)
+      ? `× ${override.quota_multiplier}`
+      : "";
+  return [when, rates, quota].filter(Boolean).join(": ");
+}
+
+function detailRow(label, value) {
+  const tr = document.createElement("tr");
+  const key = document.createElement("td");
+  key.textContent = label;
+  const cell = document.createElement("td");
+  cell.textContent = String(value);
+  tr.append(key, cell);
+  return tr;
+}
+
+/** The interval the entry's own rates came from: the priced era observed at the
+    entry's own observation, or the last priced era when none carries it. */
+function currentEra(entry) {
+  const chain = Array.isArray(entry.intervals) ? entry.intervals : [];
+  const priced = chain.filter(
+    (item) => item.removed !== true && item.valid_to !== item.valid_from,
+  );
+  const stamped = priced.filter((item) => item.observed_at === entry.observed_at);
+  if (stamped.length > 0) return stamped[stamped.length - 1];
+  return priced.length > 0 ? priced[priced.length - 1] : null;
+}
+
+function renderInfo(tbody, entry) {
+  const rows = [];
+  const add = (label, value) => rows.push(detailRow(label, value));
+  const rates = entry.rates !== null && typeof entry.rates === "object" ? entry.rates : {};
+  for (const [axis, value] of Object.entries(rates)) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      add(`rate ${axisLabel(axis)}`, formatRate(value));
+    }
+  }
+  if (typeof entry.currency === "string" && entry.currency !== "") {
+    add("quoted in", entry.currency);
+  }
+  const limits = entry.limits !== null && typeof entry.limits === "object" ? entry.limits : {};
+  for (const [key, value] of Object.entries(limits)) {
+    if (value !== null && value !== undefined) add(`limit ${axisLabel(key)}`, String(value));
+  }
+  const overrides = Array.isArray(entry.overrides) ? entry.overrides : [];
+  overrides.forEach((override, index) => {
+    if (override !== null && typeof override === "object") {
+      add(`override ${index + 1}`, overrideText(override));
+    }
+  });
+  if (entry.first_seen) add("first seen", entry.first_seen);
+  if (entry.observed_at) add("observed", entry.observed_at);
+  const era = currentEra(entry);
+  if (era !== null) {
+    if (era.valid_from) add("valid from", era.valid_from);
+    add("valid to", era.valid_to ?? DASH);
+  }
+  if (entry.removed_at) add("removed", entry.removed_at);
+  tbody.replaceChildren(...rows);
+}
+
+function renderTags(container, entry) {
+  const tags = [];
+  if (typeof entry.vendor === "string" && entry.vendor !== "") {
+    tags.push(tag(entry.vendor, "tag-default"));
+  }
+  if (typeof entry.modality === "string" && entry.modality !== "") {
+    tags.push(tag(entry.modality, "tag-info"));
+  }
+  if (entry.removed_at) tags.push(tag(`removed ${entry.removed_at}`, "tag-danger"));
+  container.replaceChildren(...tags);
+}
+
+function drawGrid(grid, runs) {
+  grid.replaceChildren();
+  if (runs.length === 0) return;
+  // the bottom tick is the plot's own axis line, so the grid carries the two above it
+  for (const at of [0, 50]) {
+    const line = svgNode("line");
+    line.setAttribute("x1", "0");
+    line.setAttribute("y1", String(at));
+    line.setAttribute("x2", "100");
+    line.setAttribute("y2", String(at));
+    grid.append(line);
+  }
+}
+
+function drawYTicks(container, runs) {
+  container.replaceChildren();
+  if (runs.length === 0) return;
+  const peak = chartPeak(runs);
+  for (const value of [peak, peak / 2, 0]) {
+    const tick = document.createElement("span");
+    tick.className = "chart-tick";
+    tick.textContent = formatRate(value);
+    container.append(tick);
+  }
+}
+
+function drawXTicks(container, runs, domain) {
+  container.replaceChildren();
+  if (runs.length === 0 || domain === null) return;
+  for (const [date, at] of [
+    [domain.start, "0%"],
+    [domain.finish, "100%"],
+  ]) {
+    const tick = document.createElement("span");
+    tick.className = "chart-tick";
+    tick.style.setProperty("--at", at);
+    tick.textContent = date;
+    container.append(tick);
+  }
+}
+
+function describeChart(entry, axis, runs, removed) {
+  const label = axisLabel(axis);
+  if (runs.length === 0) return `no ${label} rate is recorded for ${nameOf(entry)}.`;
+  const spans = runs.map((run) => {
+    const steps = run.points.map((point) => `${formatRate(point.value)} from ${point.date}`);
+    return run.end === null ? steps.join(", ") : `${steps.join(", ")}, the line stops at ${run.end}`;
+  });
+  let tail = "";
+  const lastEnd = runs[runs.length - 1].end;
+  if (lastEnd !== null) {
+    tail = removed ? `; the model was removed there` : `; no later era prices ${label}`;
+  }
+  return `${label} price per million tokens: ${spans.join("; then ")}${tail}.`;
+}
+
+/** One series group per run, each carrying its own line, tint and end mark: the
+    controller keeps one line's marks per group, so a second line in the same
+    group would share the first one's. */
+function drawRuns(detail, shapes) {
+  const groups = [...detail.svg.querySelectorAll(".chart-series")];
+  const keep = Math.max(shapes.length, 1);
+  for (const extra of groups.slice(keep)) extra.remove();
+  for (let index = 0; index < keep; index += 1) {
+    let group = groups[index];
+    if (group === undefined) {
+      group = svgNode("g");
+      group.setAttribute("class", "chart-series chart-series-1");
+      detail.svg.append(group);
+    }
+    let line = group.querySelector(".chart-line");
+    if (line === null) {
+      line = svgNode("polyline");
+      line.setAttribute("class", "chart-line");
+      group.append(line);
+    }
+    line.setAttribute("points", shapes[index] ?? "");
+  }
+}
+
+function drawChart(detail, entry) {
+  const { runs, removed } = chartPoints(entry, detail.axis);
+  const domain = runs.length === 0 ? null : chartDomain(runs);
+  const peak = chartPeak(runs);
+  // the card's chart carries an axis, so every line sits at its own reading; the
+  // centred flat line is the sparkline's rule, where there is no axis to read
+  const shapes =
+    domain === null ? [] : runs.map((run) => stepPolyline(run, domain, peak, false));
+  drawRuns(detail, shapes);
+  // a run past the first is a group the controller never scanned at boot, so it
+  // gets no tint and no end mark until the module looks again
+  wireLineMarks();
+  drawGrid(detail.grid, runs);
+  drawYTicks(detail.ticksY, runs);
+  drawXTicks(detail.ticksX, runs, domain);
+  const title = detail.svg.querySelector("title");
+  if (title) title.textContent = `${nameOf(entry)} ${axisLabel(detail.axis)} price history`;
+  const desc = detail.svg.querySelector("desc");
+  if (desc) desc.textContent = describeChart(entry, detail.axis, runs, removed);
+  // the body ships hidden, so the entrance observer never saw this chart
+  detail.chart.classList.add("is-drawn");
+}
+
+function renderDetail(detail, entry) {
+  detail.name.textContent = nameOf(entry);
+  detail.id.textContent = keyOf(entry);
+  renderTags(detail.tags, entry);
+  detail.empty.hidden = true;
+  detail.body.hidden = false;
+  detail.card.dataset.empty = "false";
+  if (detail.close !== null) detail.close.hidden = false;
+  renderInfo(detail.info, entry);
+  drawChart(detail, entry);
+}
+
+/** Back to the empty card: the state key goes with the body, so a reload or a
+    shared url does not reopen it. */
+function emptyDetail(detail) {
+  detail.name.textContent = "model detail";
+  detail.id.textContent = "";
+  renderTags(detail.tags, {});
+  detail.body.hidden = true;
+  detail.empty.hidden = false;
+  detail.card.dataset.empty = "true";
+  if (detail.close !== null) detail.close.hidden = true;
+}
+
+function detailNodes() {
+  const card = document.getElementById("model-detail");
+  const chart = document.getElementById("detail-chart");
+  if (card === null || chart === null) return null;
+  const svg = chart.querySelector(".chart-svg");
+  const grid = chart.querySelector(".chart-grid");
+  // the series group and its line are the chart's skeleton; every draw rebuilds
+  // them from the runs, and a missing one means the markup moved
+  const skeleton = chart.querySelector(".chart-series") && chart.querySelector(".chart-line");
+  if (svg === null || grid === null || !skeleton) return null;
+  return {
+    card,
+    chart,
+    svg,
+    grid,
+    name: document.getElementById("detail-name"),
+    id: document.getElementById("detail-id"),
+    tags: document.getElementById("detail-tags"),
+    empty: document.getElementById("detail-empty"),
+    body: document.getElementById("detail-body"),
+    close: document.getElementById("detail-close"),
+    ticksY: document.getElementById("detail-ticks-y"),
+    ticksX: document.getElementById("detail-ticks-x"),
+    info: document.getElementById("detail-info"),
+    axis: CHART_AXES[0],
+  };
+}
+
+/* The vendored controller draws a sparkline's tint and end dot from its
+   polyline, but it scans once at boot and these rows are built after that.
+   Re-running it is the module's own idempotent entry: every line it already
+   wired is skipped. The import is dynamic because the build's node harness
+   loads this module with no ui.js beside it. */
+let chartController;
+
+function wireLineMarks() {
+  if (typeof document === "undefined" || typeof document.createElementNS !== "function") return;
+  chartController ??= import("./ui.js")
+    .then((ui) => ui.initChart)
+    .catch(() => null);
+  chartController.then((initChart) => initChart?.());
+}
+
+/* the row's own price history, always on the input axis: the card's selector
+   filters the card, never the list */
+function sparkShape(entry) {
+  const { runs } = chartPoints(entry, "input");
+  if (runs.length === 0) return null;
+  const domain = chartDomain(runs);
+  const peak = chartPeak(runs);
+  const flat = runs.every((run) => run.points.every((point) => point.value === peak));
+  const spark = document.createElement("div");
+  spark.className = "stat-spark";
+  spark.setAttribute("aria-hidden", "true");
+  // one svg per run: the controller keeps one line's marks per svg, so two runs
+  // in one svg would share a single tint and end dot
+  for (const run of runs) {
+    const svg = svgNode("svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.setAttribute("preserveAspectRatio", "none");
+    const line = svgNode("polyline");
+    line.setAttribute("points", stepPolyline(run, domain, peak, flat));
+    svg.append(line);
+    spark.append(svg);
+  }
+  return spark;
+}
+
+function sparkCell(entry) {
+  const td = document.createElement("td");
+  td.className = "spark-cell";
+  const spark = sparkShape(entry);
+  if (spark !== null) td.append(spark);
+  return td;
+}
+
 export function init() {
   const wrap = document.getElementById("models");
   const body = document.getElementById("models-body");
@@ -368,12 +790,20 @@ export function init() {
   const entries = Array.isArray(payload.entries) ? payload.entries : [];
   const lookup = new Map(entries.map((entry) => [keyOf(entry), entry]));
   const state = decodeState(window.location.hash);
+  const arrived = encodeState(state);
   // a fragment can name a key no box can clear any more (a modality row, or a
   // model that left the tree); drop it so the URL and the session agree
   state.sel = state.sel.filter((key) => {
     const entry = lookup.get(key);
     return entry !== undefined && isChatPriced(entry);
   });
+  // the same rule for the detail card: a fragment naming no entry selects nothing
+  if (state.model !== "" && !lookup.has(state.model)) state.model = "";
+  // a dropped key leaves the url too, or a reload resurrects the dead selection
+  if (encodeState(state) !== arrived) {
+    window.history.replaceState(null, "", `#${encodeState(state)}`);
+  }
+  const detail = detailNodes();
 
   const qBox = document.getElementById("q");
   const tokenBoxes = {
@@ -429,9 +859,13 @@ export function init() {
     tr.append(pick);
 
     const name = document.createElement("td");
-    const title = document.createElement("span");
-    title.className = "table-name";
+    const title = document.createElement("button");
+    title.type = "button";
+    title.className = "table-name model-button";
+    title.dataset.key = key;
+    title.setAttribute("aria-controls", "model-detail");
     title.textContent = nameOf(entry);
+    title.addEventListener("click", () => selectModel(key));
     name.append(title);
     if (!isChatPriced(entry)) {
       name.append(document.createTextNode(" "));
@@ -447,11 +881,50 @@ export function init() {
     name.append(sub);
     tr.append(name);
 
-    tr.append(cell(entry.vendor ? String(entry.vendor) : DASH));
+    const vendor = document.createElement("td");
+    vendor.className = "col-vendor";
+    vendor.textContent = entry.vendor ? String(entry.vendor) : DASH;
+    tr.append(vendor);
     tr.append(cell(formatRate(rateOf(entry, "input")), "num-col"));
     tr.append(cell(formatRate(rateOf(entry, "cache_read")), "num-col"));
     tr.append(cell(formatRate(rateOf(entry, "output")), "num-col"));
+    tr.append(sparkCell(entry));
     return tr;
+  }
+
+  function syncModelCurrent() {
+    for (const button of wrap.querySelectorAll(".model-button")) {
+      button.setAttribute("aria-current", button.dataset.key === state.model ? "true" : "false");
+    }
+  }
+
+  function selectModel(key) {
+    const entry = lookup.get(key);
+    if (entry === undefined) return;
+    state.model = key;
+    syncModelCurrent();
+    if (detail !== null) {
+      renderDetail(detail, entry);
+      // one column puts the card above the table, so a pick below the fold must
+      // bring it back into view or the page reads as if the tap did nothing
+      if (detail.card.getBoundingClientRect().top < 0) {
+        detail.card.scrollIntoView({ block: "start" });
+      }
+    }
+    push();
+  }
+
+  function clearModel() {
+    state.model = "";
+    syncModelCurrent();
+    if (detail !== null) emptyDetail(detail);
+    push();
+  }
+
+  function showSelectedModel() {
+    if (detail === null || state.model === "") return;
+    const entry = lookup.get(state.model);
+    if (entry !== undefined) renderDetail(detail, entry);
   }
 
   function renderRows() {
@@ -475,6 +948,8 @@ export function init() {
     body.replaceChildren(fragment);
     if (countLine) countLine.textContent = `${shown.length} of ${entries.length} models`;
     syncAriaSort();
+    syncModelCurrent();
+    wireLineMarks();
   }
 
   function renderSession() {
@@ -565,6 +1040,23 @@ export function init() {
     push();
   });
 
+  if (detail !== null) {
+    for (const button of detail.card.querySelectorAll("[data-axis]")) {
+      button.addEventListener("click", () => {
+        const axis = button.dataset.axis;
+        if (!CHART_AXES.includes(axis)) return;
+        detail.axis = axis;
+        for (const peer of detail.card.querySelectorAll("[data-axis]")) {
+          peer.setAttribute("aria-pressed", peer === button ? "true" : "false");
+        }
+        if (state.model === "") return;
+        const entry = lookup.get(state.model);
+        if (entry !== undefined) drawChart(detail, entry);
+      });
+    }
+    detail.close?.addEventListener("click", () => clearModel());
+  }
+
   wrap.addEventListener("table:sort", (event) => {
     const { key, dir } = event.detail;
     state.sort = dir === "none" ? "" : key;
@@ -590,6 +1082,7 @@ export function init() {
   lastHash = encodeState(state);
 
   restoreSort(state, wrap);
+  showSelectedModel();
 
   // last, so nothing below it can leave the page reported ready
   reportReady(document, wrap);

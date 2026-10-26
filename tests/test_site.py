@@ -23,6 +23,7 @@ from test_publish import _fixture_root, _flat_rows
 ROOT = Path(__file__).resolve().parents[1]
 
 APP_JS = ROOT / "src" / "ai_pricelog" / "site_assets" / "app.js"
+SITE_ASSETS = APP_JS.parent
 
 # the page's own half of the handshake, pinned as a whole statement because the
 # property alone survives a changed value. the module's half, the call included,
@@ -47,6 +48,10 @@ out.rate = probe.cases.peak ? app.priceAtRate(2.5, probe.cases.peak.tokens) : nu
 out.rates = (probe.rates ?? []).map(v => app.formatRate(v));
 out.matches = (probe.matches ?? []).map(m => app.whenMatches(m.when, m.ctx));
 out.chat = (probe.chat ?? []).map(entry => app.isChatPriced(entry));
+out.chart = (probe.chart ?? []).map(spec => app.chartPoints(spec.entry, spec.axis));
+out.axes = app.CHART_AXES;
+out.polyline = (probe.polyline ?? []).map(
+  spec => app.stepPolyline(spec.run, spec.domain, spec.peak, spec.flat));
 if (probe.reveal) {
   const run = marked => {
     const listeners = [];
@@ -147,12 +152,12 @@ if (probe.modeChanges) {
 if (probe.rows) {
   const make = (tag) => ({
     tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
-    dataset: {}, checked: false,
+    dataset: {}, checked: false, attrs: {},
     append(...nodes) { this.children.push(...nodes); },
     replaceChildren(...nodes) {
       this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
     },
-    setAttribute() {},
+    setAttribute(name, value) { this.attrs[name] = String(value); },
     querySelector() { return null; },
     querySelectorAll() { return []; },
     addEventListener() {},
@@ -188,12 +193,20 @@ if (probe.rows) {
     session_rows: elements.get("session-body").children.length,
     model_rows: body.children.map((tr) => {
       const name = tr.children[1];
+      const spark = tr.children[6].children[0];
+      const lines = spark && spark.className === "stat-spark"
+        ? spark.children.flatMap((svg) => svg.children
+            .filter((node) => node.tag === "polyline")
+            .map((node) => node.attrs.points ?? ""))
+        : null;
       return {
         has_box: hasBox(tr.children[0]),
         name: name.children[0].textContent,
         tags: name.children
           .filter((node) => typeof node.className === "string" && node.className.startsWith("tag "))
           .map((node) => node.textContent),
+        vendor_class: tr.children[2].className,
+        lines,
       };
     }),
   };
@@ -390,6 +403,119 @@ MODALITY = {
     ],
 }
 
+# a two-interval chain for the price-history chart: input and output move on
+# 2026-10-01, and cache_read is priced only in the first era, so an axis whose
+# data runs out pins the line's own end
+CHAIN = {
+    "source": "fixture",
+    "model_id": "m7",
+    "vendor": "fixture",
+    "name": "Fixture Seven",
+    "observed_at": "2026-10-01",
+    "rates": {"input": 1.0, "output": 4.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-10-01",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 2.0, "output": 8.0, "cache_read": 0.25},
+        },
+        {
+            "valid_from": "2026-10-01",
+            "valid_to": None,
+            "observed_at": "2026-10-01",
+            "rates": {"input": 1.0, "output": 4.0},
+        },
+    ],
+}
+
+# the inverted pair the interval rule clamps to an empty span: the 08-01 row
+# never applied, so only the 09-01 rate is a price the model was charged
+INVERTED = {
+    "source": "fixture",
+    "model_id": "m8",
+    "vendor": "fixture",
+    "name": "Fixture Eight",
+    "observed_at": "2026-09-01",
+    "rates": {"input": 3.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-01",
+            "observed_at": "2026-09-01",
+            "rates": {"input": 1.5},
+        },
+        {
+            "valid_from": "2026-09-01",
+            "valid_to": None,
+            "observed_at": "2026-09-01",
+            "rates": {"input": 3.0},
+        },
+    ],
+}
+
+# an axis that stops being priced for one era and comes back: 101 stored keys
+# carry this shape, so the chart must not drop either era
+GAPPED = {
+    "source": "fixture",
+    "model_id": "m9",
+    "vendor": "fixture",
+    "name": "Fixture Nine",
+    "observed_at": "2026-10-01",
+    "rates": {"input": 1.0, "output": 4.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-09-01",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 2.0, "output": 8.0},
+        },
+        {
+            "valid_from": "2026-09-01",
+            "valid_to": "2026-10-01",
+            "observed_at": "2026-09-01",
+            "rates": {"output": 9.0},
+        },
+        {
+            "valid_from": "2026-10-01",
+            "valid_to": None,
+            "observed_at": "2026-10-01",
+            "rates": {"input": 1.0, "output": 4.0},
+        },
+    ],
+}
+
+# a model removed and later revived: 38 stored keys carry this shape, and the
+# entry is not removed now
+REVIVED = {
+    "source": "fixture",
+    "model_id": "m10",
+    "vendor": "fixture",
+    "name": "Fixture Ten",
+    "observed_at": "2026-09-10",
+    "rates": {"input": 1.0},
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-08-20",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 2.0},
+        },
+        {
+            "valid_from": "2026-08-20",
+            "valid_to": "2026-09-10",
+            "observed_at": "2026-08-20",
+            "removed": True,
+        },
+        {
+            "valid_from": "2026-09-10",
+            "valid_to": None,
+            "observed_at": "2026-09-10",
+            "rates": {"input": 1.0},
+        },
+    ],
+}
+
 # a provenance name a scraper could hand back: interpolated raw it would close
 # the page's script island, and escaped it is just a name
 NASTY = "</script><script>alert(1)</script>"
@@ -521,6 +647,51 @@ def test_a_modality_row_has_no_checkbox_and_never_prices_a_session(tmp_path):
     assert result["rows"]["session_rows"] == 1
 
 
+def test_every_row_draws_its_price_history_sparkline(tmp_path):
+    """The row carries the model's own shape on the input axis, and a row with
+    no priced interval draws none rather than an empty line."""
+    bare = {
+        "source": "fixture",
+        "model_id": "m11",
+        "vendor": "fixture",
+        "observed_at": "2026-08-01",
+        "rates": {"image": 1.0},
+        "intervals": [],
+    }
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": {"entries": [ENTRY, MODALITY, bare]}, "hash": ""},
+        },
+    )
+    rows = result["rows"]["model_rows"]
+    assert [row["lines"] is not None for row in rows] == [True, True, False]
+    assert [len(row["lines"]) for row in rows[:2]] == [1, 1]
+    # the vendor column's own class is what the desktop hide rule targets, on
+    # the row side; the header carries it beside this
+    assert [row["vendor_class"] for row in rows] == ["col-vendor"] * 3
+
+
+def test_the_row_sparkline_draws_the_input_axis(tmp_path):
+    """GAPPED prices input and output differently, so the drawn coordinates say
+    which axis the sparkline read: input runs 2.0 then 1.0 over a peak of 2, so
+    the first era sits at the top of the box and the second at its middle. An
+    output-based sparkline would draw 8.0 then 9.0 and land at neither."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": {"entries": [GAPPED]}, "hash": ""},
+        },
+    )
+    lines = result["rows"]["model_rows"][0]["lines"]
+    levels = [[point.split(",")[1] for point in line.split()] for line in lines]
+    assert levels == [["0", "0"], ["50", "50"]]
+
+
 def test_every_key_of_the_real_export_renders(tmp_path):
     """The fixture cannot carry the shape of 1123 real entries; this one does."""
     rows = store.load_shards(ROOT / store.SHARD_DIR)
@@ -602,12 +773,66 @@ def test_every_reference_the_page_makes_resolves(tmp_path):
 
 
 def test_every_element_the_page_script_looks_up_exists(tmp_path):
+    """Every id and class the module reaches for is on the page. The card's
+    parts are found by class, so an id-only walk misses the lookup that makes
+    the whole card render."""
     out = _built(tmp_path)
-    html = (out / "index.html").read_text(encoding="utf-8")
-    wanted = set(re.findall(r'getElementById\("([^"]+)"\)', APP_JS.read_text(encoding="utf-8")))
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    script = APP_JS.read_text(encoding="utf-8")
+    wanted = set(re.findall(r'getElementById\("([^"]+)"\)', script))
     assert wanted != set()
     for element_id in sorted(wanted):
-        assert f'id="{element_id}"' in html, f"the page never renders #{element_id}"
+        assert soup.select_one(f'[id="{element_id}"]') is not None, (
+            f"the page never renders #{element_id}"
+        )
+    for selector in (".chart-svg", ".chart-series", ".chart-line", ".chart-grid"):
+        assert selector in script, selector
+        assert soup.select_one(f"#detail-chart {selector}") is not None, (
+            f"the page never renders {selector}"
+        )
+    assert soup.select_one("[data-axis][aria-pressed]") is not None
+
+
+def test_the_page_holds_a_model_detail_card(tmp_path):
+    """The card is server-rendered and empty until a row is picked: `data-empty`
+    is what hides it above the table on a phone, the body ships hidden, the
+    empty state carries the instruction, the axis selector offers the chart's
+    three axes with the first one selected, and the line ships with no points so
+    nothing paints before the page fills it."""
+    soup = _soup((_built(tmp_path) / "index.html").read_text(encoding="utf-8"))
+    card = soup.select_one("#model-detail")
+    assert card is not None
+    assert card["data-empty"] == "true"
+    assert "js-only" in card["class"]
+    body = soup.select_one("#detail-body")
+    assert body is not None and body.has_attr("hidden")
+    empty = soup.select_one("#detail-empty")
+    assert empty is not None
+    assert empty.get_text(" ", strip=True) == (
+        "select a model in the table to see its price history and rates"
+    )
+    axes = [
+        (b.get("data-axis"), b.get_text(strip=True), b.get("aria-pressed"), " ".join(b["class"]))
+        for b in card.select("[data-axis]")
+    ]
+    assert axes == [
+        ("input", "input", "true", "btn btn-secondary"),
+        ("output", "output", "false", "btn btn-secondary"),
+        ("cache_read", "cache read", "false", "btn btn-secondary"),
+    ]
+    line = card.select_one(".chart .chart-line")
+    assert line is not None and line.get("points") == ""
+
+
+def test_the_shipped_asset_tree_names_no_design_system():
+    """A published file must never name the internal system it was copied from.
+    The sweep reads every text asset whole rather than the one header a reader
+    happens to open, so a comment carried over in the next refresh fails here."""
+    assert SITE_ASSETS.is_dir()
+    for path in sorted(SITE_ASSETS.rglob("*")):
+        if path.suffix in {".css", ".js", ".svg", ".html"}:
+            text = path.read_text(encoding="utf-8").lower()
+            assert "cloudy" not in text, f"{path.name} names the design system"
 
 
 def test_the_session_card_offers_the_request_modes(tmp_path):
@@ -921,6 +1146,189 @@ def test_when_matches_on_the_mode_key(tmp_path):
     assert result["matches"] == [expected for _, _, expected in _MATCH_CASES]
 
 
+def test_the_chart_draws_one_point_per_interval(tmp_path):
+    """A two-row chain is two prices, so the line steps twice: once at each
+    interval's own start, at that interval's rate for the chosen axis."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": CHAIN, "axis": "input"},
+                {"entry": CHAIN, "axis": "output"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [
+            {
+                "points": [
+                    {"date": "2026-08-01", "value": 2.0},
+                    {"date": "2026-10-01", "value": 1.0},
+                ],
+                "end": None,
+            }
+        ],
+        "removed": False,
+    }
+    assert result["chart"][1] == {
+        "runs": [
+            {
+                "points": [
+                    {"date": "2026-08-01", "value": 8.0},
+                    {"date": "2026-10-01", "value": 4.0},
+                ],
+                "end": None,
+            }
+        ],
+        "removed": False,
+    }
+
+
+def test_the_chart_collapses_an_inverted_pair_to_one_point(tmp_path):
+    """The clamped interval never applied, so the pair draws one price: the one
+    the model was actually charged, at the surviving interval's start."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": INVERTED, "axis": "input"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [{"points": [{"date": "2026-09-01", "value": 3.0}], "end": None}],
+        "removed": False,
+    }
+
+
+def test_the_chart_ends_the_line_at_a_removal(tmp_path):
+    """A removed model keeps the prices it held and stops at the removal's own
+    start: the removal row carries a copied rate that was never charged."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": REMOVED, "axis": "input"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [{"points": [{"date": "2026-08-01", "value": 1.0}], "end": "2026-08-05"}],
+        "removed": True,
+    }
+
+
+def test_the_chart_ends_an_axis_whose_data_runs_out(tmp_path):
+    """cache_read is priced only in the first era. The line stops where that
+    era does instead of carrying the stale rate over the row that lacks one."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": CHAIN, "axis": "cache_read"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [{"points": [{"date": "2026-08-01", "value": 0.25}], "end": "2026-10-01"}],
+        "removed": False,
+    }
+
+
+def test_the_chart_keeps_every_era_an_axis_is_priced_in(tmp_path):
+    """The axis goes missing for one era and comes back. The chart keeps both
+    eras as separate runs: 101 stored keys have such a gap, and a single
+    truncated line would drop history the flat entry still carries."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": GAPPED, "axis": "input"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [
+            {"points": [{"date": "2026-08-01", "value": 2.0}], "end": "2026-09-01"},
+            {"points": [{"date": "2026-10-01", "value": 1.0}], "end": None},
+        ],
+        "removed": False,
+    }
+
+
+def test_the_chart_continues_past_a_closed_removal(tmp_path):
+    """A model that came back after a removal is not removed now: the chart
+    draws the revival as its own run instead of stopping at the old removal."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chart": [
+                {"entry": REVIVED, "axis": "input"},
+            ],
+        },
+    )
+    assert result["chart"][0] == {
+        "runs": [
+            {"points": [{"date": "2026-08-01", "value": 2.0}], "end": "2026-08-20"},
+            {"points": [{"date": "2026-09-10", "value": 1.0}], "end": None},
+        ],
+        "removed": False,
+    }
+
+
+def test_the_axis_selector_offers_the_chart_axes(tmp_path):
+    """The selector's own segments and the module's axis list are one set: a
+    segment whose axis the module rejects draws nothing, and every other check
+    here would stay green."""
+    soup = _soup((_built(tmp_path) / "index.html").read_text(encoding="utf-8"))
+    offered = [b["data-axis"] for b in soup.select("#model-detail [data-axis]")]
+    result = _node(tmp_path, {"cases": {}, "fragment": ""})
+    assert result["axes"] == offered == ["input", "output", "cache_read"]
+
+
+def test_a_model_fragment_key_restores_and_round_trips(tmp_path):
+    """The detail card's model is url state like the rest: a shared link opens
+    onto the same card, and the encoder writes the key only when it is set."""
+    result = _node(tmp_path, {"cases": {}, "fragment": "#model=deepseek/deepseek-v4-pro"})
+    assert result["state"]["model"] == "deepseek/deepseek-v4-pro"
+    assert result["encoded"] == "calc=1000000|0|0&model=deepseek/deepseek-v4-pro"
+
+
+def test_a_flat_history_draws_at_the_top_or_the_middle(tmp_path):
+    """The builder's two readings of a price that never moved, which is the
+    choice the two callers make: at the top of its own scale it agrees with the
+    axis ticks (peak = the value, y = 0), and at the middle it reads as a shape
+    the way a sparkline with no axis does. A card chart drawn at 50 reads a 1.32
+    price as 0.66 beside its own ticks."""
+    run = {"points": [{"date": "2026-08-01", "value": 2.0}], "end": None}
+    domain = {"start": "2026-08-01", "finish": "2026-10-01"}
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "polyline": [
+                {"run": run, "domain": domain, "peak": 2.0, "flat": False},
+                {"run": run, "domain": domain, "peak": 2.0, "flat": True},
+            ],
+        },
+    )
+    levels = [[point.split(",")[1] for point in line.split()] for line in result["polyline"]]
+    assert levels == [["0", "0"], ["50", "50"]]
+
+
 def test_a_fragment_restores_the_whole_state(tmp_path):
     result = _node(tmp_path, {"cases": {}, "fragment": FRAGMENT})
     assert result["state"] == {
@@ -932,6 +1340,7 @@ def test_a_fragment_restores_the_whole_state(tmp_path):
         "day": "2026-09-07",
         "rate": "0.5",
         "mode": "fast",
+        "model": "",
     }
 
 
@@ -989,6 +1398,7 @@ def test_a_fragment_that_names_nothing_keeps_the_defaults(tmp_path):
         "day": "",
         "rate": "",
         "mode": "",
+        "model": "",
     }
     assert result["encoded"] == "calc=1000000|0|0"
 

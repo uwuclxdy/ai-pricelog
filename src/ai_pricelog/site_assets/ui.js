@@ -70,9 +70,14 @@ const runExit = (el, panel, clock) => {
   }, clock());
 };
 
-// a press inside a controller belongs to that controller, so only the others close
+// a press inside a controller belongs to that controller, so only the others close.
+// Controllers are dropped when their root leaves the DOM: a re-render that replaces
+// a tip or a select leaves a dead entry here, and every outside press then walks it.
 const closeOnOutside = controllers => document.addEventListener('pointerdown', e => {
-  controllers.forEach(c => { if (!c.root.contains(e.target)) c.close(); });
+  for (let i = controllers.length - 1; i >= 0; i--) {
+    if (!controllers[i].root.isConnected) { controllers.splice(i, 1); continue; }
+    if (!controllers[i].root.contains(e.target)) controllers[i].close();
+  }
 });
 
 /* ====================== sliding inks (tabs, navbar) ====================== */
@@ -127,13 +132,16 @@ function placeFrom(wrapEl, inkEl, activeSel) {
    a page writes the wrap and gets the whole component. Where a marker sits is
    part of it: these are positioned with no z-index, so paint order is document
    order, and one that paints UNDER its siblings goes first. Existing markup is
-   reused, so a page that still writes one never gets a second. */
-function ownChild(parent, cls, { tag = 'div', first = false } = {}) {
+   reused, so a page that still writes one never gets a second. `svg` builds in
+   the SVG namespace, where `className` is read-only, so the class is an
+   attribute for both. */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function ownChild(parent, cls, { tag = 'div', first = false, svg = false } = {}) {
   const sel = `:scope > .${cls.trim().split(/\s+/).join('.')}`;
   let el = parent.querySelector(sel);
   if (!el) {
-    el = document.createElement(tag);
-    el.className = cls;
+    el = svg ? document.createElementNS(SVG_NS, tag) : document.createElement(tag);
+    el.setAttribute('class', cls);
     el.setAttribute('aria-hidden', 'true');
     if (first) parent.prepend(el); else parent.append(el);
   }
@@ -217,8 +225,8 @@ export function initTabs() {
     // component does not own
     const tabsRow = wrap.querySelector(':scope > .tabs');
     if (!tabsRow) return null;
-    // the rail is hoisted, never queried inline: tools/reference-coverage.py
-    // parses builder args with a flat scan that closes at the first `)`
+    // the rail is hoisted, never queried inline: the builder args are parsed with
+    // a flat scan that closes at the first `)`
     return ownChild(tabsRow, 'tab-ink');
   };
   const wraps = () => document.querySelectorAll(TAB_WRAP);
@@ -536,6 +544,31 @@ export function initSelect() {
     trigger.setAttribute('aria-controls', menu.id);
     options.forEach((o, j) => { o.id ||= `select-${i}-opt-${j}`; });
 
+    // the width floor: the trigger's text is only the selected value, so left
+    // to itself a select in a flex row sizes to it and the open panel outgrows
+    // the shut state. Measured after the row reaches the document (a detached
+    // tree has no layout, so offsetWidth reads 0) and again through an explicit
+    // fonts.load, since fonts.ready can resolve before a lazy face even starts.
+    // Pinned at the panel's corner so its box never extends the scroller's
+    // overflow. The floor is the widest option plus the menu's gutter and border.
+    const sizer = document.createElement('span');
+    sizer.className = 'menu-item';
+    sizer.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;top:0;left:0;';
+    menu.appendChild(sizer);
+    const fitLongest = () => {
+      if (!root.isConnected) return;
+      let widest = 0;
+      options.forEach(opt => {
+        sizer.textContent = opt.textContent;
+        widest = Math.max(widest, sizer.offsetWidth);
+      });
+      root.style.minWidth = (widest + 10) + 'px';
+    };
+    requestAnimationFrame(fitLongest);
+    document.fonts.ready.then(() => {
+      document.fonts.load(getComputedStyle(sizer).font).then(fitLongest);
+    });
+
     const visible = () => options.filter(o => !o.hidden);
     const selectedVisible = () => {
       const vis = visible();
@@ -677,6 +710,64 @@ export function initSelect() {
    owns nothing a command does: it dispatches `run` on the backdrop with the row's
    data-command. Ctrl/Cmd+K opens it whether or not a trigger button exists. */
 const VISIBLE_ROW = '.palette-row:not([hidden])';
+
+export function initSlider() {
+  document.querySelectorAll('.slider').forEach(root => {
+    if (!once(root, 'uiSlider')) return;
+    const track = root.querySelector('.slider-track');
+    const fill = root.querySelector('.slider-fill');
+    if (!track || !fill) return;   // the controller never throws on half-built markup
+    const min = parseFloat(root.getAttribute('aria-valuemin') ?? '0');
+    const max = parseFloat(root.getAttribute('aria-valuemax') ?? '100');
+    let val = parseFloat(root.getAttribute('aria-valuenow') ?? String(min));
+    const commit = () => {
+      root.setAttribute('aria-valuenow', String(val));
+      fill.style.width = ((val - min) / (max - min)) * 100 + '%';
+    };
+    const setVal = (v, fire) => {
+      val = Math.min(max, Math.max(min, v));
+      commit();
+      if (fire) root.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const valFromX = clientX => {
+      const r = track.getBoundingClientRect();
+      return min + ((clientX - r.left) / r.width) * (max - min);
+    };
+    root.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      root.focus();
+      setVal(valFromX(e.clientX), true);
+      // a synthetic event carries no active pointer and the capture throws,
+      // which would also bail the ring through its error listener
+      try { root.setPointerCapture(e.pointerId); } catch {}
+      root.dataset.dragging = '1';
+    });
+    root.addEventListener('pointermove', e => {
+      if (root.dataset.dragging) setVal(valFromX(e.clientX), true);
+    });
+    const end = e => {
+      if (!root.dataset.dragging) return;
+      delete root.dataset.dragging;
+      try { if (root.hasPointerCapture(e.pointerId)) root.releasePointerCapture(e.pointerId); } catch {}
+    };
+    root.addEventListener('pointerup', end);
+    root.addEventListener('pointercancel', end);
+    root.addEventListener('keydown', e => {
+      const step =
+        e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 :
+        e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 :
+        e.key === 'PageUp' ? 10 :
+        e.key === 'PageDown' ? -10 :
+        e.key === 'Home' ? min - val :
+        e.key === 'End' ? max - val : 0;
+      if (!step) return;
+      e.preventDefault();
+      setVal(val + step, true);
+    });
+    Object.defineProperty(root, 'value', { get: () => String(val) });
+    commit();
+  });
+}
 
 export function initPalette() {
   // the sheet's own catalogue anchor is named `palette`, so an id lookup finds
@@ -877,7 +968,12 @@ export function initTooltip() {
     });
     // touch has no hover: the first contact shows it
     trigger.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') open(); });
-    trigger.addEventListener('focus', () => { focused = true; open(); });
+    trigger.addEventListener('focus', () => {
+      // click focuses the trigger too, and a pointer focus must not count as the
+      // show condition: :focus-visible separates keyboard focus from pointer focus
+      focused = trigger.matches(':focus-visible');
+      if (focused) open();
+    });
     trigger.addEventListener('blur', () => { focused = false; maybeClose(); });
     trigger.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
@@ -1154,6 +1250,57 @@ export function initSticky() {
   });
 }
 
+/* Plays each target once, in batches of what arrives together: when it crosses
+   the line 10% above the bottom edge, or when it is on screen and no scroller
+   holding it can lift it any higher. Without the second clause a short element
+   at a page's end, or one low on a page that cannot scroll, stays hidden for
+   good: measured, a 40px chart as the sheet's last element sat at 859-899px of
+   a 900px window at full scroll, under the 810px line. Returns the call that
+   plays a batch from outside, for the reveal's net. */
+function watchEntrance(targets, play) {
+  const pending = new Set(targets);
+  const onScreen = new Set();
+  const settle = els => {
+    const batch = els.filter(el => pending.delete(el));
+    batch.forEach(el => {
+      onScreen.delete(el);
+      line.unobserve(el);
+      seen.unobserve(el);
+    });
+    if (!pending.size) {
+      removeEventListener('scroll', sweep, true);
+      removeEventListener('resize', sweep);
+    }
+    if (batch.length) play(batch);
+  };
+  function sweep() { settle([...onScreen].filter(cannotRise)); }
+  const line = new IntersectionObserver(
+    entries => settle(entries.filter(e => e.isIntersecting).map(e => e.target)),
+    { threshold: 0, rootMargin: '0px 0px -10% 0px' });
+  const seen = new IntersectionObserver(entries => {
+    entries.forEach(e => e.isIntersecting ? onScreen.add(e.target) : onScreen.delete(e.target));
+    sweep();
+  }, { threshold: 0 });
+  addEventListener('scroll', sweep, { capture: true, passive: true });
+  addEventListener('resize', sweep);
+  targets.forEach(el => {
+    line.observe(el);
+    seen.observe(el);
+  });
+  return settle;
+}
+
+/* every scroller holding the element already sits at its end */
+const cannotRise = el => {
+  for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+    const overflowY = getComputedStyle(n).overflowY;
+    const scrolls = overflowY === 'auto' || overflowY === 'scroll';
+    if (scrolls && n.scrollTop < n.scrollHeight - n.clientHeight - 1) return false;
+  }
+  const page = document.scrollingElement;
+  return page.scrollTop >= page.scrollHeight - page.clientHeight - 1;
+};
+
 /* JS adds the hiding class at runtime, so no-JS keeps the content visible.
    Reduced motion skips the hide entirely rather than zeroing a duration. */
 export function initReveal() {
@@ -1171,20 +1318,14 @@ export function initReveal() {
   const land = els => els.forEach((el, i) => {
     el.style.transitionDelay = Math.min(i, 5) * 40 + 'ms';
     el.classList.add('in');
-    io.unobserve(el);
   });
-
-  const io = new IntersectionObserver(
-    entries => land(entries.filter(e => e.isIntersecting).map(e => e.target)),
-    { threshold: 0, rootMargin: '0px 0px -10% 0px' });
-  targets.forEach(el => io.observe(el));
+  const settle = watchEntrance(targets, land);
 
   /* The net covers an observer that never fired, so it reveals only what is ON
      SCREEN when it lands. Revealing every target instead settles the whole page
      before the reader reaches any of it: measured on the rendered sheet, 44 of
      46 sections were off screen at 1500ms, so no section could ever animate. */
-  setTimeout(() => land(targets.filter(el => {
-    if (el.classList.contains('in')) return false;
+  setTimeout(() => settle(targets.filter(el => {
     const r = el.getBoundingClientRect();
     return r.top < innerHeight && r.bottom > 0;
   })), 1500);
@@ -1235,8 +1376,56 @@ function initLegend() {
   });
 }
 
+/* A line's area and its end point are the line's own geometry, so a page writes
+   the polyline and this derives the other two: the flat tint down to the plot's
+   floor, under the line, and the round mark on its last point, over it. Both are
+   read off the `points` attribute rather than kept, so a page that redraws a line
+   rewrites that one attribute and the pair follows; an emptied or removed line
+   takes its pair with it, or a tint would outlive the line it stood under. A write through
+   the `SVGPointList` API fires no mutation, measured in Chrome, so it redraws
+   nothing. A sparkline takes the same pair. A `<path>` line has no point list to
+   read, and gets neither. */
+let lineMarks = null;
+function drawLineMarks(line) {
+  const n = line.points?.numberOfItems;
+  const box = line.ownerSVGElement?.viewBox.baseVal;
+  const parent = line.parentNode;
+  if (!parent) return;
+  if (!n || !box?.height) {
+    parent.querySelectorAll(':scope > .chart-area, :scope > .chart-point.chart-end').forEach(m => m.remove());
+    return;
+  }
+  const pts = Array.from({ length: n }, (_, i) => line.points.getItem(i));
+  const floor = box.y + box.height;
+  const first = pts[0];
+  const last = pts[n - 1];
+  const area = ownChild(parent, 'chart-area', { tag: 'polygon', svg: true, first: true });
+  area.setAttribute('points',
+    [...pts.map(p => `${p.x},${p.y}`), `${last.x},${floor}`, `${first.x},${floor}`].join(' '));
+  const end = ownChild(parent, 'chart-point chart-end', { tag: 'line', svg: true });
+  end.setAttribute('x1', last.x);
+  end.setAttribute('y1', last.y);
+  end.setAttribute('x2', last.x);
+  end.setAttribute('y2', last.y);
+}
+function initLineMarks() {
+  document.querySelectorAll('.chart-series > .chart-line, .stat-spark svg > polyline').forEach(line => {
+    if (!once(line, 'uiLineMarks')) return;
+    lineMarks ||= new MutationObserver(records => records.forEach(r => {
+      if (r.type === 'attributes') return drawLineMarks(r.target);
+      if (![...r.removedNodes].some(n => n.matches?.('.chart-line, polyline'))) return;
+      if (r.target.querySelector(':scope > .chart-line, :scope > polyline')) return;
+      r.target.querySelectorAll(':scope > .chart-area, :scope > .chart-point.chart-end').forEach(m => m.remove());
+    }));
+    drawLineMarks(line);
+    lineMarks.observe(line, { attributes: true, attributeFilter: ['points'] });
+    lineMarks.observe(line.parentNode, { childList: true });
+  });
+}
+
 export function initChart() {
   initLegend();
+  initLineMarks();
   const charts = [...document.querySelectorAll('.chart')].filter(el => once(el, 'uiChart'));
   if (!charts.length) return;
 
@@ -1247,15 +1436,7 @@ export function initChart() {
     charts.forEach(el => el.classList.add('is-drawn'));
     return;
   }
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('is-drawn');
-        io.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
-  charts.forEach(el => io.observe(el));
+  watchEntrance(charts, els => els.forEach(el => el.classList.add('is-drawn')));
 }
 
 /* ========================== popovers and menus ========================== */
@@ -1276,13 +1457,22 @@ export function initPopovers() {
   const close = (menu, btn) => {
     if (menu.hidden || menu.classList.contains('closing')) return;
     btn?.setAttribute('aria-expanded', 'false');
-    runExit(menu, null, () => animMs(menu));
+    menu.querySelectorAll('.menu-item.focus').forEach(r => r.classList.remove('focus'));
+    menu.uiPopoverExit = runExit(menu, null, () => animMs(menu));
   };
 
   document.querySelectorAll('[aria-controls][aria-haspopup]').forEach(btn => {
     const menu = document.getElementById(btn.getAttribute('aria-controls'));
     if (!menu || !menu.classList.contains('popover') || !once(btn, 'uiPopover')) return;
     popoverPairs.push({ btn, menu, close });
+
+    const show = () => {
+      clearTimeout(menu.uiPopoverExit);
+      menu.classList.remove('closing');
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+    };
+
     // a checkbox row has to survive several picks, so an input inside the
     // item keeps the menu open; a button row is an action, and an action
     // row that opens a modal leaves a menu open behind the dialog, whose
@@ -1295,9 +1485,95 @@ export function initPopovers() {
     });
     btn.addEventListener('click', () => {
       if (!menu.hidden) return close(menu, btn);
-      menu.classList.remove('closing');
-      menu.hidden = false;
-      btn.setAttribute('aria-expanded', 'true');
+      show();
+    });
+
+    // the keyboard model and the row focus belong to the menu costume alone;
+    // a bare popover keeps the base open / outside-click / Escape / exit
+    if (!menu.classList.contains('popover-menu')) return;
+
+    const rows = [...menu.querySelectorAll('.menu-item')];
+    // the menu-button pattern: the button is the one Tab stop, rows are focusable
+    // by script only, and a checkbox row's input is never a second target; the
+    // box stays the state and the row's aria-checked mirrors it
+    rows.forEach(row => {
+      row.tabIndex = -1;
+      const input = row.querySelector('input');
+      if (input) {
+        input.tabIndex = -1;
+        // the menuitemcheckbox row is the one checkbox a screen reader hears;
+        // the input stays the state and is never announced or Tab-stopped
+        input.setAttribute('aria-hidden', 'true');
+        const sync = () => row.setAttribute('aria-checked', String(input.checked));
+        sync();
+        input.addEventListener('change', sync);
+      }
+    });
+    let focusIdx = 0;
+    const isOpen = () => !menu.hidden && !menu.classList.contains('closing');
+    const activeIndex = () => {
+      const at = rows.findIndex(r => r.classList.contains('active'));
+      return at >= 0 ? at : 0;
+    };
+    const focusRow = idx => {
+      if (!rows.length) return;
+      focusIdx = ((idx % rows.length) + rows.length) % rows.length;
+      rows[focusIdx].focus();
+    };
+    // the .focus mark follows the real focus wherever it lands, and the row is
+    // the only thing that ever holds focus: a pointer click focuses the checkbox
+    // input, which is aria-hidden, so focus moves to its row instead
+    menu.addEventListener('focusin', e => {
+      const row = e.target.closest?.('.menu-item');
+      if (!row) return;
+      if (e.target.matches?.('input')) { row.focus(); return; }
+      const pos = rows.indexOf(row);
+      if (pos >= 0) {
+        focusIdx = pos;
+        rows.forEach(r => r.classList.toggle('focus', r === rows[pos]));
+      }
+    });
+    // Enter/Space fire the row's own click, so a consumer's listener on it runs;
+    // the menu's click listener above then closes it. A checkbox row toggles its
+    // box and stays open.
+    const activate = () => {
+      const row = rows[focusIdx];
+      if (!row) return;
+      const input = row.querySelector('input');
+      if (input) { input.click(); return; }
+      row.click();
+    };
+    const open = (toLast = false) => {
+      if (isOpen()) return;
+      show();
+      focusRow(toLast ? rows.length - 1 : activeIndex());
+    };
+
+    // focus is on the button: closed keys open, and a pointer-opened menu moves
+    // focus into the rows on the first arrow
+    btn.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowDown': e.preventDefault(); isOpen() ? focusRow(activeIndex()) : open(false); break;
+        case 'ArrowUp':   e.preventDefault(); isOpen() ? focusRow(rows.length - 1) : open(true); break;
+        case 'Home':      if (isOpen()) { e.preventDefault(); focusRow(0); } break;
+        case 'End':       if (isOpen()) { e.preventDefault(); focusRow(rows.length - 1); } break;
+        case 'Enter':
+        case ' ':         e.preventDefault(); isOpen() ? close(menu, btn) : open(false); break;
+        case 'Tab':       close(menu, btn); break;
+      }
+    });
+    // focus is on a row: the arrows walk it, Enter/Space activate, Escape is the
+    // global handler's, and Tab closes while the default moves focus on
+    menu.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowDown': e.preventDefault(); focusRow(focusIdx + 1); break;
+        case 'ArrowUp':   e.preventDefault(); focusRow(focusIdx - 1); break;
+        case 'Home':      e.preventDefault(); focusRow(0); break;
+        case 'End':       e.preventDefault(); focusRow(rows.length - 1); break;
+        case 'Enter':
+        case ' ':         e.preventDefault(); activate(); break;
+        case 'Tab':       close(menu, btn); break;
+      }
     });
   });
   if (!once(document.body, 'uiPopoverGlobal')) return;
@@ -1307,6 +1583,9 @@ export function initPopovers() {
     openPairs().forEach(({ btn, menu }) => {
       if (menu.contains(e.target) || btn.contains(e.target)) return;
       close(menu, btn);
+      // focus moves into the rows now, so an outside press must not leave it on
+      // a row the exit is about to hide
+      if (menu.contains(document.activeElement)) btn.focus();
     });
   });
   document.addEventListener('keydown', e => {
@@ -1546,9 +1825,21 @@ export function initTypedPlaceholder() {
    consumer opts in: this one selector names every component the stylesheet makes
    scroll, and the controller writes the cue class onto each. The axis is derived
    from what the element actually scrolls, never from a class the author wrote.
-   `no-scroll-fade` on any scroller is the one opt-out. Off at rest, so a no-JS
+   A consumer scroller opts in with `data-scroll-fade`; `no-scroll-fade` on any
+   scroller is the one opt-out. Floating panels never carry it: the select menu
+   and the palette scroll bare, her call 2026-09-23. Off at rest, so a no-JS
    page paints no cue. The two has-more classes are the CSS's own gate. */
-const SCROLL_FADE_SELECTOR = 'pre, .table-wrap, .chart-scroll, .modal-body, .log-view, .pagination-pages, .sidebar-nav, .navbar-nav, .select-menu, .palette-list';
+const SCROLL_FADE_SELECTOR = 'pre, .table-wrap, .chart-scroll, .modal-body, .log-view, .pagination-pages, .sidebar-nav, .navbar-nav, [data-scroll-fade]';
+
+/* One resize listener and one observer serve every scroller on the page. A
+   consumer that swaps markup (an htmx partial on every tick) replaces a
+   scroller each time, and a per-element listener plus observation would hold
+   every replaced node in memory for the page's life. */
+const fadeSyncs = new Map();
+const fadeObserver = new ResizeObserver(entries => {
+  for (const entry of entries) fadeSyncs.get(entry.target)?.();
+});
+let fadeResizeBound = false;
 
 export function initScrollFade() {
   document.querySelectorAll(SCROLL_FADE_SELECTOR).forEach(el => {
@@ -1563,14 +1854,26 @@ export function initScrollFade() {
       el.classList.toggle('has-more-start', pos > 1);
       el.classList.toggle('has-more-end', pos + view < full - 1);
     };
+    fadeSyncs.set(el, sync);
     el.addEventListener('scroll', sync, { passive: true });
-    addEventListener('resize', sync);
     /* The box changes size with no scroll and no window resize: the rail collapse
        takes this nav's clientHeight 756 to 722, which left the cue saying nothing
        was below with 34px still there, until the next scroll. */
-    new ResizeObserver(sync).observe(el);
+    fadeObserver.observe(el);
     sync();
   });
+  if (!fadeResizeBound) {
+    addEventListener('resize', () => {
+      for (const [el, sync] of fadeSyncs) if (el.isConnected) sync();
+    });
+    fadeResizeBound = true;
+  }
+  for (const [el, sync] of fadeSyncs) {
+    if (el.isConnected) continue;
+    el.removeEventListener('scroll', sync);
+    fadeObserver.unobserve(el);
+    fadeSyncs.delete(el);
+  }
 }
 
 /* ============================ scrollbar =========================== */
@@ -1616,6 +1919,11 @@ export function initScrollbars() {
   const at = (el, axis) => axis === 'y' ? el.scrollTop : el.scrollLeft;
 
   const scrolls = (el, axis) => {
+    /* `no-scrollbar` opts a scroller out of the drawn bar: it keeps scrolling,
+       and the bar keeps riding the page or column it belongs to. A surface
+       that reads as fixed chrome carries it, so it never grows a bar of its
+       own. */
+    if (el.closest('.no-scrollbar')) return false;
     if (full(el, axis) <= view(el, axis) + 1) return false;
     if (el === root) return true;
     const ov = getComputedStyle(el)[axis === 'y' ? 'overflowY' : 'overflowX'];
@@ -1811,6 +2119,13 @@ export function initScrollbars() {
   let drag = null;
   let frame = 0;
   let pointer = null;
+  // the thumb's last painted state per scroller and axis, for place()'s re-anchor
+  let anchors = new WeakMap();
+  const anchor = (el, axis) => {
+    let c = anchors.get(el);
+    if (!c) anchors.set(el, c = {});
+    return c[axis] || (c[axis] = {});
+  };
 
   const place = axis => {
     const bar = bars[axis];
@@ -1821,7 +2136,23 @@ export function initScrollbars() {
     // pinned chrome can take the whole scrollport, and a track with no room for
     // a handle is a mark, not a bar
     if (room < SCROLLBAR_MIN) { bar.classList.remove('is-on'); return; }
-    const run = padA + (max > 0 ? (at(el, axis) / max) * (track - len) : 0);
+    /* A cover that moves under a live scroll (a stuck header at its section's
+       end) shrinks `padA` one-to-one with the scroll while the progress term
+       follows only at (track - len) / max, so the thumb runs backward under a
+       forward scroll. Re-anchoring the line at the last painted position keeps
+       the thumb continuous through the change and still reaches the track's end
+       exactly at full scroll. With static chrome the re-anchored line IS the
+       standard one, so nothing else changes. */
+    const s = at(el, axis);
+    const a = anchor(el, axis);
+    let run;
+    if (max > 0 && track - len >= 1 && a.at < max) {
+      run = a.run + (s - a.at) * (padA + track - len - a.run) / (max - a.at);
+    } else {
+      run = padA + (max > 0 ? (s / max) * (track - len) : 0);
+    }
+    a.at = s;
+    a.run = run;
     if (axis === 'y') {
       bar.style.top = `${box.top + run}px`;
       bar.style.left = `${box.right - SCROLLBAR_LANE}px`;
@@ -1878,6 +2209,8 @@ export function initScrollbars() {
   addEventListener('scroll', e => {
     const el = e.target === document || e.target === root ? root : e.target;
     if (!(el instanceof Element) && el !== root) return;
+    // a bare scroller never claims the bar, nor arms it for the page behind it
+    if (el.closest('.no-scrollbar')) return;
     // the event names the element that scrolled and never the axis, so it takes
     // the axes it can actually drive and leaves the other bar with its owner
     if (!drag) for (const axis of ['x', 'y']) if (scrolls(el, axis)) active[axis] = el;
@@ -1910,7 +2243,7 @@ export function initScrollbars() {
      for the same reason. */
   document.documentElement.addEventListener('pointerleave', () => { pointer = null; sync(); });
 
-  addEventListener('resize', () => { radii = new WeakMap(); sync(); });
+  addEventListener('resize', () => { radii = new WeakMap(); anchors = new WeakMap(); sync(); });
 
   for (const axis of ['y', 'x']) {
     bars[axis].addEventListener('pointerdown', e => {
@@ -2120,6 +2453,7 @@ export function init() {
   initToggles();
   initDisclosures();
   initSelect();
+  initSlider();
   initPalette();
   initTooltip();
   initPopovers();

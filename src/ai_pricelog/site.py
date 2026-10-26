@@ -42,6 +42,49 @@ _PAGE_STYLE = """
   .stack { display: flex; flex-direction: column; gap: var(--space-8); }
   .toolbar .field { max-width: 190px; }
   .toolbar .field.wide { max-width: 320px; }
+  /* a flex item's min-width is auto, so a table wider than its column would
+     widen the document instead of scrolling in its own wrap */
+  .stack > * { min-width: 0; }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
+  .workspace-main, .workspace-aside { min-width: 0; }
+  /* an unfilled card is dead weight above the table on a phone, so it waits
+     for a pick; the desktop column keeps it as the pane's own affordance */
+  @media (max-width: 1099px) {
+    #model-detail[data-empty="true"] { display: none; }
+  }
+  @media (min-width: 1100px) {
+    html.js .workspace { grid-template-columns: minmax(0, 1fr) 380px;
+      grid-template-areas: "main aside"; align-items: start; }
+    html.js .workspace-main { grid-area: main; }
+    html.js .workspace-aside { grid-area: aside; position: sticky;
+      top: calc(var(--pin-top) + var(--space-8));
+      max-height: calc(100vh - var(--space-16)); overflow-y: auto; }
+    /* the side card shows the vendor as a tag and the row's sub-line names the
+       source, so the column is the width the card buys back at its own
+       breakpoint; below it the table scrolls in its own wrap, every column
+       intact */
+    #models-table .col-vendor { display: none; }
+  }
+  .model-button { padding: 0; letter-spacing: inherit; cursor: pointer; }
+  .spark-col, .spark-cell { width: 84px; min-width: 84px; }
+  /* one svg per run, laid on the same cell so a history with a gap or a
+     revival draws each era with its own tint and end mark */
+  .spark-cell .stat-spark { margin-top: 0; height: 24px; display: grid; }
+  .spark-cell .stat-spark svg { grid-area: 1 / 1; }
+  /* the spark header's .sr-only is absolutely positioned at the table's far
+     edge, and inside this scrolling wrap it reached the page's own scroll area
+     (measured: the phone page scrolled 386px sideways); a positioned wrap holds
+     that overflow where it belongs */
+  #models { position: relative; }
+  /* the row's name is the only way into the card, so on a coarse pointer it
+     carries the 44px target itself instead of leaving it to the row's own
+     checkbox toggle */
+  @media (pointer: coarse) {
+    .model-button { min-height: 44px; display: flex; align-items: center; }
+  }
+  #detail-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  #detail-name, #detail-id { overflow-wrap: anywhere; }
+  #detail-chart { margin-block: var(--space-5); }
 """
 
 # first in <head>, so the theme lands before the stylesheet paints
@@ -73,7 +116,7 @@ _SORT_ICON = (
 # the sortable columns of the interactive table: key, label, cell class
 _COLUMNS = (
     ("name", "model", ""),
-    ("vendor", "vendor", ""),
+    ("vendor", "vendor", "col-vendor"),
     ("input", "input", "num-col"),
     ("cache_read", "cached input", "num-col"),
     ("output", "output", "num-col"),
@@ -225,6 +268,9 @@ def _models_table() -> str:
             f'<button type="button" class="th-sort" data-sort="{key}">'
             f"{_esc(label)}{_SORT_ICON}</button></th>"
         )
+    cells.append(
+        '<th class="spark-col" scope="col"><span class="sr-only">price history</span></th>'
+    )
     return "".join(
         [
             '<div class="table-wrap js-only" id="models">\n',
@@ -238,7 +284,64 @@ def _models_table() -> str:
     )
 
 
+def _detail_card() -> str:
+    """The model detail aside, rendered empty: the page's module fills the
+    title, the chart and the key-value table when a row is picked."""
+    return "".join(
+        [
+            '<aside class="card js-only workspace-aside" id="model-detail" data-empty="true"'
+            " data-scroll-fade>\n",
+            '<div class="card-header">\n',
+            "<div>\n",
+            '<div class="card-title" id="detail-name" aria-live="polite">model detail</div>\n',
+            '<div class="card-subtitle" id="detail-id"></div>\n',
+            "</div>\n",
+            '<div id="detail-tags"></div>\n',
+            '<button class="btn btn-icon" type="button" id="detail-close"'
+            ' aria-label="close model detail" hidden>\n',
+            '<svg aria-hidden="true"><use href="#i-x"/></svg>\n',
+            "</button>\n",
+            "</div>\n",
+            '<p class="empty-state" id="detail-empty">'
+            "select a model in the table to see its price history and rates</p>\n",
+            '<div id="detail-body" hidden>\n',
+            '<div class="btn-group" role="group" aria-label="price axis">\n',
+            '<button class="btn btn-secondary" type="button" aria-pressed="true"'
+            ' data-axis="input">input</button>\n',
+            '<button class="btn btn-secondary" type="button" aria-pressed="false"'
+            ' data-axis="output">output</button>\n',
+            '<button class="btn btn-secondary" type="button" aria-pressed="false"'
+            ' data-axis="cache_read">cache read</button>\n',
+            "</div>\n",
+            '<div class="chart" id="detail-chart">\n',
+            '<div class="chart-axis-title chart-axis-title-y">price per mtok</div>\n',
+            '<div class="chart-ticks-y" id="detail-ticks-y"></div>\n',
+            '<div class="chart-plot">\n',
+            '<svg class="chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none" role="img">\n',
+            "<title>price history</title>\n",
+            "<desc>select a model to read its price history.</desc>\n",
+            '<g class="chart-grid"></g>\n',
+            '<g class="chart-series chart-series-1">'
+            '<polyline class="chart-line" points=""></polyline></g>\n',
+            "</svg>\n",
+            "</div>\n",
+            '<div class="chart-ticks-x" id="detail-ticks-x"></div>\n',
+            "</div>\n",
+            '<table class="info-table" aria-label="model rates, limits and dates">\n',
+            '<tbody id="detail-info"></tbody>\n',
+            "</table>\n",
+            "</div>\n",
+            "</aside>\n",
+        ]
+    )
+
+
 def _session_card() -> str:
+    """The calculator's controls, and the priced sessions beside them.
+
+    The results table is a raised surface of its own, so it sits after the card
+    rather than inside it: a card never sits on a card.
+    """
     return "".join(
         [
             '<section class="card js-only">\n',
@@ -273,16 +376,15 @@ def _session_card() -> str:
             "</div>\n",
             '<p class="empty-state" id="session-empty">'
             "select a model in the table to price a session against it</p>\n",
-            '<div class="table-wrap" id="session-wrap" hidden>\n',
-            '<table id="session-table">\n',
-            '<caption class="sr-only">the selected models, cheapest first</caption>\n',
+            "</section>\n",
+            '<div class="table-wrap js-only" id="session-wrap" hidden>\n',
+            '<table id="session-table" aria-label="the selected models, cheapest first">\n',
             '<thead><tr><th scope="col">model</th>'
             '<th class="num-col" scope="col">session</th>'
             '<th class="num-col" scope="col">vs cheapest</th></tr></thead>\n',
             '<tbody id="session-body"></tbody>\n',
             "</table>\n",
             "</div>\n",
-            "</section>\n",
         ]
     )
 
@@ -351,12 +453,15 @@ def _document(payload: Mapping[str, object], rows: str, entry_count: int, source
             '<a class="skip-link" href="#main">skip to content</a>\n',
             '<main id="main" class="page">\n',
             _page_header(payload, entry_count, source_count),
-            '<div class="stack">\n',
+            '<div class="workspace">\n',
+            _detail_card(),
+            '<div class="workspace-main stack">\n',
             _toolbar(),
             _app_fallback(),
             _models_table(),
             _session_card(),
             _static_table(rows),
+            "</div>\n",
             "</div>\n",
             "</main>\n",
             '<div class="toast-stack" id="toast-stack"></div>\n',
