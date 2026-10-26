@@ -5598,6 +5598,60 @@
       },
       "vendor": "aion-labs"
     },
+    "openrouter/alibaba/happyhorse-1.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/happyhorse-1.0"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "openrouter/alibaba/happyhorse-1.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/happyhorse-1.1"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "openrouter/alibaba/wan-2.6": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/wan-2.6"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "openrouter/alibaba/wan-2.7": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/wan-2.7"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "openrouter/alibaba/wan-3.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/wan-3.0"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "openrouter/alibaba/wan-3.0-prime": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "alibaba/wan-3.0-prime"
+        ]
+      },
+      "vendor": "alibaba"
+    },
     "openrouter/allenai/olmo-3-32b-think": {
       "curated": false,
       "sources": {
@@ -5886,6 +5940,51 @@
       },
       "vendor": "arcee-ai"
     },
+    "openrouter/assemblyai/universal-3-5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "assemblyai/universal-3-5-pro"
+        ]
+      },
+      "vendor": "assemblyai"
+    },
+    "openrouter/assemblyai/universal-3-6-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "assemblyai/universal-3-6-pro"
+        ]
+      },
+      "vendor": "assemblyai"
+    },
+    "openrouter/baai/bge-base-en-v1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baai/bge-base-en-v1.5"
+        ]
+      },
+      "vendor": "baai"
+    },
+    "openrouter/baai/bge-large-en-v1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baai/bge-large-en-v1.5"
+        ]
+      },
+      "vendor": "baai"
+    },
+    "openrouter/baai/bge-m3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baai/bge-m3"
+        ]
+      },
+      "vendor": "baai"
+    },
     "openrouter/baidu/ernie-4.5-300b-a47b": {
       "curated": false,
       "sources": {
@@ -5903,6 +6002,105 @@
         ]
       },
       "vendor": "baidu"
+    },
+    "openrouter/baseten/elephant-1:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/elephant-1:free"
+        ]
+      },
+      "vendor": "baseten"
+    },
+    "openrouter/baseten/mammoth-1:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/mammoth-1:free"
+        ]
+      },
+      "vendor": "baseten"
+    },
+    "openrouter/black-forest-labs/flux-3-image": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux-3-image"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux-3-image-klein": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux-3-image-klein"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux-3-video": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux-3-video"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux-video-edit": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux-video-edit"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux-video-upscale": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux-video-upscale"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux.2-flex": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux.2-flex"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux.2-klein-4b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux.2-klein-4b"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux.2-max": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux.2-max"
+        ]
+      },
+      "vendor": "black-forest-labs"
+    },
+    "openrouter/black-forest-labs/flux.2-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "black-forest-labs/flux.2-pro"
+        ]
+      },
+      "vendor": "black-forest-labs"
     },
     "openrouter/bytedance-seed/seed-1.6": {
       "curated": false,
@@ -5958,6 +6156,96 @@
       },
       "vendor": "bytedance-seed"
     },
+    "openrouter/bytedance-seed/seed-audio-1-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seed-audio-1-0"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
+    "openrouter/bytedance-seed/seedream-4.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seedream-4.5"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
+    "openrouter/bytedance-seed/seedream-5-0-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seedream-5-0-flash"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
+    "openrouter/bytedance-seed/seedream-5-0-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seedream-5-0-lite"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
+    "openrouter/bytedance-seed/seedream-5-0-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seedream-5-0-pro"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
+    "openrouter/bytedance/seedance-1-5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-1-5-pro"
+        ]
+      },
+      "vendor": "bytedance"
+    },
+    "openrouter/bytedance/seedance-2.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-2.0"
+        ]
+      },
+      "vendor": "bytedance"
+    },
+    "openrouter/bytedance/seedance-2.0-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-2.0-fast"
+        ]
+      },
+      "vendor": "bytedance"
+    },
+    "openrouter/bytedance/seedance-2.0-mini": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-2.0-mini"
+        ]
+      },
+      "vendor": "bytedance"
+    },
+    "openrouter/bytedance/seedance-2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-2.5"
+        ]
+      },
+      "vendor": "bytedance"
+    },
     "openrouter/bytedance/ui-tars-1.5-7b": {
       "curated": false,
       "sources": {
@@ -5966,6 +6254,42 @@
         ]
       },
       "vendor": "bytedance"
+    },
+    "openrouter/canopylabs/orpheus-3b-0.1-ft": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "canopylabs/orpheus-3b-0.1-ft"
+        ]
+      },
+      "vendor": "canopylabs"
+    },
+    "openrouter/cloudflare/clef": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cloudflare/clef"
+        ]
+      },
+      "vendor": "cloudflare"
+    },
+    "openrouter/cloudflare/clef-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cloudflare/clef-flash"
+        ]
+      },
+      "vendor": "cloudflare"
+    },
+    "openrouter/cloudflare/clef-omni": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cloudflare/clef-omni"
+        ]
+      },
+      "vendor": "cloudflare"
     },
     "openrouter/cognitivecomputations/dolphin-mistral-24b-venice-edition": {
       "curated": false,
@@ -6011,6 +6335,60 @@
         ]
       },
       "vendor": "cohere"
+    },
+    "openrouter/cohere/rerank-4-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/rerank-4-fast"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/cohere/rerank-4-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/rerank-4-pro"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/cohere/rerank-v3.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/rerank-v3.5"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/deepgram/aura-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepgram/aura-2"
+        ]
+      },
+      "vendor": "deepgram"
+    },
+    "openrouter/deepgram/flux-tts": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepgram/flux-tts"
+        ]
+      },
+      "vendor": "deepgram"
+    },
+    "openrouter/deepgram/nova-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepgram/nova-3"
+        ]
+      },
+      "vendor": "deepgram"
     },
     "openrouter/deepseek/deepseek-chat": {
       "curated": false,
@@ -6102,6 +6480,105 @@
       },
       "vendor": "dots-studio"
     },
+    "openrouter/elevenlabs/eleven-flash-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-flash-v2"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-flash-v2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-flash-v2.5"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-multilingual-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-multilingual-v2"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-turbo-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-turbo-v2"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-turbo-v2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-turbo-v2.5"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-v3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-v3"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-v3-conversational": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-v3-conversational"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-v4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-v4"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/eleven-v4-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/eleven-v4-turbo"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/scribe-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/scribe-v2"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
+    "openrouter/elevenlabs/scribe-v2-medical": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "elevenlabs/scribe-v2-medical"
+        ]
+      },
+      "vendor": "elevenlabs"
+    },
     "openrouter/elorian/glimpse": {
       "curated": false,
       "sources": {
@@ -6119,6 +6596,78 @@
         ]
       },
       "vendor": "fireworks"
+    },
+    "openrouter/fish-audio/drama-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/drama-3"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/s1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/s1"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/s2-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/s2-pro"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/s2.1-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/s2.1-pro"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/s2.1-pro-free:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/s2.1-pro-free:free"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/transcribe-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/transcribe-1"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/fish-audio/transcribe-1-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "fish-audio/transcribe-1-pro"
+        ]
+      },
+      "vendor": "fish-audio"
+    },
+    "openrouter/google/chirp-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/chirp-3"
+        ]
+      },
+      "vendor": "google"
     },
     "openrouter/google/gemini-2.5-flash-image": {
       "curated": false,
@@ -6174,6 +6723,15 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-3.1-flash-tts-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-3.1-flash-tts-preview"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-3.1-pro-preview:batch": {
       "curated": false,
       "sources": {
@@ -6197,6 +6755,15 @@
       "sources": {
         "openrouter": [
           "google/gemini-3.5-flash:batch"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-3.5-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-3.5-transcribe"
         ]
       },
       "vendor": "google"
@@ -6228,6 +6795,24 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-3.8-flash-lite-tts": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-3.8-flash-lite-tts"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-3.8-flash-tts": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-3.8-flash-tts"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-3.8-flash:batch": {
       "curated": false,
       "sources": {
@@ -6251,6 +6836,33 @@
       "sources": {
         "openrouter": [
           "google/gemini-4-argon:batch"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-embedding-001": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-embedding-001"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-embedding-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-embedding-2"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-embedding-2-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-embedding-2-preview"
         ]
       },
       "vendor": "google"
@@ -6318,6 +6930,33 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/veo-3.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/veo-3.1"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/veo-3.1-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/veo-3.1-fast"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/veo-3.1-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/veo-3.1-lite"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/gryphe/mythomist-7b": {
       "curated": false,
       "sources": {
@@ -6326,6 +6965,60 @@
         ]
       },
       "vendor": "gryphe"
+    },
+    "openrouter/hexgrad/kokoro-82m": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "hexgrad/kokoro-82m"
+        ]
+      },
+      "vendor": "hexgrad"
+    },
+    "openrouter/heygen/avatar-iv": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/avatar-iv"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-video-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-video-1"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-voice-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-voice-1"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-voice-1-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-voice-1-turbo"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-voice-1-turbo:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-voice-1-turbo:free"
+        ]
+      },
+      "vendor": "heygen"
     },
     "openrouter/ibm-granite/granite-4.0-h-micro": {
       "curated": false,
@@ -6386,6 +7079,24 @@
       "sources": {
         "openrouter": [
           "inception/mercury-3"
+        ]
+      },
+      "vendor": "inception"
+    },
+    "openrouter/inception/mercury-decide": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inception/mercury-decide"
+        ]
+      },
+      "vendor": "inception"
+    },
+    "openrouter/inception/mercury-decide:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inception/mercury-decide:free"
         ]
       },
       "vendor": "inception"
@@ -6465,6 +7176,78 @@
       },
       "vendor": "inference-net"
     },
+    "openrouter/intfloat/e5-base-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "intfloat/e5-base-v2"
+        ]
+      },
+      "vendor": "intfloat"
+    },
+    "openrouter/intfloat/e5-large-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "intfloat/e5-large-v2"
+        ]
+      },
+      "vendor": "intfloat"
+    },
+    "openrouter/intfloat/multilingual-e5-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "intfloat/multilingual-e5-large"
+        ]
+      },
+      "vendor": "intfloat"
+    },
+    "openrouter/jaredpalmer/kev-4b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "jaredpalmer/kev-4b"
+        ]
+      },
+      "vendor": "jaredpalmer"
+    },
+    "openrouter/krea/k3-edit": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "krea/k3-edit"
+        ]
+      },
+      "vendor": "krea"
+    },
+    "openrouter/krea/krea-2-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "krea/krea-2-large"
+        ]
+      },
+      "vendor": "krea"
+    },
+    "openrouter/krea/krea-2-medium": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "krea/krea-2-medium"
+        ]
+      },
+      "vendor": "krea"
+    },
+    "openrouter/krea/krea-2-medium-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "krea/krea-2-medium-turbo"
+        ]
+      },
+      "vendor": "krea"
+    },
     "openrouter/kwaipilot/kat-coder-air-v2.5": {
       "curated": false,
       "sources": {
@@ -6492,6 +7275,51 @@
       },
       "vendor": "kwaipilot"
     },
+    "openrouter/kwaivgi/kling-v3.0-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "kwaivgi/kling-v3.0-pro"
+        ]
+      },
+      "vendor": "kwaivgi"
+    },
+    "openrouter/kwaivgi/kling-v3.0-std": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "kwaivgi/kling-v3.0-std"
+        ]
+      },
+      "vendor": "kwaivgi"
+    },
+    "openrouter/kwaivgi/kling-video-o1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "kwaivgi/kling-video-o1"
+        ]
+      },
+      "vendor": "kwaivgi"
+    },
+    "openrouter/liquid/d1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/d1"
+        ]
+      },
+      "vendor": "liquid"
+    },
+    "openrouter/liquid/d1-ultra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/d1-ultra"
+        ]
+      },
+      "vendor": "liquid"
+    },
     "openrouter/liquid/lfm-2.5-2.6b": {
       "curated": false,
       "sources": {
@@ -6515,6 +7343,15 @@
       "sources": {
         "openrouter": [
           "liquid/lfm-2.5-24b-a2b"
+        ]
+      },
+      "vendor": "liquid"
+    },
+    "openrouter/liquid/lfm-2.5-embedding-350m:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/lfm-2.5-embedding-350m:free"
         ]
       },
       "vendor": "liquid"
@@ -6582,6 +7419,15 @@
       },
       "vendor": "meta"
     },
+    "openrouter/meta/muse-image": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "meta/muse-image"
+        ]
+      },
+      "vendor": "meta"
+    },
     "openrouter/meta/muse-spark-1.1": {
       "curated": false,
       "sources": {
@@ -6636,6 +7482,15 @@
       },
       "vendor": "meta"
     },
+    "openrouter/meta/muse-voice-transcribe-1.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "meta/muse-voice-transcribe-1.0"
+        ]
+      },
+      "vendor": "meta"
+    },
     "openrouter/meta/muse-wonder": {
       "curated": false,
       "sources": {
@@ -6645,6 +7500,105 @@
       },
       "vendor": "meta"
     },
+    "openrouter/microsoft/mai-image-2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.5"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-image-2.5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.5-pro"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-image-2.6": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.6"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-image-2.6-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.6-flash"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-transcribe-1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-transcribe-1.5"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-transcribe-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-transcribe-2"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-voice-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-voice-2"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-voice-2-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-voice-2-flash"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-voice-2.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-voice-2.1"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-voice-2.1-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-voice-2.1-flash"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/microsoft-decision-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/microsoft-decision-1"
+        ]
+      },
+      "vendor": "microsoft"
+    },
     "openrouter/microsoft/wizardlm-2-7b": {
       "curated": false,
       "sources": {
@@ -6653,6 +7607,33 @@
         ]
       },
       "vendor": "microsoft"
+    },
+    "openrouter/minimax/hailuo-2.3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/hailuo-2.3"
+        ]
+      },
+      "vendor": "minimax"
+    },
+    "openrouter/minimax/hailuo-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/hailuo-3"
+        ]
+      },
+      "vendor": "minimax"
+    },
+    "openrouter/minimax/hailuo-3-max": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/hailuo-3-max"
+        ]
+      },
+      "vendor": "minimax"
     },
     "openrouter/minimax/minimax-01": {
       "curated": false,
@@ -6726,11 +7707,38 @@
       },
       "vendor": "minimax"
     },
+    "openrouter/minimax/speech-2.8-hd": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/speech-2.8-hd"
+        ]
+      },
+      "vendor": "minimax"
+    },
+    "openrouter/minimax/speech-2.8-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/speech-2.8-turbo"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "openrouter/mistralai/codestral-2508": {
       "curated": false,
       "sources": {
         "openrouter": [
           "mistralai/codestral-2508"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/codestral-embed-2505": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/codestral-embed-2505"
         ]
       },
       "vendor": "mistralai"
@@ -6776,6 +7784,15 @@
       "sources": {
         "openrouter": [
           "mistralai/ministral-8b-2512"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/mistral-embed-2312": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/mistral-embed-2312"
         ]
       },
       "vendor": "mistralai"
@@ -6888,11 +7905,74 @@
       },
       "vendor": "mistralai"
     },
+    "openrouter/mistralai/voxtral-mini-3b-2507": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-mini-3b-2507"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-mini-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-mini-transcribe"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-mini-transcribe-3-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-mini-transcribe-3-0"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-mini-tts-2603": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-mini-tts-2603"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-mini-tts-3-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-mini-tts-3-0"
+        ]
+      },
+      "vendor": "mistralai"
+    },
     "openrouter/mistralai/voxtral-small-24b-2507": {
       "curated": false,
       "sources": {
         "openrouter": [
           "mistralai/voxtral-small-24b-2507"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-small-24b-2507-stt": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-small-24b-2507-stt"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/voxtral-small-transcribe-3-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/voxtral-small-transcribe-3-0"
         ]
       },
       "vendor": "mistralai"
@@ -6968,6 +8048,33 @@
         ]
       },
       "vendor": "morph"
+    },
+    "openrouter/nace-ai/drex-max": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nace-ai/drex-max"
+        ]
+      },
+      "vendor": "nace-ai"
+    },
+    "openrouter/nace-ai/drex-v1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nace-ai/drex-v1.5"
+        ]
+      },
+      "vendor": "nace-ai"
+    },
+    "openrouter/nace-ai/drex-v2.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nace-ai/drex-v2.0"
+        ]
+      },
+      "vendor": "nace-ai"
     },
     "openrouter/nex-agi/nex-n2-mini": {
       "curated": false,
@@ -7059,6 +8166,33 @@
       },
       "vendor": "nousresearch"
     },
+    "openrouter/nvidia/llama-nemotron-embed-vl-1b-v2:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/llama-nemotron-embed-vl-1b-v2:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
+    "openrouter/nvidia/llama-nemotron-rerank-vl-1b-v2:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/llama-nemotron-rerank-vl-1b-v2:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
+    "openrouter/nvidia/nemotron-3-embed-1b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3-embed-1b:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
       "curated": false,
       "sources": {
@@ -7113,6 +8247,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/nemotron-3.5-content-safety": {
       "curated": false,
       "sources": {
@@ -7127,6 +8270,24 @@
       "sources": {
         "openrouter": [
           "nvidia/nemotron-3.5-content-safety:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
+    "openrouter/nvidia/nemotron-3.5-embed-1b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-embed-1b:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
+    "openrouter/nvidia/nemotron-3.5-embed-8b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-embed-8b:free"
         ]
       },
       "vendor": "nvidia"
@@ -7149,6 +8310,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/nemotron-3.5-rerank-8b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-rerank-8b:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/nemotron-3.5-super-vl": {
       "curated": false,
       "sources": {
@@ -7163,6 +8333,15 @@
       "sources": {
         "openrouter": [
           "nvidia/nemotron-3.5-super-vl:free"
+        ]
+      },
+      "vendor": "nvidia"
+    },
+    "openrouter/nvidia/parakeet-tdt-0.6b-v3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/parakeet-tdt-0.6b-v3"
         ]
       },
       "vendor": "nvidia"
@@ -7271,6 +8450,24 @@
       "sources": {
         "openrouter": [
           "openai/gpt-4o-mini-2024-07-18"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-4o-mini-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-4o-mini-transcribe"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-4o-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-4o-transcribe"
         ]
       },
       "vendor": "openai"
@@ -7599,6 +8796,15 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6-luna-decisions": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6-luna-decisions"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-6-luna-pro": {
       "curated": false,
       "sources": {
@@ -7743,6 +8949,60 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-image-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-1"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-image-1-mini": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-1-mini"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-image-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-2"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-image-2.5-flare": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-2.5-flare"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-image-2.5-sunburst": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-2.5-sunburst"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-transcribe"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/o1:batch": {
       "curated": false,
       "sources": {
@@ -7824,6 +9084,60 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/text-embedding-3-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/text-embedding-3-large"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/text-embedding-3-small": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/text-embedding-3-small"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/text-embedding-ada-002": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/text-embedding-ada-002"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/whisper-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/whisper-1"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/whisper-large-v3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/whisper-large-v3"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/whisper-large-v3-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/whisper-large-v3-turbo"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openrouter/auto": {
       "curated": false,
       "sources": {
@@ -7895,6 +9209,42 @@
         ]
       },
       "vendor": "perceptron"
+    },
+    "openrouter/perplexity/pplx-decider-flash-v1.2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-decider-flash-v1.2"
+        ]
+      },
+      "vendor": "perplexity"
+    },
+    "openrouter/perplexity/pplx-decider-v1.2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-decider-v1.2"
+        ]
+      },
+      "vendor": "perplexity"
+    },
+    "openrouter/perplexity/pplx-embed-v1-0.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-embed-v1-0.6b"
+        ]
+      },
+      "vendor": "perplexity"
+    },
+    "openrouter/perplexity/pplx-embed-v1-4b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-embed-v1-4b"
+        ]
+      },
+      "vendor": "perplexity"
     },
     "openrouter/perplexity/sonar-pro-search": {
       "curated": false,
@@ -7968,6 +9318,60 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen-audio-3.0-tts-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-audio-3.0-tts-flash"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen-audio-3.0-tts-plus": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-audio-3.0-tts-plus"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen-image-2.1-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-image-2.1-pro"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen-image-2.1-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-image-2.1-turbo"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen-image-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-image-3"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen-image-3-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen-image-3-pro"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/qwen/qwen-plus-2025-07-28": {
       "curated": false,
       "sources": {
@@ -8004,11 +9408,56 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen3-asr-0.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-asr-0.6b"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-asr-1.7b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-asr-1.7b"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/qwen/qwen3-coder": {
       "curated": false,
       "sources": {
         "openrouter": [
           "qwen/qwen3-coder"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-embedding-4b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-embedding-4b"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-embedding-8b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-embedding-8b"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-reranker-8b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-reranker-8b"
         ]
       },
       "vendor": "qwen"
@@ -8139,6 +9588,150 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/recraft/recraft-v3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v3"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-pro"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-pro-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-pro-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-styles": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-styles"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-styles-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-styles-pro"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-styles-pro-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-styles-pro-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-styles-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-styles-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-flash"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-pro"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-pro-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-pro-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-utility": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-utility"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-utility-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-utility-pro"
+        ]
+      },
+      "vendor": "recraft"
+    },
+    "openrouter/recraft/recraft-v4.1-vector": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-vector"
+        ]
+      },
+      "vendor": "recraft"
+    },
     "openrouter/recursive/flint-v1.0:free": {
       "curated": false,
       "sources": {
@@ -8192,6 +9785,60 @@
         ]
       },
       "vendor": "relace"
+    },
+    "openrouter/respan/span-01": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "respan/span-01"
+        ]
+      },
+      "vendor": "respan"
+    },
+    "openrouter/respan/span-01-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "respan/span-01-lite"
+        ]
+      },
+      "vendor": "respan"
+    },
+    "openrouter/respan/span-01-lite:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "respan/span-01-lite:free"
+        ]
+      },
+      "vendor": "respan"
+    },
+    "openrouter/respan/span-02": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "respan/span-02"
+        ]
+      },
+      "vendor": "respan"
+    },
+    "openrouter/runway/aleph-2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "runway/aleph-2"
+        ]
+      },
+      "vendor": "runway"
+    },
+    "openrouter/runway/gen-4.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "runway/gen-4.5"
+        ]
+      },
+      "vendor": "runway"
     },
     "openrouter/sakana/fugu-max": {
       "curated": false,
@@ -8274,6 +9921,15 @@
       },
       "vendor": "sao10k"
     },
+    "openrouter/scaledown/classify-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "scaledown/classify-1"
+        ]
+      },
+      "vendor": "scaledown"
+    },
     "openrouter/scaledown/extract": {
       "curated": false,
       "sources": {
@@ -8291,6 +9947,96 @@
         ]
       },
       "vendor": "scaledown"
+    },
+    "openrouter/sentence-transformers/all-minilm-l12-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sentence-transformers/all-minilm-l12-v2"
+        ]
+      },
+      "vendor": "sentence-transformers"
+    },
+    "openrouter/sentence-transformers/all-minilm-l6-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sentence-transformers/all-minilm-l6-v2"
+        ]
+      },
+      "vendor": "sentence-transformers"
+    },
+    "openrouter/sentence-transformers/all-mpnet-base-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sentence-transformers/all-mpnet-base-v2"
+        ]
+      },
+      "vendor": "sentence-transformers"
+    },
+    "openrouter/sentence-transformers/multi-qa-mpnet-base-dot-v1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+        ]
+      },
+      "vendor": "sentence-transformers"
+    },
+    "openrouter/sentence-transformers/paraphrase-minilm-l6-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sentence-transformers/paraphrase-minilm-l6-v2"
+        ]
+      },
+      "vendor": "sentence-transformers"
+    },
+    "openrouter/sesame/csm-1b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sesame/csm-1b"
+        ]
+      },
+      "vendor": "sesame"
+    },
+    "openrouter/sourceful/riverflow-v2-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sourceful/riverflow-v2-fast"
+        ]
+      },
+      "vendor": "sourceful"
+    },
+    "openrouter/sourceful/riverflow-v2-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sourceful/riverflow-v2-pro"
+        ]
+      },
+      "vendor": "sourceful"
+    },
+    "openrouter/sourceful/riverflow-v2.5-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sourceful/riverflow-v2.5-fast"
+        ]
+      },
+      "vendor": "sourceful"
+    },
+    "openrouter/sourceful/riverflow-v2.5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sourceful/riverflow-v2.5-pro"
+        ]
+      },
+      "vendor": "sourceful"
     },
     "openrouter/stealth/ox-alpha": {
       "curated": false,
@@ -8351,6 +10097,15 @@
       "sources": {
         "openrouter": [
           "tencent/hunyuan-a13b-instruct:free"
+        ]
+      },
+      "vendor": "tencent"
+    },
+    "openrouter/tencent/hy-image-v3.5-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "tencent/hy-image-v3.5-preview"
         ]
       },
       "vendor": "tencent"
@@ -8436,6 +10191,24 @@
       },
       "vendor": "thedrummer"
     },
+    "openrouter/thenlper/gte-base": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "thenlper/gte-base"
+        ]
+      },
+      "vendor": "thenlper"
+    },
+    "openrouter/thenlper/gte-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "thenlper/gte-large"
+        ]
+      },
+      "vendor": "thenlper"
+    },
     "openrouter/thinkingmachines/inkling-small:batch": {
       "curated": false,
       "sources": {
@@ -8471,6 +10244,33 @@
         ]
       },
       "vendor": "thinkingmachines"
+    },
+    "openrouter/togethercomputer/tev1-4b-experimental": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "togethercomputer/tev1-4b-experimental"
+        ]
+      },
+      "vendor": "togethercomputer"
+    },
+    "openrouter/typesafe/jev-1.13": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "typesafe/jev-1.13"
+        ]
+      },
+      "vendor": "typesafe"
+    },
+    "openrouter/typesafe/jev-1.14": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "typesafe/jev-1.14"
+        ]
+      },
+      "vendor": "typesafe"
     },
     "openrouter/typesafe/jev-router": {
       "curated": false,
@@ -8526,6 +10326,24 @@
       },
       "vendor": "undi95"
     },
+    "openrouter/upstage/solar-decide": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "upstage/solar-decide"
+        ]
+      },
+      "vendor": "upstage"
+    },
+    "openrouter/upstage/solar-decide-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "upstage/solar-decide-flash"
+        ]
+      },
+      "vendor": "upstage"
+    },
     "openrouter/upstage/solar-mini4": {
       "curated": false,
       "sources": {
@@ -8553,6 +10371,87 @@
       },
       "vendor": "upstage"
     },
+    "openrouter/voyageai/rerank-2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/rerank-2.5"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/rerank-2.5-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/rerank-2.5-lite"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/rerank-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/rerank-3"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/rerank-3-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/rerank-3-lite"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/voyage-4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/voyage-4"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/voyage-4-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/voyage-4-large"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/voyage-4-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/voyage-4-lite"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/voyage-code-4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/voyage-code-4"
+        ]
+      },
+      "vendor": "voyageai"
+    },
+    "openrouter/voyageai/voyage-multimodal-3.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "voyageai/voyage-multimodal-3.5"
+        ]
+      },
+      "vendor": "voyageai"
+    },
     "openrouter/writer/palmyra-x5": {
       "curated": false,
       "sources": {
@@ -8567,6 +10466,69 @@
       "sources": {
         "openrouter": [
           "x-ai/grok-4.3:batch"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-imagine-image-2.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-imagine-image-2.0"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-imagine-image-quality": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-imagine-image-quality"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-imagine-video": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-imagine-video"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-imagine-video-1.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-imagine-video-1.5"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-imagine-video-1.5-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-imagine-video-1.5-lite"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-stt-1.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-stt-1.0"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-voice-tts-1.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-voice-tts-1.0"
         ]
       },
       "vendor": "x-ai"
