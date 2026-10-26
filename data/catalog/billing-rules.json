@@ -297,6 +297,17 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "together-geo-specific-inference-premium",
+      "provider": "together",
+      "effective": "2026-10-16",
+      "timezone": "UTC",
+      "statement": "serverless requests sent to the geo-specific base URLs us-api.together.ai or ca-api.together.ai cost 1.25x the standard serverless rate (a 25% premium) for input, cached input and output tokens, on the eight models the geo-specific-inference page lists (Kimi-K3, GLM-5.3, GLM-5.3-Flash, GLM-5.2, DeepSeek-V4.1-Flash, DeepSeek-V4.1-Flash-1017, DeepSeek-V4-Pro-0813, MiniMax-M3), with model availability differing by geography; requests to api.together.ai guarantee no geography and bill the standard rates. the page names no timezone; UTC is the recorded frame. the index stores the standard serverless rates",
+      "citation": [
+        "https://docs.together.ai/docs/changelog.md",
+        "https://docs.together.ai/docs/serverless/geo-specific-inference.md"
+      ]
     }
   ]
 }
