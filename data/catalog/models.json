@@ -5706,6 +5706,33 @@
       },
       "vendor": "amazon"
     },
+    "openrouter/amazon/titan-embed-image-v1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "amazon/titan-embed-image-v1"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "openrouter/amazon/titan-embed-text-v1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "amazon/titan-embed-text-v1"
+        ]
+      },
+      "vendor": "amazon"
+    },
+    "openrouter/amazon/titan-embed-text-v2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "amazon/titan-embed-text-v2"
+        ]
+      },
+      "vendor": "amazon"
+    },
     "openrouter/anthracite-org/magnum-v2-72b": {
       "curated": false,
       "sources": {
