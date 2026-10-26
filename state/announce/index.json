@@ -47,14 +47,14 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "e2d5d2e5d0a070e0c561ba44e0d7ea6f295d08ba4cd9d91070c9da75d05e5fb7",
-      "fetched": "2026-10-25T18:00:12Z"
+      "fetched": "2026-10-26T01:00:13Z"
     }
   },
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "ac718539aa28523d58f757a097097c69a5a6562f1c68987690e20e1d0e0346ca",
-      "fetched": "2026-10-20T18:00:14Z"
+      "sha256": "b7f82ff92e115d5ff8b414c5fa035144990570684ebd8064f1076024aece5f9a",
+      "fetched": "2026-10-26T01:00:13Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
@@ -92,7 +92,7 @@
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
       "sha256": "a612344099e7a3d905ac9a7fd375421f5a77917732c07f395de192b8dded8d4d",
-      "fetched": "2026-10-25T18:00:12Z"
+      "fetched": "2026-10-26T01:00:13Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -103,15 +103,15 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "2bed6a38817d986dfdd30f5f5b496a26f34f20e142e5e3426742e5e935964ffe",
-      "fetched": "2026-10-22T03:00:12Z"
+      "sha256": "ecb10d5e37398598e27c686b5353f28f01d270cde823de5b2b0250fe609b3d41",
+      "fetched": "2026-10-26T01:00:13Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "dfa24441b6fa9b8ece1973c4b54133d178f48c35ba7f58909c6bf95ff64f85c5",
-      "fetched": "2026-10-22T17:22:18Z"
+      "sha256": "fb569e48df954959507c9d545ed030d8f75ccdc63bbbb9242cc47d28bdd99068",
+      "fetched": "2026-10-26T01:00:13Z"
     }
   },
   "cohere": {
@@ -144,7 +144,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "d686c4c752698769372f95decea53c33fdc250d53f766e71bd24fe0ee0fa028f",
-      "fetched": "2026-10-25T18:00:12Z"
+      "fetched": "2026-10-26T01:00:13Z"
     }
   },
   "scaleway": {

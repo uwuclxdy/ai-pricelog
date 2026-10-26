@@ -284,6 +284,7 @@
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-09-24","rates":{"input":0.049,"output":0.098,"cache_read":0.0098},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0423"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-09-25","rates":{"input":0.04872,"output":0.09744,"cache_read":0.009744},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0423"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-10-15","rates":{"input":0.091,"output":0.182,"cache_read":0.0182},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0423"}}
+{"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash","observed_at":"2026-10-26","rates":{"input":0.05,"output":0.45,"cache_read":0.05},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0423"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-26","rates":{"input":0.04,"output":0.08,"cache_read":0.008},"limits":{"context":1310720},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-26","rates":{"input":0.06,"output":0.12,"cache_read":0.012},"limits":{"context":1310720},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-08-29","rates":{"input":0.045,"output":0.09,"cache_read":0.009},"limits":{"context":1310720},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
@@ -628,6 +629,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B  (free)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-14","rates":{"input":0.2,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-26","rates":{"input":0.1,"output":0.34,"cache_read":0.1},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:batch","observed_at":"2026-08-29","rates":{"input":0.39,"output":0.97},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:batch","observed_at":"2026-09-18","removed":true,"rates":{"input":0.39,"output":0.97},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B (free)"}}
@@ -951,6 +953,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-18","rates":{"input":0.279,"output":11.936,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-21","rates":{"input":0.239,"output":11.936,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-23","rates":{"input":0.239,"output":10.8,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-26","rates":{"input":0.152,"output":16.0,"cache_read":0.142},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-10-23","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
@@ -1076,6 +1079,7 @@
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.4,"cache_read":0.025},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano"}}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano","observed_at":"2026-08-29","rates":{"input":0.1,"output":0.4,"cache_read":0.03},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano"}}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano","observed_at":"2026-08-30","rates":{"input":0.1,"output":0.4,"cache_read":0.025},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano"}}
+{"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano","observed_at":"2026-10-26","rates":{"input":0.1,"output":0.4,"cache_read":0.03},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano"}}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano:batch","observed_at":"2026-08-26","rates":{"input":0.05,"output":0.2,"cache_read":0.0125},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano:batch","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"openai/gpt-4.1-nano:batch","observed_at":"2026-08-31","rates":{"input":0.05,"output":0.2,"cache_read":0.0125},"fees":{"web_search":0.01},"limits":{"context":1047576},"provenance":{"name":"GPT-4.1 Nano (batch)"}}
@@ -1510,6 +1514,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-10-22","rates":{"input":0.4,"output":3.2},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-10-22","rates":{"input":0.26,"output":2.08},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-10-23","rates":{"input":0.4,"output":3.2},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-122b-a10b","observed_at":"2026-10-26","rates":{"input":0.26,"output":2.08},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-122B-A10B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-08-26","rates":{"input":0.195,"output":1.56},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-10-08","rates":{"input":0.26,"output":2.6},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-10-19","rates":{"input":0.195,"output":1.56},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
