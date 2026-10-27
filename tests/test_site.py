@@ -162,12 +162,18 @@ if (probe.modeChanges) {
 if (probe.rows) {
   let builtRows = 0;
   /* the stub's own selector machinery: the page's row-click capture listener
-     walks classes and tags through closest/querySelector, so the stub answers
-     the single-token forms (a class, a tag, a comma list of those) the page's
+     and the day picker walk classes, tags and one attribute through
+     closest/querySelector/matches, so the stub answers the single-token forms
+     (a class, a tag, an `[attr="value"]`, a comma list of those) the page's
      handlers use */
   const matches = (node, selector) =>
     selector.split(",").some((token) => {
       const part = token.trim();
+      const attr = /^\\[([\\w-]+)="([^"]*)"\\]$/.exec(part);
+      if (attr) {
+        const value = attr[1] === "tabindex" ? node.tabIndex : node.attrs?.[attr[1]];
+        return value !== undefined && String(value) === attr[2];
+      }
       if (part.startsWith(".")) {
         return (
           typeof node.className === "string" &&
@@ -214,6 +220,14 @@ if (probe.rows) {
       scrollIntoView() {},
       style: { setProperty() {} },
       closest(selector) { return climb(this, selector); },
+      matches(selector) { return matches(this, selector); },
+      contains(node) {
+        for (let at = node; at; at = at.parent) {
+          if (at === this) return true;
+        }
+        return false;
+      },
+      focus() { globalThis.document.activeElement = this; },
       querySelector(selector) { return deepFirst(this, selector); },
       querySelectorAll() { return []; },
       addEventListener(name, fn, options) {
@@ -226,8 +240,13 @@ if (probe.rows) {
     const has = (name) => el.className.split(/\\s+/).includes(name);
     el.classList = {
       contains: has,
-      add(name) {
-        if (!has(name)) el.className = `${el.className} ${name}`.trim();
+      add(...names) {
+        for (const name of names) {
+          if (!has(name)) el.className = `${el.className} ${name}`.trim();
+        }
+      },
+      remove(...names) {
+        el.className = el.className.split(/\\s+/).filter((n) => n && !names.includes(n)).join(" ");
       },
       toggle(name, force) {
         const on = force === undefined ? !has(name) : Boolean(force);
@@ -263,7 +282,7 @@ if (probe.rows) {
     sortButtons.set(key, button);
   }
   wrap.querySelector = (sel) => {
-    const match = /\.th-sort\[data-sort="(.+)"\]/.exec(sel);
+    const match = /\\.th-sort\\[data-sort="(.+)"\\]/.exec(sel);
     return match ? sortButtons.get(match[1]) ?? null : null;
   };
   wrap.querySelectorAll = (sel) => (sel === ".th-sort" ? [...sortButtons.values()] : []);
@@ -278,6 +297,63 @@ if (probe.rows) {
     "calc-day-value", "model-detail", "detail-name", "detail-id", "detail-tags", "detail-empty",
     "detail-body", "detail-close", "detail-ticks-y", "detail-ticks-x", "detail-info",
   ]) elements.set(id, make("input"));
+  /* the day picker's skeleton, built only when a probe drives it: the range
+     wraps the trigger and the panel, so contains() answers the page's
+     focusout and pointerdown reads off the same tree the grid hangs from */
+  let picker = null;
+  if (probe.rows.picker) {
+    const range = make("div");
+    const panel = make("div");
+    const prev = make("button");
+    const next = make("button");
+    const month = make("span");
+    const grid = make("tbody");
+    const today = make("button");
+    panel.append(prev, next, month, grid, today);
+    panel.hidden = true;
+    panel.querySelector = (sel) => ({
+      "#calc-day-grid": grid, "#calc-day-month": month, "#calc-day-today": today,
+    }[sel] ?? null);
+    panel.querySelectorAll = (sel) => (sel === ".daterange-head .btn" ? [prev, next] : []);
+    const trigger = elements.get("calc-day");
+    range.append(trigger, panel);
+    // the open-time flips are arithmetic on these numbers against the
+    // window's 1280x800, so a probe places the trigger where it wants a flip
+    const rect = probe.rows.triggerRect ?? { top: 100, bottom: 132, left: 100, right: 300 };
+    trigger.getBoundingClientRect = () => rect;
+    panel.offsetHeight = 320;
+    panel.offsetWidth = 300;
+    elements.set("calc-day-range", range);
+    elements.set("calc-day-panel", panel);
+    picker = { range, panel, prev, next, month, grid, today };
+  }
+  /* the picker reads the wall clock for today and schedules its exit on a
+     timer: a pinned instant makes today a fixture value, and a held timer
+     queue lets a probe read the panel between the close and the hide */
+  const RealDate = Date;
+  const realTimers = { set: globalThis.setTimeout, clear: globalThis.clearTimeout };
+  const timers = new Map();
+  if (probe.rows.now) {
+    const pinned = RealDate.parse(probe.rows.now);
+    globalThis.Date = class extends RealDate {
+      constructor(...args) { super(...(args.length > 0 ? args : [pinned])); }
+      static now() { return pinned; }
+    };
+  }
+  if (picker) {
+    let timerId = 0;
+    globalThis.setTimeout = (fn, ms) => {
+      timerId += 1;
+      timers.set(timerId, { fn, ms });
+      return timerId;
+    };
+    globalThis.clearTimeout = (id) => { timers.delete(id); };
+    // only the panel wears the exit costume, so a hide timed off any other
+    // element reads the 0s every unanimated element computes
+    globalThis.getComputedStyle = (element) => ({
+      animationDuration: element === picker.panel ? probe.rows.exitDuration : "0s",
+    });
+  }
   // the detail card's chart skeleton, the shape detailNodes and drawChart read
   const chart = make("div");
   const svg = make("svg");
@@ -302,8 +378,10 @@ if (probe.rows) {
     (sel) => (sel === "[data-axis]" ? axisButtons : []);
   const hashes = [];
   const windowListeners = {};
+  const documentListeners = {};
   globalThis.document = {
     documentElement: { dataset: {} },
+    activeElement: null,
     getElementById: (id) => elements.get(id) ?? null,
     createElement: (tag) => {
       if (tag === "tr") builtRows += 1;
@@ -311,11 +389,14 @@ if (probe.rows) {
     },
     createTextNode: (text) => ({ textContent: String(text), children: [] }),
     createDocumentFragment: () => ({ ...make("fragment"), isFragment: true }),
+    addEventListener(name, fn) { documentListeners[name] = fn; },
   };
   globalThis.window = {
     location: { hash: probe.rows.hash },
     history: { replaceState(_state, _title, url) { hashes.push(String(url)); } },
     addEventListener(name, fn) { windowListeners[name] = fn; },
+    innerWidth: 1280,
+    innerHeight: 800,
   };
   app.init();
   const builtOnInit = builtRows;
@@ -395,10 +476,135 @@ if (probe.rows) {
       });
     }
   }
+  /* the picker's own state machine, one action at a time, each answered by a
+     snapshot of what a reader and a screen reader see: `trigger`, `prev`,
+     `next`, `today` and `flush` (fire the held exit timers) take no argument;
+     `key:<key>` presses a key on the focused element, `focus:<prev|next|today>`
+     moves focus onto that panel button, `day:<date>` clicks that grid cell,
+     `gridgap` clicks the grid off any cell, `pointerdown:<place>` presses the
+     pointer and `focusout:<place>` moves focus, where a place is `inside` (the
+     prev button), `outside` (a focusable input), `page` (an unfocusable block),
+     for pointerdown only `still` (the page block, pressed without moving
+     focus) and for focusout only `nowhere` (focus leaving the document). a
+     press runs in Chromium's order: pointerdown, then focus moves to the
+     pressed element when it is focusable and to the body when it is not, and a
+     move off a focused element inside the picker fires the picker's focusout
+     with the new focus as related target. a key step records whether the
+     handler prevented the browser default; the stub performs no default.
+     residuals the stub cannot see: native button activation (Enter or Space on
+     a nav button clicking it), a default action itself (page scroll), and a
+     focusout an engine may fire when a redraw removes the focused cell */
+  const pickerSteps = [];
+  if (picker) {
+    const trigger = elements.get("calc-day");
+    const outsider = elements.get("q");
+    const dayButtons = () =>
+      picker.grid.children.flatMap((tr) => tr.children.map((td) => td.children[0]));
+    const daysWhere = (test) => dayButtons().filter(test).map((b) => b.dataset.day);
+    const named = new Map([
+      [trigger, "trigger"], [outsider, "outside"],
+      [picker.prev, "prev"], [picker.next, "next"], [picker.today, "today"],
+    ]);
+    const snapshot = (action, prevented) => {
+      const active = globalThis.document.activeElement;
+      return {
+        prevented,
+        session_note: elements.get("session-note").textContent,
+        up: picker.range.classList.contains("daterange-up"),
+        end: picker.range.classList.contains("daterange-end"),
+        action,
+        open: picker.range.classList.contains("open"),
+        closing: picker.range.classList.contains("closing"),
+        hidden: picker.panel.hidden === true,
+        expanded: trigger.attrs["aria-expanded"] ?? null,
+        month: picker.month.textContent,
+        days: daysWhere(() => true),
+        outside: daysWhere((b) => b.classList.contains("is-outside")),
+        current: daysWhere((b) => b.attrs["aria-current"] === "date"),
+        picked: daysWhere(
+          (b) => b.classList.contains("is-start") && b.classList.contains("is-end")),
+        tabbable: daysWhere((b) => b.tabIndex === 0),
+        focus: named.get(active) ?? active?.dataset?.day ?? null,
+        timers: [...timers.values()].map((timer) => timer.ms),
+        url: hashes[hashes.length - 1] ?? probe.rows.hash,
+        day_value: elements.get("calc-day-value").textContent,
+        day_empty: elements.get("calc-day-value").classList.contains("is-empty"),
+      };
+    };
+    const page = elements.get("session-wrap");
+    const relative = (where) => {
+      if (where === "inside") return picker.prev;
+      if (where === "outside") return outsider;
+      if (where === "page" || where === "still") return page;
+      throw new Error(`picker names no place: ${where}`);
+    };
+    const focusable = (element) => element === picker.prev || element === outsider;
+    const focusOn = (element) => { globalThis.document.activeElement = element; };
+    const panelButton = (name) => {
+      const button = { prev: picker.prev, next: picker.next, today: picker.today }[name];
+      if (!button) throw new Error(`picker names no panel button: ${name}`);
+      return button;
+    };
+    for (const action of probe.rows.picker) {
+      const [verb, arg] = action.split(/:(.*)/s);
+      let prevented = null;
+      if (verb === "trigger") {
+        focusOn(trigger);
+        trigger._listeners.click({});
+      } else if (verb === "prev" || verb === "next" || verb === "today") {
+        panelButton(verb)._listeners.click({});
+      } else if (verb === "flush") {
+        const due = [...timers.values()];
+        timers.clear();
+        for (const timer of due) timer.fn();
+      } else if (verb === "focus") {
+        focusOn(panelButton(arg));
+      } else if (verb === "key") {
+        // a key lands on the focused element and bubbles; the panel hears it
+        // only while focus sits inside it
+        const active = globalThis.document.activeElement;
+        prevented = false;
+        if (picker.panel.contains(active)) {
+          picker.panel._listeners.keydown({
+            key: arg, target: active, preventDefault() { prevented = true; },
+          });
+        }
+      } else if (verb === "day") {
+        const button = dayButtons().find((b) => b.dataset.day === arg);
+        if (!button) throw new Error(`picker grid draws no ${arg}`);
+        picker.grid._listeners.click({ target: button });
+      } else if (verb === "gridgap") {
+        picker.grid._listeners.click({ target: picker.grid.children[0] });
+      } else if (verb === "pointerdown") {
+        const target = relative(arg);
+        const left = globalThis.document.activeElement;
+        documentListeners.pointerdown({ target });
+        // `still` is a press that moves no focus at all (WebKit's clicked
+        // button), which leaves the pointerdown listener as the only close path
+        const landed = arg === "still" ? left : focusable(target) ? target : null;
+        if (landed !== left) {
+          focusOn(landed);
+          if (picker.range.contains(left)) {
+            picker.range._listeners.focusout({ relatedTarget: landed });
+          }
+        }
+      } else if (verb === "focusout") {
+        const target = arg === "nowhere" ? null : relative(arg);
+        focusOn(target);
+        picker.range._listeners.focusout({ relatedTarget: target });
+      } else throw new Error(`picker names no action: ${action}`);
+      pickerSteps.push(snapshot(action, prevented));
+    }
+  }
+  globalThis.Date = RealDate;
+  globalThis.setTimeout = realTimers.set;
+  globalThis.clearTimeout = realTimers.clear;
+  delete globalThis.getComputedStyle;
   const hasBox = (node) =>
     node.type === "checkbox"
     || (Array.isArray(node.children) && node.children.some(hasBox));
   out.rows = {
+    picker: pickerSteps,
     "built_on_init": builtOnInit,
     "built_after_steps": builtRows,
     rowclick_capture: wrap._captures?.click === true,
@@ -1621,6 +1827,377 @@ def test_a_day_fragment_reads_on_the_trigger(tmp_path):
     )
     assert off["rows"]["day_value"] == "today"
     assert off["rows"]["day_empty"] is True
+
+
+# the picker probes pin the wall clock to a friday near a month edge, so a two
+# day walk crosses into march and today's cell sits in both months' grids
+PICKER_NOW = "2026-02-27T12:00:00Z"
+PICKER_TODAY = PICKER_NOW[:10]
+# a fixture duration, not the page's token: any value off the stub's 0s default
+# proves the hide is timed off the panel, and 0.25 multiplies to 250 with no
+# float residue, so the scheduled hide is 250 + the page's 20ms slack
+PICKER_EXIT = "0.25s"
+PICKER_HIDE_MS = 270
+
+
+def _picker(
+    tmp_path: Path,
+    actions: list[str],
+    hash_: str = "",
+    trigger_rect: dict[str, int] | None = None,
+) -> list[dict[str, object]]:
+    rows: dict[str, object] = {
+        "island": {"entries": []},
+        "hash": hash_,
+        "now": PICKER_NOW,
+        "exitDuration": PICKER_EXIT,
+        "picker": actions,
+    }
+    if trigger_rect is not None:
+        rows["triggerRect"] = trigger_rect
+    result = _node(tmp_path, {"cases": {}, "fragment": "", "rows": rows})
+    steps = result["rows"]["picker"]
+    assert [step["action"] for step in steps] == actions
+    return steps
+
+
+def _outside(grid: list[str], year: int, month: int) -> list[str]:
+    prefix = f"{year}-{month + 1:02d}-"
+    return [day for day in grid if not day.startswith(prefix)]
+
+
+def test_the_day_picker_opens_on_today_and_walks_days_across_the_month_edge(tmp_path):
+    """The trigger opens the panel on today's month with today's cell focused;
+    the arrows walk a day or a week and redraw the month the anchor lands in."""
+    steps = _picker(
+        tmp_path,
+        [
+            "trigger",
+            "key:ArrowRight",
+            "key:ArrowRight",
+            "key:ArrowLeft",
+            "key:ArrowDown",
+            "key:ArrowUp",
+        ],
+    )
+    february = _monday_grid(2026, 1)
+    march = _monday_grid(2026, 2)
+    opened = steps[0]
+    assert opened["open"] is True
+    assert opened["closing"] is False
+    assert opened["hidden"] is False
+    assert opened["expanded"] == "true"
+    assert opened["month"] == "february 2026"
+    assert opened["days"] == february
+    assert opened["outside"] == _outside(february, 2026, 1)
+    assert opened["current"] == [PICKER_TODAY]
+    assert opened["tabbable"] == [PICKER_TODAY]
+    assert opened["focus"] == PICKER_TODAY
+    assert opened["picked"] == []
+    # a trigger with room below and to the right opens the panel unflipped
+    assert (opened["up"], opened["end"]) == (False, False)
+
+    walk = [(step["focus"], step["month"]) for step in steps[1:]]
+    assert walk == [
+        ("2026-02-28", "february 2026"),
+        ("2026-03-01", "march 2026"),
+        ("2026-02-28", "february 2026"),
+        ("2026-03-07", "march 2026"),
+        ("2026-02-28", "february 2026"),
+    ]
+    # the roving tab stop follows the focus: exactly one tabbable cell
+    assert [step["tabbable"] for step in steps[1:]] == [[focus] for focus, _ in walk]
+    in_march = steps[2]
+    assert in_march["days"] == march
+    assert in_march["outside"] == _outside(march, 2026, 2)
+    # today is a february day the march grid still draws, and keeps its mark
+    assert in_march["current"] == [PICKER_TODAY]
+    # every walk key keeps the browser from scrolling the page under the panel
+    assert [step["prevented"] for step in steps] == [None, True, True, True, True, True]
+    # walking never picks: the panel stays open and the state stays empty
+    assert all(step["open"] for step in steps)
+    assert all(step["day_value"] == "today" for step in steps)
+
+
+def test_the_day_picker_opens_on_the_picked_month_and_clamps_month_steps(tmp_path):
+    """A `day=` fragment opens the panel on its own month with its cell marked;
+    a month step keeps the date, clamped to the target month's last day."""
+    steps = _picker(
+        tmp_path,
+        ["trigger", "key:PageUp", "key:PageDown", "next", "prev", "prev"],
+        hash_="#day=2026-03-31",
+    )
+    opened = steps[0]
+    assert opened["month"] == "march 2026"
+    assert opened["days"] == _monday_grid(2026, 2)
+    assert opened["picked"] == ["2026-03-31"]
+    assert opened["tabbable"] == ["2026-03-31"]
+    assert opened["focus"] == "2026-03-31"
+    assert opened["day_value"] == "2026-03-31"
+
+    walk = [(step["focus"], step["month"]) for step in steps[1:]]
+    assert walk == [
+        ("2026-02-28", "february 2026"),
+        ("2026-03-28", "march 2026"),
+        ("2026-04-28", "april 2026"),
+        ("2026-03-28", "march 2026"),
+        ("2026-02-28", "february 2026"),
+    ]
+    assert steps[3]["days"] == _monday_grid(2026, 3)
+    # PageUp/PageDown would scroll the page a screen without the prevent
+    assert [step["prevented"] for step in steps] == [None, True, True, None, None, None]
+    # navigating draws other months but never moves the picked day: april's
+    # grid opens on monday 2026-03-30, so it still draws the picked 31st
+    assert [step["picked"] for step in steps[1:]] == [
+        [],
+        ["2026-03-31"],
+        ["2026-03-31"],
+        ["2026-03-31"],
+        [],
+    ]
+    assert all(step["open"] and step["day_value"] == "2026-03-31" for step in steps)
+
+
+def test_escape_closes_the_day_picker_and_the_panel_hides_after_its_exit(tmp_path):
+    """Escape runs the exit costume: the panel stays drawn until the timer read
+    off its animation fires, focus returns to the trigger, and a reopen during
+    the exit cancels the pending hide."""
+    steps = _picker(
+        tmp_path, ["trigger", "key:Escape", "flush", "trigger", "key:Escape", "trigger"]
+    )
+    closing = steps[1]
+    assert closing["open"] is False
+    assert closing["closing"] is True
+    assert closing["hidden"] is False
+    assert closing["expanded"] == "false"
+    assert closing["focus"] == "trigger"
+    assert closing["timers"] == [PICKER_HIDE_MS]
+    assert (closing["prevented"], steps[4]["prevented"]) == (True, True)
+
+    hidden = steps[2]
+    assert (hidden["open"], hidden["closing"], hidden["hidden"], hidden["timers"]) == (
+        False,
+        False,
+        True,
+        [],
+    )
+
+    reopened = steps[5]
+    assert (reopened["open"], reopened["closing"], reopened["hidden"]) == (True, False, False)
+    assert reopened["expanded"] == "true"
+    # the hide queued by the second escape must not fire on the reopened panel
+    assert reopened["timers"] == []
+    assert reopened["focus"] == PICKER_TODAY
+
+
+def test_a_picked_day_lands_in_the_fragment_and_reopens_marked(tmp_path):
+    """A cell click and an Enter on the focused cell both write the day into
+    state, the trigger label and the fragment, then close onto the trigger; the
+    next open lands on the picked day."""
+    steps = _picker(
+        tmp_path,
+        [
+            "trigger",
+            "day:2026-02-10",
+            "flush",
+            "trigger",
+            "key:ArrowRight",
+            "key:Enter",
+            "flush",
+            "trigger",
+        ],
+    )
+    assert steps[0]["session_note"] == "priced at 12:00 UTC today"
+    clicked = steps[1]
+    assert (clicked["open"], clicked["closing"], clicked["focus"]) == (False, True, "trigger")
+    assert clicked["day_value"] == "2026-02-10"
+    assert clicked["day_empty"] is False
+    assert re.search(r"(^|[#&])day=2026-02-10($|&)", clicked["url"])
+    # the session reprices on the picked day, not only its label and link
+    assert clicked["session_note"] == "priced at 12:00 UTC on 2026-02-10"
+
+    reopened = steps[3]
+    assert reopened["picked"] == ["2026-02-10"]
+    assert reopened["tabbable"] == ["2026-02-10"]
+    assert reopened["focus"] == "2026-02-10"
+    # today keeps its own mark beside the picked day
+    assert reopened["current"] == [PICKER_TODAY]
+
+    entered = steps[5]
+    assert (entered["open"], entered["focus"]) == (False, "trigger")
+    assert (steps[4]["prevented"], entered["prevented"]) == (True, True)
+    assert entered["day_value"] == "2026-02-11"
+    assert re.search(r"(^|[#&])day=2026-02-11($|&)", entered["url"])
+    assert entered["session_note"] == "priced at 12:00 UTC on 2026-02-11"
+    assert steps[7]["picked"] == ["2026-02-11"]
+
+
+def test_enter_and_space_pick_only_from_a_day_cell(tmp_path):
+    """Enter or Space on a focused nav or today button bubbles to the panel's
+    key handler and must leave the pick to the button itself; on a day cell
+    either key picks the focused day."""
+    steps = _picker(
+        tmp_path,
+        ["trigger", "focus:next", "key:Enter", "focus:today", "key: ", "key:ArrowRight", "key: "],
+    )
+    for step in steps[2:6]:
+        assert step["open"] is True
+        assert step["day_value"] == "today"
+        assert "day=" not in step["url"]
+    assert [step["focus"] for step in steps[1:6]] == [
+        "next",
+        "next",
+        "today",
+        "today",
+        "2026-02-28",
+    ]
+    spaced = steps[6]
+    assert (spaced["open"], spaced["focus"]) == (False, "trigger")
+    assert spaced["day_value"] == "2026-02-28"
+    assert re.search(r"(^|[#&])day=2026-02-28($|&)", spaced["url"])
+    # a key on a nav button keeps its default, which is the button's own click;
+    # on a day cell the handler takes the key over
+    assert [step["prevented"] for step in steps[2::2]] == [False, False, True]
+    assert steps[5]["prevented"] is True
+
+
+@pytest.mark.parametrize(
+    ("rect", "flips"),
+    [
+        # 68px below, under the 320px panel plus 8px, with 700px above; the
+        # 300px panel from x=1200 overruns the 1280px width
+        ({"top": 700, "bottom": 732, "left": 1100, "right": 1200}, (True, True)),
+        # 240px below is too little, but 150px above is less: stay down
+        ({"top": 150, "bottom": 560, "left": 100, "right": 300}, (False, False)),
+        # 324px below fits the panel but not its 8px gap; the right edge, not
+        # the left, decides the overrun: 1000 + 300 > 1280 while 900 + 300 is not
+        ({"top": 444, "bottom": 476, "left": 900, "right": 1000}, (True, True)),
+        # 300px both above and below, too little for the panel: a tie stays down
+        ({"top": 300, "bottom": 500, "left": 100, "right": 300}, (False, False)),
+        # exactly 328px below and exactly 1280px wide: both fit
+        ({"top": 440, "bottom": 472, "left": 880, "right": 980}, (False, False)),
+    ],
+)
+def test_the_day_picker_flips_up_and_to_the_end_near_the_viewport_edges(tmp_path, rect, flips):
+    """The panel opens above the trigger when the room below cannot hold it plus
+    its gap and the room above is larger, and aligns to the trigger's end when
+    it would overrun the window's right edge (window 1280x800, panel 300x320)."""
+    steps = _picker(tmp_path, ["trigger"], trigger_rect=rect)
+    assert steps[0]["open"] is True
+    assert (steps[0]["up"], steps[0]["end"]) == flips
+
+
+def test_the_today_foot_clears_the_picked_day(tmp_path):
+    """Today is the calculator's empty default, so the foot clears the state
+    rather than writing today's date: the label reads "today" and the fragment
+    drops its `day=` key."""
+    steps = _picker(tmp_path, ["trigger", "today", "flush", "trigger"], hash_="#day=2026-03-31")
+    assert steps[0]["day_value"] == "2026-03-31"
+    assert steps[0]["session_note"] == "priced at 12:00 UTC on 2026-03-31"
+    cleared = steps[1]
+    assert (cleared["open"], cleared["focus"]) == (False, "trigger")
+    assert cleared["day_value"] == "today"
+    assert cleared["day_empty"] is True
+    assert "day=" not in cleared["url"]
+    assert cleared["session_note"] == "priced at 12:00 UTC today"
+    reopened = steps[3]
+    assert reopened["month"] == "february 2026"
+    assert reopened["picked"] == []
+    assert reopened["focus"] == PICKER_TODAY
+
+
+def test_the_day_picker_closes_on_an_outside_click_or_focus_and_on_a_trigger_toggle(tmp_path):
+    """A pointer or focus move inside the picker, a grid click between cells
+    included, keeps it open; one outside closes it and leaves focus where the
+    reader put it; a press outside an already closed picker changes nothing;
+    and the trigger toggles it shut."""
+    steps = _picker(
+        tmp_path,
+        [
+            "trigger",
+            "gridgap",
+            "pointerdown:inside",
+            "pointerdown:outside",
+            "flush",
+            "pointerdown:outside",
+            "trigger",
+            "focusout:inside",
+            "focusout:outside",
+            "trigger",
+            "trigger",
+        ],
+    )
+    opened, closed = (True, "true"), (False, "false")
+    assert [(step["open"], step["expanded"]) for step in steps] == [
+        opened,
+        opened,
+        opened,
+        closed,
+        closed,
+        closed,
+        opened,
+        opened,
+        closed,
+        opened,
+        closed,
+    ]
+    assert [step["focus"] for step in steps] == [
+        PICKER_TODAY,
+        PICKER_TODAY,
+        "prev",
+        "outside",
+        "outside",
+        "outside",
+        PICKER_TODAY,
+        "prev",
+        "outside",
+        PICKER_TODAY,
+        "trigger",
+    ]
+    # the second outside press lands on a hidden picker: no exit replays
+    settled = steps[5]
+    assert (settled["closing"], settled["hidden"], settled["timers"]) == (False, True, [])
+    assert all(step["day_value"] == "today" for step in steps)
+
+
+def test_the_day_picker_closes_when_focus_leaves_the_page_or_the_page_is_pressed(tmp_path):
+    """Focus leaving the document (a focusout with no related target) closes the
+    picker; a press on an unfocusable stretch of the page closes it too and
+    sends focus to the body, and the exit then hides the panel. A press that
+    moves no focus (a button WebKit leaves unfocused) fires no
+    focusout, so the page-wide press listener alone has to close it."""
+    steps = _picker(
+        tmp_path,
+        [
+            "trigger",
+            "focusout:nowhere",
+            "trigger",
+            "pointerdown:page",
+            "flush",
+            "trigger",
+            "pointerdown:still",
+        ],
+    )
+    assert [(step["open"], step["expanded"]) for step in steps] == [
+        (True, "true"),
+        (False, "false"),
+        (True, "true"),
+        (False, "false"),
+        (False, "false"),
+        (True, "true"),
+        (False, "false"),
+    ]
+    assert [step["focus"] for step in steps] == [
+        PICKER_TODAY,
+        None,
+        PICKER_TODAY,
+        None,
+        None,
+        PICKER_TODAY,
+        PICKER_TODAY,
+    ]
+    assert (steps[4]["hidden"], steps[4]["closing"]) == (True, False)
+    assert (steps[6]["closing"], steps[6]["timers"]) == (True, [PICKER_HIDE_MS])
 
 
 def test_the_peak_rate_is_the_highest_priced_clock_window(tmp_path):
