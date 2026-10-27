@@ -49,6 +49,12 @@ out.rates = (probe.rates ?? []).map(v => app.formatRate(v));
 out.matches = (probe.matches ?? []).map(m => app.whenMatches(m.when, m.ctx));
 out.chat = (probe.chat ?? []).map(entry => app.isChatPriced(entry));
 out.chart = (probe.chart ?? []).map(spec => app.chartPoints(spec.entry, spec.axis));
+out.chartPeak = (probe.chartPeak ?? []).map(spec => app.chartPoints(spec.entry, spec.axis, true));
+out.peakRates = (probe.peakRates ?? []).map(spec => app.peakRate(spec.entry, spec.axis));
+out.peakState = {
+  on: app.decodeState(probe.peakFragment ?? "").peak,
+  encoded: app.encodeState({ ...app.defaultState(), model: "alpha/m1", peak: true }),
+};
 out.axes = app.CHART_AXES;
 out.polyline = (probe.polyline ?? []).map(
   spec => app.stepPolyline(spec.run, spec.domain, spec.peak, spec.flat));
@@ -151,20 +157,40 @@ if (probe.modeChanges) {
 }
 if (probe.rows) {
   let builtRows = 0;
-  const make = (tag) => ({
-    tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
-    dataset: {}, checked: false, attrs: {}, rects: [{}],
-    append(...nodes) { this.children.push(...nodes); },
-    replaceChildren(...nodes) {
-      this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
-    },
-    setAttribute(name, value) { this.attrs[name] = String(value); },
-    getAttribute(name) { return this.attrs[name] ?? null; },
-    getClientRects() { return this.rects; },
-    querySelector() { return null; },
-    querySelectorAll() { return []; },
-    addEventListener(name, fn) { (this._listeners || (this._listeners = {}))[name] = fn; },
-  });
+  const make = (tag) => {
+    const el = {
+      tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
+      dataset: {}, checked: false, attrs: {}, rects: [{}],
+      append(...nodes) { this.children.push(...nodes); },
+      replaceChildren(...nodes) {
+        this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
+      },
+      setAttribute(name, value) { this.attrs[name] = String(value); },
+      getAttribute(name) { return this.attrs[name] ?? null; },
+      getClientRects() { return this.rects; },
+      getBoundingClientRect() { return { top: 0, left: 0 }; },
+      scrollIntoView() {},
+      style: { setProperty() {} },
+      querySelector() { return null; },
+      querySelectorAll() { return []; },
+      addEventListener(name, fn) { (this._listeners || (this._listeners = {}))[name] = fn; },
+    };
+    const has = (name) => el.className.split(/\\s+/).includes(name);
+    el.classList = {
+      contains: has,
+      add(name) {
+        if (!has(name)) el.className = `${el.className} ${name}`.trim();
+      },
+      toggle(name, force) {
+        const on = force === undefined ? !has(name) : Boolean(force);
+        if (on && !has(name)) el.className = `${el.className} ${name}`.trim();
+        if (!on && has(name))
+          el.className = el.className.split(/\\s+/).filter((n) => n !== name).join(" ");
+        return on;
+      },
+    };
+    return el;
+  };
   const wrap = make("div");
   wrap.dataset.uiTable = "1";
   const body = make("tbody");
@@ -200,8 +226,32 @@ if (probe.rows) {
   for (const id of [
     "q", "calc-input", "calc-cached", "calc-output", "calc-day", "calc-rate",
     "calc-mode", "session-wrap", "session-body", "session-empty",
-    "session-note", "rate-line", "model-count",
+    "session-note", "rate-line", "model-count", "peak-toggle",
+    "model-detail", "detail-name", "detail-id", "detail-tags", "detail-empty",
+    "detail-body", "detail-close", "detail-ticks-y", "detail-ticks-x", "detail-info",
   ]) elements.set(id, make("input"));
+  // the detail card's chart skeleton, the shape detailNodes and drawChart read
+  const chart = make("div");
+  const svg = make("svg");
+  const chartTitle = make("title");
+  const chartDesc = make("desc");
+  svg.querySelector = (sel) => (sel === "title" ? chartTitle : sel === "desc" ? chartDesc : null);
+  svg.querySelectorAll = (sel) => (sel === ".chart-series" ? [series] : []);
+  const chartGrid = make("g");
+  const series = make("g");
+  const line = make("polyline");
+  series.querySelector = (sel) => (sel === ".chart-line" ? line : null);
+  chart.querySelector = (sel) => ({
+    ".chart-svg": svg, ".chart-grid": chartGrid, ".chart-series": series, ".chart-line": line,
+  }[sel] ?? null);
+  elements.set("detail-chart", chart);
+  const axisButtons = ["input", "output", "cache_read"].map((axis) => {
+    const button = make("button");
+    button.dataset.axis = axis;
+    return button;
+  });
+  elements.get("model-detail").querySelectorAll =
+    (sel) => (sel === "[data-axis]" ? axisButtons : []);
   const hashes = [];
   const windowListeners = {};
   globalThis.document = {
@@ -240,6 +290,39 @@ if (probe.rows) {
     sortButtons.get(probe.rows.hideColumnAfter).closest("th").rects = [];
     windowListeners.resize?.();
   }
+  const cardSnapshot = () => ({
+    name: elements.get("detail-name").textContent,
+    info: elements.get("detail-info").children.map((tr) => tr.children.map((td) => td.textContent)),
+    desc: chartDesc.textContent,
+    pressed: elements.get("peak-toggle").attrs["aria-pressed"] ?? null,
+    on: /(^|\\s)on(\\s|$)/.test(elements.get("peak-toggle").className),
+  });
+  let card = probe.rows.cardAfterInit ? cardSnapshot() : null;
+  if (probe.rows.clickModel) {
+    const picked = body.children.find(
+      (row) => row.children[1]?.children?.[0]?.dataset?.key === probe.rows.clickModel);
+    picked?.children[1]?.children?.[0]?._listeners?.click?.({});
+    card = cardSnapshot();
+  }
+  let axisCard = null;
+  if (probe.rows.chartAxis) {
+    const button = axisButtons.find((b) => b.dataset.axis === probe.rows.chartAxis);
+    button?._listeners?.click?.({});
+    axisCard = cardSnapshot();
+  }
+  const toggleStates = [];
+  for (let i = 0; i < (probe.rows.toggles ?? 0); i += 1) {
+    elements.get("peak-toggle")._listeners?.click?.({});
+    toggleStates.push({
+      url: hashes[hashes.length - 1] ?? probe.rows.hash,
+      rates: body.children.map((tr) => tr.children.slice(3, 6).map((td) => td.textContent)),
+      tags: body.children.map((tr) =>
+        tr.children[1].children
+          .filter((node) => typeof node.className === "string" && node.className.startsWith("tag "))
+          .map((node) => node.textContent)),
+      card: cardSnapshot(),
+    });
+  }
   const hasBox = (node) =>
     node.type === "checkbox"
     || (Array.isArray(node.children) && node.children.some(hasBox));
@@ -249,6 +332,9 @@ if (probe.rows) {
     // the fragment the page ends on: a rewritten one when it dropped a key,
     // else the one it loaded
     url: hashes[hashes.length - 1] ?? probe.rows.hash,
+    toggle_states: toggleStates,
+    card,
+    axis_card: axisCard,
     session_rows: elements.get("session-body").children.length,
     steps,
     model_rows: body.children.map((tr) => {
@@ -263,6 +349,7 @@ if (probe.rows) {
         hidden: tr.hidden === true,
         has_box: hasBox(tr.children[0]),
         name: name.children[0].textContent,
+        rates: tr.children.slice(3, 6).map((td) => td.textContent),
         tags: name.children
           .filter((node) => typeof node.className === "string" && node.className.startsWith("tag "))
           .map((node) => node.textContent),
@@ -581,6 +668,125 @@ REVIVED = {
 # a provenance name a scraper could hand back: interpolated raw it would close
 # the page's script island, and escaped it is just a name
 NASTY = "</script><script>alert(1)</script>"
+
+# a scheduled peak: the clock window raises all three table axes, while the
+# threshold, mode and day-only overrides price no clock range and must not
+# enter the peak reading; the last override carries a quota, not a rate
+PEAK = {
+    "source": "fixture",
+    "model_id": "p1",
+    "vendor": "fixture",
+    "name": "Peak One",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 0.66, "output": 1.98, "cache_read": 0.022},
+    "overrides": [
+        {
+            "when": {
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "window": [100, 400],
+            },
+            "rates": {"input": 1.32, "output": 3.96, "cache_read": 0.044},
+        },
+        {"when": {"min_tokens": 100000}, "rates": {"input": 9.0}},
+        {"when": {"mode": "fast"}, "rates": {"input": 8.0}},
+        {"when": {"days": ["saturday", "sunday"]}, "rates": {"input": 7.0}},
+        {"when": {"window": [1600, 2400]}, "quota_multiplier": 0.4},
+    ],
+}
+
+# a base above every clock window: the peak reading equals the base, so the
+# row carries no tag
+PEAK_BASE = {
+    "source": "fixture",
+    "model_id": "p2",
+    "vendor": "fixture",
+    "name": "Peak Base",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 0.132, "output": 0.528, "cache_read": 0.033},
+    "overrides": [
+        {
+            "when": {"window": [0, 1600]},
+            "rates": {"input": 0.132, "output": 0.528, "cache_read": 0.033},
+        },
+        {
+            "when": {"window": [1600, 2400]},
+            "rates": {"input": 0.0825, "output": 0.33, "cache_read": 0.020625},
+        },
+    ],
+}
+
+PLAIN = {
+    "source": "fixture",
+    "model_id": "p3",
+    "vendor": "fixture",
+    "name": "Plain Three",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 2.0, "output": 4.0, "cache_read": 0.5},
+}
+
+# a window that raises only two axes: the cache axis the window leaves out
+# keeps its base rate in the peak reading
+PEAK_PARTIAL = {
+    "source": "fixture",
+    "model_id": "p4",
+    "vendor": "fixture",
+    "name": "Peak Partial",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 1.0, "output": 2.0, "cache_read": 0.5},
+    "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 3.0}}],
+}
+
+# a model whose window raises the only axis it prices, so its peak input (3.0)
+# outranks the plain entry's 2.0 while its base input (1.0) sits below it
+PEAK_SORT = {
+    "source": "fixture",
+    "model_id": "s1",
+    "vendor": "fixture",
+    "name": "Sort Peak",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 1.0, "output": 2.0},
+    "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 3.0}}],
+}
+
+# an axis that exists only in the window: the card's peak reading lists it,
+# while the base rates carry no such rate at all
+PEAK_AXIS = {
+    "source": "fixture",
+    "model_id": "a1",
+    "vendor": "fixture",
+    "name": "Axis Only",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 1.0},
+    "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 2.0, "cache_read": 0.5}}],
+}
+
+# a detail-card model: its entry-level and per-interval schedules are raised by
+# the same window, so the card's rate rows and its chart both have a peak to read
+CARD = {
+    "source": "fixture",
+    "model_id": "c1",
+    "vendor": "fixture",
+    "name": "Card One",
+    "observed_at": "2026-08-01",
+    "rates": {"input": 1.0, "output": 2.0, "cache_read": 0.5},
+    "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 2.0, "output": 4.0}}],
+    "intervals": [
+        {
+            "valid_from": "2026-08-01",
+            "valid_to": "2026-09-01",
+            "observed_at": "2026-08-01",
+            "rates": {"input": 1.0, "output": 2.0, "cache_read": 0.5},
+            "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 2.0, "output": 4.0}}],
+        },
+        {
+            "valid_from": "2026-09-01",
+            "valid_to": None,
+            "observed_at": "2026-09-01",
+            "rates": {"input": 1.0, "output": 2.0, "cache_read": 0.5},
+            "overrides": [{"when": {"window": [0, 600]}, "rates": {"input": 2.0, "output": 4.0}}],
+        },
+    ],
+}
 
 
 def _rows() -> list[dict[str, object]]:
@@ -1096,6 +1302,22 @@ def test_the_shipped_asset_tree_names_no_design_system():
             assert "cloudy" not in text, f"{path.name} names the design system"
 
 
+def test_the_toolbar_offers_a_peak_time_toggle(tmp_path):
+    """The page-wide switch that prints the entry's highest scheduled rate: a
+    real button in the shipped toggle costume, named by its own visible label."""
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    toggle = soup.select_one("#peak-toggle")
+    assert toggle is not None
+    assert toggle.name == "button"
+    assert "toggle" in toggle.get("class", [])
+    assert toggle.get("aria-pressed") == "false"
+    assert toggle.get("aria-labelledby") == "peak-label"
+    assert "toggle-wrap" in toggle.parent.get("class", [])
+    label = soup.select_one("#peak-label")
+    assert label is not None and label.get_text(strip=True) == "peak time"
+
+
 def test_the_session_card_offers_the_request_modes(tmp_path):
     """The calculator's mode select: standard first and selected, then every
     request mode the index carries — fast (the anthropic premium) and batch
@@ -1149,6 +1371,255 @@ def test_the_mode_gate_accepts_every_option_the_select_offers(tmp_path):
     # the fragment restore applies the same gate: a crafted fragment naming a
     # mode neither list carries must land on standard, not on a ghost mode
     assert result["state"]["mode"] == ""
+
+
+def test_the_peak_rate_is_the_highest_priced_clock_window(tmp_path):
+    """A peak reads the base and every override naming a clock window — never a
+    threshold, mode, day-only or quota-only override, whose 9.0 / 8.0 / 7.0
+    would otherwise outrank the window's 1.32."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "peakRates": [
+                {"entry": PEAK, "axis": "input"},
+                {"entry": PEAK, "axis": "output"},
+                {"entry": PEAK, "axis": "cache_read"},
+                {"entry": PEAK_BASE, "axis": "input"},
+                {"entry": PLAIN, "axis": "input"},
+                {"entry": PEAK_PARTIAL, "axis": "input"},
+                {"entry": PEAK_PARTIAL, "axis": "output"},
+                {"entry": PEAK_PARTIAL, "axis": "cache_read"},
+            ],
+        },
+    )
+    assert result["peakRates"] == [1.32, 3.96, 0.044, 0.132, 2.0, 3.0, 2.0, 0.5]
+
+
+def test_the_peak_chart_points_read_each_interval_schedule(tmp_path):
+    """Every interval's own overrides set its peak, so the history keeps its
+    step shape instead of flattening to the entry's today rate."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "chartPeak": [{"entry": ENTRY, "axis": "input"}],
+        },
+    )
+    runs = result["chartPeak"][0]["runs"]
+    assert [point["value"] for run in runs for point in run["points"]] == [9.0, 1.0]
+
+
+def test_the_peak_fragment_key_round_trips(tmp_path):
+    result = _node(
+        tmp_path,
+        {"cases": {}, "fragment": "#peak=1", "peakFragment": "#peak=1"},
+    )
+    assert result["peakState"] == {
+        "on": True,
+        "encoded": "calc=1000000|0|0&model=alpha/m1&peak=1",
+    }
+    off = _node(
+        tmp_path,
+        {"cases": {}, "fragment": "#peak=0", "peakFragment": "#peak=0"},
+    )
+    assert off["peakState"]["on"] is False
+
+
+def test_a_peak_fragment_prints_the_windowed_rates_and_tags_the_row(tmp_path):
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [PEAK, PEAK_BASE, PLAIN]},
+                "hash": "#peak=1",
+            },
+        },
+    )
+    rows = result["rows"]["model_rows"]
+    assert [row["rates"] for row in rows] == [
+        ["1.32", "0.044", "3.96"],
+        ["0.132", "0.033", "0.528"],
+        ["2", "0.5", "4"],
+    ]
+    # the tag marks only a row whose printed rate moved off its base
+    assert ["peak" in row["tags"] for row in rows] == [True, False, False]
+
+
+def test_peak_off_prints_the_base_rates_with_no_tag(tmp_path):
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": {"entries": [PEAK, PEAK_BASE, PLAIN]}, "hash": ""},
+        },
+    )
+    rows = result["rows"]["model_rows"]
+    assert [row["rates"] for row in rows] == [
+        ["0.66", "0.022", "1.98"],
+        ["0.132", "0.033", "0.528"],
+        ["2", "0.5", "4"],
+    ]
+    assert [row["tags"] for row in rows] == [[], [], []]
+
+
+def test_the_peak_toggle_reprices_the_table_and_rides_the_fragment(tmp_path):
+    """One click repaints every row from the entry's own peak and writes the
+    fragment; the second click puts both back."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [PEAK, PLAIN]},
+                "hash": "",
+                "toggles": 2,
+            },
+        },
+    )
+    on, off = result["rows"]["toggle_states"]
+    assert on["url"] == "#calc=1000000|0|0&peak=1"
+    assert on["rates"] == [["1.32", "0.044", "3.96"], ["2", "0.5", "4"]]
+    assert ["peak" in tag for tag in on["tags"]] == [True, False]
+    assert off["url"] == "#calc=1000000|0|0"
+    assert off["rates"] == [["0.66", "0.022", "1.98"], ["2", "0.5", "4"]]
+    assert ["peak" in tag for tag in off["tags"]] == [False, False]
+
+
+def test_the_open_card_reads_peak_rates_and_follows_the_toggle(tmp_path):
+    """The card's rate rows and its chart read the same peak the table does,
+    and a toggle with the card open repaints both in place."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [CARD, PLAIN]},
+                "hash": "#peak=1",
+                "clickModel": "fixture/c1",
+                "toggles": 1,
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["card"]["name"] == "Card One"
+    assert rows["card"]["info"][:3] == [
+        ["rate input", "2"],
+        ["rate output", "4"],
+        ["rate cache read", "0.5"],
+    ]
+    assert rows["card"]["desc"] == (
+        "input price per million tokens: 2 from 2026-08-01, 2 from 2026-09-01."
+    )
+    assert rows["card"]["pressed"] == "true"
+    assert rows["card"]["on"] is True
+    after = rows["toggle_states"][0]
+    assert after["card"]["info"][:3] == [
+        ["rate input", "1"],
+        ["rate output", "2"],
+        ["rate cache read", "0.5"],
+    ]
+    assert after["card"]["desc"] == (
+        "input price per million tokens: 1 from 2026-08-01, 1 from 2026-09-01."
+    )
+    assert after["card"]["pressed"] == "false"
+    assert after["card"]["on"] is False
+
+
+def test_a_peak_fragment_opens_the_card_at_peak(tmp_path):
+    """A shared link naming both a model and peak opens the card on the peak
+    reading, not on the base one its neighbour renders off."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [CARD]},
+                "hash": "#model=fixture/c1&peak=1",
+                "cardAfterInit": True,
+            },
+        },
+    )
+    card = result["rows"]["card"]
+    assert card["name"] == "Card One"
+    assert card["info"][:3] == [
+        ["rate input", "2"],
+        ["rate output", "4"],
+        ["rate cache read", "0.5"],
+    ]
+    assert card["desc"] == "input price per million tokens: 2 from 2026-08-01, 2 from 2026-09-01."
+
+
+def test_switching_the_card_axis_keeps_the_peak_reading(tmp_path):
+    """The axis buttons redraw the chart from the interval schedule; under peak
+    the redraw must stay on the peak values."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [CARD]},
+                "hash": "#peak=1",
+                "clickModel": "fixture/c1",
+                "chartAxis": "output",
+            },
+        },
+    )
+    card = result["rows"]["axis_card"]
+    assert card["desc"] == (
+        "output price per million tokens: 4 from 2026-08-01, 4 from 2026-09-01."
+    )
+
+
+def test_a_rate_sort_orders_by_the_printed_peak(tmp_path):
+    """The sort and the cells must read one value: base order is Sort Peak then
+    Plain Three, and the window flips it."""
+    island = {"entries": [PEAK_SORT, PLAIN]}
+    on = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": island, "hash": "#sort=input&dir=asc&peak=1"},
+        },
+    )
+    off = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": island, "hash": "#sort=input&dir=asc"},
+        },
+    )
+    assert [row["name"] for row in on["rows"]["model_rows"]] == ["Plain Three", "Sort Peak"]
+    assert [row["name"] for row in off["rows"]["model_rows"]] == ["Sort Peak", "Plain Three"]
+
+
+def test_the_card_lists_an_axis_that_only_the_window_prices(tmp_path):
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [PEAK_AXIS]},
+                "hash": "#peak=1",
+                "clickModel": "fixture/a1",
+            },
+        },
+    )
+    info = result["rows"]["card"]["info"]
+    assert ["rate input", "2"] in info
+    assert ["rate cache read", "0.5"] in info
 
 
 def _node_cases() -> dict[str, dict[str, object]]:
@@ -1602,6 +2073,7 @@ def test_a_fragment_restores_the_whole_state(tmp_path):
         "rate": "0.5",
         "mode": "fast",
         "model": "",
+        "peak": False,
     }
 
 
@@ -1660,6 +2132,7 @@ def test_a_fragment_that_names_nothing_keeps_the_defaults(tmp_path):
         "rate": "",
         "mode": "",
         "model": "",
+        "peak": False,
     }
     assert result["encoded"] == "calc=1000000|0|0"
 

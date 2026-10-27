@@ -227,6 +227,11 @@ def _toolbar() -> str:
             "</div>\n",
             '<span class="grow"></span>\n',
             '<p class="field-hint" id="model-count"></p>\n',
+            '<div class="toggle-wrap">\n',
+            '<button class="toggle" type="button" id="peak-toggle" aria-pressed="false"'
+            ' aria-labelledby="peak-label"></button>\n',
+            '<span class="toggle-label" id="peak-label">peak time</span>\n',
+            "</div>\n",
             "</div>\n",
         ]
     )

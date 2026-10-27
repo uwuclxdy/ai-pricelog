@@ -30,6 +30,35 @@ function axisRate(rates, axis) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+/** Whether a `when` names a clock window, the one override shape that
+    schedules a price: the structural read `whenMatches` gates on, numeric
+    minute pair included. */
+function hasClockWindow(when) {
+  if (when === null || typeof when !== "object") return false;
+  const window = when.window;
+  if (!Array.isArray(window) || window.length !== 2) return false;
+  const [start, end] = window;
+  return Number.isFinite(start) && Number.isFinite(end);
+}
+
+/** The per-axis peak: the highest of the base rate and every override whose
+    `when` names a clock window. A threshold, mode, day-only or quota-only
+    override prices no clock range, so none enters the peak; `null` when
+    nothing prices the axis. An interval item reads the same way. */
+export function peakRate(entry, axis) {
+  const values = [];
+  const base = axisRate(entry.rates, axis);
+  if (base !== null) values.push(base);
+  const overrides = Array.isArray(entry.overrides) ? entry.overrides : [];
+  for (const override of overrides) {
+    if (override === null || typeof override !== "object") continue;
+    if (!hasClockWindow(override.when)) continue;
+    const value = axisRate(override.rates, axis);
+    if (value !== null) values.push(value);
+  }
+  return values.length === 0 ? null : Math.max(...values);
+}
+
 export function keyOf(entry) {
   return `${entry.source}/${entry.model_id}`;
 }
@@ -62,16 +91,18 @@ export function todayUTC(now = new Date()) {
  * timeline: one point per interval that prices the axis, and a run ends where an
  * interval stops pricing it or removes the model. A later era that prices the
  * axis again opens a new run, so a gap never grows a price the source did not
- * charge. `removed` is the model's own state today, which is the entry's, not
- * any single era's.
+ * charge. With `peak`, a point is the interval's own peak rate instead of its
+ * base rate. `removed` is the model's own state today, which is the entry's,
+ * not any single era's.
  */
-export function chartPoints(entry, axis) {
+export function chartPoints(entry, axis, peak = false) {
   const runs = [];
   let run = null;
   const chain = Array.isArray(entry.intervals) ? entry.intervals : [];
   for (const item of chain) {
     if (item.valid_to === item.valid_from) continue;
-    const value = item.removed === true ? null : axisRate(item.rates, axis);
+    const value =
+      item.removed === true ? null : peak ? peakRate(item, axis) : axisRate(item.rates, axis);
     if (value === null) {
       if (run !== null) {
         run.end = item.valid_from ?? null;
@@ -280,6 +311,7 @@ export function defaultState() {
     rate: "",
     mode: "",
     model: "",
+    peak: false,
   };
 }
 
@@ -342,6 +374,7 @@ export function decodeState(hash) {
   const mode = text("mode");
   if (MODES.includes(mode)) state.mode = mode;
   state.model = text("model");
+  state.peak = text("peak") === "1";
   return state;
 }
 
@@ -361,6 +394,8 @@ export function encodeState(state) {
   // the slash is the key's own separator, so it is the one character the
   // fragment keeps literal; everything else still percent-encodes
   if (state.model) parts.push(`model=${encodeURIComponent(state.model).replaceAll("%2F", "/")}`);
+  // peak rides last, the one key a shared link gains after model
+  if (state.peak) parts.push("peak=1");
   return parts.join("&");
 }
 
@@ -384,12 +419,12 @@ function rateOf(entry, axis) {
   return axisRate(entry.rates, axis);
 }
 
-function sortValue(entry, key) {
+function sortValue(entry, key, peak) {
   switch (key) {
     case "input":
     case "cache_read":
     case "output":
-      return rateOf(entry, key);
+      return peak ? peakRate(entry, key) : rateOf(entry, key);
     case "vendor":
       return entry.vendor ? String(entry.vendor).toLowerCase() : null;
     default:
@@ -399,11 +434,11 @@ function sortValue(entry, key) {
 
 /* a model the export has no reading for sorts to the bottom in either
    direction: an empty cell is a missing fact, not a small number */
-function compareOn(key, dir) {
+function compareOn(key, dir, peak) {
   const sign = dir === "desc" ? -1 : 1;
   return (a, b) => {
-    const left = sortValue(a, key);
-    const right = sortValue(b, key);
+    const left = sortValue(a, key, peak);
+    const right = sortValue(b, key, peak);
     if (left === null || right === null) {
       if (left === null && right === null) return 0;
       return left === null ? 1 : -1;
@@ -527,13 +562,37 @@ function currentEra(entry) {
   return priced.length > 0 ? priced[priced.length - 1] : null;
 }
 
-function renderInfo(tbody, entry) {
+/** The rate axes the entry's peak schedule prices: the base's axes plus every
+    axis a clock-window override carries, so a window-only axis still reads. */
+function peakAxes(entry) {
+  const axes = new Set();
+  const base = entry.rates !== null && typeof entry.rates === "object" ? entry.rates : {};
+  for (const axis of Object.keys(base)) axes.add(axis);
+  const overrides = Array.isArray(entry.overrides) ? entry.overrides : [];
+  for (const override of overrides) {
+    if (override === null || typeof override !== "object") continue;
+    if (!hasClockWindow(override.when)) continue;
+    const rates = override.rates;
+    if (rates === null || typeof rates !== "object") continue;
+    for (const axis of Object.keys(rates)) axes.add(axis);
+  }
+  return axes;
+}
+
+function renderInfo(tbody, entry, peak) {
   const rows = [];
   const add = (label, value) => rows.push(detailRow(label, value));
-  const rates = entry.rates !== null && typeof entry.rates === "object" ? entry.rates : {};
-  for (const [axis, value] of Object.entries(rates)) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      add(`rate ${axisLabel(axis)}`, formatRate(value));
+  if (peak) {
+    for (const axis of peakAxes(entry)) {
+      const value = peakRate(entry, axis);
+      if (value !== null) add(`rate ${axisLabel(axis)}`, formatRate(value));
+    }
+  } else {
+    const rates = entry.rates !== null && typeof entry.rates === "object" ? entry.rates : {};
+    for (const [axis, value] of Object.entries(rates)) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        add(`rate ${axisLabel(axis)}`, formatRate(value));
+      }
     }
   }
   if (typeof entry.currency === "string" && entry.currency !== "") {
@@ -652,14 +711,14 @@ function drawRuns(detail, shapes) {
   }
 }
 
-function drawChart(detail, entry) {
-  const { runs, removed } = chartPoints(entry, detail.axis);
+function drawChart(detail, entry, peak) {
+  const { runs, removed } = chartPoints(entry, detail.axis, peak);
   const domain = runs.length === 0 ? null : chartDomain(runs);
-  const peak = chartPeak(runs);
+  const top = chartPeak(runs);
   // the card's chart carries an axis, so every line sits at its own reading; the
   // centred flat line is the sparkline's rule, where there is no axis to read
   const shapes =
-    domain === null ? [] : runs.map((run) => stepPolyline(run, domain, peak, false));
+    domain === null ? [] : runs.map((run) => stepPolyline(run, domain, top, false));
   drawRuns(detail, shapes);
   // a run past the first is a group the controller never scanned at boot, so it
   // gets no tint and no end mark until the module looks again
@@ -675,7 +734,7 @@ function drawChart(detail, entry) {
   detail.chart.classList.add("is-drawn");
 }
 
-function renderDetail(detail, entry) {
+function renderDetail(detail, entry, peak) {
   detail.name.textContent = nameOf(entry);
   detail.id.textContent = keyOf(entry);
   renderTags(detail.tags, entry);
@@ -683,8 +742,8 @@ function renderDetail(detail, entry) {
   detail.body.hidden = false;
   detail.card.dataset.empty = "false";
   if (detail.close !== null) detail.close.hidden = false;
-  renderInfo(detail.info, entry);
-  drawChart(detail, entry);
+  renderInfo(detail.info, entry, peak);
+  drawChart(detail, entry, peak);
 }
 
 /** Back to the empty card: the state key goes with the body, so a reload or a
@@ -822,6 +881,7 @@ export function init() {
   const sessionNote = document.getElementById("session-note");
   const rateLine = document.getElementById("rate-line");
   const countLine = document.getElementById("model-count");
+  const peakToggle = document.getElementById("peak-toggle");
 
   let lastHash = "";
 
@@ -872,14 +932,21 @@ export function init() {
     title.addEventListener("click", () => selectModel(key));
     modelButtons.set(key, title);
     name.append(title);
-    if (!isChatPriced(entry)) {
+    const modalityTag = isChatPriced(entry) ? null : tag(entry.modality, "tag-info");
+    if (modalityTag !== null) {
       name.append(document.createTextNode(" "));
-      name.append(tag(entry.modality, "tag-info"));
+      name.append(modalityTag);
     }
-    if (entry.removed_at) {
+    const removedTag = entry.removed_at
+      ? tag(`removed ${entry.removed_at}`, "tag-danger")
+      : null;
+    if (removedTag !== null) {
       name.append(document.createTextNode(" "));
-      name.append(tag(`removed ${entry.removed_at}`, "tag-danger"));
+      name.append(removedTag);
     }
+    // built once here so a toggle appends the very node instead of constructing
+    // one per flip
+    const peakTag = tag("peak", "tag-warning");
     const sub = document.createElement("div");
     sub.className = "td-sub";
     sub.textContent = `${entry.source} · ${entry.observed_at}`;
@@ -890,11 +957,11 @@ export function init() {
     vendor.className = "col-vendor";
     vendor.textContent = entry.vendor ? String(entry.vendor) : DASH;
     tr.append(vendor);
-    tr.append(cell(formatRate(rateOf(entry, "input")), "num-col"));
-    tr.append(cell(formatRate(rateOf(entry, "cache_read")), "num-col"));
-    tr.append(cell(formatRate(rateOf(entry, "output")), "num-col"));
+    // the three rate cells the peak toggle rewrites in place
+    const rateCells = AXES.map(([, axis]) => cell(formatRate(rateOf(entry, axis)), "num-col"));
+    for (const rateCell of rateCells) tr.append(rateCell);
     tr.append(sparkCell(entry));
-    return tr;
+    return { tr, entry, name, title, modalityTag, removedTag, peakTag, sub, rateCells };
   }
 
   /* the mark moves between the one button carrying it and the new pick: the
@@ -915,7 +982,7 @@ export function init() {
     state.model = key;
     syncModelCurrent();
     if (detail !== null) {
-      renderDetail(detail, entry);
+      renderDetail(detail, entry, state.peak);
       // one column puts the card above the table, so a pick below the fold must
       // bring it back into view or the page reads as if the tap did nothing
       if (detail.card.getBoundingClientRect().top < 0) {
@@ -935,7 +1002,7 @@ export function init() {
   function showSelectedModel() {
     if (detail === null || state.model === "") return;
     const entry = lookup.get(state.model);
-    if (entry !== undefined) renderDetail(detail, entry);
+    if (entry !== undefined) renderDetail(detail, entry, state.peak);
   }
 
   /* the filter's own predicate: the one definition of "on screen", shared by
@@ -969,23 +1036,55 @@ export function init() {
     let shown = 0;
     for (const entry of entries) {
       const hit = matchesFilter(entry);
-      rows.get(keyOf(entry)).hidden = !hit;
+      rows.get(keyOf(entry)).tr.hidden = !hit;
       if (hit) shown += 1;
     }
     if (countLine) countLine.textContent = `${shown} of ${entries.length} models`;
   }
 
   /* the sort half: appending to a fragment moves the live rows, so one write
-     reorders the whole table and no node is constructed */
+     reorders the whole table and no node is constructed. a rate sort reads the
+     same printed value the cells carry, so peaking on or off reorders it */
   function reorderRows() {
     let ordered = entries;
     if (state.sort && state.dir) {
       // a stable sort keeps the export's own order inside every tie
-      ordered = entries.slice().sort(compareOn(state.sort, state.dir));
+      ordered = entries.slice().sort(compareOn(state.sort, state.dir, state.peak));
     }
     const fragment = document.createDocumentFragment();
-    for (const entry of ordered) fragment.append(rows.get(keyOf(entry)));
+    for (const entry of ordered) fragment.append(rows.get(keyOf(entry)).tr);
     body.replaceChildren(fragment);
+  }
+
+  /* the peak half of a row: the three rate cells print the entry's peak while
+     the toggle is on, and the `peak` tag marks a row whose printed rate moved
+     off its base. the name cell is rebuilt from its own stored nodes, so a
+     flip never constructs a row */
+  function syncRowPeak(row) {
+    for (let index = 0; index < AXES.length; index += 1) {
+      const axis = AXES[index][1];
+      const value = state.peak ? peakRate(row.entry, axis) : rateOf(row.entry, axis);
+      row.rateCells[index].textContent = formatRate(value);
+    }
+    const moved =
+      state.peak &&
+      AXES.some(([, axis]) => peakRate(row.entry, axis) !== rateOf(row.entry, axis));
+    const children = [row.title];
+    if (row.modalityTag !== null) children.push(" ", row.modalityTag);
+    if (row.removedTag !== null) children.push(" ", row.removedTag);
+    if (moved) children.push(" ", row.peakTag);
+    children.push(row.sub);
+    row.name.replaceChildren(...children);
+  }
+
+  function syncPeakControl() {
+    peakToggle?.setAttribute("aria-pressed", String(Boolean(state.peak)));
+    peakToggle?.classList.toggle("on", Boolean(state.peak));
+  }
+
+  function syncPeak() {
+    for (const row of rows.values()) syncRowPeak(row);
+    syncPeakControl();
   }
 
   function renderSession() {
@@ -1084,6 +1183,16 @@ export function init() {
     push();
   });
 
+  // the page owns the peak state; the controller's own toggle class flip lands
+  // on the value this handler writes afterwards
+  peakToggle?.addEventListener("click", () => {
+    state.peak = !state.peak;
+    syncPeak();
+    reorderRows();
+    showSelectedModel();
+    push();
+  });
+
   if (detail !== null) {
     for (const button of detail.card.querySelectorAll("[data-axis]")) {
       button.addEventListener("click", () => {
@@ -1095,7 +1204,7 @@ export function init() {
         }
         if (state.model === "") return;
         const entry = lookup.get(state.model);
-        if (entry !== undefined) drawChart(detail, entry);
+        if (entry !== undefined) drawChart(detail, entry, state.peak);
       });
     }
     detail.close?.addEventListener("click", () => clearModel());
@@ -1164,6 +1273,8 @@ export function init() {
   const rows = new Map(entries.map((entry) => [keyOf(entry), rowFor(entry)]));
   reorderRows();
   syncRows();
+  // the fragment's peak key reprices the rows it restored
+  syncPeak();
   // the rows exist from here on, so their line marks wire once; a chart
   // redraw keeps its own call for the groups it rebuilds
   wireLineMarks();
