@@ -61,6 +61,42 @@ Supports text-based formats such as pdf, doc, and txt.
 - [List Batches](https://platform.kimi.ai/docs/api/batch-list.md): List the batch jobs of the current account.
 - [Retrieve Batch](https://platform.kimi.ai/docs/api/batch-retrieve.md): Get the details and progress of a specific batch job.
 - [Cancel Batch](https://platform.kimi.ai/docs/api/batch-cancel.md): Cancel an in-progress batch job.
+- [Admin API overview](https://platform.kimi.ai/docs/admin-api/overview.md): Manage organization members, invitations, projects, and inference API keys programmatically, and query billing, usage, and audit logs.
+- [List daily bills](https://platform.kimi.ai/docs/admin-api/billing-daily-bills.md): Daily bills (one row per calendar day; project_id/key are filter dimensions; see nested model_details for model × token-type × key breakdown) with cursor pagination (`has_more`/`next`).
+Amounts are in milli-cent; billing data for day T becomes available at 07:00 (UTC+8) on day T+1; earlier returns `… - [List product bills](https://platform.kimi.ai/docs/admin-api/billing-product-bills.md): Product-dimension bills (fees aggregated by model/business type) with cursor pagination (`has_more`/`next`).
+Amounts are in milli-cent; data for day T becomes available at 07:00 (UTC+8) on day T+1.
+- [List request details](https://platform.kimi.ai/docs/admin-api/billing-request-details.md): Per-request details for an organization over a time window (data for day T becomes available at 07:00 (UTC+8) on day T+1) with cursor pagination.
+Amounts are in milli-cent; supports project_id/key filters.
+- [List interrupted requests](https://platform.kimi.ai/docs/admin-api/billing-interrupted-requests.md): Incremental feed of requests the client disconnected from (`finish_reason = 'client_disconnected'`), ordered by ingestion time and queryable in near real time — well suited for incremental polling (no `data_not_ready` gate).
+- [Get account balance](https://platform.kimi.ai/docs/admin-api/billing-account.md): Get organization account balance - [List audit log events](https://platform.kimi.ai/docs/admin-api/audit-logs.md): Queries audit events in the organization (console management operations, login events, and Admin API operations), newest first, with cursor pagination.
+- [Get usage aggregation](https://platform.kimi.ai/docs/admin-api/usage.md): Get usage aggregation - [Get organization info](https://platform.kimi.ai/docs/admin-api/organization.md): Get organization info - [List members](https://platform.kimi.ai/docs/admin-api/members.md): List organization members - [Get member](https://platform.kimi.ai/docs/admin-api/member.md): Get organization member - [Update member role](https://platform.kimi.ai/docs/admin-api/member-update-role.md): Updates a member's role.
+Demoting an admin to member requires at least one other admin in the organization, otherwise `400 last_admin_protected` is returned.
+- [Remove member](https://platform.kimi.ai/docs/admin-api/member-remove.md): Removes a member from the organization.
+The organization creator cannot be removed, and removing an admin requires at least one other admin in the organization, otherwise `400 last_admin_protected` is returned.
+Repeating the removal returns `404 member_not_found`.
+- [List invitations](https://platform.kimi.ai/docs/admin-api/invites.md): List organization invitations - [Get invitation](https://platform.kimi.ai/docs/admin-api/invite.md): Get organization invitation - [Create invitation](https://platform.kimi.ai/docs/admin-api/invite-create.md): Creates an invitation.
+The key owner must be an organization admin; the inviter is recorded as the key owner.
+The invitee is masked in the response, same as the list endpoint.
+- [List projects](https://platform.kimi.ai/docs/admin-api/projects.md): List organization projects - [Get project](https://platform.kimi.ai/docs/admin-api/project.md): Get organization project - [Create project](https://platform.kimi.ai/docs/admin-api/project-create.md): Creates a project.
+The name allows 1-20 non-space characters and the description up to 50 characters.
+- [Update project](https://platform.kimi.ai/docs/admin-api/project-update.md): Updates project name and/or description; at least one field is required.
+- [Archive project](https://platform.kimi.ai/docs/admin-api/project-archive.md): Archives a project.
+Archiving is idempotent: re-archiving an already archived project succeeds and returns the current state, without refreshing `archived_at` or producing another audit event.
+- [List project members](https://platform.kimi.ai/docs/admin-api/project-members.md): List project members - [Add project member](https://platform.kimi.ai/docs/admin-api/project-member-add.md): Adds an organization member to a project (upsert semantics): adds the member if absent, or updates the existing member's role.
+The `uid` must already be an organization member.
+Repeating the same request does not create a duplicate membership.
+- [Update project member role](https://platform.kimi.ai/docs/admin-api/project-member-update-role.md): Updates a project member's role.
+- [Remove project member](https://platform.kimi.ai/docs/admin-api/project-member-remove.md): Removes a member from the project.
+Repeating the removal returns `404 member_not_found`.
+- [List project API keys](https://platform.kimi.ai/docs/admin-api/project-api-keys.md): List project API keys (metadata only; secrets are never returned) - [Get API key metadata](https://platform.kimi.ai/docs/admin-api/api-key.md): Get API key metadata - [Rename API key](https://platform.kimi.ai/docs/admin-api/api-key-rename.md): Renames a inference API key.
+The key must belong to the project and to the authenticated organization.
+The name allows 1-30 UTF-8 characters.
+The secret is never returned.
+- [Revoke API key](https://platform.kimi.ai/docs/admin-api/api-key-revoke.md): Revokes (soft-deletes) a inference API key, effective immediately.
+Repeating the revoke returns `404 key_not_found`.
+- [Get organization rate limits](https://platform.kimi.ai/docs/admin-api/rate-limits.md): Get organization rate limits - [Get project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits.md): Project daily/monthly consume limits in milli-cent.
+- [Update project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits-update.md): Update project consume limits in milli-cent.
+Each field has three semantics: omitted keeps the current value; `null` clears the limit (unlimited); a number sets a new limit.
 - [Model Inference Pricing Explanation](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/websearch.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
@@ -88,4 +124,4 @@ It is different from products such as Kimi Membership and Kimi Code — please d
 - [Terms of Service for Kimi OpenPlatform](https://platform.kimi.ai/docs/agreement/modeluse.md): Review the rules for accounts, API usage, billing, data, compliance, and the rights and obligations of Kimi Open Platform users.
 - [Kimi OpenPlatform Privacy Policy](https://platform.kimi.ai/docs/agreement/userprivacy.md): Learn how Kimi Open Platform collects, uses, stores, shares, and protects personal information and how users can exercise their data rights.
 - [Platform Changelog](https://platform.kimi.ai/docs/platform-changelog.md): Review historical Kimi Open Platform feature releases, model launches, product improvements, and issue fixes.
-## OpenAPI Specs - [openapi](/docs/openapi.json) ## Optional - [Playground](https://platform.kimi.ai/playground)
+## OpenAPI Specs - [openapi](/docs/admin-api/openapi.yaml) - [openapi](/docs/openapi.json) ## Optional - [Playground](https://platform.kimi.ai/playground)
