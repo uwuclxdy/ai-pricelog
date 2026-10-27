@@ -841,6 +841,8 @@ export function init() {
     }
   }
 
+  const modelButtons = new Map();
+
   function rowFor(entry) {
     const key = keyOf(entry);
     const tr = document.createElement("tr");
@@ -868,6 +870,7 @@ export function init() {
     title.setAttribute("aria-controls", "model-detail");
     title.textContent = nameOf(entry);
     title.addEventListener("click", () => selectModel(key));
+    modelButtons.set(key, title);
     name.append(title);
     if (!isChatPriced(entry)) {
       name.append(document.createTextNode(" "));
@@ -894,10 +897,16 @@ export function init() {
     return tr;
   }
 
+  /* the mark moves between the one button carrying it and the new pick: the
+     scan it replaces touched every model button on every render */
+  let currentButton = null;
+
   function syncModelCurrent() {
-    for (const button of wrap.querySelectorAll(".model-button")) {
-      button.setAttribute("aria-current", button.dataset.key === state.model ? "true" : "false");
-    }
+    const button = state.model === "" ? null : modelButtons.get(state.model) ?? null;
+    if (button === currentButton) return;
+    if (currentButton !== null) currentButton.setAttribute("aria-current", "false");
+    if (button !== null) button.setAttribute("aria-current", "true");
+    currentButton = button;
   }
 
   function selectModel(key) {
@@ -929,29 +938,54 @@ export function init() {
     if (entry !== undefined) renderDetail(detail, entry);
   }
 
-  function renderRows() {
+  /* the filter's own predicate: the one definition of "on screen", shared by
+     the row pass and the selection merge so the two can never disagree */
+  function matchesFilter(entry) {
     const needle = state.q.trim().toLowerCase();
-    let shown = entries;
-    if (needle) {
-      shown = entries.filter(
-        (entry) =>
-          nameOf(entry).toLowerCase().includes(needle) ||
-          String(entry.vendor === null || entry.vendor === undefined ? "" : entry.vendor)
-            .toLowerCase()
-            .includes(needle),
-      );
+    if (needle === "") return true;
+    return (
+      nameOf(entry).toLowerCase().includes(needle) ||
+      String(entry.vendor === null || entry.vendor === undefined ? "" : entry.vendor)
+        .toLowerCase()
+        .includes(needle)
+    );
+  }
+
+  function shownKeys() {
+    return new Set(entries.filter(matchesFilter).map(keyOf));
+  }
+
+  /* a sort lives only on a column the current layout draws: the th's own
+     client rects decide that, never a breakpoint restated in the script */
+  function sortColumnVisible(key) {
+    const button = wrap.querySelector(`.th-sort[data-sort="${key}"]`);
+    const column = button === null ? null : button.closest("th");
+    return column !== null && column.getClientRects().length > 0;
+  }
+
+  /* the filter half: rows exist once, so a keystroke only toggles `hidden`
+     on the nodes that are already in the table */
+  function syncRows() {
+    let shown = 0;
+    for (const entry of entries) {
+      const hit = matchesFilter(entry);
+      rows.get(keyOf(entry)).hidden = !hit;
+      if (hit) shown += 1;
     }
+    if (countLine) countLine.textContent = `${shown} of ${entries.length} models`;
+  }
+
+  /* the sort half: appending to a fragment moves the live rows, so one write
+     reorders the whole table and no node is constructed */
+  function reorderRows() {
+    let ordered = entries;
     if (state.sort && state.dir) {
       // a stable sort keeps the export's own order inside every tie
-      shown = shown.slice().sort(compareOn(state.sort, state.dir));
+      ordered = entries.slice().sort(compareOn(state.sort, state.dir));
     }
     const fragment = document.createDocumentFragment();
-    for (const entry of shown) fragment.append(rowFor(entry));
+    for (const entry of ordered) fragment.append(rows.get(keyOf(entry)));
     body.replaceChildren(fragment);
-    if (countLine) countLine.textContent = `${shown.length} of ${entries.length} models`;
-    syncAriaSort();
-    syncModelCurrent();
-    wireLineMarks();
   }
 
   function renderSession() {
@@ -1010,9 +1044,17 @@ export function init() {
     }
   }
 
+  // a fragment restoring a sort on a column this layout hides would order
+  // rows by a fact no reader can see: drop it and let the url follow
+  if (state.sort !== "" && !sortColumnVisible(state.sort)) {
+    state.sort = "";
+    state.dir = "";
+    push();
+  }
+
   qBox?.addEventListener("input", () => {
     state.q = qBox.value;
-    renderRows();
+    syncRows();
     push();
   });
 
@@ -1059,27 +1101,74 @@ export function init() {
     detail.close?.addEventListener("click", () => clearModel());
   }
 
+  /* set while the synthetic clicks below re-run the controller's cycle, so
+     the events they emit never write page state */
+  let cyclingSort = false;
+
   wrap.addEventListener("table:sort", (event) => {
+    if (cyclingSort) return;
     const { key, dir } = event.detail;
-    state.sort = dir === "none" ? "" : key;
-    state.dir = dir === "none" ? "" : dir;
-    renderRows();
+    if (dir !== "none" && !sortColumnVisible(key)) {
+      // a click on a column the layout hides cannot start a sort the reader
+      // has no way to read: the same drop the init and resize paths run
+      state.sort = "";
+      state.dir = "";
+    } else {
+      state.sort = dir === "none" ? "" : key;
+      state.dir = dir === "none" ? "" : dir;
+    }
+    reorderRows();
+    syncAriaSort();
     push();
   });
 
   wrap.addEventListener("table:selection", (event) => {
     // a row a search is hiding keeps its membership: only the boxes on screen
-    // speak for their own name
-    const shown = new Set(
-      [...wrap.querySelectorAll('tbody input[type="checkbox"][data-name]')].map((box) => box.dataset.name),
-    );
+    // speak for their own name, and the filter state is what decides on screen
+    const shown = shownKeys();
     state.sel = [...new Set([...state.sel.filter((key) => !shown.has(key)), ...event.detail.selected])];
     renderSession();
     push();
   });
 
+  // the same reading on resize: a width change that hides the sorted column
+  // drops the sort, since a reader on the new layout cannot see the fact it
+  // orders by
+  window.addEventListener?.("resize", () => {
+    if (state.sort === "" || sortColumnVisible(state.sort)) return;
+    const key = state.sort;
+    // the controller's cycle lives in the vendored module's own memory, so it
+    // has to be re-run to `none` here or the next click on this column would
+    // step on from the stale direction; restoreSort drives the same cycle
+    // through the same clicks
+    const steps = state.dir === "desc" ? 1 : 2;
+    state.sort = "";
+    state.dir = "";
+    const button = wrap.querySelector(`.th-sort[data-sort="${key}"]`);
+    if (button !== null) {
+      cyclingSort = true;
+      try {
+        for (let step = 0; step < steps; step += 1) button.click();
+      } finally {
+        cyclingSort = false;
+      }
+    }
+    reorderRows();
+    syncAriaSort();
+    push();
+  });
+
   syncControls();
-  renderRows();
+  // build each row once: a filter toggles `hidden` on these nodes and a sort
+  // reorders them, so no keystroke re-runs the per-row construction
+  const rows = new Map(entries.map((entry) => [keyOf(entry), rowFor(entry)]));
+  reorderRows();
+  syncRows();
+  // the rows exist from here on, so their line marks wire once; a chart
+  // redraw keeps its own call for the groups it rebuilds
+  wireLineMarks();
+  syncAriaSort();
+  syncModelCurrent();
   renderSession();
   lastHash = encodeState(state);
 

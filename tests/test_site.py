@@ -150,21 +150,49 @@ if (probe.modeChanges) {
   delete globalThis.window;
 }
 if (probe.rows) {
+  let builtRows = 0;
   const make = (tag) => ({
     tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
-    dataset: {}, checked: false, attrs: {},
+    dataset: {}, checked: false, attrs: {}, rects: [{}],
     append(...nodes) { this.children.push(...nodes); },
     replaceChildren(...nodes) {
       this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
     },
     setAttribute(name, value) { this.attrs[name] = String(value); },
+    getAttribute(name) { return this.attrs[name] ?? null; },
+    getClientRects() { return this.rects; },
     querySelector() { return null; },
     querySelectorAll() { return []; },
-    addEventListener() {},
+    addEventListener(name, fn) { (this._listeners || (this._listeners = {}))[name] = fn; },
   });
   const wrap = make("div");
   wrap.dataset.uiTable = "1";
   const body = make("tbody");
+  // the shipped controller's own sort cycle, driven through the page's own
+  // buttons, so a fragment restore steps the clicks a reader would make and a
+  // column the layout hides reports no client rect
+  const sortState = { key: null, dir: "none" };
+  const sortButtons = new Map();
+  for (const key of ["name", "vendor", "input", "cache_read", "output"]) {
+    const button = make("button");
+    button.dataset.sort = key;
+    const column = make("th");
+    column.dataset.sort = key;
+    if ((probe.rows.hiddenColumns ?? []).includes(key)) column.rects = [];
+    button.closest = (sel) => (sel === "th" ? column : null);
+    button.click = () => {
+      const next = { none: "asc", asc: "desc", desc: "none" };
+      sortState.dir = sortState.key === key ? next[sortState.dir] : "asc";
+      sortState.key = key;
+      wrap._listeners?.["table:sort"]?.({ detail: { key, dir: sortState.dir } });
+    };
+    sortButtons.set(key, button);
+  }
+  wrap.querySelector = (sel) => {
+    const match = /\.th-sort\[data-sort="(.+)"\]/.exec(sel);
+    return match ? sortButtons.get(match[1]) ?? null : null;
+  };
+  wrap.querySelectorAll = (sel) => (sel === ".th-sort" ? [...sortButtons.values()] : []);
   const elements = new Map([["models", wrap], ["models-body", body]]);
   const island = make("script");
   island.textContent = JSON.stringify(probe.rows.island);
@@ -174,23 +202,55 @@ if (probe.rows) {
     "calc-mode", "session-wrap", "session-body", "session-empty",
     "session-note", "rate-line", "model-count",
   ]) elements.set(id, make("input"));
+  const hashes = [];
+  const windowListeners = {};
   globalThis.document = {
     documentElement: { dataset: {} },
     getElementById: (id) => elements.get(id) ?? null,
-    createElement: (tag) => make(tag),
+    createElement: (tag) => {
+      if (tag === "tr") builtRows += 1;
+      return make(tag);
+    },
     createTextNode: (text) => ({ textContent: String(text), children: [] }),
     createDocumentFragment: () => ({ ...make("fragment"), isFragment: true }),
   };
   globalThis.window = {
     location: { hash: probe.rows.hash },
-    history: { replaceState() {} },
+    history: { replaceState(_state, _title, url) { hashes.push(String(url)); } },
+    addEventListener(name, fn) { windowListeners[name] = fn; },
   };
   app.init();
+  const builtOnInit = builtRows;
+  const steps = [];
+  for (const filter of probe.rows.filters ?? []) {
+    const box = elements.get("q");
+    box.value = filter;
+    box._listeners?.input?.();
+    steps.push({
+      filter,
+      built: builtRows,
+      count: elements.get("model-count").textContent,
+      rows: body.children.map((tr) => ({
+        key: tr.children[1]?.children?.[0]?.dataset?.key ?? "",
+        hidden: tr.hidden === true,
+      })),
+    });
+  }
+  if (probe.rows.hideColumnAfter) {
+    sortButtons.get(probe.rows.hideColumnAfter).closest("th").rects = [];
+    windowListeners.resize?.();
+  }
   const hasBox = (node) =>
     node.type === "checkbox"
     || (Array.isArray(node.children) && node.children.some(hasBox));
   out.rows = {
+    "built_on_init": builtOnInit,
+    "built_after_steps": builtRows,
+    // the fragment the page ends on: a rewritten one when it dropped a key,
+    // else the one it loaded
+    url: hashes[hashes.length - 1] ?? probe.rows.hash,
     session_rows: elements.get("session-body").children.length,
+    steps,
     model_rows: body.children.map((tr) => {
       const name = tr.children[1];
       const spark = tr.children[6].children[0];
@@ -200,6 +260,7 @@ if (probe.rows) {
             .map((node) => node.attrs.points ?? ""))
         : null;
       return {
+        hidden: tr.hidden === true,
         has_box: hasBox(tr.children[0]),
         name: name.children[0].textContent,
         tags: name.children
@@ -694,6 +755,202 @@ def test_the_row_sparkline_draws_the_input_axis(tmp_path):
     lines = result["rows"]["model_rows"][0]["lines"]
     levels = [[point.split(",")[1] for point in line.split()] for line in lines]
     assert levels == [["0", "0"], ["50", "50"]]
+
+
+def _stub_entry(source: str, model_id: str, name: str, vendor: str, input_rate: float):
+    return {
+        "source": source,
+        "model_id": model_id,
+        "vendor": vendor,
+        "name": name,
+        "observed_at": "2026-08-01",
+        "rates": {"input": input_rate, "output": input_rate * 2},
+        "intervals": [
+            {
+                "valid_from": "2026-08-01",
+                "valid_to": None,
+                "observed_at": "2026-08-01",
+                "rates": {"input": input_rate, "output": input_rate * 2},
+            }
+        ],
+    }
+
+
+def test_a_search_keystroke_hides_rows_instead_of_rebuilding_them(tmp_path):
+    """The filter toggles the built rows rather than constructing them again.
+
+    A rebuilt row and a toggled one look the same to every reader, so the
+    construction count is the only seam that tells them apart: the pre-change
+    page built three fresh rows on each of the three keystrokes.
+    """
+    entries = [
+        _stub_entry("alpha", "m1", "Alpha One", "alpha", 1.0),
+        _stub_entry("beta", "m2", "Beta Two", "beta", 2.0),
+        _stub_entry("beta", "m3", "Beta Three", "beta", 3.0),
+    ]
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": entries},
+                "hash": "",
+                "filters": ["one", "zzz", ""],
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["built_on_init"] == 3
+    assert rows["built_after_steps"] == 3
+    assert [step["built"] for step in rows["steps"]] == [3, 3, 3]
+    assert [step["count"] for step in rows["steps"]] == [
+        "1 of 3 models",
+        "0 of 3 models",
+        "3 of 3 models",
+    ]
+    assert rows["steps"][0]["rows"] == [
+        {"key": "alpha/m1", "hidden": False},
+        {"key": "beta/m2", "hidden": True},
+        {"key": "beta/m3", "hidden": True},
+    ]
+    assert rows["steps"][1]["rows"] == [
+        {"key": "alpha/m1", "hidden": True},
+        {"key": "beta/m2", "hidden": True},
+        {"key": "beta/m3", "hidden": True},
+    ]
+    assert rows["steps"][2]["rows"] == [
+        {"key": "alpha/m1", "hidden": False},
+        {"key": "beta/m2", "hidden": False},
+        {"key": "beta/m3", "hidden": False},
+    ]
+
+
+def test_a_sort_reorders_the_built_rows_without_rebuilding_them(tmp_path):
+    """A sort moves the rows it already has: the fragment restores by clicking
+    the controller's own button, so the page's sort handler runs the same path
+    a reader's click does."""
+    entries = [
+        _stub_entry("beta", "first", "Beta First", "beta", 1.0),
+        _stub_entry("alpha", "second", "Alpha Second", "alpha", 2.0),
+        _stub_entry("alpha", "third", "Alpha Third", "alpha", 3.0),
+    ]
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": entries},
+                "hash": "#sort=vendor&dir=asc",
+                "filters": ["second"],
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["built_on_init"] == 3
+    assert rows["built_after_steps"] == 3
+    # a stable sort keeps the export's order inside the tie
+    assert [row["name"] for row in rows["model_rows"]] == [
+        "Alpha Second",
+        "Alpha Third",
+        "Beta First",
+    ]
+    # the filter hides its misses in that same sorted order
+    assert rows["steps"][0]["rows"] == [
+        {"key": "alpha/second", "hidden": False},
+        {"key": "alpha/third", "hidden": True},
+        {"key": "beta/first", "hidden": True},
+    ]
+
+
+def test_a_sort_on_a_hidden_column_is_dropped(tmp_path):
+    """The vendor column leaves the table at 1100px and up, so a `sort=vendor`
+    fragment would order every row by a fact no reader can see on desktop. The
+    column's own visibility decides it, never a breakpoint restated in the
+    script: the stub reports the header with no client rect."""
+    entries = [
+        _stub_entry("beta", "first", "Beta First", "beta", 1.0),
+        _stub_entry("alpha", "second", "Alpha Second", "alpha", 2.0),
+        _stub_entry("alpha", "third", "Alpha Third", "alpha", 3.0),
+    ]
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": entries},
+                "hash": "#sort=vendor&dir=asc",
+                "hiddenColumns": ["vendor"],
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["url"] == "#calc=1000000|0|0"
+    assert [row["name"] for row in rows["model_rows"]] == [
+        "Beta First",
+        "Alpha Second",
+        "Alpha Third",
+    ]
+
+
+def test_a_visible_vendor_sort_still_applies(tmp_path):
+    """The control on the same fixture with the column drawn: the drop above
+    must read the column, not the key."""
+    entries = [
+        _stub_entry("beta", "first", "Beta First", "beta", 1.0),
+        _stub_entry("alpha", "second", "Alpha Second", "alpha", 2.0),
+        _stub_entry("alpha", "third", "Alpha Third", "alpha", 3.0),
+    ]
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": entries},
+                "hash": "#sort=vendor&dir=asc",
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["url"] == "#sort=vendor&dir=asc"
+    assert [row["name"] for row in rows["model_rows"]] == [
+        "Alpha Second",
+        "Alpha Third",
+        "Beta First",
+    ]
+
+
+def test_hiding_the_sorted_column_drops_the_sort_on_resize(tmp_path):
+    """A mobile reader's vendor sort must not survive the width that hides the
+    column: the resize handler re-reads the same visibility and drops it."""
+    entries = [
+        _stub_entry("beta", "first", "Beta First", "beta", 1.0),
+        _stub_entry("alpha", "second", "Alpha Second", "alpha", 2.0),
+        _stub_entry("alpha", "third", "Alpha Third", "alpha", 3.0),
+    ]
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": entries},
+                "hash": "#sort=vendor&dir=asc",
+                "hideColumnAfter": "vendor",
+            },
+        },
+    )
+    rows = result["rows"]
+    assert rows["url"] == "#calc=1000000|0|0"
+    assert rows["built_after_steps"] == 3
+    assert [row["name"] for row in rows["model_rows"]] == [
+        "Beta First",
+        "Alpha Second",
+        "Alpha Third",
+    ]
 
 
 def test_every_key_of_the_real_export_renders(tmp_path):
