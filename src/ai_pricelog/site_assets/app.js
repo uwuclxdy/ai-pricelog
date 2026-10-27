@@ -1418,7 +1418,6 @@ export function init() {
       (parseFloat(getComputedStyle(dayPanel).animationDuration) || 0) * 1000 + 20;
 
     const open = () => {
-      if (dayRange.classList.contains("open")) return;
       clearTimeout(closeTimer);
       dayRange.classList.remove("closing");
       anchor = state.day === "" ? todayUTC() : state.day;
