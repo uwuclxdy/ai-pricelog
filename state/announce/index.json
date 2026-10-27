@@ -65,8 +65,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "44c50100bdfeac1a70b0003432f3049ee571e4ca4ce13e00b0c102e0d3c44c88",
-      "fetched": "2026-10-21T00:59:24Z"
+      "sha256": "51c702878aab4a90aa79dd3d9c921d6a5fcf4312cb835f0519baffc9aea2aa6d",
+      "fetched": "2026-10-27T16:00:15Z"
     }
   },
   "mistral": {
@@ -117,8 +117,8 @@
   "cohere": {
     "https://docs.cohere.com/changelog": {
       "file": "state/announce/cohere/changelog.md",
-      "sha256": "a5d7c5ff1889ed750bf317de3e0c80cf3a40badb6d211ba4de0f139f6757df4f",
-      "fetched": "2026-10-21T00:59:24Z"
+      "sha256": "dec1d59bc57098293da8dcb012d321d2cab6bcd24a6b9931648ca3c87decea5d",
+      "fetched": "2026-10-27T16:00:15Z"
     }
   },
   "google": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "e38978ecb089ff84763faf9109d79a27a8886687eacc7c5e8874155f95c37fa3",
-      "fetched": "2026-10-26T21:00:15Z"
+      "sha256": "52b6e01df5893ce82a7efd34dcace2ecd9d9920c07da5611e11f12df51467123",
+      "fetched": "2026-10-27T16:00:15Z"
     }
   },
   "cloudflare": {
