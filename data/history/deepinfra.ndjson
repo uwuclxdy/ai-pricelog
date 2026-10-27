@@ -49,6 +49,7 @@
 {"schema":4,"source":"deepinfra","model_id":"llama-4-scout-17b-16e-instruct","observed_at":"2026-08-29","rates":{"input":0.1,"output":0.3},"limits":{"context":327680},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"llama-guard-4-12b","observed_at":"2026-08-29","rates":{"input":0.18,"output":0.18},"limits":{"context":163840},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"meta-llama-3.1-70b-instruct-turbo","observed_at":"2026-08-29","rates":{"input":0.4,"output":0.4},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"meta-llama-3.1-70b-instruct-turbo","observed_at":"2026-10-27","removed":true,"rates":{"input":0.4,"output":0.4},"limits":{"context":131072}}
 {"schema":4,"source":"deepinfra","model_id":"meta-llama-3.1-8b-instruct-turbo","observed_at":"2026-08-29","rates":{"input":0.02,"output":0.04},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-nemo-instruct-2407","observed_at":"2026-08-29","rates":{"input":0.019,"output":0.03},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"mistral-nemo-instruct-2407","observed_at":"2026-10-08","rates":{"input":0.029,"output":0.03},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
