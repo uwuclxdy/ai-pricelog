@@ -707,6 +707,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-06-07","rates":{"input":0.05,"output":0.1},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=google/gemma-3-4b-it&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-08-26","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-10-20","rates":{"input":0.04,"output":0.05,"cache_read":0.02},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-10-27","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-08-26","rates":{"input":0.07,"output":0.34},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-09-10","rates":{"input":0.042,"output":0.22},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-09-13","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
@@ -720,6 +721,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-23","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-23","rates":{"input":0.0675,"output":0.225,"cache_read":0.0375},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-26","rates":{"input":0.0765,"output":0.255,"cache_read":0.0425},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-27","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B  (free)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-14","rates":{"input":0.2,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
@@ -1113,6 +1115,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.15,"output":20.0,"cache_read":0.14},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.2,"output":20.0,"cache_read":0.19},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.189,"output":20.0,"cache_read":0.179},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.159,"output":11.5,"cache_read":0.149},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-10-23","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
