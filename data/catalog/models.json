@@ -8940,6 +8940,24 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6.1-terra-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.1-terra-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.1-terra-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.1-terra-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-6.1-terra:batch": {
       "curated": false,
       "sources": {
