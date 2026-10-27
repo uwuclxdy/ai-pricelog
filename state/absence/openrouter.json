@@ -1,1 +1,1 @@
-{"mistralai/mistral-large-2512:batch": {"absent_runs": 2, "since": "2026-10-26"}}
+{"ibm-granite/granite-4.0-h-micro": {"absent_runs": 1, "since": "2026-10-27"}}
