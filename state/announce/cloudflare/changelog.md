@@ -101,7 +101,7 @@ Noted that you can now run LoRA inference with the base model rather than explic
 For more details, refer to Configurations .
 2024-04-11 Add AI native binding Added new AI native binding, you can now run models with const resp = await env.AI.run(modelName, inputs) Deprecated @cloudflare/ai npm package.
 While existing solutions using the @cloudflare/ai package will continue to work, no new Workers AI features will be supported.
-Moving to native AI bindings is highly recommended Previous Agents ↗︎ Was this helpful?
+Moving to native AI bindings is highly recommended Previous Event subscriptions Was this helpful?
 Yes No Edit page Report issue On this page Overview Edit page Report issue Getting started Plans Contact sales Partners Find a partner Startups Under attack?
 Domain name search Company About Careers Investors Press Press kit Global network Public interest Project Galileo Athenian Project Cloudflare for Campaigns Project Fairshot Impact/ESG Compliance Compliance resources Trust Hub Data Protection Responsible AI Transparency report Report abuse Resources App innovation report Cloudflare Radar Case studies Status Support Events Blog Developers Documentation Learning center Community Solutions SSE and SASE platform Cloudflare AI Cloud AI Security Frontend Development Platform Multi-Tenant Platform Development Web Security Platform Start Building Log
 In © 2026 Cloudflare, Inc.
