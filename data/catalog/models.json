@@ -7347,6 +7347,15 @@
       },
       "vendor": "liquid"
     },
+    "openrouter/liquid/d1.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/d1.1"
+        ]
+      },
+      "vendor": "liquid"
+    },
     "openrouter/liquid/lfm-2.5-2.6b": {
       "curated": false,
       "sources": {
