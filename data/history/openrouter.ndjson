@@ -2116,6 +2116,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-09-29","rates":{"input":0.3,"output":0.9,"cache_read":0.05},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-10-15","rates":{"input":0.3,"output":0.9,"cache_read":0.055},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-10-24","rates":{"input":0.3,"output":0.9,"cache_read":0.05},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-10-27","rates":{"input":0.3,"output":0.9,"cache_read":0.055},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-08-26","rates":{"input":0.4,"output":1.75,"cache_read":0.08},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-09-25","rates":{"input":0.6,"output":2.2,"cache_read":0.11},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-10-17","rates":{"input":0.54,"output":1.98,"cache_read":0.099},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
