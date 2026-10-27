@@ -1,9 +1,17 @@
 Changelog - Fireworks AI Docs Documentation Index Fetch the complete documentation index at: /llms.txt Use this file to discover all available pages before exploring further.
 Skip to main content Fireworks AI Docs home page Documentation Nexus API & SDK Reference CLI Reference Changelog Resources Community Status Dashboard Dashboard Search...
 Navigation Changelog Search...
-⌘ K Changelog On this page Back to top 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01
-2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
-Copy page Copy page ​ 2026-10-21 Training ​ Training SDK 1.2.30: clearer TITO errors and trajectory discard fireworks-ai 1.2.30 and the updated Fireworks Cookbook complete the changes to how TITO sidecars handle failed agent turns, which began in 1.2.27.
+⌘ K Changelog On this page Back to top 2026-10-27 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02
+2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
+Copy page Copy page ​ 2026-10-27 Inference ​ New model on Serverless: Rune 26B-A4B Rune 26B-A4B is now available on Serverless.
+It’s a System One decision model, so it doesn’t reason and doesn’t generate text.
+You send a document and up to 256 typed questions about it, and it returns a calibrated probability for each answer from a single read.
+Questions can be multiple choice, true/false, or a graded scale.
+Output tokens are always zero, so you’re billed for input only.
+Call accounts/fireworks/models/rune through the System One decisions API or the OpenAI-compatible Decisions API .
+It accepts text only, up to 262K context.
+Rates are on Serverless pricing .
+​ 2026-10-21 Training ​ Training SDK 1.2.30: clearer TITO errors and trajectory discard fireworks-ai 1.2.30 and the updated Fireworks Cookbook complete the changes to how TITO sidecars handle failed agent turns, which began in 1.2.27.
 If you run agentic RL with TITO, upgrade both; the latest cookbook requires 1.2.30.
 pip install --upgrade "fireworks-ai[training]>=1.2.30" ​ Errors identify their source Before 1.2.27, the sidecar returned HTTP 502 for two failures that weren’t server-side: tito_model_malformed_output (unparseable model output) and tito_upstream_error (any sampling exception, including client timeouts and dropped connections).
 They are replaced by: tito_sdk_parse_error (422): the output couldn’t be parsed into an assistant or tool message.
