@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import subprocess
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -55,6 +56,7 @@ out.peakState = {
   on: app.decodeState(probe.peakFragment ?? "").peak,
   encoded: app.encodeState({ ...app.defaultState(), model: "alpha/m1", peak: true }),
 };
+out.grid = (probe.grid ?? []).map(([year, month]) => app.monthGrid(year, month));
 out.axes = app.CHART_AXES;
 out.polyline = (probe.polyline ?? []).map(
   spec => app.stepPolyline(spec.run, spec.domain, spec.peak, spec.flat));
@@ -146,8 +148,10 @@ if (probe.modeChanges) {
   const modeBox = elements.get("calc-mode");
   out.modeChanges = {};
   for (const value of probe.modeChanges) {
-    modeBox.value = value;
-    modeBox._listeners.change();
+    // the shipped select's own change event: its value surface is the root's
+    // dataset, written before the event fires
+    modeBox.dataset.value = value;
+    modeBox._listeners.change({ detail: { value } });
     // a fire that changes state pushes, so the last fragment always names the
     // post-fire state; an empty list means the state never left its default
     out.modeChanges[value] = app.decodeState(hashes[hashes.length - 1]).mode;
@@ -227,7 +231,7 @@ if (probe.rows) {
     "q", "calc-input", "calc-cached", "calc-output", "calc-day", "calc-rate",
     "calc-mode", "session-wrap", "session-body", "session-empty",
     "session-note", "rate-line", "model-count", "peak-toggle",
-    "model-detail", "detail-name", "detail-id", "detail-tags", "detail-empty",
+    "calc-day-value", "model-detail", "detail-name", "detail-id", "detail-tags", "detail-empty",
     "detail-body", "detail-close", "detail-ticks-y", "detail-ticks-x", "detail-info",
   ]) elements.set(id, make("input"));
   // the detail card's chart skeleton, the shape detailNodes and drawChart read
@@ -335,6 +339,8 @@ if (probe.rows) {
     toggle_states: toggleStates,
     card,
     axis_card: axisCard,
+    day_value: elements.get("calc-day-value").textContent,
+    day_empty: elements.get("calc-day-value").classList.contains("is-empty"),
     session_rows: elements.get("session-body").children.length,
     steps,
     model_rows: body.children.map((tr) => {
@@ -845,6 +851,15 @@ def _soup(html: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
+def _monday_grid(year: int, month: int) -> list[str]:
+    """The whole Monday-first weeks a month's calendar covers, 0-based month."""
+    first = date(year, month + 1, 1)
+    start = first - timedelta(days=first.weekday())
+    following = date(year + (month + 1) // 12, (month + 1) % 12 + 1, 1)
+    length = (first.weekday() + (following - first).days + 6) // 7 * 7
+    return [(start + timedelta(days=index)).isoformat() for index in range(length)]
+
+
 def test_the_flat_export_of_the_fixture_builds_the_expected_tree(tmp_path):
     out = _built(tmp_path)
     assert (out / "index.html").is_file()
@@ -1319,28 +1334,33 @@ def test_the_toolbar_offers_a_peak_time_toggle(tmp_path):
 
 
 def test_the_session_card_offers_the_request_modes(tmp_path):
-    """The calculator's mode select: standard first and selected, then every
-    request mode the index carries — fast (the anthropic premium) and batch
-    (the openai image discount).
+    """The calculator's mode control is the shipped select — standard first and
+    selected, then every request mode the index carries (fast, the anthropic
+    premium; batch, the openai image discount) — never a native `<select>`.
 
-    The option set is pinned whole — one equality over the (value, label)
-    pairs, never a substring walk that a fourth option would slip past.
+    The option set is pinned whole over the menu's own role=option rows.
     """
     out = _built(tmp_path)
     soup = _soup((out / "index.html").read_text(encoding="utf-8"))
-    select = soup.select_one("#calc-mode")
-    assert select is not None
-    assert select.name == "select"
-    label = soup.select_one('label[for="calc-mode"]')
+    root = soup.select_one("#calc-mode")
+    assert root is not None and "select" in root.get("class", [])
+    trigger = root.select_one(".select-trigger")
+    assert trigger is not None and trigger.name == "button"
+    assert trigger.get("aria-labelledby") == "calc-mode-label calc-mode-value"
+    label = soup.select_one("#calc-mode-label")
     assert label is not None and label.get_text(strip=True) == "request mode"
+    value = soup.select_one("#calc-mode-value")
+    assert value is not None and value.get_text(strip=True) == "standard"
     options = [
-        (option.get("value", ""), option.get_text(strip=True), option.has_attr("selected"))
-        for option in select.select("option")
+        (option.name, option.get_text(strip=True), option.get("aria-selected"))
+        for option in root.select('[role="option"]')
     ]
+    # the shipped rows are divs: the trigger keeps DOM focus for the menu's
+    # whole life, so an option is a tab stop the keyboard model never had
     assert options == [
-        ("", "standard", True),
-        ("fast", "fast", False),
-        ("batch", "batch", False),
+        ("div", "standard", "true"),
+        ("div", "fast", "false"),
+        ("div", "batch", "false"),
     ]
 
 
@@ -1350,27 +1370,124 @@ def test_the_mode_gate_accepts_every_option_the_select_offers(tmp_path):
     unselects it for every interactive user while every gate stays green.
 
     Driven over the served page's own option list through the real init run:
-    each offered option fires the select's change event and must come back as
-    the session's mode; the empty standard option and an unknown value must
-    reset it.
+    the select's change event carries each offered label, and the standard
+    label is the empty, mode-less request.
     """
     out = _built(tmp_path)
     soup = _soup((out / "index.html").read_text(encoding="utf-8"))
-    options = [option.get("value", "") for option in soup.select_one("#calc-mode").select("option")]
+    root = soup.select_one("#calc-mode")
+    labels = [option.get_text(strip=True) for option in root.select('[role="option"]')]
     result = _node(
         tmp_path,
-        {"cases": {}, "fragment": "#mode=no-such-mode", "modeChanges": options + ["no-such-mode"]},
+        {
+            "cases": {},
+            "fragment": "#mode=no-such-mode",
+            "modeChanges": labels + ["no-such-mode"],
+        },
     )
-    # the script's gate list and the select's options are two lists that must
-    # stay one set: whole equality over the non-empty values, so a mode added
-    # to or dropped from either side reds
-    assert sorted(value for value in options if value) == sorted(result["modes"])
-    for value in options:
-        assert result["modeChanges"][value] == value, f"mode {value!r} reset by the gate"
+    # the script's gate list and the select's labels are two lists that must
+    # stay one set once the standard label's empty value is accounted for
+    assert sorted(label for label in labels if label != "standard") == sorted(result["modes"])
+    for label in labels:
+        expected = "" if label == "standard" else label
+        assert result["modeChanges"][label] == expected, f"mode {label!r} reset by the gate"
     assert result["modeChanges"]["no-such-mode"] == ""
     # the fragment restore applies the same gate: a crafted fragment naming a
     # mode neither list carries must land on standard, not on a ghost mode
     assert result["state"]["mode"] == ""
+
+
+def test_the_page_carries_no_native_select_or_date_input(tmp_path):
+    """The native select's popup is OS chrome over the ring cursor, and a
+    native date input paints the platform calendar the same way."""
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    assert soup.select("select") == []
+    assert soup.select('input[type="date"]') == []
+
+
+def test_the_day_control_is_the_shipped_date_picker(tmp_path):
+    """The calculator's priced-on field is the daterange component: a select
+    trigger over a dialog panel, no UA calendar."""
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    root = soup.select_one("#calc-day-range")
+    assert root is not None
+    assert {"select", "daterange"} <= set(root.get("class", []))
+    trigger = root.select_one(".select-trigger")
+    assert trigger is not None and trigger.name == "button"
+    assert trigger.get("aria-haspopup") == "dialog"
+    assert trigger.get("aria-expanded") == "false"
+    assert trigger.get("aria-labelledby") == "calc-day-label calc-day-value"
+    value = soup.select_one("#calc-day-value")
+    assert value is not None and value.get_text(strip=True) == "today"
+    assert "is-empty" in value.get("class", [])
+    panel = root.select_one(".daterange-panel")
+    assert panel is not None and panel.has_attr("hidden")
+    assert panel.get("role") == "dialog"
+    assert [th.get_text(strip=True) for th in panel.select(".daterange-dow")] == [
+        "mo",
+        "tu",
+        "we",
+        "th",
+        "fr",
+        "sa",
+        "su",
+    ]
+    assert panel.select_one("#calc-day-grid") is not None
+    assert panel.select_one("#calc-day-month") is not None
+    assert panel.select_one("#calc-day-today").get_text(strip=True) == "today"
+
+
+def test_an_impossible_day_fragment_falls_back_to_today(tmp_path):
+    """The day the picker consumes must be a real calendar date: a link naming
+    the 30th of february prices nothing and would open the panel on a month it
+    cannot draw."""
+    bad = _node(tmp_path, {"cases": {}, "fragment": "#day=2026-02-30"})
+    assert bad["state"]["day"] == ""
+    real = _node(tmp_path, {"cases": {}, "fragment": "#day=2026-02-28"})
+    assert real["state"]["day"] == "2026-02-28"
+
+
+def test_the_month_grid_is_monday_first_whole_weeks(tmp_path):
+    """The picker's calendar covers whole weeks from Monday, adjacent months
+    included, so every row is seven cells and no month starts mid-row."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "grid": [[2026, 8], [2026, 1], [2024, 1], [2026, 7], [2026, 11]],
+        },
+    )
+    assert result["grid"] == [
+        _monday_grid(2026, 8),
+        _monday_grid(2026, 1),
+        _monday_grid(2024, 1),
+        _monday_grid(2026, 7),
+        _monday_grid(2026, 11),
+    ]
+
+
+def test_a_day_fragment_reads_on_the_trigger(tmp_path):
+    """A `day=` link names its date on the control; the empty default reads
+    "today", the day the calculator falls back to."""
+    on = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {"island": {"entries": []}, "hash": "#day=2026-09-07"},
+        },
+    )
+    assert on["rows"]["day_value"] == "2026-09-07"
+    assert on["rows"]["day_empty"] is False
+    off = _node(
+        tmp_path,
+        {"cases": {}, "fragment": "", "rows": {"island": {"entries": []}, "hash": ""}},
+    )
+    assert off["rows"]["day_value"] == "today"
+    assert off["rows"]["day_empty"] is True
 
 
 def test_the_peak_rate_is_the_highest_priced_clock_window(tmp_path):

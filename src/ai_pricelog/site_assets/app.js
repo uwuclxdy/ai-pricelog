@@ -19,6 +19,15 @@ const AXES = [
 const SORT_KEYS = ["name", "vendor", "input", "cache_read", "output"];
 const DEFAULT_TOKENS = { input: 1000000, cached: 0, output: 0 };
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Whether `text` is a real calendar day, not only a YYYY-MM-DD-shaped one: a
+    link naming the 30th of february must fall back rather than reach the
+    picker's month arithmetic. */
+function isDay(text) {
+  if (!DAY_PATTERN.test(text)) return false;
+  const at = new Date(`${text}T00:00:00Z`);
+  return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === text;
+}
 /* the request modes the calculator offers; "" is the standard request. the
    row schema keeps `mode` an open string, but the page never invents modes */
 export const MODES = ["fast", "batch"];
@@ -84,6 +93,21 @@ export function tokenCount(text, fallback) {
 /** Today in UTC, the calendar the export's own dated fields use. */
 export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
+}
+
+/** The whole Monday-first weeks a month's calendar covers, adjacent-month days
+    included, so every row is seven cells and no month starts mid-row. 0-based
+    month; a flat list of `YYYY-MM-DD` strings. */
+export function monthGrid(year, month) {
+  const first = Date.UTC(year, month, 1);
+  const lead = (new Date(first).getUTCDay() + 6) % 7;
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const length = Math.ceil((lead + daysInMonth) / 7) * 7;
+  const days = [];
+  for (let index = 0; index < length; index += 1) {
+    days.push(new Date(Date.UTC(year, month, 1 - lead + index)).toISOString().slice(0, 10));
+  }
+  return days;
 }
 
 /**
@@ -368,7 +392,7 @@ export function decodeState(hash) {
     };
   }
   const day = text("day");
-  if (DAY_PATTERN.test(day)) state.day = day;
+  if (isDay(day)) state.day = day;
   const rate = text("rate");
   if (rate !== "" && Number(rate) > 0 && Number.isFinite(Number(rate))) state.rate = rate;
   const mode = text("mode");
@@ -875,6 +899,11 @@ export function init() {
   const dayBox = document.getElementById("calc-day");
   const rateBox = document.getElementById("calc-rate");
   const modeBox = document.getElementById("calc-mode");
+  const dayRange = document.getElementById("calc-day-range");
+  const dayPanel = document.getElementById("calc-day-panel");
+  const dayValue = document.getElementById("calc-day-value");
+  const modeValue = document.getElementById("calc-mode-value");
+  const modeOptions = modeBox === null ? [] : [...modeBox.querySelectorAll('[role="option"]')];
   const sessionWrap = document.getElementById("session-wrap");
   const sessionBody = document.getElementById("session-body");
   const sessionEmpty = document.getElementById("session-empty");
@@ -1133,14 +1162,34 @@ export function init() {
     }
   }
 
+  /* the two controls the shipped component wears: the value span, the option
+     marks and the root's own value mirror the state, so the fragment restore
+     and a pick after it agree on what the eye reads */
+  function syncDay() {
+    if (dayValue) {
+      dayValue.textContent = state.day === "" ? "today" : state.day;
+      dayValue.classList.toggle("is-empty", state.day === "");
+    }
+  }
+
+  function syncMode() {
+    // standard is the label of the empty, mode-less request
+    const label = state.mode === "" ? "standard" : state.mode;
+    if (modeValue) modeValue.textContent = label;
+    if (modeBox) modeBox.dataset.value = state.mode;
+    for (const option of modeOptions) {
+      option.setAttribute("aria-selected", String(option.textContent.trim() === label));
+    }
+  }
+
   function syncControls() {
     if (qBox) qBox.value = state.q;
-    if (dayBox) dayBox.value = state.day;
     if (rateBox) rateBox.value = state.rate;
-    if (modeBox) modeBox.value = state.mode;
     for (const [field, box] of Object.entries(tokenBoxes)) {
       if (box) box.value = String(state.calc[field]);
     }
+    syncDay();
+    syncMode();
   }
 
   // a fragment restoring a sort on a column this layout hides would order
@@ -1165,20 +1214,19 @@ export function init() {
     });
   }
 
-  dayBox?.addEventListener("input", () => {
-    state.day = DAY_PATTERN.test(dayBox.value) ? dayBox.value : "";
-    renderSession();
-    push();
-  });
-
   rateBox?.addEventListener("input", () => {
     state.rate = Number(rateBox.value) > 0 && Number.isFinite(Number(rateBox.value)) ? rateBox.value : "";
     renderSession();
     push();
   });
 
-  modeBox?.addEventListener("change", () => {
-    state.mode = MODES.includes(modeBox.value) ? modeBox.value : "";
+  // the shipped select's change event carries the picked label in detail.value;
+  // standard is the empty, mode-less request, so the gate resets anything the
+  // option list does not offer
+  modeBox?.addEventListener("change", (event) => {
+    const label = event.detail && event.detail.value !== undefined ? String(event.detail.value) : "";
+    state.mode = MODES.includes(label) ? label : "";
+    syncMode();
     renderSession();
     push();
   });
@@ -1266,6 +1314,219 @@ export function init() {
     syncAriaSort();
     push();
   });
+
+  /* the day picker is the page's own controller: the shipped module wires the
+     select's menu and ships no daterange panel. the grid draws whole
+     Monday-first weeks, the arrows walk a day across the month edge,
+     PageUp/PageDown walk a month, and the panel opens on the month of the
+     current value, today when the day is unset */
+  if (dayRange !== null && dayBox !== null && dayPanel !== null) {
+    const dayGrid = dayPanel.querySelector("#calc-day-grid");
+    const dayMonth = dayPanel.querySelector("#calc-day-month");
+    const dayToday = dayPanel.querySelector("#calc-day-today");
+    const dayNav = dayPanel.querySelectorAll(".daterange-head .btn");
+    const dayPrev = dayNav[0] ?? null;
+    const dayNext = dayNav[1] ?? null;
+
+    const MONTHS = [
+      "january",
+      "february",
+      "march",
+      "april",
+      "may",
+      "june",
+      "july",
+      "august",
+      "september",
+      "october",
+      "november",
+      "december",
+    ];
+    const monthOf = (day) => {
+      const [year, month] = day.split("-").map(Number);
+      return { year, month: month - 1 };
+    };
+    const monthKey = (view) => `${view.year}-${String(view.month + 1).padStart(2, "0")}`;
+    // one calendar step; the month edge is Date.UTC's own rollover
+    const moved = (day, offset) => {
+      const [year, month, date] = day.split("-").map(Number);
+      return new Date(Date.UTC(year, month - 1, date + offset)).toISOString().slice(0, 10);
+    };
+
+    let view = monthOf(todayUTC());
+    let anchor = todayUTC();
+    let closeTimer = 0;
+
+    const renderGrid = () => {
+      dayMonth.textContent = `${MONTHS[view.month]} ${view.year}`;
+      const today = todayUTC();
+      const key = monthKey(view);
+      const fragment = document.createDocumentFragment();
+      const days = monthGrid(view.year, view.month);
+      for (let start = 0; start < days.length; start += 7) {
+        const row = document.createElement("tr");
+        for (const day of days.slice(start, start + 7)) {
+          const cell = document.createElement("td");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "daterange-day";
+          button.dataset.day = day;
+          if (!day.startsWith(`${key}-`)) button.classList.add("is-outside");
+          if (day === today) button.setAttribute("aria-current", "date");
+          if (day === state.day) button.classList.add("is-start", "is-end");
+          button.tabIndex = day === anchor ? 0 : -1;
+          button.textContent = String(Number(day.slice(8)));
+          cell.append(button);
+          row.append(cell);
+        }
+        fragment.append(row);
+      }
+      dayGrid.replaceChildren(fragment);
+    };
+
+    const focusAnchor = () => {
+      const button = dayGrid.querySelector('[tabindex="0"]');
+      if (button !== null) button.focus();
+    };
+
+    // the exit costume's own clock, read off the panel so a token change
+    // retimes the hide without a number here
+    const exitMs = () =>
+      (parseFloat(getComputedStyle(dayPanel).animationDuration) || 0) * 1000 + 20;
+
+    const open = () => {
+      if (dayRange.classList.contains("open")) return;
+      clearTimeout(closeTimer);
+      dayRange.classList.remove("closing");
+      anchor = state.day === "" ? todayUTC() : state.day;
+      view = monthOf(anchor);
+      renderGrid();
+      dayPanel.hidden = false;
+      // the flips measure the laid-out panel before the open costume draws it
+      const rect = dayBox.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom;
+      dayRange.classList.toggle("daterange-up", below < dayPanel.offsetHeight + 8 && rect.top > below);
+      dayRange.classList.toggle("daterange-end", rect.right + dayPanel.offsetWidth > window.innerWidth);
+      dayRange.classList.add("open");
+      dayBox.setAttribute("aria-expanded", "true");
+      focusAnchor();
+    };
+
+    const close = ({ focus = false } = {}) => {
+      if (!dayRange.classList.contains("open")) return;
+      dayRange.classList.remove("open");
+      dayRange.classList.add("closing");
+      dayBox.setAttribute("aria-expanded", "false");
+      clearTimeout(closeTimer);
+      closeTimer = setTimeout(() => {
+        dayRange.classList.remove("closing");
+        dayPanel.hidden = true;
+      }, exitMs());
+      if (focus) dayBox.focus();
+    };
+
+    const pick = (day) => {
+      state.day = isDay(day) ? day : "";
+      syncDay();
+      renderSession();
+      push();
+      close({ focus: true });
+    };
+
+    const stepDay = (offset) => {
+      anchor = moved(anchor, offset);
+      view = monthOf(anchor);
+      renderGrid();
+      focusAnchor();
+    };
+
+    const stepMonth = (offset) => {
+      const at = new Date(`${anchor}T00:00:00Z`);
+      const last = new Date(
+        Date.UTC(at.getUTCFullYear(), at.getUTCMonth() + offset + 1, 0),
+      ).getUTCDate();
+      anchor = new Date(
+        Date.UTC(at.getUTCFullYear(), at.getUTCMonth() + offset, Math.min(at.getUTCDate(), last)),
+      ).toISOString().slice(0, 10);
+      view = monthOf(anchor);
+      renderGrid();
+      focusAnchor();
+    };
+
+    dayBox.addEventListener("click", () => {
+      if (dayRange.classList.contains("open")) close();
+      else open();
+    });
+
+    dayPrev?.addEventListener("click", () => stepMonth(-1));
+    dayNext?.addEventListener("click", () => stepMonth(1));
+
+    dayGrid.addEventListener("click", (event) => {
+      const button = event.target.closest(".daterange-day");
+      if (button === null) return;
+      anchor = button.dataset.day;
+      pick(anchor);
+    });
+
+    // today is the empty default the calculator prices on, so the foot clears
+    // the state rather than writing today's date into it
+    dayToday?.addEventListener("click", () => {
+      state.day = "";
+      syncDay();
+      renderSession();
+      push();
+      close({ focus: true });
+    });
+
+    dayPanel.addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "ArrowLeft":
+          event.preventDefault();
+          stepDay(-1);
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          stepDay(1);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          stepDay(-7);
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          stepDay(7);
+          break;
+        case "PageUp":
+          event.preventDefault();
+          stepMonth(-1);
+          break;
+        case "PageDown":
+          event.preventDefault();
+          stepMonth(1);
+          break;
+        case "Enter":
+        case " ": {
+          if (event.target.matches(".daterange-day")) {
+            event.preventDefault();
+            pick(anchor);
+          }
+          break;
+        }
+        case "Escape":
+          event.preventDefault();
+          close({ focus: true });
+          break;
+      }
+    });
+
+    dayRange.addEventListener("focusout", (event) => {
+      if (!dayRange.contains(event.relatedTarget)) close();
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      if (!dayRange.contains(event.target)) close();
+    });
+  }
 
   syncControls();
   // build each row once: a filter toggles `hidden` on these nodes and a sort
