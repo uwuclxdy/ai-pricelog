@@ -161,13 +161,51 @@ if (probe.modeChanges) {
 }
 if (probe.rows) {
   let builtRows = 0;
+  /* the stub's own selector machinery: the page's row-click capture listener
+     walks classes and tags through closest/querySelector, so the stub answers
+     the single-token forms (a class, a tag, a comma list of those) the page's
+     handlers use */
+  const matches = (node, selector) =>
+    selector.split(",").some((token) => {
+      const part = token.trim();
+      if (part.startsWith(".")) {
+        return (
+          typeof node.className === "string" &&
+          node.className.split(/\\s+/).includes(part.slice(1))
+        );
+      }
+      return node.tag === part;
+    });
+  const climb = (node, selector) => {
+    for (let at = node; at; at = at.parent) {
+      if (matches(at, selector)) return at;
+    }
+    return null;
+  };
+  const deepFirst = (node, selector) => {
+    for (const child of node.children ?? []) {
+      if (matches(child, selector)) return child;
+      const hit = deepFirst(child, selector);
+      if (hit) return hit;
+    }
+    return null;
+  };
   const make = (tag) => {
     const el = {
       tag, children: [], className: "", textContent: "", hidden: false, value: "", type: "",
       dataset: {}, checked: false, attrs: {}, rects: [{}],
-      append(...nodes) { this.children.push(...nodes); },
+      append(...nodes) {
+        for (const node of nodes) {
+          if (node && typeof node === "object") node.parent = this;
+        }
+        this.children.push(...nodes);
+      },
       replaceChildren(...nodes) {
-        this.children = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
+        const flat = nodes.flatMap((node) => (node && node.isFragment ? node.children : [node]));
+        for (const node of flat) {
+          if (node && typeof node === "object") node.parent = this;
+        }
+        this.children = flat;
       },
       setAttribute(name, value) { this.attrs[name] = String(value); },
       getAttribute(name) { return this.attrs[name] ?? null; },
@@ -175,9 +213,15 @@ if (probe.rows) {
       getBoundingClientRect() { return { top: 0, left: 0 }; },
       scrollIntoView() {},
       style: { setProperty() {} },
-      querySelector() { return null; },
+      closest(selector) { return climb(this, selector); },
+      querySelector(selector) { return deepFirst(this, selector); },
       querySelectorAll() { return []; },
-      addEventListener(name, fn) { (this._listeners || (this._listeners = {}))[name] = fn; },
+      addEventListener(name, fn, options) {
+        (this._listeners || (this._listeners = {}))[name] = fn;
+        if (options === true || (options && options.capture === true)) {
+          (this._captures || (this._captures = {}))[name] = true;
+        }
+      },
     };
     const has = (name) => el.className.split(/\\s+/).includes(name);
     el.classList = {
@@ -327,18 +371,44 @@ if (probe.rows) {
       card: cardSnapshot(),
     });
   }
+  const rowClicks = [];
+  if (probe.rows.rowClicks) {
+    for (const spec of probe.rows.rowClicks) {
+      const row = body.children.find(
+        (tr) => tr.children[1]?.children?.[0]?.dataset?.key === spec.key,
+      );
+      if (!row) throw new Error(`rowClicks names no built row: ${spec.key}`);
+      let cell;
+      if (spec.cell === "button") cell = row.children[1]?.children?.[0];
+      else if (spec.cell === "select") cell = row.children[0];
+      else if (spec.cell === "rate") {
+        cell = row.children.find((c) => c.classList?.contains("num-col"));
+      } else throw new Error(`rowClicks names no cell: ${spec.cell}`);
+      const stopped = [];
+      if (cell && wrap._listeners?.click) {
+        wrap._listeners.click({ target: cell, stopPropagation: () => stopped.push(1) });
+      }
+      rowClicks.push({
+        stopped: stopped.length,
+        url: hashes[hashes.length - 1] ?? probe.rows.hash,
+        card: cardSnapshot(),
+      });
+    }
+  }
   const hasBox = (node) =>
     node.type === "checkbox"
     || (Array.isArray(node.children) && node.children.some(hasBox));
   out.rows = {
     "built_on_init": builtOnInit,
     "built_after_steps": builtRows,
+    rowclick_capture: wrap._captures?.click === true,
     // the fragment the page ends on: a rewritten one when it dropped a key,
     // else the one it loaded
     url: hashes[hashes.length - 1] ?? probe.rows.hash,
     toggle_states: toggleStates,
     card,
     axis_card: axisCard,
+    rowClicks,
     day_value: elements.get("calc-day-value").textContent,
     day_empty: elements.get("calc-day-value").classList.contains("is-empty"),
     session_rows: elements.get("session-body").children.length,
@@ -1174,6 +1244,40 @@ def test_hiding_the_sorted_column_drops_the_sort_on_resize(tmp_path):
     ]
 
 
+def test_a_rate_cell_click_opens_the_card_and_the_compare_cell_passes_through(tmp_path):
+    """One meaning per target, the page's half of it: the row click registers
+    in the capture phase, a click that missed a control opens the model's card
+    and stops there, and the compare cell passes through to whatever handles
+    it below. That the shipped controller's bubble handler is the one it
+    passes to is the browser leg's business, not a stub's."""
+    result = _node(
+        tmp_path,
+        {
+            "cases": {},
+            "fragment": "",
+            "rows": {
+                "island": {"entries": [ENTRY, PLAIN]},
+                "hash": "",
+                "rowClicks": [
+                    {"key": "fixture/m1", "cell": "button"},
+                    {"key": "fixture/m1", "cell": "rate"},
+                    {"key": "fixture/m1", "cell": "select"},
+                ],
+            },
+        },
+    )
+    assert result["rows"]["rowclick_capture"] is True
+    button, rate, select = result["rows"]["rowClicks"]
+    assert button["stopped"] == 0
+    assert button["card"]["name"] == ""
+    assert rate["stopped"] == 1
+    assert rate["card"]["name"] == "Fixture One"
+    assert "model=fixture/m1" in rate["url"]
+    assert select["stopped"] == 0
+    assert select["url"] == rate["url"]
+    assert select["card"]["name"] == "Fixture One"
+
+
 def test_every_key_of_the_real_export_renders(tmp_path):
     """The fixture cannot carry the shape of 1123 real entries; this one does."""
     rows = store.load_shards(ROOT / store.SHARD_DIR)
@@ -1300,10 +1404,39 @@ def test_the_page_holds_a_model_detail_card(tmp_path):
     assert axes == [
         ("input", "input", "true", "btn btn-secondary"),
         ("output", "output", "false", "btn btn-secondary"),
-        ("cache_read", "cache read", "false", "btn btn-secondary"),
+        ("cache_read", "cached input", "false", "btn btn-secondary"),
     ]
+    # the card's axis label and the table's column label name one rate one way:
+    # both literals are reader-facing, and neither alone catches a reword
+    sort = soup.select_one('#models-table .th-sort[data-sort="cache_read"]')
+    assert sort is not None and sort.get_text(strip=True) == "cached input"
+    # the no-js floor's header is the third copy of that label
+    static = [th.get_text(strip=True) for th in soup.select("#models-static thead th")]
+    assert static[static.index("cached input")] == "cached input"
     line = card.select_one(".chart .chart-line")
     assert line is not None and line.get("points") == ""
+
+
+def test_the_header_names_the_page(tmp_path):
+    """The h1 names the page instead of asserting a claim about it, and the
+    meta and noscript lede stay short; pinned by equality so a reword is a
+    test edit."""
+    out = _built(tmp_path)
+    soup = _soup((out / "index.html").read_text(encoding="utf-8"))
+    header = soup.select_one(".page-header")
+    assert header.select_one(".label").get_text(strip=True) == "genai pricing index"
+    assert header.select_one("h1.page-title").get_text(strip=True) == "ai model prices"
+    export = json.loads((out / "flat-v3.json").read_text(encoding="utf-8"))
+    meta = [item.get_text(" ", strip=True) for item in header.select(".page-meta-item")]
+    assert meta == [
+        f"updated {header.select_one('.page-meta time')['datetime']}",
+        f"{len(export['entries'])} models",
+        f"{len({entry['source'] for entry in export['entries']})} sources",
+    ]
+    lede = soup.select_one("noscript .section-lede").get_text(" ", strip=True)
+    assert lede == (
+        "search, sorting and the comparison need javascript. every model is listed below."
+    )
 
 
 def test_the_shipped_asset_tree_names_no_design_system():
@@ -1630,7 +1763,7 @@ def test_the_open_card_reads_peak_rates_and_follows_the_toggle(tmp_path):
     assert rows["card"]["info"][:3] == [
         ["rate input", "2"],
         ["rate output", "4"],
-        ["rate cache read", "0.5"],
+        ["rate cached input", "0.5"],
     ]
     assert rows["card"]["desc"] == (
         "input price per million tokens: 2 from 2026-08-01, 2 from 2026-09-01."
@@ -1641,7 +1774,7 @@ def test_the_open_card_reads_peak_rates_and_follows_the_toggle(tmp_path):
     assert after["card"]["info"][:3] == [
         ["rate input", "1"],
         ["rate output", "2"],
-        ["rate cache read", "0.5"],
+        ["rate cached input", "0.5"],
     ]
     assert after["card"]["desc"] == (
         "input price per million tokens: 1 from 2026-08-01, 1 from 2026-09-01."
@@ -1670,7 +1803,7 @@ def test_a_peak_fragment_opens_the_card_at_peak(tmp_path):
     assert card["info"][:3] == [
         ["rate input", "2"],
         ["rate output", "4"],
-        ["rate cache read", "0.5"],
+        ["rate cached input", "0.5"],
     ]
     assert card["desc"] == "input price per million tokens: 2 from 2026-08-01, 2 from 2026-09-01."
 
@@ -1736,7 +1869,7 @@ def test_the_card_lists_an_axis_that_only_the_window_prices(tmp_path):
     )
     info = result["rows"]["card"]["info"]
     assert ["rate input", "2"] in info
-    assert ["rate cache read", "0.5"] in info
+    assert ["rate cached input", "0.5"] in info
 
 
 def _node_cases() -> dict[str, dict[str, object]]:

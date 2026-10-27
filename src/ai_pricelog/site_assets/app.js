@@ -512,8 +512,13 @@ function svgNode(tag) {
     : document.createElement(tag);
 }
 
+/* the rate-axis labels a reader reads; cache_read matches the table's own
+   column label, the rest spell out with spaces */
+const AXIS_LABELS = { cache_read: "cached input" };
+
 function axisLabel(axis) {
-  return String(axis).replaceAll("_", " ");
+  const text = String(axis);
+  return Object.hasOwn(AXIS_LABELS, text) ? AXIS_LABELS[text] : text.replaceAll("_", " ");
 }
 
 function clockText(minutes) {
@@ -1287,6 +1292,24 @@ export function init() {
     renderSession();
     push();
   });
+
+  /* one meaning per target: a click that missed a control opens the row's
+     model, captured before the shipped controller's row handler can read it
+     as a selection; the compare cell stays that handler's */
+  wrap.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target;
+      if (target === null || typeof target.closest !== "function") return;
+      if (target.closest(".cell-select")) return;
+      if (target.closest("button, a, input, select, textarea, label")) return;
+      const key = target.closest("tr")?.querySelector(".model-button")?.dataset?.key;
+      if (key === undefined || key === null) return;
+      event.stopPropagation();
+      selectModel(key);
+    },
+    true,
+  );
 
   // the same reading on resize: a width change that hides the sorted column
   // drops the sort, since a reader on the new layout cannot see the fact it

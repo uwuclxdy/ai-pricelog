@@ -76,9 +76,8 @@ _PAGE_STYLE = """
      (measured: the phone page scrolled 386px sideways); a positioned wrap holds
      that overflow where it belongs */
   #models { position: relative; }
-  /* the row's name is the only way into the card, so on a coarse pointer it
-     carries the 44px target itself instead of leaving it to the row's own
-     checkbox toggle */
+  /* the whole row opens the card, and on a coarse pointer the row is the
+     target: the name button's 44px floor holds the row to the same measure */
   @media (pointer: coarse) {
     .model-button { min-height: 44px; display: flex; align-items: center; }
   }
@@ -194,9 +193,9 @@ def _page_header(payload: Mapping[str, object], entry_count: int, source_count: 
             '<header class="page-header">\n',
             '<div class="page-header-body">\n',
             '<div class="label">genai pricing index</div>\n',
-            '<h1 class="page-title">what every watched model costs</h1>\n',
+            '<h1 class="page-title">ai model prices</h1>\n',
             '<p class="page-meta">\n',
-            '<span class="page-meta-item">prices last updated ',
+            '<span class="page-meta-item">updated ',
             f'<time datetime="{updated}">{updated}</time></span>\n',
             f'<span class="page-meta-item">{entry_count} models</span>\n',
             f'<span class="page-meta-item">{source_count} sources</span>\n',
@@ -316,7 +315,7 @@ def _detail_card() -> str:
             '<button class="btn btn-secondary" type="button" aria-pressed="false"'
             ' data-axis="output">output</button>\n',
             '<button class="btn btn-secondary" type="button" aria-pressed="false"'
-            ' data-axis="cache_read">cache read</button>\n',
+            ' data-axis="cache_read">cached input</button>\n',
             "</div>\n",
             '<div class="chart" id="detail-chart">\n',
             '<div class="chart-axis-title chart-axis-title-y">price per mtok</div>\n',
@@ -460,7 +459,7 @@ def _static_table(rows: str) -> str:
         [
             "<noscript>\n",
             '<p class="section-lede">search, sorting and the comparison need javascript.'
-            " every model is listed below, cheapest axes included.</p>\n",
+            " every model is listed below.</p>\n",
             '<div class="table-wrap">\n',
             '<table id="models-static">\n',
             '<caption class="sr-only">every model in the flat export</caption>\n',
