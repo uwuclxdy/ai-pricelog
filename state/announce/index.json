@@ -162,8 +162,8 @@
   "databricks": {
     "https://docs.databricks.com/aws/en/release-notes/": {
       "file": "state/announce/databricks/release-notes.md",
-      "sha256": "07b9b7f3d3c3445a078faa7283699f29e93daf87cf23f11f6974695799e29bee",
-      "fetched": "2026-10-14"
+      "sha256": "a988a3230d00ed685f7492c9a24d8f7ddf1eddd8e6644d99d64afc1cc9c0dc28",
+      "fetched": "2026-10-28T22:00:12Z"
     }
   }
 }
