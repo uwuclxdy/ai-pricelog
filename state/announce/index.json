@@ -41,13 +41,13 @@
   "moonshot": {
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
-      "sha256": "bf5ed7f985b31c7750afd7c924a4eb1d8c0927238bb78226a4469f4bcde0d610",
-      "fetched": "2026-10-23T19:00:14Z"
+      "sha256": "f6e5648b472c145d067b2eb968ac7ea2290ad04404e8e9a2f597cb95c0ca8d2f",
+      "fetched": "2026-10-28T09:00:16Z"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "50f2a34e9adf43fd4ae3e4dc8e74c818af4ee96f302020c0d798ba87a5296cb2",
-      "fetched": "2026-10-27T08:00:15Z"
+      "sha256": "12b0008841f948e191aadcd315e23538126e86f59a482e57aa4072a88fd95e1e",
+      "fetched": "2026-10-28T09:00:16Z"
     }
   },
   "minimax": {
