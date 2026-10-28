@@ -2,6 +2,7 @@
 {"schema":4,"source":"mistral","model_id":"codestral-2405","observed_at":"2024-09-17","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://mistral.ai/news/september-24-release"}}
 {"schema":4,"source":"mistral","model_id":"codestral-2405","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"mistral","model_id":"codestral-25-08","observed_at":"2026-08-29","rates":{"input":0.3,"output":0.9,"cache_read":0.03},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
+{"schema":4,"source":"mistral","model_id":"deepseek-v4-flash-1017","observed_at":"2026-10-28","rates":{"input":0.3,"output":1.2,"cache_read":0.007},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"devstral-2-25-12","observed_at":"2025-12-09","rates":{"input":0.4,"output":2.0},"provenance":{"url":"https://mistral.ai/news/devstral-2-vibe-cli"}}
 {"schema":4,"source":"mistral","model_id":"devstral-2-25-12","observed_at":"2026-08-27","removed":true}
 {"schema":4,"source":"mistral","model_id":"devstral-small-2-25-12","observed_at":"2025-12-09","rates":{"input":0.1,"output":0.3},"provenance":{"url":"https://mistral.ai/news/devstral-2-vibe-cli"}}

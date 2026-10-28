@@ -4773,6 +4773,15 @@
       },
       "vendor": "mistral"
     },
+    "mistral/deepseek-v4-flash-1017": {
+      "curated": false,
+      "sources": {
+        "mistral": [
+          "deepseek-v4-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "mistral/devstral-2-25-12": {
       "curated": false,
       "sources": {
