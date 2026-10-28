@@ -8490,6 +8490,15 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-4-turbo:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-4-turbo:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-4.1-mini:batch": {
       "curated": false,
       "sources": {
