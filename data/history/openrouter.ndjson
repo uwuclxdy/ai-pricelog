@@ -160,6 +160,7 @@
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/virtuoso-large","observed_at":"2025-09-22","rates":{"input":0.75,"output":1.2},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/virtuoso-large","observed_at":"2026-08-26","rates":{"input":0.75,"output":1.2},"limits":{"context":131072},"provenance":{"name":"Virtuoso Large"}}
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/virtuoso-large","observed_at":"2026-08-29","removed":true}
+{"schema":4,"source":"openrouter","model_id":"assemblyai/assemblyai-tts-1","observed_at":"2026-10-28","modality":"speech","rates":{"input":15.0,"output":0.0},"provenance":{"name":"TTS 1"}}
 {"schema":4,"source":"openrouter","model_id":"assemblyai/universal-3-5-pro","observed_at":"2026-10-26","modality":"transcription","rates":{"input":83.3333,"output":0.0},"provenance":{"name":"Universal-3.5 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"assemblyai/universal-3-6-pro","observed_at":"2026-10-26","modality":"transcription","rates":{"input":83.3333,"output":0.0},"provenance":{"name":"Universal-3.6 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"baai/bge-base-en-v1.5","observed_at":"2026-10-26","modality":"embeddings","rates":{"input":0.005,"output":0.0},"limits":{"context":512},"provenance":{"name":"bge-base-en-v1.5"}}
