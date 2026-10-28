@@ -1172,6 +1172,42 @@
       },
       "vendor": "cohere"
     },
+    "dashscope/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
+    "dashscope/glm-5.2-fast-preview": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "glm-5.2-fast-preview"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "dashscope/glm-5.3": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "glm-5.3"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "dashscope/kimi-k3": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "kimi-k3"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "dashscope/qvq-max": {
       "curated": false,
       "sources": {
@@ -1366,6 +1402,24 @@
       "sources": {
         "dashscope": [
           "qwen3.5-plus-2026-02-15"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "dashscope/qwen3.6-27b": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "qwen3.6-27b"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "dashscope/qwen3.6-35b-a3b": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "qwen3.6-35b-a3b"
         ]
       },
       "vendor": "alibaba"
