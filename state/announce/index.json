@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "00abfd4bf298a61df01404fe6111976d0f1cfe5b94a68ff41a4d7d513ad2514d",
-      "fetched": "2026-10-28T01:00:16Z"
+      "sha256": "88581efe666cecd03233f7d55ab731e361bb8a0da120beb569ba6e44e023b286",
+      "fetched": "2026-10-28T03:00:13Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "fec6799676d2a4f627726484c9f5d4d4e45350b6b8a1799be9073eecce1d313b",
-      "fetched": "2026-10-27T14:00:16Z"
+      "sha256": "fd448b2131b81fab54d9fdbcb0d40c0366329865ec9c6aae91a9030de7481020",
+      "fetched": "2026-10-28T03:00:13Z"
     }
   },
   "scaleway": {

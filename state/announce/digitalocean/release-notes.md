@@ -256,13 +256,6 @@ Deny rules take precedence over allow rules that match the same traffic.
 For rule actions and configuration steps, see How to Configure Firewall Rules .
 3 August PostgreSQL Advanced Edition clusters now support sslmode=verify-full for full TLS certificate verification.
 For setup, see How to Connect to PostgreSQL Database Clusters and Increase TLS Verification with sslmode .
-July 2026 30 July OpenSearch 3.3 and 3.6 are now available for database clusters .
-New clusters use OpenSearch 2.19 by default.
-Kafka versions 3.9 and 4.1 are now available for database clusters .
-New clusters use Kafka 4.1 by default.
-For version support and Kafka 3.8 end of availability, see Kafka Limits .
-DigitalOcean Insights is now available in private preview with custom dashboards, metrics, logs, and metric alerts for supported resources and regions.
-For more information, see DigitalOcean Insights features .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
