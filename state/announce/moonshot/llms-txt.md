@@ -17,7 +17,6 @@ The Kimi API Platform provides K3.1 Pro, the previous-generation K3, K2.7 Code, 
 - [Dynamically Loaded Tools](https://platform.kimi.ai/docs/guide/use-dynamic-tool-loading.md): Append tool definitions to Kimi conversations on demand to reduce token usage, improve tool selection, and preserve prefix caching.
 - [Use Kimi API for Tool Calls](https://platform.kimi.ai/docs/guide/use-kimi-api-to-complete-tool-calls.md): Define, register, and execute Kimi API `tool_calls`, return tool results, and handle tool calls in streaming responses.
 - [Best Practices for Web Search](https://platform.kimi.ai/docs/guide/best-practices-for-web-search.md): Choose the right search API for the job, control costs, write effective queries, and configure parameters to improve web search result quality.
-- [Use Web Search with the $web_search Built-in Tool](https://platform.kimi.ai/docs/guide/use-web-search.md): Add web search to Kimi API applications using the recommended official tool channel or the built-in `$web_search` flow for supported models.
 - [How to Use Official Tools in Kimi API](https://platform.kimi.ai/docs/guide/use-official-tools.md): Review the official tools available on Kimi Open Platform and learn how to configure and call them through the Chat Completions API.
 - [Tool Choice](https://platform.kimi.ai/docs/guide/use-tool-choice.md): Use `tool_choice` to let Kimi select tools automatically, require a tool call, forbid tools, or force a specific function.
 - [Kimi K3 API Tool Calling Best Practices](https://platform.kimi.ai/docs/guide/kimi-k3-tool-calling-best-practice.md): When your agent has a large tool inventory, combine dynamic loading, tool_choice, and reasoning effort in the tool-calling flow.
@@ -97,7 +96,7 @@ Repeating the revoke returns `404 key_not_found`.
 - [Get organization rate limits](https://platform.kimi.ai/docs/admin-api/rate-limits.md): Get organization rate limits - [Get project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits.md): Project daily/monthly consume limits in milli-cent.
 - [Update project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits-update.md): Update project consume limits in milli-cent.
 Each field has three semantics: omitted keeps the current value; `null` clears the limit (unlimited); a number sets a new limit.
-- [Model Inference Pricing Explanation](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
+- [Model Inference Pricing](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/websearch.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.

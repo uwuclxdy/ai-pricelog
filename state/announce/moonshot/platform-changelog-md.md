@@ -3,7 +3,7 @@
 This page is updated periodically with Kimi Open Platform product updates and related documentation changes.
 **September 2026** ### 🔍 Web Search API Launch web searches through `/v1/tools/search` and `/v1/tools/search_pro` and get structured results — ideal for Agent applications that orchestrate their own search logic.
 Organization- and project-level QPS limits are supported.
-See [Web Search Basic](https://platform.kimi.ai/docs/api/tools-search.md), [Web Search Pro](https://platform.kimi.ai/docs/api/tools-search-pro.md), [Web Search Best Practices](https://platform.kimi.ai/docs/guide/web-search-best-practice.md), and [Web Search Pricing](https://platform.kimi.ai/docs/pricing/websearch.md).
+See [Web Search Basic](https://platform.kimi.ai/docs/api/tools-search.md), [Web Search Pro](https://platform.kimi.ai/docs/api/tools-search-pro.md), [Web Search Best Practices](https://platform.kimi.ai/docs/guide/best-practices-for-web-search.md), and [Web Search Pricing](https://platform.kimi.ai/docs/pricing/websearch.md).
 ### 💰 Billing method change Account usage is now deducted at a uniform ratio of 50% cash and 50% vouchers.
 When either balance is depleted, all subsequent usage is deducted from the remaining balance type.
 Users with signed contracts follow their contract terms and continue to prioritize voucher usage — they are not affected.
