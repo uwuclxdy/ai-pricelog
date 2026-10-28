@@ -213,6 +213,7 @@
 {"schema":4,"source":"openrouter","model_id":"bytedance/ui-tars-1.5-7b","observed_at":"2026-08-26","rates":{"input":0.1,"output":0.2,"cache_read":0.1},"limits":{"context":128000},"provenance":{"name":"UI-TARS 7B "}}
 {"schema":4,"source":"openrouter","model_id":"canopylabs/orpheus-3b-0.1-ft","observed_at":"2026-10-26","modality":"speech","rates":{"input":7.0,"output":0.0},"limits":{"context":4096},"provenance":{"name":"Orpheus 3B"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0},"limits":{"context":65537},"provenance":{"name":"Clef"}}
+{"schema":4,"source":"openrouter","model_id":"cloudflare/clef","observed_at":"2026-10-28","modality":"decisions","rates":{"input":0.24,"output":0.0},"limits":{"context":65537},"provenance":{"name":"Clef"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.019,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-10-28","modality":"decisions","rates":{"input":0.038,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-omni","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.15,"output":0.0},"limits":{"context":65536},"provenance":{"name":"Clef Omni"}}
