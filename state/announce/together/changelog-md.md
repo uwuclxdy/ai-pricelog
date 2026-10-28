@@ -32,12 +32,11 @@ Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
 **October 17, 2026** ## Post-training: Muse Spark Open `meta-models/Muse-Spark-Open-816B-A42B` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and one adapter session per resource.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
-**October 16, 2026** ## Geo-specific inference You can now keep serverless inference processing in the United States or Canada.
-Set your client's base URL to `https://us-api.together.ai/v1` for the United States or `https://ca-api.together.ai/v1` for Canada, using your existing API key and model IDs.
+**October 16, 2026** ## Geo-specific inference You can now keep serverless inference processing in the United States.
+Set your client's base URL to `https://us-api.together.ai/v1`, using your existing API key and model IDs.
 There are no GPUs to provision.
-* **United States:** `moonshotai/Kimi-K3`, `zai-org/GLM-5.3`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, `deepseek-ai/DeepSeek-V4-Pro-0813`, and `MiniMaxAI/MiniMax-M3`.
-* **Canada:** `zai-org/GLM-5.3`, `zai-org/GLM-5.3-Flash`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, and `deepseek-ai/DeepSeek-V4-Pro-0813`.
-Both geographies cost 1.25× standard serverless rates (a 25% premium) for input, cached input, and output tokens.
+US models: `moonshotai/Kimi-K3`, `zai-org/GLM-5.3`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, `deepseek-ai/DeepSeek-V4-Pro-0813`, and `MiniMaxAI/MiniMax-M3`.
+US-only inference costs 1.25× standard serverless rates (a 25% premium) for input, cached input, and output tokens.
 See [Geo-specific inference](https://docs.together.ai/docs/serverless/geo-specific-inference.md) for details.
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.40 input / \$1.20 output / \$0.04 cached input (per 1M tokens).
