@@ -2758,6 +2758,15 @@
       },
       "vendor": "alibaba"
     },
+    "fireworks/ultramarine-1-flash-us": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "ultramarine-1-flash-us"
+        ]
+      },
+      "vendor": null
+    },
     "gemini-2.5-flash": {
       "curated": true,
       "name": "Gemini 2.5 Flash",
