@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "a04d90ab92b538d5bc2231346b97b3440127fe445f464289ca8c2078bff523d0",
-      "fetched": "2026-10-28T00:00:16Z"
+      "sha256": "31351cc9a03ee7c2832974bf653a112f829a85f57ba5d45df67b194207c011cd",
+      "fetched": "2026-10-28T01:00:16Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "e98ad46b28cb5c0d0af4072451b3840e12bdd829d4a7e3dbaf524a450b781746",
-      "fetched": "2026-10-26T20:00:11Z"
+      "sha256": "00abfd4bf298a61df01404fe6111976d0f1cfe5b94a68ff41a4d7d513ad2514d",
+      "fetched": "2026-10-28T01:00:16Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",

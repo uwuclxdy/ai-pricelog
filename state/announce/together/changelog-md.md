@@ -194,7 +194,15 @@ Pricing: \$0.15 input / \$0.47 output (per 1M tokens).
 **August 29, 2026** ## `active_sessions` autoscaling metric for TTS Dedicated endpoint autoscaling now accepts `active_sessions`, which targets concurrent open client WebSocket sessions per replica on a TTS deployment (`AVERAGE_VALUE` only).
 The default `inflight_requests` metric also covers TTS handlers, so HTTP TTS traffic can keep scaling without a policy change.
 See [Configure autoscaling](https://docs.together.ai/docs/dedicated-endpoints/scaling.md#scaling-metrics).
-**August 28, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
+**August 28, 2026** ## Start now option for scheduled capacity clusters When you create a scheduled capacity cluster in the [console](https://api.together.ai/clusters), you can check **Start now** to provision it immediately instead of picking a future start date.
+**Start now** is available only when the selected capacity pool window includes today's date.
+You still choose an end date within the pool window.
+See [Schedule a cluster](https://docs.together.ai/docs/gpu-clusters-management.md#schedule-a-cluster).
+## GPU capacity request dialog In the [console](https://api.together.ai/clusters) create-cluster form, select **Need a different configuration?** to open the **Notify when available** dialog.
+The dialog now asks for the GPU type, number of GPUs, region, optional storage size, and start date, plus an end date for reserved or scheduled capacity.
+It also shows an estimated cost.
+See [Request capacity](https://docs.together.ai/docs/gpu-clusters-management.md#request-capacity).
+## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
 Pricing: \$1.40 input / \$4.40 output / \$0.26 cached input (per 1M tokens).
 **August 27, 2026** ## Billing usage API (beta) `GET /billing/usage` returns organization-wide usage and cost line items, filterable by month.
 The endpoint is in beta and enabled per organization.
@@ -229,7 +237,11 @@ See [Supported models](https://docs.together.ai/docs/fine-tuning/supported-model
 ## Longer context for GLM-5.2 `zai-org/GLM-5.2` on [serverless](https://docs.together.ai/docs/serverless/models.md) now accepts a 1,000,000-token context length, up from 512,000.
 Pricing is unchanged.
 See the [GLM-5.2 quickstart](https://docs.together.ai/docs/glm-5.2-quickstart.md).
-**August 24, 2026** ## Fine-tuning quality improvements Training quality has improved for fine-tuning on the following models: * `Qwen/Qwen3.5-0.8B`.
+**August 24, 2026** ## Quick reprovision for pending GPU cluster nodes You can now run **Quick reprovision** as a [manual node repair](https://docs.together.ai/docs/node-repair.md#manual-node-repair) on nodes that are still in the **Pending** or **Scheduling** phase.
+The other repair actions stay disabled for nodes in those phases.
+Nodes with an unset or **Unknown** phase still don't offer a **Repair** action.
+See [Start a manual repair](https://docs.together.ai/docs/node-repair.md#start-a-manual-repair).
+## Fine-tuning quality improvements Training quality has improved for fine-tuning on the following models: * `Qwen/Qwen3.5-0.8B`.
 * `Qwen/Qwen3.5-2B`.
 * `Qwen/Qwen3.5-4B`.
 * `Qwen/Qwen3.5-9B`.
@@ -269,11 +281,20 @@ bank account with instant verification from your [billing settings](https://api.
 Credits are deposited after the ACH payment clears (usually 1–3 business days).
 Auto-recharge still requires a card as the default payment method.
 See [Payment methods & invoices](https://docs.together.ai/docs/billing-payment-methods.md#ach-bank-transfers).
+## GPU cluster size picker follows live capacity When you create or edit a GPU cluster in the [console](https://api.together.ai/clusters), the GPU size picker lists every full-node multiple of 8 GPUs, up to the capacity currently available for that GPU type and region.
+It no longer stops at a fixed ceiling of 1,024 GPUs.
+See [Scale a cluster](https://docs.together.ai/docs/gpu-clusters-management.md#scale-a-cluster).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `black-forest-labs/FLUX.1-schnell`.
 * `Qwen/Qwen2.5-7B`.
 * `moonshotai/Kimi-K2.6`.
 See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration options.
-**August 18, 2026** ## Unknown fields rejected on dedicated endpoints API The [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/overview.md) management API now rejects unknown JSON request-body fields and unknown query parameters with HTTP `400`.
+**August 18, 2026** ## Hybrid scheduled capacity clusters When you create a scheduled capacity cluster that starts now, you can mix capacity pool GPUs with prepaid reserved GPUs from outside the pool.
+The cluster details page shows how the cluster's GPUs split between the two.
+* **Console:** Set the pool GPU count under **Select Capacity Pool GPU Count**.
+To add reserved GPUs, turn on **Add compute outside your capacity pool** and set **Reserved GPUs**.
+* **API and CLI:** Pass `num_capacity_pool_gpus` and `num_reserved_gpus` so they sum to `num_gpus`.
+See [Capacity types](https://docs.together.ai/docs/gpu-clusters-overview.md#capacity-types), the [quickstart](https://docs.together.ai/docs/gpu-clusters-quickstart.md), and [Create a hybrid scheduled capacity cluster](https://docs.together.ai/docs/gpu-clusters-management.md#create-a-hybrid-scheduled-capacity-cluster).
+## Unknown fields rejected on dedicated endpoints API The [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/overview.md) management API now rejects unknown JSON request-body fields and unknown query parameters with HTTP `400`.
 The response names the field (for example `unknown field "inactive_timeout"`) instead of silently ignoring it.
 Remove retired or misspelled keys from clients that still send them.
 See [Troubleshooting](https://docs.together.ai/docs/dedicated-endpoints/manage.md#troubleshooting) and [Error codes](https://docs.together.ai/docs/error-codes.md).
@@ -308,6 +329,10 @@ Organization members cannot leave the organization's default project, and the la
 See [Leaving a project](https://docs.together.ai/docs/projects.md#leaving-a-project).
 ## Dedicated API keys for Vercel projects Connecting a Vercel project from [Integrations settings](https://api.together.ai/settings/integrations) now creates a dedicated API key for each linked Vercel project, set as the `TOGETHER_API_KEY` environment variable in that Vercel project.
 See [Vercel integration](https://docs.together.ai/docs/api-keys-authentication.md#vercel-integration).
+## Non-interactive cluster deletes in the Together CLI `tg beta clusters delete` and `tg beta clusters storage delete` no longer hang waiting for confirmation when run in scripts or CI.
+Both commands now honor the global `--non-interactive` and `--json` flags.
+In interactive sessions, pass the new `--force` flag to skip the confirmation prompt.
+See [Delete a cluster](https://docs.together.ai/reference/cli/clusters.md#delete-a-cluster) in the CLI reference.
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `Qwen/Qwen3.8-2.4T-A95B`: FP4 quantization.
 Pricing: \$2.50 input / \$6.25 output / \$0.50 cached input (per 1M tokens).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-FP8`.
@@ -533,7 +558,14 @@ See [Preview](https://docs.together.ai/reference/cli/finetune.md#preview).
 ## Worker engine cache metrics Dedicated endpoint Prometheus metrics now expose `worker_engine_kv_cache_utilization` and `worker_engine_cache_hit_rate` gauges.
 Use them to track KV-cache pressure and prefix-reuse efficiency on deployment workers.
 See [Monitor endpoints and deployments](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md).
-**July 22, 2026** ## Cluster remediation mode override `tg beta clusters remediations approve` now accepts a `--mode` flag to override the recommended repair action when you approve a node remediation.
+**July 22, 2026** ## GPU cluster host power-cycle repairs Node repair now includes a **Cycle** action, which cordons the bare-metal host and power-cycles it through its baseboard management controller (BMC).
+The repair preserves local scratch data, and the node keeps its host and node identity.
+Cycle is available only on supported hardware and for accounts where Together has enabled it.
+* **Console:** Select **Cycle** in the repair dialog, or choose it as the override action when you approve a recommendation from the **Repairs** tab.
+* **CLI:** Pass `--mode HOST_POWER_CYCLE` to `tg beta clusters remediations create`.
+* **API and SDK:** Set `mode` to `REMEDIATION_MODE_HOST_POWER_CYCLE` when you create a remediation.
+See [Node repair](https://docs.together.ai/docs/node-repair.md) and the [clusters CLI reference](https://docs.together.ai/reference/cli/clusters.md#create-a-node-remediation).
+## Cluster remediation mode override `tg beta clusters remediations approve` now accepts a `--mode` flag to override the recommended repair action when you approve a node remediation.
 Choose reboot, quick reprovision, migrate to new host, or remove without changing the recommendation in the console first.
 See [Node repair](https://docs.together.ai/docs/node-repair.md#override-the-recommended-action) and the [clusters CLI reference](https://docs.together.ai/reference/cli/clusters.md).
 **July 21, 2026** ## GPU cluster add-on CLI flags `tg beta clusters create` and `tg beta clusters update` now expose flags for Headlamp and Slurm Web cluster add-ons.
@@ -563,9 +595,9 @@ Metrics stream in live while a job runs and stay available after it completes.
 Poll validation before you pin a revision in a deployment.
 A revision must reach `REVISION_VALIDATION_STATUS_SUCCESS` before it can deploy when referenced explicitly.
 See [Check revision validation](https://docs.together.ai/docs/dedicated-endpoints/custom-models.md#check-revision-validation).
-## GPU cluster reserved GPU updates You can now update `num_reserved_gpus` on reserved clusters through the API and CLI.
-Pass `num_reserved_gpus` on cluster update to change the prepaid reserved GPU count without changing total `num_gpus`.
-See [API and integrations](https://docs.together.ai/docs/gpu-clusters-api.md#inspect-cluster-gpu-counts).
+## GPU cluster reserved GPU increases You can now increase the prepaid reserved GPU count on a reserved cluster through the API and CLI, without changing its total `num_gpus`.
+Set `num_reserved_gpus` when you update the cluster.
+See [Manage GPU clusters](https://docs.together.ai/docs/gpu-clusters-management.md#update-cluster-gpu-counts).
 **July 17, 2026** ## Privacy and training opt-in settings Training opt-in and other privacy toggles now live under **Privacy** in [Organization Settings](https://api.together.ai/settings/organization/~current).
 Organization admins control data-sharing settings for all traffic sent under the organization's API keys.
 See [Privacy and security](https://docs.together.ai/docs/privacy-and-security.md).
@@ -586,8 +618,8 @@ Pricing: \$1.00 input / \$4.05 output / \$0.17 cached input (per 1M tokens).
 ## Image inputs for evaluations You can now evaluate vision-capable models on image datasets.
 Add an `image_data_urls` column to your evaluation dataset (a base64 image data URL, or a list of them) and the images are attached to the model and judge requests alongside the text prompt.
 See [Prepare a dataset](https://docs.together.ai/docs/run-an-evaluation.md#prepare-a-dataset) for details.
-## GPU cluster GPU count breakdown Cluster retrieve and list responses now expose `num_reserved_gpus` and `num_capacity_pool_gpus` alongside `num_gpus`, so you can see how total capacity splits between prepaid reserved GPUs and on-demand burst from a capacity pool.
-See [API and integrations](https://docs.together.ai/docs/gpu-clusters-api.md#inspect-cluster-gpu-counts) for details.
+## GPU cluster GPU count breakdown Cluster retrieve and list responses now include `num_reserved_gpus` and `num_capacity_pool_gpus` alongside `num_gpus`, so you can see how total capacity splits between prepaid reserved GPUs and GPUs drawn from a capacity pool.
+See [Manage GPU clusters](https://docs.together.ai/docs/gpu-clusters-management.md#inspect-cluster-gpu-counts) for details.
 ## Remediation linked alerts Remediation retrieve and list responses now include `linked_alerts`, an array of passive health check alerts tied to the repair (including resolved alerts).
 See [Node repair](https://docs.together.ai/docs/node-repair.md#linked-alerts-in-api-responses) for details.
 ## Clear a deployment queue The Queue API adds `POST /queue/clear` (`client.beta.jig.queue.clear`) to cancel all pending jobs for a model in one call.
@@ -603,9 +635,9 @@ See [SSH into a cluster](https://docs.together.ai/reference/cli/clusters.md#ssh-
 Install with one command and run your existing tools without hand-editing provider settings.
 See [TogetherLink](https://docs.together.ai/docs/togetherlink.md).
 ## Slurm cluster OIDC SSH Slurm GPU clusters with OIDC enabled now support browser-based SSH through the Together CLI.
-Choose **OIDC** on the cluster details page to sign in without uploading an SSH key.
+To sign in without uploading an SSH key, select **OIDC** on the cluster details page.
 Key-based SSH remains available.
-See [Cluster management](https://docs.together.ai/docs/gpu-clusters-management.md#direct-ssh-access).
+See [Connect over SSH](https://docs.together.ai/docs/gpu-clusters-ssh.md).
 ## Fine-tuning model limits API The model limits endpoint now returns `supports_full_training` so you can check whether a model supports full fine-tuning before submitting a job.
 When the field is `false`, the model is LoRA-only.
 See [LoRA vs.
