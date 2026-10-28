@@ -6102,11 +6102,29 @@
       },
       "vendor": "baidu"
     },
+    "openrouter/baseten/elephant-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/elephant-1"
+        ]
+      },
+      "vendor": "baseten"
+    },
     "openrouter/baseten/elephant-1:free": {
       "curated": false,
       "sources": {
         "openrouter": [
           "baseten/elephant-1:free"
+        ]
+      },
+      "vendor": "baseten"
+    },
+    "openrouter/baseten/mammoth-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/mammoth-1"
         ]
       },
       "vendor": "baseten"
@@ -9326,6 +9344,15 @@
         ]
       },
       "vendor": "openrouter"
+    },
+    "openrouter/particle-ai/particle-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "particle-ai/particle-1"
+        ]
+      },
+      "vendor": "particle-ai"
     },
     "openrouter/perceptron/perceptron-mk1": {
       "curated": false,

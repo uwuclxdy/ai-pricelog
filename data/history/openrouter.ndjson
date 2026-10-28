@@ -175,8 +175,10 @@
 {"schema":4,"source":"openrouter","model_id":"baidu/ernie-4.5-vl-424b-a47b","observed_at":"2025-12-28","rates":{"input":0.336,"output":1.0},"limits":{"context":123000},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"baidu/ernie-4.5-vl-424b-a47b","observed_at":"2026-08-26","rates":{"input":0.42,"output":1.25},"limits":{"context":123000},"provenance":{"name":"ERNIE 4.5 VL 424B A47B "}}
 {"schema":4,"source":"openrouter","model_id":"baidu/ernie-4.5-vl-424b-a47b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.42,"output":1.25},"limits":{"context":123000}}
+{"schema":4,"source":"openrouter","model_id":"baseten/elephant-1","observed_at":"2026-10-28","modality":"decisions","rates":{"input":0.035,"output":0.0},"limits":{"context":16384},"provenance":{"name":"Elephant 1"}}
 {"schema":4,"source":"openrouter","model_id":"baseten/elephant-1:free","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.0,"output":0.0},"limits":{"context":16384},"provenance":{"name":"Elephant 1 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"baseten/elephant-1:free","observed_at":"2026-10-28","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":16384}}
+{"schema":4,"source":"openrouter","model_id":"baseten/mammoth-1","observed_at":"2026-10-28","modality":"decisions","rates":{"input":0.1,"output":0.0},"limits":{"context":16384},"provenance":{"name":"Mammoth 1"}}
 {"schema":4,"source":"openrouter","model_id":"baseten/mammoth-1:free","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.0,"output":0.0},"limits":{"context":16384},"provenance":{"name":"Mammoth 1 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"baseten/mammoth-1:free","observed_at":"2026-10-28","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":16384}}
 {"schema":4,"source":"openrouter","model_id":"black-forest-labs/flux-3-image","observed_at":"2026-10-26","modality":"image","rates":{"input":0.0,"output":0.0,"image_output":9.820359},"limits":{"context":46864},"unmapped":{"image_token":"0.00000982035928143713"},"provenance":{"name":"FLUX 3 Image"}}
@@ -1582,6 +1584,7 @@
 {"schema":4,"source":"openrouter","model_id":"openrouter/free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":200000},"provenance":{"name":"Free Models Router"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/fusion","observed_at":"2026-08-26","limits":{"context":1000000},"provenance":{"name":"Fusion"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/pareto-code","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Pareto Code Router"}}
+{"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-28","rates":{"input":0.25,"output":1.0,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.5},"limits":{"context":32768},"provenance":{"name":"Perceptron Mk1"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1.5","observed_at":"2026-09-25","rates":{"input":0.15,"output":1.5},"limits":{"context":36864},"provenance":{"name":"Perceptron Mk1.5"}}
 {"schema":4,"source":"openrouter","model_id":"perplexity/pplx-decider-flash-v1.2","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.01,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Decider Flash V1.2"}}
