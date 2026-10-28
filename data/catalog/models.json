@@ -6039,6 +6039,15 @@
       },
       "vendor": "arcee-ai"
     },
+    "openrouter/assemblyai/assemblyai-tts-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "assemblyai/assemblyai-tts-1"
+        ]
+      },
+      "vendor": "assemblyai"
+    },
     "openrouter/assemblyai/universal-3-5-pro": {
       "curated": false,
       "sources": {
