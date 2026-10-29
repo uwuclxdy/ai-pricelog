@@ -96,15 +96,15 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "83e069da6885304b348758071107ab23e822b829d932b0a7805e173fd985cfaa",
-      "fetched": "2026-10-27T21:00:18Z"
+      "sha256": "7b3531c4bea817d1cd8431d6cd8c29f39f98e20f105dbe69157cf1c320bab965",
+      "fetched": "2026-10-29T13:00:14Z"
     }
   },
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "7c150b069bd1952293f71eb0681d4a01be0beef428bd3db78bf53a3d12e4df11",
-      "fetched": "2026-10-26T22:00:15Z"
+      "sha256": "c56f6e7234db52d17367e7f06d6748c921bbf3aa3739751c8e1db97c41f7b7e3",
+      "fetched": "2026-10-29T13:00:14Z"
     }
   },
   "fireworks": {
