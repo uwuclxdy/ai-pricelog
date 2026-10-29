@@ -10218,6 +10218,15 @@
       },
       "vendor": "sourceful"
     },
+    "openrouter/sourceful/riverflow-v2.6-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "sourceful/riverflow-v2.6-pro"
+        ]
+      },
+      "vendor": "sourceful"
+    },
     "openrouter/stealth/ox-alpha": {
       "curated": false,
       "sources": {
