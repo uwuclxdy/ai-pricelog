@@ -8472,6 +8472,15 @@
       },
       "vendor": "nvidia"
     },
+    "openrouter/nvidia/nemotron-3.5-transcribe": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nvidia/nemotron-3.5-transcribe"
+        ]
+      },
+      "vendor": "nvidia"
+    },
     "openrouter/nvidia/parakeet-tdt-0.6b-v3": {
       "curated": false,
       "sources": {
