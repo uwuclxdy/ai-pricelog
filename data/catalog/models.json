@@ -6129,6 +6129,15 @@
       },
       "vendor": "baseten"
     },
+    "openrouter/baseten/joey-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/joey-1"
+        ]
+      },
+      "vendor": "baseten"
+    },
     "openrouter/baseten/mammoth-1": {
       "curated": false,
       "sources": {
