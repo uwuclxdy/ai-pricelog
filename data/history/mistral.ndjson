@@ -32,6 +32,7 @@
 {"schema":4,"source":"mistral","model_id":"mistral-large-3-25-12","observed_at":"2026-08-29","rates":{"input":0.5,"output":1.5,"cache_read":0.05},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"mistral-large-4-0","observed_at":"2026-10-06","rates":{"input":0.68,"output":2.09,"cache_read":0.07},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"mistral-large-4-0","observed_at":"2026-10-20","rates":{"input":1.36,"output":4.18,"cache_read":0.14},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
+{"schema":4,"source":"mistral","model_id":"mistral-large-4-0","observed_at":"2026-10-29","rates":{"input":0.7,"output":2.1,"cache_read":0.07},"provenance":{"url":"https://docs.mistral.ai/inference/pricing"}}
 {"schema":4,"source":"mistral","model_id":"mistral-medium-3-25-05","observed_at":"2025-05-07","rates":{"input":0.4,"output":2.0},"provenance":{"url":"https://mistral.ai/news/mistral-medium-3"}}
 {"schema":4,"source":"mistral","model_id":"mistral-medium-3-25-05","observed_at":"2026-08-27","removed":true}
 {"schema":4,"source":"mistral","model_id":"mistral-medium-3-5-26-04","observed_at":"2026-05-22","rates":{"input":1.5,"output":7.5},"provenance":{"url":"https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5"}}
