@@ -2,6 +2,32 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**October 2026** **Agent API: effort level updates and the `ultra-preview` effort level** These effort level changes were not listed in earlier changelog entries.
+Each line names the current version.
+Earlier versions stay available as [pinned versions](https://docs.perplexity.ai/docs/agent-api/effort.md#pinning-an-effort-level-version).
+* **`fast` (`fast@2026-10-16.0`):** falls back to `openai/gpt-5.6-luna` when `openai/gpt-6-luna` is unavailable.
+* **`low` (`low@2026-10-24.0`):** max output tokens rise from 32,768 to 128,000.
+`web_search` `max_tokens` and `max_tokens_per_page` rise from 2,000 to 4,000.
+`fetch_url` content extraction uses `openai/gpt-6-luna`.
+* **`medium` (`medium@2026-10-22.1`):** `web_search` `max_tokens` and `max_tokens_per_page` rise from 2,000 to 4,000.
+`fetch_url` content extraction uses `openai/gpt-6-luna`.
+* **`high` (`high@2026-10-28.0`):** uses `openai/gpt-6.1-terra` instead of `openai/gpt-6-sol`.
+Max steps rise from 15 to 40, and a run makes at most 40 tool calls.
+`web_search` `max_tokens` and `max_tokens_per_page` rise from 2,000 to 4,000.
+`fetch_url` content extraction uses `openai/gpt-6-luna`.
+* **`xhigh` (`xhigh@2026-10-29.0`):** stays on `anthropic/claude-opus-5-5`, with `openai/gpt-6.1-sol` as the fallback model.
+Max steps rise from 100 to 300, and context compaction starts at 150,000 tokens.
+`xhigh` sets no system prompt, so its frozen configuration no longer sends `instructions`.
+* **Step budget reminders:** `low`, `medium`, `high`, and `xhigh` remind the model of its remaining step budget as it works.
+`fast` runs one step and has no reminders.
+**New: `ultra-preview`.** An effort level for broad research and data-gathering tasks where coverage matters most.
+Runs can take a long time.
+Call it by name with `effort="ultra-preview"`.
+The undocumented `ultra` effort name is removed and now returns an error.
+The `wide-research` alias now selects `xhigh`.
+`max_steps` now accepts values up to 500, up from 100.
+If you use a [frozen configuration](https://docs.perplexity.ai/docs/agent-api/effort.md#current-effort-level-values), copy the updated values to keep matching each effort level's public API fields.
+See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md).
 **October 2026** **Agent API: `preset` renamed to `effort`** This is a naming change only.
 Effort levels keep the same models, prompts, tools, limits, and pricing.
 Version pinning and frozen configurations continue to work as before.
