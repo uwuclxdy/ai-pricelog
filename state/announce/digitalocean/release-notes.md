@@ -16,7 +16,7 @@ Kafka 4.3 is now available for database clusters .
 New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.
 Kafka versions 3.9 and 4.2 remain available.
 Kafka 4.3 reaches end of availability for new clusters on 25 June 2027 and end of life on 25 September 2027.
-For version support, see Kafka Limits .
+For version support, see Kafka version support and end-of-life dates .
 26 October DigitalOcean Harness Runtime can start a sandbox with no harness in it.
 Set harness: none in the environment spec, and the session boots the base image with a general-purpose toolchain and nothing running.
 You run commands with doctl harness-runtime exec , move files with upload and download , and reach services with port-forward .
@@ -36,7 +36,7 @@ Existing running or paused sessions continue to use the image they were created 
 To remediate, remove affected sessions and create new ones from your existing environment spec or Agent Config.
 For more information, see How to Manage Harness Runtime Sessions and How to Use a Custom Sandbox Template (BYOT) .
 codex , claude-code , opencode : Node.js 20 to Node.js 24.22.1 hermes : Hermes Agent v0.22.5, Node.js 26.12.1, Python 3.14 openhands : OpenHands agent server 1.58.2, Node.js 24.22.1 23 October The following MiniMax model is now available in public preview on DigitalOcean Inference for serverless inference : MiniMax M3.1-Flash (Public Preview) For more information, see the Available Models page .
-The Your usage graph on the Cost Analysis page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
+The Your usage graph on the Billing Insights page can now group and filter spend by project, tag, model, token type, and model access key, in addition to product.
 The available grouping options depend on the selected spend category.
 Use these filters to break down spend over a selected date range, for example to track AI spend by model or monitor resources by tag.
 22 October We have updated the following buildpacks for App Platform: PHP buildpack : We updated the buildpack to version 298 and added PHP versions 8.5.3 - 8.5.12 , 8.4.18 - 8.4.27 , 8.3.31 - 8.3.33 , 8.3.35 - 8.3.36 , and 8.2.31 - 8.2.35 .
@@ -98,7 +98,7 @@ For more information, see Use Prompt Caching .
 7 October Managed databases are available in Memphis ( mem1 ) on AMDv5 plans only.
 Storage-Optimized plans are now available for Kafka and OpenSearch clusters in mem1 only.
 See the regional availability matrix for current coverage by engine.
-The Cost Analysis tab of the Billing page now includes Serverless Inference Live Usage , which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
+The Insights tab of the Billing page now includes Serverless Inference Live Usage , which lists the estimated cost and token counts of your Serverless Inference requests by model and model access key, for both teams and organizations.
 Data refreshes every 10 minutes and covers the last 30 days.
 6 October PostgreSQL Advanced Edition clusters now support 20 additional extensions beyond the pre-installed pg_repack , pg_stat_statements , pgaudit , plpgsql , and vector extensions, including pg_trgm , pgcrypto , citext , and uuid-ossp .
 You can enable them with CREATE EXTENSION .
@@ -151,7 +151,7 @@ To list models, regions, and OpenAI keys, use the doctl serverless-inference com
 28 September Valkey 9 is now available for database clusters .
 New clusters use Valkey 9 by default.
 Valkey 8 remains available for new and existing clusters.
-For version support, see Valkey Limits .
+For version support, see Valkey version support and end-of-life dates .
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit: Claude Sonnet 5.5 For more information, see the Available Models page .
 25 September The following NVIDIA model is now available on DigitalOcean Inference for serverless inference and Agent Development Kit: Nemotron 3 Diarization For more information, see the Available Models page .
 23 September The following TypeSafe AI model is now available on DigitalOcean Inference for inference: Jev For more information, see the Available Models page .
@@ -186,6 +186,10 @@ For more information, see How to Explore and Query Metrics .
 10 September The DigitalOcean Control Panel now supports adding and removing allow and deny rules based on IP addresses and CIDR ranges when you create or manage regional load balancers that use HTTP or Network traffic management.
 See How to Create Regional Load Balancers and How to Manage Regional Load Balancers .
 Global load balancers do not support firewall rules, and DigitalOcean Kubernetes (DOKS)-managed load balancers continue to use Kubernetes service configuration.
+Kafka 4.2 is available for database clusters , and new clusters use Kafka 4.2 by default.
+Kafka 3.9 remains available for new clusters.
+You can no longer create Kafka 4.1 clusters, and existing Kafka 4.1 clusters reach end of life on 31 January 2027.
+For version support, see Kafka version support and end-of-life dates .
 DigitalOcean Insights now supports tracing in private preview .
 You can search, filter, and inspect traces and spans for supported resources and regions.
 For more information, see How to View Traces .
