@@ -9,7 +9,10 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 26 October DigitalOcean Harness Runtime can start a sandbox with no harness in it.
+October 2026 28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
+Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
+To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
+26 October DigitalOcean Harness Runtime can start a sandbox with no harness in it.
 Set harness: none in the environment spec, and the session boots the base image with a general-purpose toolchain and nothing running.
 You run commands with doctl harness-runtime exec , move files with upload and download , and reach services with port-forward .
 This option is available through doctl and the API.
