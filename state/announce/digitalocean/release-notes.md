@@ -12,6 +12,11 @@ Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
 October 2026 28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
 To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
+Kafka 4.3 is now available for database clusters .
+New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.
+Kafka versions 3.9 and 4.2 remain available.
+Kafka 4.3 reaches end of availability for new clusters on 25 June 2027 and end of life on 25 September 2027.
+For version support, see Kafka Limits .
 26 October DigitalOcean Harness Runtime can start a sandbox with no harness in it.
 Set harness: none in the environment spec, and the session boots the base image with a general-purpose toolchain and nothing running.
 You run commands with doctl harness-runtime exec , move files with upload and download , and reach services with port-forward .
