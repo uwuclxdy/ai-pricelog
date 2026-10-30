@@ -1,6 +1,6 @@
 Search & Fetch | DeepSeek API Docs Skip to main content Search / Fetch API is now available, powered by our in-house search engine and supporting web search and fetch.
-Click here to view the guide.
-DeepSeek API Docs Resources Integrations API Status FAQ English English 中文（中国） DeepSeek Platform 中 Quick Start API Guides API Reference News Change Log Vision Thinking Mode Multi-round Conversation Chat Prefix Completion (Beta) FIM Completion (Beta) JSON Output Tool Calls Files API Search & Fetch Context Caching Using the Responses API Using the Anthropic API Search & Fetch On this page Search & Fetch The Search API and the Fetch API give agents and RAG applications access to live web content: Search API finds web pages for a query and returns structured results.
+Click here to view the guide DeepSeek API Docs Resources Integrations API Status FAQ English English 中文（中国） DeepSeek Platform 中 Quick Start API Guides API Reference News Change Log Vision Thinking Mode Multi-round Conversation Chat Prefix Completion (Beta) FIM Completion (Beta) JSON Output Tool Calls Files API Search & Fetch Context Caching Using the Responses API Using the Anthropic API Search & Fetch On this page Copy Markdown Copy Markdown Open Markdown Search & Fetch The Search API and the Fetch API give agents and RAG applications access to live web content: Search API finds web pages for
+a query and returns structured results.
 It is powered by DeepSeek's in-house search engine.
 Fetch API retrieves a single web page and returns its content as Markdown.
 Both are raw JSON APIs.

@@ -1610,6 +1610,7 @@
 {"schema":4,"source":"openrouter","model_id":"openrouter/pareto-code","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Pareto Code Router"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-28","rates":{"input":0.25,"output":1.0,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.25,"output":1.0,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
+{"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.1,"output":1.0,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.5},"limits":{"context":32768},"provenance":{"name":"Perceptron Mk1"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1.5","observed_at":"2026-09-25","rates":{"input":0.15,"output":1.5},"limits":{"context":36864},"provenance":{"name":"Perceptron Mk1.5"}}
 {"schema":4,"source":"openrouter","model_id":"perplexity/pplx-decider-flash-v1.2","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.01,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Decider Flash V1.2"}}

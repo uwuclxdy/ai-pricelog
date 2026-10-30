@@ -5,6 +5,7 @@ Token counting Prompt engineering Logs and datasets Get started with logs Data l
 AI Studio Playground Try out LearnLM Troubleshooting Access for Workspace users Google Cloud Platform Gemini Enterprise Agent Platform Gemini API OAuth authentication Policies Terms of service Available regions Abuse monitoring Feedback information Gemini 4 Argon is now available.
 Try it out .
 Home Gemini API Docs Send feedback Release notes This page documents updates to the Gemini API.
+October 30, 2026 Computer Use generally available (GA) : Released the Computer Use tool to general availability (GA) across the Interactions and GenerateContent APIs.
 October 27, 2026 Gemini API CLI ( gemini-api ) beta : Released the Gemini API CLI ( gemini-api ), a stateless, zero-dependency command-line client for AI coding agents, scripts, and CI pipelines.
 Use gemini-api on the Interactions API to generate text and media, analyze files, and run Gemini managed agents .
 See the Gemini API CLI guide to get started.
@@ -381,5 +382,5 @@ Tuning models is not yet supported for Gemini models (Work in progress).
 Send feedback Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License , and code samples are licensed under the Apache 2.0 License .
 For details, see the Google Developers Site Policies .
 Java is a registered trademark of Oracle and/or its affiliates.
-Last updated 2026-10-28 UTC.
+Last updated 2026-10-30 UTC.
 Terms Privacy Manage cookies English Deutsch Español – América Latina Français Indonesia Italiano Polski Português – Brasil Shqip Tiếng Việt Türkçe Русский עברית العربيّة فارسی हिंदी বাংলা ภาษาไทย 中文 – 简体 中文 – 繁體 日本語 한국어
