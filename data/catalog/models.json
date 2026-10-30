@@ -11708,6 +11708,15 @@
       },
       "vendor": "deepseek"
     },
+    "scaleway/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "scaleway": [
+          "deepseek-v4.1-flash-1017"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "scaleway/glm-5.3": {
       "curated": false,
       "sources": {
