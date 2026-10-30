@@ -6399,6 +6399,15 @@
       },
       "vendor": "canopylabs"
     },
+    "openrouter/cloudflare/clairic": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cloudflare/clairic"
+        ]
+      },
+      "vendor": "cloudflare"
+    },
     "openrouter/cloudflare/clef": {
       "curated": false,
       "sources": {
