@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-October 2026 28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
+October 2026 30 October The following OpenAI model is now available on DigitalOcean Inference for serverless inference : GPT-6.1 Terra For more information, see the Available Models page .
+28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
 To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
 Kafka 4.3 is now available for database clusters .
