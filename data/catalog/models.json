@@ -324,6 +324,15 @@
       },
       "vendor": "deepseek"
     },
+    "baseten/elephant-1": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "elephant-1"
+        ]
+      },
+      "vendor": null
+    },
     "baseten/glm-4-7": {
       "curated": false,
       "sources": {
@@ -378,6 +387,15 @@
       },
       "vendor": "zai"
     },
+    "baseten/joey-1": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "joey-1"
+        ]
+      },
+      "vendor": null
+    },
     "baseten/kimi-k26": {
       "curated": false,
       "sources": {
@@ -395,6 +413,15 @@
         ]
       },
       "vendor": "moonshot"
+    },
+    "baseten/mammoth-1": {
+      "curated": false,
+      "sources": {
+        "baseten": [
+          "mammoth-1"
+        ]
+      },
+      "vendor": null
     },
     "baseten/muse-spark-open": {
       "curated": false,

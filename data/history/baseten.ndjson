@@ -9,6 +9,7 @@
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash","observed_at":"2026-09-22","rates":{"input":0.3,"output":1.2,"cache_read":0.007},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash-1017","observed_at":"2026-10-17","rates":{"input":0.3,"output":1.2,"cache_read":0.007},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"deepseek-v41-flash-fast","observed_at":"2026-10-11","rates":{"input":0.6,"output":2.4,"cache_read":0.014},"provenance":{"url":"https://www.baseten.co/pricing"}}
+{"schema":4,"source":"baseten","model_id":"elephant-1","observed_at":"2026-10-31","rates":{"input":0.035,"output":0.0},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"glm-4-7","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.2,"cache_read":0.12},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"glm-4-7","observed_at":"2026-09-22","removed":true,"rates":{"input":0.6,"output":2.2,"cache_read":0.12}}
 {"schema":4,"source":"baseten","model_id":"glm-52","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://www.baseten.co/pricing"}}
@@ -21,11 +22,13 @@
 {"schema":4,"source":"baseten","model_id":"inkling","observed_at":"2026-09-22","removed":true,"rates":{"input":1.0,"output":4.05,"cache_read":0.17}}
 {"schema":4,"source":"baseten","model_id":"inkling-small","observed_at":"2026-08-29","rates":{"input":0.5,"output":1.2,"cache_read":0.1},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"inkling-small","observed_at":"2026-09-22","removed":true,"rates":{"input":0.5,"output":1.2,"cache_read":0.1}}
+{"schema":4,"source":"baseten","model_id":"joey-1","observed_at":"2026-10-31","rates":{"input":0.01,"output":0.0},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"kimi-k26","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"kimi-k26","observed_at":"2026-09-22","removed":true,"rates":{"input":0.95,"output":4.0,"cache_read":0.16}}
 {"schema":4,"source":"baseten","model_id":"kimi-k27-code","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"kimi-k27-code","observed_at":"2026-09-22","removed":true,"rates":{"input":0.95,"output":4.0,"cache_read":0.16}}
 {"schema":4,"source":"baseten","model_id":"kimi-k3","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"provenance":{"url":"https://www.baseten.co/pricing"}}
+{"schema":4,"source":"baseten","model_id":"mammoth-1","observed_at":"2026-10-31","rates":{"input":0.1,"output":0.0},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"muse-spark-open","observed_at":"2026-10-16","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"nemotron-35-super-vl","observed_at":"2026-10-15","rates":{"input":0.2,"output":0.5,"cache_read":0.04},"provenance":{"url":"https://www.baseten.co/pricing"}}
 {"schema":4,"source":"baseten","model_id":"nvidia-nemotron-ultra","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.4,"cache_read":0.12},"provenance":{"url":"https://www.baseten.co/pricing"}}
