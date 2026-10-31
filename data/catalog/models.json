@@ -9516,6 +9516,15 @@
       },
       "vendor": "prism-ml"
     },
+    "openrouter/prism-ml/ternary-bonsai-2-9b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "prism-ml/ternary-bonsai-2-9b"
+        ]
+      },
+      "vendor": "prism-ml"
+    },
     "openrouter/qwen/qwen-2.5-7b-instruct": {
       "curated": false,
       "sources": {

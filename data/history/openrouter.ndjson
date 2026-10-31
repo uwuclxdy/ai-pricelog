@@ -770,6 +770,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-23","rates":{"input":0.0675,"output":0.225,"cache_read":0.0375},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-26","rates":{"input":0.0765,"output":0.255,"cache_read":0.0425},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-27","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-27","rates":{"input":0.0765,"output":0.255,"cache_read":0.0425},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B  (free)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-14","rates":{"input":0.2,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
@@ -1183,6 +1184,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.169,"output":20.0,"cache_read":0.159},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.2,"output":11.5,"cache_read":0.19},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.15,"output":11.5,"cache_read":0.14},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.169,"output":11.5,"cache_read":0.159},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-10-23","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
@@ -1196,6 +1198,7 @@
 {"schema":4,"source":"openrouter","model_id":"morph/morph-v3-large","observed_at":"2026-08-26","rates":{"input":0.9,"output":1.9},"limits":{"context":262144},"provenance":{"name":"Morph V3 Large"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.06,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-27","modality":"decisions","rates":{"input":0.12,"output":0.0,"cache_read":0.12},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
+{"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-27","modality":"decisions","rates":{"input":0.06,"output":0.0,"cache_read":0.06},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-v1.5","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.04,"output":0.0},"limits":{"context":131072},"provenance":{"name":"Drex v1.5"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-v2.0","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.06,"output":0.0},"limits":{"context":131072},"provenance":{"name":"Drex v2.0"}}
 {"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2-mini","observed_at":"2026-08-26","rates":{"input":0.025,"output":0.1,"cache_read":0.0025},"limits":{"context":262144},"provenance":{"name":"Nex-N2-Mini"}}
@@ -1648,6 +1651,7 @@
 {"schema":4,"source":"openrouter","model_id":"poolside/laguna-xs-2.1:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Laguna XS 2.1 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"prism-ml/ternary-bonsai-2-27b","observed_at":"2026-09-18","rates":{"input":0.075,"output":0.5},"limits":{"context":262144},"provenance":{"name":"Ternary Bonsai 2 27B"}}
 {"schema":4,"source":"openrouter","model_id":"prism-ml/ternary-bonsai-2-27b","observed_at":"2026-09-28","rates":{"input":0.075,"output":0.5,"cache_read":0.0375},"limits":{"context":262144},"provenance":{"name":"Ternary Bonsai 2 27B"}}
+{"schema":4,"source":"openrouter","model_id":"prism-ml/ternary-bonsai-2-9b","observed_at":"2026-10-27","rates":{"input":0.08,"output":0.13,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Ternary Bonsai 2 9B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen-2.5-72b-instruct","observed_at":"2025-09-22","rates":{"input":0.07,"output":0.26},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen-2.5-72b-instruct","observed_at":"2025-12-28","rates":{"input":0.12,"output":0.39},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen-2.5-72b-instruct","observed_at":"2026-04-26","rates":{"input":0.36,"output":0.4},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=qwen/qwen-2.5-72b-instruct&shape=v4&range=all"}}
