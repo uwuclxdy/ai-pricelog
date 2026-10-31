@@ -160,18 +160,40 @@ def _strip_code_fences(text: str) -> str:
     return "\n".join(kept)
 
 
-def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
+@functools.lru_cache(maxsize=4)
+def _page_text(url: str) -> str:
+    """fetch a page once per process: the rendered page is ~300 KB and the
+    pipeline scrapes one model id at a time, so the fallback would otherwise
+    refetch it per model."""
+    return fetch_text(url)
+
+
+def pricing_tables(cfg: ProviderCfg) -> tuple[list[tuple[list[str], list[list[str]]]], str]:
+    """the model-inference page's pricing tables and the url they came from.
+
+    the markdown export's tables when it carries a priced one, else the
+    rendered page's flight payload; a page whose tables are all incidental
+    raises the no-Model-pricing-table break, and a page carrying no table on
+    either surface raises naming both urls."""
     page_url = _load_index(cfg.scraper_url)
-    docs = _doc_tables(_strip_code_fences(fetch_text(page_url)))
-    if not docs:
-        rendered_url = page_url.removesuffix(".md")
-        stream = _flight_stream(fetch_text(rendered_url), rendered_url)
-        docs = _flight_docs(stream, rendered_url)
-        if not docs:
-            raise FetchError(f"no pricing table (DocTable or html) on {page_url} or {rendered_url}")
-        page_url = rendered_url
-    if not any(_pricing_columns(titles) is not None for titles, _ in docs):
-        raise FetchError(f"no Model pricing table on {page_url}")
+    docs = _doc_tables(_strip_code_fences(_page_text(page_url)))
+    if any(_pricing_columns(titles) is not None for titles, _ in docs):
+        return docs, page_url
+    rendered_url = page_url.removesuffix(".md")
+    payload_docs = _flight_docs(
+        _flight_stream(_page_text(rendered_url), rendered_url), rendered_url
+    )
+    if payload_docs:
+        return payload_docs, rendered_url
+    if docs:
+        raise FetchError(f"no Model pricing table on {page_url} or {rendered_url}")
+    raise FetchError(
+        f"no pricing table (DocTable, html or flight payload) on {page_url} or {rendered_url}"
+    )
+
+
+def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
+    docs, page_url = pricing_tables(cfg)
     for doc in docs:
         pricing = _pricing(doc, model_id, page_url)
         if pricing is not None:
@@ -274,23 +296,49 @@ def _flight_stream(page: str, page_url: str) -> str:
     return "".join(chunks)
 
 
+def _doc_table_calls(stream: str) -> list[int]:
+    """every `_jsx(DocTable,{` call head's position, skipping string literals
+    so a documentation sample inside one contributes no table. a quote opens
+    a string at any depth and closes on the next same quote, an escaped
+    character staying inside it."""
+    positions: list[int] = []
+    index = 0
+    while index < len(stream):
+        char = stream[index]
+        if char in ('"', "'", "`"):
+            index += 1
+            while index < len(stream):
+                if stream[index] == "\\":
+                    index += 2
+                    continue
+                if stream[index] == char:
+                    index += 1
+                    break
+                index += 1
+            continue
+        if stream.startswith("_jsx(DocTable,{", index):
+            positions.append(index)
+        index += 1
+    return positions
+
+
 def _flight_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[str]]]]:
-    """every DocTable call in the flight payload as (column titles, rows)
-    pairs; [] when the payload carries no call.
+    """every priced DocTable call in the flight payload as (column titles,
+    rows) pairs; [] when the payload carries no priced one.
 
     the scan keys on the `_jsx(DocTable,{` call head, never the bare name:
     the component's module source in the same stream spells the name with
     empty columns/rows defaults, and reading it as a table would turn a dark
-    page into every model absent. a call carrying neither columns nor rows
-    is a prop-less shell and contributes no table; a call whose props do not
-    parse raises."""
+    page into every model absent; the head is matched outside string
+    literals, so a docs sample inside one is page text, not a table. a call
+    carrying neither columns nor rows is a prop-less shell and contributes no
+    table; a table naming no rate is skipped before its cells are read, so an
+    incidental one cannot blind the priced calls; a priced table whose rows
+    carry no printable text is the shell the platform serves and contributes
+    nothing, never every model absent. a call whose props do not parse
+    raises."""
     docs: list[tuple[list[str], list[list[str]]]] = []
-    start = 0
-    while True:
-        position = stream.find("_jsx(DocTable,{", start)
-        if position == -1:
-            return docs
-        start = position + 1
+    for position in _doc_table_calls(stream):
         fragment = stream[position : position + 80]
         try:
             props, _ = _jsx_object(stream, position + len("_jsx(DocTable,"))
@@ -300,11 +348,18 @@ def _flight_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[
                 continue
             if not isinstance(columns, list) or not isinstance(rows, list):
                 raise ValueError("missing columns or rows props")
-            docs.append((_flight_titles(columns), _flight_rows(rows)))
+            titles = _flight_titles(columns)
+            if _pricing_columns(titles) is None:
+                continue
+            data = _flight_rows(rows)
+            if not any(_carries_data(row) for row in data):
+                continue
+            docs.append((titles, data))
         except (RecursionError, ValueError) as exc:
             raise FetchError(
                 f"DocTable call on {page_url} does not parse: {fragment!r}: {exc}"
             ) from exc
+    return docs
 
 
 def _flight_titles(columns: list[object]) -> list[str]:

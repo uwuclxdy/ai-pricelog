@@ -1,9 +1,9 @@
 """live smoke probe for the moonshot .md endpoints.
 
-kimi's pricing HTML is JS-rendered; the pipeline runs entirely on the static
-.md twins (models.md for detection, llms.txt resolving the merged pricing
-chat page and its pricing tables — `<DocTable>` blocks or plain html ones —
-for scraping). the fixture tests pin saved
+kimi's pricing page is read from two surfaces: the static .md twin when its
+tables carry rates (models.md for detection, llms.txt resolving the merged
+pricing chat page), and the rendered page's flight payload otherwise. the
+fixture tests pin saved
 copies and cannot catch the upstream pages changing shape or disappearing,
 so the cron workflow runs this probe against the live endpoints. exit 0 =
 every endpoint still serves what the pipeline expects.
@@ -51,12 +51,10 @@ def check_pricing(pricing: Pricing | None, model_id: str) -> Pricing:
     return pricing
 
 
-def check_pricing_pages(index_url: str) -> str:
-    """the resolved chat page fetches and carries a model pricing table; its url."""
-    page_url = scraper._load_index(index_url)
-    docs = scraper._doc_tables(scraper.fetch_text(page_url))
-    if not any(scraper._column_index(titles, "Model") is not None for titles, _ in docs):
-        raise ValueError(f"no model pricing table on pricing page {page_url}")
+def check_pricing_pages(cfg: ProviderCfg) -> str:
+    """the resolved chat page fetches and carries a model pricing table on one
+    of its surfaces (the markdown export or the rendered page); its url."""
+    _docs, page_url = scraper.pricing_tables(cfg)
     return page_url
 
 
@@ -66,7 +64,7 @@ def main() -> int:
         ids = detector.detect(cfg)
         model_id = pick_model(ids)
         pricing = check_pricing(scraper.scrape(cfg, model_id), model_id)
-        page_url = check_pricing_pages(cfg.scraper_url)
+        page_url = check_pricing_pages(cfg)
     except (ConfigError, FetchError, ValueError) as exc:
         print(f"moonshot smoke failed: {exc}", file=sys.stderr)
         return 1

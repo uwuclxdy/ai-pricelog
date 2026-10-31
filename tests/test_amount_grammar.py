@@ -271,6 +271,7 @@ def scrape_moonshot_k3(monkeypatch: pytest.MonkeyPatch, cache_read: str):
     )
     monkeypatch.setattr(moonshot_page, "fetch_text", lambda url: pages[url])
     moonshot_page._load_index.cache_clear()
+    moonshot_page._page_text.cache_clear()
     cfg = ProviderCfg(
         key="moonshot",
         provider="Moonshot AI",
@@ -283,6 +284,7 @@ def scrape_moonshot_k3(monkeypatch: pytest.MonkeyPatch, cache_read: str):
         return moonshot_page.scrape(cfg, "kimi-k3")
     finally:
         moonshot_page._load_index.cache_clear()
+        moonshot_page._page_text.cache_clear()
 
 
 def test_moonshot_scrape_rejects_a_comma_decimal_amount(monkeypatch):

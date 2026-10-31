@@ -56,8 +56,10 @@ def fixture_fetch(*pages: str) -> Callable[[str], str]:
 @pytest.fixture(autouse=True)
 def clear_index_cache():
     scraper._load_index.cache_clear()
+    scraper._page_text.cache_clear()
     yield
     scraper._load_index.cache_clear()
+    scraper._page_text.cache_clear()
 
 
 def test_detect_models(monkeypatch):
@@ -201,6 +203,8 @@ def test_scrape_page_without_model_table_raises(monkeypatch):
             return (FIXTURES / "llms.txt").read_text()
         if url == CHAT_URL:
             return page_text
+        if url == FLIGHT_URL:
+            return _flight_page()
         raise AssertionError(f"unexpected fetch of {url}")
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
@@ -339,6 +343,7 @@ _PLACEHOLDER_SHELL = """
 def _chat_page(monkeypatch: pytest.MonkeyPatch, page_text: str, flight: str | None = None) -> None:
     """serve the markdown export, and the rendered page's payload chunks when
     the reader falls back to them; `flight` None serves a page with no table."""
+    scraper._page_text.cache_clear()
     flight_text = _flight_page(*([flight] if flight is not None else []))
 
     def fake(url: str) -> str:
@@ -461,6 +466,113 @@ def test_the_markdown_export_wins_when_it_carries_the_table(monkeypatch):
     assert pricing.url == CHAT_URL
 
 
+def test_an_incidental_export_table_still_falls_back_to_the_payload(monkeypatch):
+    # the fallback answers "does the export price anything", not "does it
+    # carry a table": a Unit table beside the empty shells must not hold the
+    # reader on the export while the payload carries the rates
+    unit = '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
+    _chat_page(monkeypatch, unit, _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_a_payload_pricing_table_with_no_row_still_raises(monkeypatch):
+    # pricing columns with no data row is the same shell the html side
+    # refuses; reading it as "model absent" would read a dark page as a
+    # delisting half
+    empty_call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],rows:[]})"
+    )
+    _chat_page(monkeypatch, _EMPTY_SHELL, empty_call)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert str(exc.value).endswith(FLIGHT_URL)
+
+
+def test_a_non_pricing_flight_table_with_numeric_cells_is_skipped(monkeypatch):
+    # an incidental table is skipped before its cells are read, so a number
+    # or a null in a table that names no rate blinds nothing
+    incidental = "_jsx(DocTable,{columns:[{title:`Region`}],rows:[[1], [null]]})"
+    _chat_page(monkeypatch, _EMPTY_SHELL, incidental + _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_a_docs_example_inside_a_payload_string_prices_nothing(monkeypatch):
+    # a documentation sample carries the call head as page text; scanning into
+    # a string literal would price a fabricated $0.01 row over the real table
+    sample = (
+        '_jsx(_components.pre,{children:`_jsx(DocTable,{columns:[{title:"Model"},'
+        '{title:"Input"},{title:"Output"}],rows:[["kimi-k3","$0.01 / MTok",'
+        '"$0.02 / MTok"]]}) is the docs example`})'
+    )
+    _chat_page(monkeypatch, _EMPTY_SHELL, sample + _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(15.00 / 1e6)
+
+
+def test_a_payload_literal_that_does_not_decode_raises(monkeypatch):
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return _EMPTY_SHELL
+        if url == FLIGHT_URL:
+            return '<script>self.__next_f.push([1,"bad \\q escape"])</script>'
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    with pytest.raises(FetchError, match="does not decode"):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_a_template_interpolation_in_a_cell_raises(monkeypatch):
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3.00 / MTok`,`${fee}`]]})"
+    )
+    _chat_page(monkeypatch, _EMPTY_SHELL, call)
+    with pytest.raises(FetchError, match="interpolation"):
+        scraper.scrape(cfg(), "kimi-k3")
+
+
+def test_the_flight_grammar_reads_the_live_prop_shapes(monkeypatch):
+    # the live call carries numeric props (groups spans) and booleans beside
+    # the columns/rows; the grammar must read past them, not raise
+    call = (
+        "_jsx(DocTable,{className:`doc-table-bordered`,groups:[{title:`Base tokens`,span:2}],"
+        "corner:null,columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _chat_page(monkeypatch, _EMPTY_SHELL, call)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_the_rendered_page_is_fetched_once_across_scrapes(monkeypatch):
+    calls: list[str] = []
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return _EMPTY_SHELL
+        if url == FLIGHT_URL:
+            calls.append(url)
+            return _flight_page(_K3_FLIGHT_CALL + _K2_FLIGHT_CALL)
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    assert scraper.scrape(cfg(), "kimi-k3") is not None
+    assert scraper.scrape(cfg(), "kimi-k2.7-code") is not None
+    assert calls == [FLIGHT_URL]
+
+
 def test_scrape_reads_the_html_table_shape(monkeypatch):
     # the docs platform writes plain HTML tables instead of <DocTable> props
     # since 2026-10; when the rows come back, they must price through the
@@ -487,6 +599,7 @@ def test_a_shell_with_no_readable_row_still_raises(monkeypatch, page_text):
     _chat_page(monkeypatch, page_text)
     with pytest.raises(FetchError) as exc:
         scraper.scrape(cfg(), "kimi-k3")
+    assert CHAT_URL in str(exc.value)
     assert str(exc.value).endswith(FLIGHT_URL)
 
 

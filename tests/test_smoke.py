@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from ai_pricelog import smoke
+from ai_pricelog.config import ProviderCfg
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.scrapers import moonshot_page as scraper
 from ai_pricelog.web import FetchError
@@ -12,6 +13,28 @@ from ai_pricelog.web import FetchError
 FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 INDEX_URL = "https://platform.kimi.ai/docs/llms.txt"
 CHAT_URL = "https://platform.kimi.ai/docs/pricing/chat.md"
+FLIGHT_URL = "https://platform.kimi.ai/docs/pricing/chat"
+
+
+def cfg() -> ProviderCfg:
+    return ProviderCfg(
+        key="moonshot",
+        provider="Moonshot AI",
+        detector="moonshot_page",
+        detector_url=INDEX_URL,
+        scraper="moonshot_page",
+        scraper_url=INDEX_URL,
+    )
+
+
+def _flight_page(*payloads: str) -> str:
+    import json
+
+    pushes = "".join(
+        f"<script>self.__next_f.push([1,{json.dumps(payload)}])</script>" for payload in payloads
+    )
+    return f"<!DOCTYPE html><html><body>{pushes}</body></html>"
+
 
 PAGES = {
     "llms": (INDEX_URL, "llms.txt"),
@@ -33,8 +56,10 @@ def fixture_fetch(*pages: str):
 @pytest.fixture(autouse=True)
 def clear_index_cache():
     scraper._load_index.cache_clear()
+    scraper._page_text.cache_clear()
     yield
     scraper._load_index.cache_clear()
+    scraper._page_text.cache_clear()
 
 
 def pricing() -> Pricing:
@@ -76,36 +101,41 @@ def test_check_pricing_rejects_non_positive():
 
 def test_check_pricing_pages_fetches_resolved_page(monkeypatch):
     monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
-    assert smoke.check_pricing_pages(INDEX_URL) == CHAT_URL
+    assert smoke.check_pricing_pages(cfg()) == CHAT_URL
 
 
 def test_check_pricing_pages_requires_a_table(monkeypatch):
-    base = fixture_fetch("llms")
-
     def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
         if url == CHAT_URL:
             return "# no pricing table\n"
-        return base(url)
+        if url == FLIGHT_URL:
+            return _flight_page()
+        raise FetchError(f"fetch failed for {url}")
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
-    with pytest.raises(ValueError, match="chat.md"):
-        smoke.check_pricing_pages(INDEX_URL)
+    with pytest.raises(FetchError, match="pricing/chat"):
+        smoke.check_pricing_pages(cfg())
 
 
 def test_check_pricing_pages_requires_a_model_table(monkeypatch):
     # a page carrying only a non-pricing table (no Model column) holds no rate:
     # the smoke's shape check must red on it, not pass it
-    base = fixture_fetch("llms")
     page = '<DocTable columns={[{ title: "Unit" }]}\n  rows={[["1M tokens"]]}\n/>\n'
 
     def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
         if url == CHAT_URL:
             return page
-        return base(url)
+        if url == FLIGHT_URL:
+            return _flight_page()
+        raise FetchError(f"fetch failed for {url}")
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
-    with pytest.raises(ValueError, match="chat.md"):
-        smoke.check_pricing_pages(INDEX_URL)
+    with pytest.raises(FetchError, match="Model pricing table"):
+        smoke.check_pricing_pages(cfg())
 
 
 def test_check_pricing_pages_propagates_fetch_failure(monkeypatch):
@@ -118,4 +148,4 @@ def test_check_pricing_pages_propagates_fetch_failure(monkeypatch):
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
     with pytest.raises(FetchError, match="pricing/chat"):
-        smoke.check_pricing_pages(INDEX_URL)
+        smoke.check_pricing_pages(cfg())
