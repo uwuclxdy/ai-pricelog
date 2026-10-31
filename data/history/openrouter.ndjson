@@ -771,6 +771,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-26","rates":{"input":0.0765,"output":0.255,"cache_read":0.0425},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-27","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-27","rates":{"input":0.0765,"output":0.255,"cache_read":0.0425},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-10-31","rates":{"input":0.0675,"output":0.225,"cache_read":0.0375},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B  (free)"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.34,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-31b-it","observed_at":"2026-10-14","rates":{"input":0.2,"output":0.4},"limits":{"context":262144},"provenance":{"name":"Gemma 4 31B"}}
@@ -1185,6 +1186,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.2,"output":11.5,"cache_read":0.19},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.15,"output":11.5,"cache_read":0.14},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-27","rates":{"input":0.169,"output":11.5,"cache_read":0.159},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-10-31","rates":{"input":0.192,"output":15.0,"cache_read":0.182},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-10-23","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
@@ -1254,6 +1256,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-22","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-28","rates":{"input":0.08,"output":0.45},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-28","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-31","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-10-27","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"limits":{"context":512288},"provenance":{"name":"Nemotron 3 Ultra"}}
@@ -2289,6 +2292,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-10-28","rates":{"input":0.0298,"output":7.0,"cache_read":0.0288},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-10-28","rates":{"input":0.0341,"output":7.0,"cache_read":0.0331},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-10-28","rates":{"input":0.0209,"output":7.0,"cache_read":0.0199},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2","observed_at":"2026-10-31","rates":{"input":0.006,"output":7.0,"cache_read":0.005},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-08-26","rates":{"input":1.4,"output":4.4,"cache_read":0.26},"limits":{"context":1048575},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-09-08","rates":{"input":0.7,"output":2.2,"cache_read":0.07},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
@@ -2338,6 +2342,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3","observed_at":"2026-10-30","rates":{"input":0.08,"output":3.6,"cache_read":0.076},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3","observed_at":"2026-10-30","rates":{"input":0.104,"output":2.769,"cache_read":0.099},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3","observed_at":"2026-10-31","rates":{"input":0.08,"output":3.184,"cache_read":0.076},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3","observed_at":"2026-10-31","rates":{"input":0.0699,"output":1.4,"cache_read":0.0689},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-08-29","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1310720},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-09-10","rates":{"input":0.07,"output":0.2333,"cache_read":0.014},"limits":{"context":1310720},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-09-10","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1310720},"provenance":{"name":"GLM 5.3 Flash"}}
@@ -2366,6 +2371,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-10-28","rates":{"input":0.0454,"output":0.0737,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-10-28","rates":{"input":0.0451,"output":0.0737,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-10-28","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-10-31","rates":{"input":0.0237,"output":0.1142,"cache_read":0.0237},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048575},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-08","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-22","rates":{"input":0.06,"output":0.2,"cache_read":0.012},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
