@@ -13,7 +13,10 @@ Input and Output cells all render "-" is unpriced: scrape returns None for
 it, but only beside priced rows — when no model row on the page carries an
 amount or an unreadable amount-shaped token the page is a shape break
 (FetchError "no priced model rows"), so an all-dash page stays loud instead
-of reading every row as unpriced. rows
+of reading every row as unpriced. an Output cell rendering "-" beside a
+priced Input prices output 0.0: an input-only model's free output is a
+real zero, and openrouter lists those ids at completion 0. a row whose
+Input cell renders "-" beside priced cells is a shape break. rows
 key by the /library/ slug. rows the match scan passes over with a
 malformed name cell (odd desktop renders, odd links, out-of-charset slugs)
 are additive drift detection already reported.
@@ -77,9 +80,11 @@ def _pricing(cells: list[Tag], model_id: str, url: str) -> Pricing | None:
     columns = [_desktop(cells[i], url) for i in (1, 2, 3)]
     if all(_unpriced(cell) for cell in columns):
         return None
+    input_cost = _dollars(columns[0], "input", model_id, url)
+    output_cost = 0.0 if _unpriced(columns[2]) else _dollars(columns[2], "output", model_id, url)
     return Pricing(
-        input_cost_per_token=_dollars(columns[0], "input", model_id, url),
-        output_cost_per_token=_dollars(columns[2], "output", model_id, url),
+        input_cost_per_token=input_cost,
+        output_cost_per_token=output_cost,
         mode="chat",
         cache_read_cost_per_token=_cache_read(columns[1], model_id, url),
     )

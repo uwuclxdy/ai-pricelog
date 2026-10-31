@@ -306,6 +306,31 @@ def test_scrape_all_dash_row_is_unpriced(monkeypatch):
     assert pricing.output_cost_per_token == pytest.approx(0.50 / 1e6)
 
 
+def test_scrape_input_only_row_prices_output_zero(monkeypatch):
+    # live page 2026-10-31: elephant-1 prices Input only, Cache Input and
+    # Output render "-"; openrouter lists the same ids at completion 0, so a
+    # rate-less output beside a priced input is a real zero, never a shape
+    # break. the single-row page also pins that a plain amount in the Input
+    # column alone satisfies the page-level priced guard.
+    monkeypatch.setattr(
+        scraper,
+        "fetch_soup",
+        lambda url: _page(
+            _row(
+                "elephant-1",
+                "<span>$0.035</span>",
+                "<span>-</span>",
+                f"<span>-</span>{_BUTTON}",
+            ),
+        ),
+    )
+    pricing = scraper.scrape(cfg(), "elephant-1")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.035 / 1e6)
+    assert pricing.cache_read_cost_per_token is None
+    assert pricing.output_cost_per_token == 0.0
+
+
 def test_scrape_all_dash_page_raises(monkeypatch):
     # a page that prices nothing at all is the structural break plan #22
     # keeps loud; only a dash row beside priced ones reads as unpriced
@@ -346,8 +371,8 @@ def test_scrape_reads_the_rate_not_the_button_label(monkeypatch):
 
 
 def test_scrape_partially_unpriced_row_raises(monkeypatch):
-    # only the all-dash form is unpriced; a row with one "-" column stays a
-    # page-shape break
+    # a row whose Input cell renders "-" stays a page-shape break; a
+    # rate-less Output beside a priced Input prices 0.0
     monkeypatch.setattr(
         scraper,
         "fetch_soup",
@@ -368,7 +393,6 @@ def test_scrape_partially_unpriced_row_raises(monkeypatch):
 @pytest.mark.parametrize(
     "cells",
     [
-        ("<span>$0.15</span>", "<span>-</span>", "<span>-</span>"),
         ("<span>-</span>", "<span>$0.03</span>", "<span>-</span>"),
         ("<span>-</span>", "<span>-</span>", "<span>$0.50</span>"),
     ],
@@ -376,7 +400,9 @@ def test_scrape_partially_unpriced_row_raises(monkeypatch):
 def test_scrape_guard_reads_an_amount_in_every_price_column(monkeypatch, cells):
     # the page-level guard must see an amount in any of the three price
     # columns; the matched row then raises its own column error, never the
-    # page-level "no priced model rows"
+    # page-level "no priced model rows". a priced Input beside dash Output
+    # is the input-only shape and prices output 0.0, so it is not a case
+    # here
     monkeypatch.setattr(
         scraper,
         "fetch_soup",
