@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from ai_pricelog.web import FetchError
 MODELS_URL = "https://platform.kimi.ai/docs/models.md"
 INDEX_URL = "https://platform.kimi.ai/docs/llms.txt"
 CHAT_URL = "https://platform.kimi.ai/docs/pricing/chat.md"
+FLIGHT_URL = "https://platform.kimi.ai/docs/pricing/chat"
 FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 
 PAGES = {
@@ -180,6 +182,8 @@ def test_scrape_page_without_doctable_raises(monkeypatch):
             return (FIXTURES / "llms.txt").read_text()
         if url == CHAT_URL:
             return "# no pricing table here\n"
+        if url == FLIGHT_URL:
+            return _flight_page()
         raise AssertionError(f"unexpected fetch of {url}")
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
@@ -332,15 +336,129 @@ _PLACEHOLDER_SHELL = """
 """
 
 
-def _chat_page(monkeypatch: pytest.MonkeyPatch, page_text: str) -> None:
+def _chat_page(monkeypatch: pytest.MonkeyPatch, page_text: str, flight: str | None = None) -> None:
+    """serve the markdown export, and the rendered page's payload chunks when
+    the reader falls back to them; `flight` None serves a page with no table."""
+    flight_text = _flight_page(*([flight] if flight is not None else []))
+
     def fake(url: str) -> str:
         if url == INDEX_URL:
             return (FIXTURES / "llms.txt").read_text()
         if url == CHAT_URL:
             return page_text
+        if url == FLIGHT_URL:
+            return flight_text
         raise AssertionError(f"unexpected fetch of {url}")
 
     monkeypatch.setattr(scraper, "fetch_text", fake)
+
+
+def _flight_page(*payloads: str) -> str:
+    """the rendered docs page's flight-push shape: one script tag per payload
+    chunk, the payload a JSON string like the server's own."""
+    pushes = "".join(
+        f"<script>self.__next_f.push([1,{json.dumps(payload)}])</script>" for payload in payloads
+    )
+    return f"<!DOCTYPE html><html><body>{pushes}</body></html>"
+
+
+# the rendered table's own column titles, observed on the live page 2026-10-31
+_K3_FLIGHT_CALL = (
+    "_jsx(_MdxComponentBoundary,{name:`DocTable`,children:_jsx(DocTable,{"
+    "className:`doc-table-bordered`,corner:{top:`Model`,bottom:`Name`},"
+    "columns:[{title:`Model`,width:`25%`},{title:`Input`,width:`15%`},"
+    "{title:`Output`,width:`15%`},"
+    "{title:_jsx(Tooltip,{tip:`Cached input is billed at this rate.`,"
+    "children:`Cached Input`}),width:`15%`},"
+    "{title:_jsx(Tooltip,{tip:`Writing a prompt prefix with a 5-minute TTL.`,"
+    "children:`5m writes`}),width:`15%`},"
+    "{title:_jsx(Tooltip,{tip:`Writing a prompt prefix with a 1-hour TTL.`,"
+    "children:`1h writes`}),width:`15%`}],"
+    "rows:[[_jsx(_components.a,{href:`/guide/kimi-k3-1-pro-quickstart`,"
+    "children:`kimi-k3`}),`$3.00 / MTok`,`$15.00 / MTok`,`$0.30 / MTok`,"
+    "`$3.00 / MTok`,`$6.00 / MTok`]]})})"
+)
+
+_K2_FLIGHT_CALL = (
+    "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`},"
+    "{title:_jsx(Tooltip,{tip:`Cached input is billed at this rate.`,"
+    "children:`Cached Input`})}],"
+    "rows:[[_jsx(_components.a,{href:`/guide/kimi-k2-7-code-quickstart`,"
+    "children:`kimi-k2.7-code`}),`$0.95 / MTok`,`$4.00 / MTok`,`$0.19 / MTok`]]})"
+)
+
+# the page renders one props-carrying call beside a prop-less one, and the
+# DocTable module definition sits in the same stream
+_SHELL_FLIGHT_CALL = (
+    "_jsx(DocTable,{className:`doc-table-bordered`,corner:{top:`Model`,bottom:`Name`}})"
+)
+_DOC_TABLE_SOURCE = (
+    "const DocTable=({columns=[],rows=[],groups=[],corner=null,className=``})=>{return null};"
+)
+
+
+def test_scrape_reads_the_flight_payload_when_the_markdown_export_is_empty(monkeypatch):
+    # since 2026-10-23 the .md export carries empty table shells while the
+    # rendered page still holds both series tables, as DocTable calls in its
+    # flight payload inside an MdxComponentBoundary wrapper
+    _chat_page(monkeypatch, _EMPTY_SHELL, _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(15.00 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.30 / 1e6)
+    assert pricing.cache_write_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.cache_write_1h_cost_per_token == pytest.approx(6.00 / 1e6)
+    assert pricing.url == FLIGHT_URL
+
+
+def test_the_flight_payload_prices_the_k2_series_table(monkeypatch):
+    _chat_page(monkeypatch, _EMPTY_SHELL, _K3_FLIGHT_CALL + _K2_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k2.7-code")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(0.95 / 1e6)
+    assert pricing.output_cost_per_token == pytest.approx(4.00 / 1e6)
+    assert pricing.cache_read_cost_per_token == pytest.approx(0.19 / 1e6)
+
+
+def test_a_props_less_doctable_call_contributes_no_table(monkeypatch):
+    # the rendered page carries a prop-less DocTable beside the real one; it
+    # names no rate and must neither raise nor hide the table after it
+    _chat_page(monkeypatch, _EMPTY_SHELL, _SHELL_FLIGHT_CALL + _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_the_component_source_reads_as_no_table(monkeypatch):
+    # the module definition uses the same name and carries columns/rows
+    # defaults; reading it as a table would price nothing and mask a dark page
+    _chat_page(monkeypatch, _EMPTY_SHELL, _DOC_TABLE_SOURCE)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert str(exc.value).endswith(FLIGHT_URL)
+
+
+def test_a_flight_payload_with_no_table_raises(monkeypatch):
+    _chat_page(monkeypatch, _EMPTY_SHELL)
+    with pytest.raises(FetchError) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert str(exc.value).endswith(FLIGHT_URL)
+
+
+def test_the_markdown_export_wins_when_it_carries_the_table(monkeypatch):
+    # a restored export costs no second fetch of the rendered page
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return (FIXTURES / "chat.md").read_text()
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.url == CHAT_URL
 
 
 def test_scrape_reads_the_html_table_shape(monkeypatch):
@@ -364,11 +482,12 @@ def test_a_shell_with_no_readable_row_still_raises(monkeypatch, page_text):
     # the page as observed 2026-10-23 ships a self-closed header row and an
     # empty body; a table whose only data row is zero-width placeholders is
     # the same shell. both must stay a loud shape break, never a silent
-    # "model absent" (which would read as a delisting half)
+    # "model absent" (which would read as a delisting half), and the
+    # rendered page carrying no table either leaves it loud
     _chat_page(monkeypatch, page_text)
     with pytest.raises(FetchError) as exc:
         scraper.scrape(cfg(), "kimi-k3")
-    assert CHAT_URL in str(exc.value)
+    assert str(exc.value).endswith(FLIGHT_URL)
 
 
 def test_a_huge_context_cell_raises_a_fetch_error():

@@ -112,10 +112,6 @@
       "kind": "reseller",
       "name": "SambaNova"
     },
-    "scaleway": {
-      "kind": "reseller",
-      "name": "Scaleway"
-    },
     "together": {
       "kind": "reseller",
       "name": "Together AI"

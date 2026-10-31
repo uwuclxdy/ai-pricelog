@@ -1997,9 +1997,6 @@
         "openrouter": [
           "deepseek/deepseek-v4-flash-0731"
         ],
-        "scaleway": [
-          "deepseek-v4-flash-0731"
-        ],
         "together": [
           "deepseek-v4-flash-0731"
         ]
@@ -3098,9 +3095,6 @@
         ],
         "openrouter": [
           "google/gemma-4-26b-a4b-it"
-        ],
-        "scaleway": [
-          "gemma-4-26b-a4b-it"
         ]
       },
       "vendor": "google"
@@ -3332,9 +3326,6 @@
         ],
         "openrouter": [
           "z-ai/glm-5.2"
-        ],
-        "scaleway": [
-          "glm-5.2"
         ],
         "together": [
           "glm-5.2"
@@ -4058,9 +4049,6 @@
         "sambanova": [
           "gpt-oss-120b"
         ],
-        "scaleway": [
-          "gpt-oss-120b"
-        ],
         "together": [
           "gpt-oss-120b"
         ],
@@ -4455,9 +4443,6 @@
         "openrouter": [
           "meta-llama/llama-3.3-70b-instruct"
         ],
-        "scaleway": [
-          "llama-3.3-70b-instruct"
-        ],
         "together": [
           "llama-3.3-70b"
         ]
@@ -4810,9 +4795,6 @@
       "curated": true,
       "sources": {
         "deepinfra": [
-          "mistral-small-3.2-24b-instruct-2506"
-        ],
-        "scaleway": [
           "mistral-small-3.2-24b-instruct-2506"
         ]
       },
@@ -10956,9 +10938,6 @@
       "sources": {
         "mistral": [
           "pixtral-12b-2409"
-        ],
-        "scaleway": [
-          "pixtral-12b-2409"
         ]
       },
       "vendor": "mistral"
@@ -11140,9 +11119,6 @@
         ],
         "novita": [
           "qwen/qwen3-235b-a22b-instruct-2507"
-        ],
-        "scaleway": [
-          "qwen3-235b-a22b-instruct-2507"
         ]
       },
       "vendor": "alibaba"
@@ -11230,9 +11206,6 @@
         ],
         "openrouter": [
           "qwen/qwen3-coder-30b-a3b-instruct"
-        ],
-        "scaleway": [
-          "qwen3-coder-30b-a3b-instruct"
         ]
       },
       "vendor": "alibaba"
@@ -11476,9 +11449,6 @@
         "openrouter": [
           "qwen/qwen3.5-397b-a17b"
         ],
-        "scaleway": [
-          "qwen3.5-397b-a17b"
-        ],
         "together": [
           "qwen3.5-397b-a17b"
         ]
@@ -11532,9 +11502,6 @@
         ],
         "openrouter": [
           "qwen/qwen3.6-35b-a3b"
-        ],
-        "scaleway": [
-          "qwen3.6-35b-a3b"
         ]
       },
       "vendor": "alibaba"
@@ -11725,78 +11692,6 @@
         ]
       },
       "vendor": "minimax"
-    },
-    "scaleway/bge-multilingual-gemma2": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "bge-multilingual-gemma2"
-        ]
-      },
-      "vendor": null
-    },
-    "scaleway/deepseek-v4.1-flash": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "deepseek-v4.1-flash"
-        ]
-      },
-      "vendor": "deepseek"
-    },
-    "scaleway/deepseek-v4.1-flash-1017": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "deepseek-v4.1-flash-1017"
-        ]
-      },
-      "vendor": "deepseek"
-    },
-    "scaleway/glm-5.3": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "glm-5.3"
-        ]
-      },
-      "vendor": "zai"
-    },
-    "scaleway/lightonocr-3-0.8b": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "lightonocr-3-0.8b"
-        ]
-      },
-      "vendor": null
-    },
-    "scaleway/mistral-medium-3.5-128b": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "mistral-medium-3.5-128b"
-        ]
-      },
-      "vendor": "mistral"
-    },
-    "scaleway/qwen3-embedding-8b": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "qwen3-embedding-8b"
-        ]
-      },
-      "vendor": null
-    },
-    "scaleway/qwen3.8-27b": {
-      "curated": false,
-      "sources": {
-        "scaleway": [
-          "qwen3.8-27b"
-        ]
-      },
-      "vendor": null
     },
     "sonar": {
       "curated": true,

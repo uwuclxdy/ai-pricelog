@@ -30,7 +30,14 @@ def test_coverage_invariant_over_the_real_tree():
         for source, ids in entry["sources"].items():
             for model_id in ids:
                 claims.setdefault((source, model_id), []).append(canonical)
-    assert set(claims) == keys
+    # a provider dropped from providers.toml keeps its history shard while its
+    # catalog rows go, and no run can add a row under a source no provider
+    # names: an unclaimed key must name such a dropped source, and the pinned
+    # set makes dropping another one a deliberate edit here, never a silent
+    # widening of the exception
+    dropped = {source for source, _ in keys if source not in _providers()}
+    assert dropped == {"scaleway"}
+    assert set(claims) == {key for key in keys if key[0] not in dropped}
     assert all(len(canonicals) == 1 for canonicals in claims.values())
 
 

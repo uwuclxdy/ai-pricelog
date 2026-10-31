@@ -329,22 +329,6 @@ detector_url = "https://console.groq.com/docs/models.md"
 scraper = "groq_page"
 scraper_url = "https://console.groq.com/docs/models.md"
 
-# ungated 2026-08-29: the model-as-a-service page serves the per-1M-token
-# table statically in EUR; build_row converts through data/catalog/fx-rates.json.
-# announce surface: the docs changelog (server-rendered prose) and its rss.
-
-[scaleway]
-provider = "Scaleway"
-kind = "reseller"
-detector = "scaleway_page"
-detector_url = "https://www.scaleway.com/en/pricing/model-as-a-service/"
-scraper = "scaleway_page"
-scraper_url = "https://www.scaleway.com/en/pricing/model-as-a-service/"
-announce_urls = [
-  "https://www.scaleway.com/en/docs/changelog/",
-  "https://www.scaleway.com/en/docs/changelog/rss.xml",
-]
-
 # ungated 2026-08-29: the foundation-model-serving page serves the DBU
 # rates table statically. currency_rate = USD per DBU, the pay-as-you-go
 # rate stated on the AI card at https://www.databricks.com/product/pricing
