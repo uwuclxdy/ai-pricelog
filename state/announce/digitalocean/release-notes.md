@@ -9,6 +9,10 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
+November 2026 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
+SSO configuration no longer requires your IdP to send a team_role claim.
+When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.
+See the SSO configuration how-to for generic OIDC setup and provider-specific guidance .
 October 2026 30 October The following OpenAI model is now available on DigitalOcean Inference for serverless inference : GPT-6.1 Terra For more information, see the Available Models page .
 28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
@@ -261,14 +265,6 @@ Notifications arrive within an hour of your spend crossing a threshold.
 Existing billing alerts have been migrated to the Spend alerts page as an alert named Account Spend Alert .
 The following Anthropic model is deprecated from DigitalOcean Inference as of 5 August 2026: Claude Opus 4.1 Migrate to Claude Opus 4.8 ( anthropic-claude-opus-4.8 ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
-4 August We have launched the Kansas City, Missouri, USA ( mkc1 ) datacenter, which supports GPU Droplets, Kubernetes, Managed Databases, Spaces object storage, App Platform, Functions, and many other products.
-For the full list of supported products, see the regional availability matrix .
-Cloud firewall rules now support an action of allow or deny.
-Deny rules let you block traffic from specific sources, such as known malicious IP addresses, while allowing broader access to your services.
-Deny rules take precedence over allow rules that match the same traffic.
-For rule actions and configuration steps, see How to Configure Firewall Rules .
-3 August PostgreSQL Advanced Edition clusters now support sslmode=verify-full for full TLS certificate verification.
-For setup, see How to Connect to PostgreSQL Database Clusters and Increase TLS Verification with sslmode .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
