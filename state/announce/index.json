@@ -46,8 +46,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "12b0008841f948e191aadcd315e23538126e86f59a482e57aa4072a88fd95e1e",
-      "fetched": "2026-10-28T09:00:16Z"
+      "sha256": "aa062006f51248b7ff0c04701dc1c036ae9414fc84d04ff706a8be93cd624b4c",
+      "fetched": "2026-11-02T15:00:14Z"
     }
   },
   "minimax": {
@@ -58,8 +58,8 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "4c8251bfac8acff8ffb5bfb3f288232217e8085a3bf781e5fd388510db7654e1",
-      "fetched": "2026-10-30T14:00:16Z"
+      "sha256": "49ef35ce109b5f7a708cc78a03909e7ad3dd78364bbf3682dae108966df7a2e0",
+      "fetched": "2026-11-02T15:00:14Z"
     }
   },
   "xai": {
@@ -103,8 +103,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "c56f6e7234db52d17367e7f06d6748c921bbf3aa3739751c8e1db97c41f7b7e3",
-      "fetched": "2026-10-29T13:00:14Z"
+      "sha256": "2eb8802f1ec5aa5690ec78efb1e902f17ad7256c5b41932405907c81684f4963",
+      "fetched": "2026-11-02T15:00:14Z"
     }
   },
   "fireworks": {
@@ -143,20 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "c4042ecd966c6880f80018aecb66fb76daa162b8bab0a87c244f78afbdb516be",
-      "fetched": "2026-10-30T19:00:15Z"
-    }
-  },
-  "scaleway": {
-    "https://www.scaleway.com/en/docs/changelog/": {
-      "file": "state/announce/scaleway/changelog.md",
-      "sha256": "4ed47b8b2af1e2800af2b429c24b360cdd48133d4339e8c8f795a05b1c943a39",
-      "fetched": "2026-09-21"
-    },
-    "https://www.scaleway.com/en/docs/changelog/rss.xml": {
-      "file": "state/announce/scaleway/rss-xml.md",
-      "sha256": "b5388f4031d198276999955d6a4feef88c5876b2c111495dc15ae2693d89c433",
-      "fetched": "2026-10-30T14:00:16Z"
+      "sha256": "2b6e958f5616895defd9f7fabed5751c1801b1cb9ee943049198cc9251ec5606",
+      "fetched": "2026-11-02T15:00:14Z"
     }
   },
   "databricks": {
