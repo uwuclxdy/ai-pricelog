@@ -328,6 +328,16 @@
       "citation": [
         "https://docs.digitalocean.com/release-notes/"
       ]
+    },
+    {
+      "id": "google-gemini-2.5-pro-2.5-flash-deprecation-2026-11-02",
+      "provider": "google",
+      "effective": "2026-12-01",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-11-02 entry deprecates gemini-2.5-pro and gemini-2.5-flash: neither is available to select in Google AI Studio any longer, and effective 2026-12-01 all API requests to gemini-2.5-pro automatically route to gemini-3.8-flash and bill at Gemini 3.8 Flash rates, and all API requests to gemini-2.5-flash route to gemini-3.5-flash-lite and bill at Gemini 3.5 Flash-Lite rates; the entry says to update the model string before that date and review the matching migration guide. it names no shutdown date, no separate price for the routed requests and no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
     }
   ]
 }
