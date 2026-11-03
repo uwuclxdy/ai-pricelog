@@ -8157,6 +8157,87 @@
       },
       "vendor": "mistralai"
     },
+    "openrouter/mongodb/rerank-2.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/rerank-2.5"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/rerank-2.5-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/rerank-2.5-lite"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/rerank-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/rerank-3"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/rerank-3-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/rerank-3-lite"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/voyage-4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/voyage-4"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/voyage-4-large": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/voyage-4-large"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/voyage-4-lite": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/voyage-4-lite"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/voyage-code-4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/voyage-code-4"
+        ]
+      },
+      "vendor": "mongodb"
+    },
+    "openrouter/mongodb/voyage-multimodal-3.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mongodb/voyage-multimodal-3.5"
+        ]
+      },
+      "vendor": "mongodb"
+    },
     "openrouter/moondream/moondream3-preview": {
       "curated": false,
       "sources": {
