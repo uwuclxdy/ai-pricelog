@@ -41,6 +41,12 @@ See [Geo-specific inference](https://docs.together.ai/docs/serverless/geo-specif
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.40 input / \$1.20 output / \$0.04 cached input (per 1M tokens).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `reflection/Beam-1.0-501B-A23B`.
+## New field names for FP4 preparation FP4 preparation requests now identify the adapter with `model_object_id` and `model_revision_id`.
+The job still accepts only LoRA adapters, not full-weight models.
+The `adapter_object_id` and `adapter_revision_id` names are deprecated but still accepted.
+A request can use either pair, but not both.
+A job's `params` list the adapter under both pairs of names, with the same values.
+See [Prepare for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md#find-the-adapter-id) for details.
 **October 15, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `meta-models/Muse-Spark-Open-816B-A42B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$1.25 input / \$4.25 output / \$0.15 cached input (per 1M tokens).
 * `nvidia/NVIDIA-Nemotron-3.5-Super-VL`: 262,144 context length, NVFP4 quantization, image input, function calling, and structured outputs.
@@ -341,7 +347,7 @@ Pricing: \$0.35 input / \$1.50 output / \$0.04 cached input (per 1M tokens).
 * `ByteDance/Seedance-2.5`: Pricing: \$0.115/sec at 480p.
 ## New models available for fine-tuning You can now fine-tune the following models: * `deepseek-ai/DeepSeek-V4-Flash-0731`.
 See [Supported models](https://docs.together.ai/docs/fine-tuning/supported-models.md) for the full list.
-**August 10, 2026** ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/manage.md#placement-profiles) deployments now accepts an optional `compliancePolicy` object.
+**August 10, 2026** ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/manage.md#choose-where-a-deployment-runs) deployments now accepts an optional `compliancePolicy` object.
 Set `hipaa: true` so replicas only schedule on HIPAA-attested clusters.
 The policy is always enforced strictly, regardless of `constraint`, and the deployment stays unscheduled while no qualifying cluster is available.
 See [Compliance policy](https://docs.together.ai/docs/dedicated-endpoints/manage.md#compliance-policy).
