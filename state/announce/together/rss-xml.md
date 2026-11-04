@@ -1,4 +1,7 @@
-Together.ai https://www.together.ai The latest from Together 60 Webflow Auto repair for Together GPU Clusters: from GPU fault to healthy node https://www.together.ai/blog/auto-repair-for-together-gpu-clusters https://www.together.ai/blog/auto-repair-for-together-gpu-clusters Together GPU Clusters auto repair detects GPU, host and fabric faults, picks the lightest fix, and lets you decide per fault and per Xid code which repairs run automatically.
+Together.ai https://www.together.ai The latest from Together 60 Webflow Together Compiler: Continual Compilation for AI inference https://www.together.ai/blog/together-compiler-continual-compilation-for-ai-inference https://www.together.ai/blog/together-compiler-continual-compilation-for-ai-inference Together Compiler uses agents and persistent engines to optimize open models in under 24 hours, delivering up to 3.7x higher throughput as traffic changes.
+Polymorphic Inference: self-tuning inference for open models https://www.together.ai/blog/polymorphic-inference https://www.together.ai/blog/polymorphic-inference Models, traffic and chips are constantly changing.
+Polymorphic Inference adapts to each, and Together Compiler uses AI agents to keep production inference tuned.
+Auto repair for Together GPU Clusters: from GPU fault to healthy node https://www.together.ai/blog/auto-repair-for-together-gpu-clusters https://www.together.ai/blog/auto-repair-for-together-gpu-clusters Together GPU Clusters auto repair detects GPU, host and fabric faults, picks the lightest fix, and lets you decide per fault and per Xid code which repairs run automatically.
 Here is how it works.
 Together Post-Training: frontier-grade model shaping, the way that fits you https://www.together.ai/blog/together-post-training https://www.together.ai/blog/together-post-training Post-train open LLMs like Qwen, GLM and Kimi into custom models you own, with SFT or RL.
 You write the training loop.
@@ -27,8 +30,8 @@ GPT-5.6 Sol on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/g
 Sol leads pass@1 by 3.7 points; GLM-5.3 wins pass@4 at half the cost, and a GLM-first cascade hits 85.9%.
 GLM-5.3 vs.
 Claude Fable 5 on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/glm-5-3-vs-claude-fable-5-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/glm-5-3-vs-claude-fable-5-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on GLM-5.3 and Claude Fable 5.
-A tie on pass@1, but GLM-5.3 wins pass@4 and costs 5.4x less: \$3.99 per rollout vs.
-\$21.63.
+A tie on pass@1, but GLM-5.3 wins pass@4 and costs 5.4x less: $3.99 per rollout vs.
+$21.63.
 https://www.together.ai/blog/deepseek-v4-pro-0813-vs-gpt-5-6-sol-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-gpt-5-6-sol-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on DeepSeek V4 Pro 0813 and GPT-5.6 Sol.
 Sol leads pass@1 by 10 points at 35x the cost; Pro wins pass@4, and a Pro-first cascade hits 83.0%.
 DeepSeek V4 Pro 0813 vs Claude Fable 5 on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-claude-fable-5-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-claude-fable-5-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on DeepSeek V4 Pro 0813 and Claude Fable 5.
@@ -160,5 +163,3 @@ Announcing the fastest inference for realtime voice AI agents https://www.togeth
 Sub-second latency for production voice agents.
 How to evaluate and benchmark Large Language Models (LLMs) https://www.together.ai/blog/evaluate-and-benchmark-llms https://www.together.ai/blog/evaluate-and-benchmark-llms Understanding how to evaluate and benchmark Large Language Models (LLMS).
 Test, compare, and understand LLMs.
-Dynamic AI agent testing for the real world with Collinear Simulations and Together Evals https://www.together.ai/blog/collinear-simulations-together-evals https://www.together.ai/blog/collinear-simulations-together-evals Test AI agents in the real world with Collinear TraitMix and Together Evals: dynamic persona simulations, multi-turn dialogs, and LLM-as-judge scoring.
-Large Reasoning Models Fail to Follow Instructions During Reasoning: A Benchmark Study https://www.together.ai/blog/large-reasoning-models-fail-to-follow-instructions-during-reasoning-a-benchmark-study https://www.together.ai/blog/large-reasoning-models-fail-to-follow-instructions-during-reasoning-a-benchmark-study ReasonIF finds frontier LRMs fail to follow reasoning instructions >75% of the time; introduces a benchmark across languages, formatting, and length.

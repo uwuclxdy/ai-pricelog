@@ -2,6 +2,26 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** ### Decisions API: URL fetching and page freshness Pass a page URL as `state` with `mode: "web_grounding"` to fetch its text before searching.
+The fetched text replaces the URL before search.
+The response returns the page in `fetched_results` and search evidence in `search_results`.
+Set `max_staleness` to the maximum page age in seconds since its last crawl.
+An older stored copy triggers a fresh crawl.
+Each successful URL fetch costs \$0.001 in addition to searches and input tokens.
+See [Fetch a page from a URL](https://docs.perplexity.ai/docs/decisions/quickstart.md#fetch-a-page-from-a-url) for Python, TypeScript, and cURL examples.
+**November 2026** ### Decisions API: web grounding Set `mode` to `"web_grounding"` on [`POST /v1/decisions`](https://docs.perplexity.ai/api-reference/decisions-post) to check your questions against the web.
+Before the model answers, the API runs a Fast Search for each question, up to 100 questions, and adds the results to the `state` as evidence.
+The response lists them in `search_results`.
+Requests without `mode` are unchanged.
+Each search costs \$0.001, in addition to input tokens for the added results.
+The Perplexity Python library and the TypeScript SDK don't have a `mode` parameter yet, so send it in the request body.
+See [Web grounding](https://docs.perplexity.ai/docs/decisions/quickstart.md#web-grounding) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md#web-grounding).
+**November 2026** ### Analytics API: credit-usage response update For `dataset=credit_usage`, responses from [`/v1/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-get) and [`/v2/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-v2-get) currently omit the `Credit Source` breakdown.
+Total credit usage and the `Model` breakdown remain available.
+If your integration expects a fixed set of breakdowns, update it to read the returned `categories` list.
+Use `count` for total credits and `by_categories.Model` for the model breakdown when returned.
+Do not treat an omitted breakdown as zero usage.
+See the [Analytics API guide](https://docs.perplexity.ai/docs/admin/computer-analytics-api.md).
 **October 2026** **Agent API: effort level updates and the `ultra-preview` effort level** These effort level changes were not listed in earlier changelog entries.
 Each line names the current version.
 Earlier versions stay available as [pinned versions](https://docs.perplexity.ai/docs/agent-api/effort.md#pinning-an-effort-level-version).
