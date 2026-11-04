@@ -1,8 +1,29 @@
 Release Notes | Cohere For AI agents: a documentation index is available at the root level at /llms.txt.
 Append /llms.txt to any URL for a page-level index, or .md for the markdown version of any page.
 docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI Skip to navigation This page is for version v2 API (default).
-For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page October 21, 2026 Key features Upgrading Example query with Context Focus Availability September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice March 26, 2026 Technical
-details Getting started Availability December 11, 2025 Technical Details Example Query Release Notes Subscribe via RSS October 21, 2026 October 21, 2026 Announcing Cohere's Rerank 5 Models We’re pleased to announce the release of Rerank 5 , Cohere’s most advanced reranking models for enterprise retrieval: sharper search, with fewer tokens sent to your LLM.
+For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page November 3, 2026 Key features Calling open models Availability October 21, 2026 Key features Upgrading Example query with Context Focus Availability September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details
+Availability April 4, 2026 Retirement notice March 26, 2026 Technical details Getting started Availability Release Notes Subscribe via RSS November 3, 2026 November 3, 2026 Open Models and Regional Serving in Model Vault Model Vault and Model Vault Encrypted now run leading third-party open models alongside Cohere’s models, on fully managed, dedicated infrastructure.
+You can choose the right model for each task and run every one of them with the same protections.
+Key features Open models in Model Vault : deploy models from DeepSeek, Z.ai (GLM), Xiaomi (MiMo), NVIDIA (Nemotron), Google (Gemma), OpenAI (GPT-OSS), Microsoft (Phi), Alibaba (Qwen), and Mistral AI.
+See Standard Vault supported models .
+Open models in Model Vault Encrypted : run Gemma, GPT-OSS, Phi, Qwen, Devstral, and Ministral with confidential computing, so not even Cohere or the cloud provider can see your prompts or responses.
+See Encrypted Vault supported models .
+Zero Data Retention by default : prompts and responses are not retained in Model Vault.
+Regional serving : Model Vault runs in the United States, the European Union, and Canada.
+Model Vault Encrypted runs in the United States, with the European Union and Canada coming soon.
+See Regions .
+Calling open models Open models are served through the OpenAI-compatible Chat Completions API at your vault endpoint: PYTHON from openai import OpenAI client = OpenAI ( api_key = " <COHERE_API_KEY> " , base_url = " <YOUR_VAULT_ENDPOINT_URL>/v1 " , ) response = client .
+chat .
+completions .
+create ( model = " deepseek-v4-1-flash " , messages = [{ " role " : " user " , " content " : " Hello from Model Vault!
+" }], ) print ( response .
+choices [ 0 ].
+message .
+content ) See Calling a Standard Vault over the API and Calling an Encrypted Vault over the API .
+Availability Open models are available today in the Model Vault app .
+Model Vault is priced per GPU, per hour, for both Standard and Encrypted Vaults; see the pricing page .
+For reserved capacity, contact our sales team .
+October 21, 2026 October 21, 2026 Announcing Cohere's Rerank 5 Models We’re pleased to announce the release of Rerank 5 , Cohere’s most advanced reranking models for enterprise retrieval: sharper search, with fewer tokens sent to your LLM.
 Rerank 5 Pro delivers our highest reranking quality yet, with its largest gains on reasoning-intensive retrieval and in enterprise domains such as finance, healthcare, and scientific research.
 Rerank 5 Fast brings that quality to latency- and cost-sensitive workloads, and outperforms our previous-generation Rerank 4 Pro model.
 Key features Two model variants available: rerank-v5.0-pro : Optimized for the highest ranking quality, particularly for complex, reasoning-heavy queries and long or domain-specific documents.
@@ -23,7 +44,7 @@ It is a federal district.", "Capitalization or capitalisation in English grammar
 English usage varies from capitalization in other languages.", "Capital punishment has existed in the United States since before the United States was a country.
 As of 2017, capital punishment is legal in 30 of the 50 states." ], "relevant_spans": { "mode": "enabled", "threshold": 0.3, "max_spans": 10 } } ' Each result includes its relevance_score and, where passages meet the threshold , a relevant_spans list with the start and end character offsets of each passage in the original document and its score .
 Availability Rerank 5 is available through the Rerank API , as well as Microsoft Foundry ( Pro , Fast ) and Amazon SageMaker ( Pro , Fast ).
-For single-tenant deployment, Rerank 5 is also available in Cohere’s Model Vault (see Standard Vault pricing ).
+For deployment on dedicated infrastructure, Rerank 5 is also available in Cohere’s Model Vault (see Model Vault pricing ).
 For private deployments in your own VPC or on-premises, contact our sales team .
 For more details, see the model documentation , the Rerank overview , and the best practices guide .
 September 30, 2026 September 30, 2026 Announcing Cohere's Embed 5 Models We’re pleased to announce the release of Embed 5 , Cohere’s most powerful embeddings family yet.
@@ -32,7 +53,7 @@ Key features Two model variants available: embed-v5.0-pro : Optimized for the hi
 We recommend indexing with Pro and querying with Fast.
 Multimodal inputs : Embed text, images, and mixed text-and-image inputs (e.g.
 PDF pages) in a single vector Multilingual support : Supports over 100 languages Extended context length : 128k token context window Flexible storage : Matryoshka embeddings in the following dimensions: [256, 512, 768, 1024, 1536, 2048] , with float , int8 , and binary output types Availability Embed 5 is available through the Embed API , as well as Microsoft Foundry ( Pro , Fast ) and Amazon SageMaker ( Pro , Fast ).
-For single-tenant deployment, Embed 5 is also available in Cohere’s Model Vault .
+For deployment on dedicated infrastructure, Embed 5 is also available in Cohere’s Model Vault .
 For more details, see the model documentation .
 September 9, 2026 September 9, 2026 Announcing Cohere's North Small Translate We’re pleased to announce the release of North Small Translate , an open-weights mixture-of-experts model purpose-built for machine translation across more than 50 languages.
 North Small Translate is designed to give researchers, developers, and enterprises flexible ways to evaluate and deploy machine translation while retaining control over their data and infrastructure.
@@ -47,7 +68,7 @@ Parse (model ID: parse-v5.0 ) turns complex documents into clean, structured Mar
 The 2.3B-parameter multimodal model extracts text in reading order, tables, lists, forms, images and captions, page boundaries, and visual element locations.
 Outputs include Markdown/HTML content, HTML-formatted tables, bounding boxes, and image descriptions — preserving both document structure and layout for easier rendering and processing.
 Key specs: 8K context window · ~4.6GB model size · Markdown output Availability Cohere Parse is available through the Parse API, as well as Microsoft Foundry and AWS SageMaker .
-For single-tenant deployment, Parse is also available in Model Vault .
+For deployment on dedicated infrastructure, Parse is also available in Model Vault .
 For more details, see the model documentation .
 July 7, 2026 July 7, 2026 Meet Cohere Transcribe Arabic Today we are releasing Cohere Transcribe Arabic .
 This open-source speech-to-text model is a fine-tune of Cohere Transcribe using Arabic speech data.
@@ -88,24 +109,4 @@ For production deployment without rate limits, provision a dedicated Model Vault
 This enables low-latency, private cloud inference without having to manage infrastructure.
 Pricing is calculated per hour-instance, with discounted plans for longer-term commitments.
 Contact our team to discuss your requirements.
-December 11, 2025 December 11, 2025 Cohere's Rerank v4.0 Model is Here!
-We’re pleased to announce the release of Rerank 4.0 our newest and most performant foundational model for ranking.
-Technical Details Two model variants available: rerank-v4.0-pro : Optimized for state-of-the-art quality and complex use-cases rerank-v4.0-fast : Optimized for low latency and high throughput use-cases Multilingual support : Re-rank both English and non-English documents Semi-structured data support : Re-rank JSON documents Extended context length : 32k token context window Example Query PYTHON import cohere co = cohere .
-ClientV2 () query = " What is the capital of the United States?
-" docs = [ " Carson City is the capital city of the American state of Nevada.
-At the 2010 United States Census, Carson City had a population of 55,274.
-" , " The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that are a political division controlled by the United States.
-Its capital is Saipan.
-" , " Charlotte Amalie is the capital and largest city of the United States Virgin Islands.
-It has about 20,000 people.
-The city is on the island of Saint Thomas.
-" , " Washington, D.C.
-(also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States.
-It is a federal district.
-The President of the USA and many major national government offices are in the territory.
-This makes it the political center of the United States of America.
-" , " Capital punishment has existed in the United States since before the United States was a country.
-As of 2017, capital punishment is legal in 30 of the 50 states.
-The federal government (including the United States military) also uses capital punishment.
-" , ] results = co .
-rerank ( model = " rerank-v4.0-pro " , query = query , documents = docs , top_n = 5 ) Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API
+Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API
