@@ -2,6 +2,12 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** ### Analytics API: credit-usage response update For `dataset=credit_usage`, responses from [`/v1/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-get) and [`/v2/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-v2-get) currently omit the `Credit Source` breakdown.
+Total credit usage and the `Model` breakdown remain available.
+If your integration expects a fixed set of breakdowns, update it to read the returned `categories` list.
+Use `count` for total credits and `by_categories.Model` for the model breakdown when returned.
+Do not treat an omitted breakdown as zero usage.
+See the [Analytics API guide](https://docs.perplexity.ai/docs/admin/computer-analytics-api.md).
 **October 2026** **Agent API: effort level updates and the `ultra-preview` effort level** These effort level changes were not listed in earlier changelog entries.
 Each line names the current version.
 Earlier versions stay available as [pinned versions](https://docs.perplexity.ai/docs/agent-api/effort.md#pinning-an-effort-level-version).

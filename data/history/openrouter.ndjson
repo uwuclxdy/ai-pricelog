@@ -809,6 +809,7 @@
 {"schema":4,"source":"openrouter","model_id":"ibm-granite/granite-4.2-8b","observed_at":"2026-09-21","rates":{"input":0.1,"output":0.15,"cache_read":0.05},"limits":{"context":131072},"provenance":{"name":"Granite 4.2 8B"}}
 {"schema":4,"source":"openrouter","model_id":"ibm-granite/granite-4.2-8b","observed_at":"2026-09-21","rates":{"input":0.06,"output":0.25,"cache_read":0.015},"limits":{"context":131072},"provenance":{"name":"Granite 4.2 8B"}}
 {"schema":4,"source":"openrouter","model_id":"ibm-granite/granite-4.2-8b","observed_at":"2026-10-28","rates":{"input":0.06,"output":0.15,"cache_read":0.015},"limits":{"context":131072},"provenance":{"name":"Granite 4.2 8B"}}
+{"schema":4,"source":"openrouter","model_id":"ibm-granite/granite-4.2-8b","observed_at":"2026-11-04","rates":{"input":0.06,"output":0.25,"cache_read":0.015},"limits":{"context":131072},"provenance":{"name":"Granite 4.2 8B"}}
 {"schema":4,"source":"openrouter","model_id":"inception/mercury-2","observed_at":"2026-08-26","rates":{"input":0.25,"output":0.75,"cache_read":0.025},"limits":{"context":128000},"provenance":{"name":"Mercury 2"}}
 {"schema":4,"source":"openrouter","model_id":"inception/mercury-2.5","observed_at":"2026-09-08","rates":{"input":0.04,"output":0.15,"cache_read":0.004},"limits":{"context":260000},"provenance":{"name":"Mercury 2.5"}}
 {"schema":4,"source":"openrouter","model_id":"inception/mercury-2.5-preview","observed_at":"2026-09-01","rates":{"input":0.04,"output":0.15,"cache_read":0.004},"limits":{"context":260000},"provenance":{"name":"Mercury 2.5 Preview"}}
