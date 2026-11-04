@@ -47,6 +47,10 @@ as a merged PR. the step passes only branches the pass marked
   copy lands unless HEAD's copy comes from a newer run (the two run stamps
   are compared on every merge), so a held older-run PR never reverts newer
   absence counters
+- billing-rules.json and its test pin resolve by union: the pass appends the
+  same confirmed rule to every branch it judges after the confirmation, so
+  the union dedupes rules by id (HEAD's copy wins) and recomputes the
+  `len(rules) == N` pin from the landed count
 
 the push and the ref deletions happen only after every merge commit landed.
 """
@@ -55,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -703,11 +708,33 @@ def _union_models(head_text: str, branch_text: str) -> str:
     )
 
 
+def _union_billing_rules(head_text: str, branch_text: str) -> str:
+    """HEAD's rules plus the branch's additions, deduped by rule id.
+
+    The pass writes a confirmed rule onto every branch it judges after the
+    confirmation, so a burst carries identical copies of one append; the
+    union lands one. HEAD's copy wins an id clash, the `_union_models`
+    posture: a human edit of a rule on the base is never resurrected.
+    """
+    head = json.loads(head_text) if head_text else {"rules": []}
+    branch_data = json.loads(branch_text)
+    merged = list(head.get("rules") or [])
+    seen = {rule.get("id") for rule in merged}
+    for rule in branch_data.get("rules") or []:
+        if rule.get("id") in seen:
+            continue
+        merged.append(rule)
+        seen.add(rule.get("id"))
+    return json.dumps({"rules": merged}, ensure_ascii=False, indent=2) + "\n"
+
+
 # the one exact-line partition the pending scan and this merge share, owned by
 # store (automerge imports pr, so pr cannot import automerge). tests patch this
 # module attribute, so it stays a name the call sites resolve, never a direct
 # call.
 _appended_lines = store.appended_lines
+
+_BILLING_PIN_RE = re.compile(r"assert len\(rules\) == \d+")
 
 
 def _is_pipeline_path(path: str) -> bool:
@@ -957,6 +984,22 @@ def merge_branches(
                     _head_text(runner, repo_root, models.MODELS_FILE),
                     _branch_text(runner, repo_root, branch, models.MODELS_FILE),
                 ),
+                encoding="utf-8",
+            )
+        if BILLING_RULES_FILE in changed:
+            # the pass appends the same confirmed rule to every branch it
+            # judges, so git merge add/add-conflicts the identical append and
+            # staging the conflicted file would stage markers; both files
+            # resolve by union, the pin recomputed from the landed count
+            rules_text = _union_billing_rules(
+                _head_text(runner, repo_root, BILLING_RULES_FILE),
+                _branch_text(runner, repo_root, branch, BILLING_RULES_FILE),
+            )
+            (repo_root / BILLING_RULES_FILE).write_text(rules_text, encoding="utf-8")
+            head_pin = _head_text(runner, repo_root, "tests/test_billing_rules.py")
+            count = len(json.loads(rules_text)["rules"])
+            (repo_root / "tests" / "test_billing_rules.py").write_text(
+                _BILLING_PIN_RE.sub(f"assert len(rules) == {count}", head_pin),
                 encoding="utf-8",
             )
 

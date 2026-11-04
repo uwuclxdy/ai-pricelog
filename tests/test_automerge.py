@@ -833,6 +833,106 @@ def test_dirty_pipeline_file_refused(tmp_path):
         automerge.merge_branches(["pricelog/eta-66666666"], repo, pr.PrRunner(), "main", push=False)
 
 
+def _rule_branch(repo: Path, name: str, model_id: str, rules: list[dict], pin: int) -> None:
+    """A pricelog branch carrying one row, a rules append and the bumped pin."""
+    git(repo, "switch", "-c", name)
+    store.save_shard(
+        store.load_shard(repo / "data" / "history", "deepseek")
+        + [make_row("deepseek", model_id, "2026-08-31", 0.44)],
+        repo / "data" / "history",
+        "deepseek",
+    )
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    catalog = {
+        **catalog,
+        **models.seed_entries({("deepseek", model_id)}, catalog, {}),
+    }
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    (repo / BILLING_RULES_FILE).write_text(
+        json.dumps({"rules": rules}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (repo / "tests" / "test_billing_rules.py").write_text(
+        f"def test_pin():\n    assert len(rules) == {pin}\n", encoding="utf-8"
+    )
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", f"feat: {name}")
+    git(repo, "push", "origin", name)
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+
+def _rules_repo(tmp_path: Path) -> tuple[Path, list[dict]]:
+    """A build_repo clone whose main carries two rules and a matching pin."""
+    repo, _bare = build_repo(tmp_path)
+    rules = [
+        {"id": "deepseek-weekend-off-peak", "provider": "deepseek", "effective": "2026-08-23"},
+        {"id": "zai-plan-quotas", "provider": "zai", "effective": "2026-09-01"},
+    ]
+    (repo / BILLING_RULES_FILE).write_text(
+        json.dumps({"rules": rules}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (repo / "tests" / "test_billing_rules.py").write_text(
+        "def test_pin():\n    assert len(rules) == 2\n", encoding="utf-8"
+    )
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "rules")
+    git(repo, "push", "origin", "main")
+    return repo, rules
+
+
+def test_merge_unions_duplicate_billing_rules_across_branches(tmp_path):
+    # the pass writes the same confirmed rule onto every branch it judges
+    # after the confirmation, so a burst carries identical copies of one
+    # append; the union lands one, the pin matches the landed count, and the
+    # staged tree carries no conflict markers
+    repo, base_rules = _rules_repo(tmp_path)
+    duplicate = {"id": "google-gemini-deprecation", "provider": "google", "effective": "2026-12-01"}
+    _rule_branch(repo, "pricelog/alpha-00000000", "deepseek-v4-pro", [*base_rules, duplicate], 3)
+    _rule_branch(repo, "pricelog/beta-11111111", "deepseek-v4-flash", [*base_rules, duplicate], 3)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/alpha-00000000", "pricelog/beta-11111111"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.appended for r in results] == [1, 1]
+    landed = json.loads(git(repo, "show", f"{sha}:{BILLING_RULES_FILE}"))
+    assert [rule["id"] for rule in landed["rules"]] == [
+        "deepseek-weekend-off-peak",
+        "zai-plan-quotas",
+        "google-gemini-deprecation",
+    ]
+    assert "assert len(rules) == 3" in git(repo, "show", f"{sha}:tests/test_billing_rules.py")
+
+
+def test_merge_lands_two_distinct_billing_rules_and_recomputes_the_pin(tmp_path):
+    repo, base_rules = _rules_repo(tmp_path)
+    first = {"id": "google-gemini-deprecation", "provider": "google", "effective": "2026-12-01"}
+    second = {"id": "minimax-m3-flash-tier", "provider": "minimax", "effective": "2026-11-01"}
+    _rule_branch(repo, "pricelog/alpha-00000000", "deepseek-v4-pro", [*base_rules, first], 3)
+    _rule_branch(repo, "pricelog/beta-11111111", "deepseek-v4-flash", [*base_rules, second], 3)
+
+    sha, _results = automerge.merge_branches(
+        ["pricelog/alpha-00000000", "pricelog/beta-11111111"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    landed = json.loads(git(repo, "show", f"{sha}:{BILLING_RULES_FILE}"))
+    assert [rule["id"] for rule in landed["rules"]] == [
+        "deepseek-weekend-off-peak",
+        "zai-plan-quotas",
+        "google-gemini-deprecation",
+        "minimax-m3-flash-tier",
+    ]
+    assert "assert len(rules) == 4" in git(repo, "show", f"{sha}:tests/test_billing_rules.py")
+
+
 def test_staged_unrelated_change_refused(tmp_path):
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/theta-77777777", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
