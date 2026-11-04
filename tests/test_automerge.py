@@ -351,6 +351,30 @@ def test_merge_keeps_a_channel_the_base_gained_since_the_branch_was_cut(tmp_path
     assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("new channel prose")
 
 
+def test_merge_drops_a_channel_every_branch_deleted(tmp_path):
+    # the config dropped a channel the base still holds: every branch cut after
+    # the drop deletes the channel's file and index entry, so the merged tree
+    # lacks it and the merge must land the deletion, never re-write the base's
+    # stale copy into the deleted directory
+    repo, _bare = build_repo(tmp_path)
+    url = "https://example.com/changelog"
+    commit_announce(repo, {"scaleway": {url: "old prose"}}, "2026-09-18")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        announce_texts={},
+    )
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert "scaleway" not in index
+    assert not (repo / "state" / "announce" / "scaleway").exists()
+    assert any('"deepseek-v4-pro"' in line for line in shard_lines(repo))
+
+
 def test_merge_holds_a_needs_human_channel_at_the_base_copy(tmp_path):
     # a channel the pass flagged needs-human must not land via a yes-marked
     # sibling carrying the same fresh snapshot: the merge holds it at the

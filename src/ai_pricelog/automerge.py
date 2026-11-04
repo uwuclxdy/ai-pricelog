@@ -285,9 +285,12 @@ def _merge_announce(
     """Lay the burst's announce tree over the worktree, resolved per channel.
 
     The url set is the newest branch's channels plus a channel only the base
-    holds that no branch carries (gained after every branch was cut); a url
-    an earlier branch carried but the newest does not left the config and is
-    deleted even when the base's stale copy still holds it. Each url lands
+    holds that no branch carries; such a url survives only where the merged
+    tree still has its file (the base gained it after every branch was cut),
+    and one a branch deleted left the config and is dropped even though the
+    base's stale copy still holds it. A url an earlier branch carried but the
+    newest does not left the config and is deleted even when the base's stale
+    copy still holds it. Each url lands
     from the burst entry with the newest `fetched` date (a same-date tie goes
     to the newest branch), and from the base itself when no branch entry is
     newer: a branch whose run failed that channel's fetch carries a stale
@@ -345,6 +348,11 @@ def _merge_announce(
                         f"branch {branch}: announce channel {source!r}/{url!r} file"
                         f" {file!r} is missing from {base_sha}"
                     ) from exc
+                if not (repo_root / file).exists():
+                    # a branch deleted the file, so the channel left the config
+                    # while the base still held it: the merged tree lacks it and
+                    # the base's stale copy is pruned, never re-written
+                    continue
                 (repo_root / file).write_text(text, encoding="utf-8")
                 named.add(file)
                 resolved.setdefault(source, {})[url] = dict(base_entry)
