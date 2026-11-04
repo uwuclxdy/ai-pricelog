@@ -42,6 +42,7 @@
 {"schema":4,"source":"together","model_id":"kimi-k2.7-code","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"together","model_id":"kimi-k3","observed_at":"2026-07-27","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1000000},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"kimi-k3.1-pro","observed_at":"2026-11-04","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-07-09","rates":{"input":0.03,"output":0.12},"limits":{"context":32768},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-08-26","rates":{"input":0.03,"output":0.12},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"lfm2.5-8b-a1b","observed_at":"2026-09-10","removed":true,"rates":{"input":0.03,"output":0.12}}

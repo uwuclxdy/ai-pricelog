@@ -11803,6 +11803,15 @@
       },
       "vendor": "google"
     },
+    "together/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "together/lfm2.5-8b-a1b": {
       "curated": false,
       "sources": {
