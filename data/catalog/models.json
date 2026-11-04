@@ -2478,6 +2478,15 @@
       },
       "vendor": null
     },
+    "digitalocean/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "digitalocean/llama-4-maverick-17b-128e-instruct": {
       "curated": false,
       "sources": {
