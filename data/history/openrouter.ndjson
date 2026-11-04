@@ -2204,6 +2204,7 @@
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.28,"cache_read":0.0028},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5","observed_at":"2026-10-21","rates":{"input":0.119,"output":0.238,"cache_read":0.00255},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5","observed_at":"2026-10-27","rates":{"input":0.4,"output":2.0,"cache_read":0.08},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5"}}
+{"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5","observed_at":"2026-11-04","rates":{"input":0.4,"output":2.0,"cache_read":0.08},"limits":{"context":1000000},"provenance":{"name":"MiMo-V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5-pro","observed_at":"2026-08-26","rates":{"input":0.435,"output":0.87,"cache_read":0.0036},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5-Pro"}}
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5-pro","observed_at":"2026-10-21","rates":{"input":0.3045,"output":0.609,"cache_read":0.0028},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5-Pro"}}
 {"schema":4,"source":"openrouter","model_id":"xiaomi/mimo-v2.5-pro","observed_at":"2026-10-27","rates":{"input":0.48,"output":1.8,"cache_read":0.096},"limits":{"context":1050000},"provenance":{"name":"MiMo-V2.5-Pro"}}
