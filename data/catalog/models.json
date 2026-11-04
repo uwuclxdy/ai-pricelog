@@ -10398,6 +10398,15 @@
       },
       "vendor": "tencent"
     },
+    "openrouter/tencent/hy4": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "tencent/hy4"
+        ]
+      },
+      "vendor": "tencent"
+    },
     "openrouter/tencent/hy4-preview": {
       "curated": false,
       "sources": {
