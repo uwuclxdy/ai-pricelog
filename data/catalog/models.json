@@ -10056,6 +10056,15 @@
       },
       "vendor": "respan"
     },
+    "openrouter/ricursiveai/ripple-65b-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "ricursiveai/ripple-65b-preview"
+        ]
+      },
+      "vendor": "ricursiveai"
+    },
     "openrouter/runway/aleph-2": {
       "curated": false,
       "sources": {

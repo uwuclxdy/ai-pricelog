@@ -1974,6 +1974,7 @@
 {"schema":4,"source":"openrouter","model_id":"respan/span-01-lite","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Span-01 Lite"}}
 {"schema":4,"source":"openrouter","model_id":"respan/span-01-lite:free","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Span-01 Lite (free)"}}
 {"schema":4,"source":"openrouter","model_id":"respan/span-02","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.01,"output":0.0},"limits":{"context":131072},"provenance":{"name":"Span-02"}}
+{"schema":4,"source":"openrouter","model_id":"ricursiveai/ripple-65b-preview","observed_at":"2026-11-04","rates":{"input":0.2,"output":0.6,"cache_read":0.05},"limits":{"context":16384},"provenance":{"name":"ricursiveAI/Ripple-65B-Preview"}}
 {"schema":4,"source":"openrouter","model_id":"runway/aleph-2","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Aleph 2.0"}}
 {"schema":4,"source":"openrouter","model_id":"runway/gen-4.5","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Gen-4.5"}}
 {"schema":4,"source":"openrouter","model_id":"sakana/fugu-max","observed_at":"2026-09-11","rates":{"input":2.0,"output":6.0,"cache_read":0.25},"fees":{"web_search":0.01},"limits":{"context":1000000},"provenance":{"name":"Fugu Max"}}
