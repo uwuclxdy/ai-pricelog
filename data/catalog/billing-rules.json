@@ -328,6 +328,26 @@
       "citation": [
         "https://docs.digitalocean.com/release-notes/"
       ]
+    },
+    {
+      "id": "google-gemini-2.5-pro-2.5-flash-deprecation-2026-11-02",
+      "provider": "google",
+      "effective": "2026-12-01",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-11-02 entry deprecates gemini-2.5-pro (replaced by gemini-3.8-flash) and gemini-2.5-flash (replaced by gemini-3.5-flash-lite): neither is available to select in Google AI Studio any longer, and effective 2026-12-01 every API request to gemini-2.5-pro is automatically routed to gemini-3.8-flash and billed at Gemini 3.8 Flash rates, every API request to gemini-2.5-flash to gemini-3.5-flash-lite and billed at Gemini 3.5 Flash-Lite rates; the entry says to update the model string before that date and lists the breaking API changes (function calling and thought_signature validation, thinking_level replacing thinking_budget, removed sampling parameters and prefilled model turns). until the routing date the stored 2.5 rows keep billing their own rates; the entry names no timezone, so UTC is the recorded frame. removal rows come through the absence machinery",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
+    },
+    {
+      "id": "xai-grok-imagine-image-quality-retirement-2026-11-02",
+      "provider": "xai",
+      "effective": "2026-11-02",
+      "timezone": "UTC",
+      "statement": "the release notes' November 2, 2026 entry retires grok-imagine-image-quality: requests to grok-imagine-image-quality and grok-imagine-image-pro are now served by grok-imagine-image-2.0-low (grok-imagine-image-2.0 with quality set to low) at a lower per-image price, with no request changes; usage.cost_in_usd_ticks on each response reflects the lower price, and gRPC responses report grok-imagine-image-2.0-low as the model. the index carries no per-image xai row (image entries have no token pricing), so no store row changes; the page names no timezone, so UTC is the recorded frame",
+      "citation": [
+        "https://docs.x.ai/developers/release-notes"
+      ]
     }
   ]
 }
