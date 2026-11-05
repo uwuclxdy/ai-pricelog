@@ -9,7 +9,12 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
+November 2026 5 November You can now remove a Droplet snapshot’s copy from a single region without deleting the snapshot or its copies in other regions, using the DigitalOcean API or the Control Panel.
+Read How to Add or Remove Droplet Snapshots in Other Regions to learn how to remove a regional copy.
+Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
+Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
+To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
+4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
 SSO configuration no longer requires your IdP to send a team_role claim.
 When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.

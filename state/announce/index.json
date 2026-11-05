@@ -77,8 +77,8 @@
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
-      "sha256": "2405fd9f22c2b0aa6532fe136020824e0a69ffd251630cb7a0d8e329d5742714",
-      "fetched": "2026-10-29T15:00:16Z"
+      "sha256": "b5dd80d40b2ddab3fd628add4d0f353b22ee461d888e74f7ec87b5c6598c584f",
+      "fetched": "2026-11-05T16:00:20Z"
     }
   },
   "perplexity": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "2bbdf2cbcce84a3df3367377d1b04da1cb3c0d332af3aef9cda032690b9bf85c",
-      "fetched": "2026-11-05T04:00:13Z"
+      "sha256": "e7910324e118049347d0a7206b23f1ce8be8482f03cef6456582c58ab13e5964",
+      "fetched": "2026-11-05T16:00:20Z"
     }
   },
   "databricks": {
