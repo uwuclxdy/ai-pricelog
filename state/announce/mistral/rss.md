@@ -1,4 +1,7 @@
-Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Le Chonk: Built for Coders, Trusted by Defenders.
+Mistral Blog Latest news and updates from Mistral https://mistral.ai/ Le Chonk brings the brains.
+Studio puts it to work.
+https://mistral.ai/news/build-with-studio/ https://mistral.ai/news/build-with-studio/ Build and deploy enterprise agents, workflows and apps faster with Mistral Studio and Le Chonk full control over your models, data and infrastructure.
+Le Chonk: Built for Coders, Trusted by Defenders.
 https://mistral.ai/news/mistral-large-4-oss/ https://mistral.ai/news/mistral-large-4-oss/ The weights of Mistral Large 4 (Le Chonk) are now open.
 A 1T parameter multimodal model, and best open-weight model for coding, trained in Europe.
 Mistral Advances AI for Engineering with NVIDIA https://mistral.ai/news/mistral-nvidia-ai-for-industrial-engineering/ https://mistral.ai/news/mistral-nvidia-ai-for-industrial-engineering/ Mistral is collaborating with NVIDIA to develop a new generation of AI-native engineering workflows powered by NVIDIA accelerated computing.
