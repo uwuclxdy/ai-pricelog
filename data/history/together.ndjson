@@ -1,6 +1,7 @@
 {"schema":4,"source":"together","model_id":"cogito-v2.1-671b","observed_at":"2026-08-26","rates":{"input":1.25,"output":1.25},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-03","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"limits":{"context":1000000},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"deepseek-v4-flash-0731","observed_at":"2026-11-05","removed":true,"rates":{"input":0.14,"output":0.28,"cache_read":0.03}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro","observed_at":"2026-04-24","rates":{"input":2.1,"output":4.4,"cache_read":0.2},"limits":{"context":512000},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro","observed_at":"2026-06-09","rates":{"input":1.74,"output":3.48,"cache_read":0.2},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-pro","observed_at":"2026-08-26","rates":{"input":1.74,"output":3.48,"cache_read":0.2},"provenance":{"url":"https://www.together.ai/pricing"}}
@@ -17,6 +18,7 @@
 {"schema":4,"source":"together","model_id":"gemma-4-31b","observed_at":"2026-05-14","rates":{"input":0.2,"output":0.5},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"gemma-4-31b","observed_at":"2026-05-21","rates":{"input":0.39,"output":0.97},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"gemma-4-31b","observed_at":"2026-08-26","rates":{"input":0.39,"output":0.97},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"gemma-4-31b","observed_at":"2026-11-05","removed":true,"rates":{"input":0.39,"output":0.97}}
 {"schema":4,"source":"together","model_id":"gemma-4-31b-it-pearl","observed_at":"2026-05-15","rates":{"input":0.28,"output":0.86},"limits":{"context":32000},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"gemma-4-31b-it-pearl","observed_at":"2026-08-26","rates":{"input":0.28,"output":0.86},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"gemma-4-31b-it-pearl","observed_at":"2026-08-28","removed":true}
@@ -52,7 +54,9 @@
 {"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2025-12-27","rates":{"input":0.88,"output":0.88},"provenance":{"url":"https://arquivo.pt/wayback/20251227224619id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2026-05-29","rates":{"input":1.04,"output":1.04},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2026-08-26","rates":{"input":1.04,"output":1.04},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"llama-3.3-70b","observed_at":"2026-11-05","removed":true,"rates":{"input":1.04,"output":1.04}}
 {"schema":4,"source":"together","model_id":"minimax-m2.7","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"minimax-m2.7","observed_at":"2026-11-05","removed":true,"rates":{"input":0.3,"output":1.2,"cache_read":0.06}}
 {"schema":4,"source":"together","model_id":"minimax-m3","observed_at":"2026-06-12","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":524288},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"minimax-m3","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"minimax-m3.1-flash","observed_at":"2026-10-23","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"provenance":{"url":"https://www.together.ai/pricing"}}
@@ -86,5 +90,6 @@
 {"schema":4,"source":"together","model_id":"qwen3.8-flash","observed_at":"2026-09-22","rates":{"input":0.09,"output":0.28},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3.8-flash","observed_at":"2026-10-05","rates":{"input":0.15,"output":0.47},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"reflection-beam","observed_at":"2026-10-17","rates":{"input":0.4,"output":1.2,"cache_read":0.04},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"ripple-65b-preview","observed_at":"2026-11-05","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"rnj-1-instruct","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"ternary-bonsai-27b","observed_at":"2026-08-29","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://www.together.ai/pricing"}}
