@@ -3666,6 +3666,15 @@
       },
       "vendor": "google"
     },
+    "google/gemini-omni-1.2-flash": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-omni-1.2-flash"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-omni-flash-preview": {
       "curated": false,
       "sources": {
