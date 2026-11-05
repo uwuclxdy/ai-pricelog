@@ -61,7 +61,10 @@ If you have an existing Go app that uses v0, we recommend upgrading to v1 .
 go1.25.9-go1.25.14 go1.26.2-go1.26.10 go1.27.0-go1.27.3 21 October The following DeepSeek model is now available on DigitalOcean Inference for serverless inference : DeepSeek V4.1 Flash 1017 For more information, see the Available Models page .
 20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
-13 October In public preview , you can now create spend alerts for Serverless Inference model access keys .
+13 October Cloud Security Posture Management (CSPM) paid plans support DigitalOcean Kubernetes (DOKS) clusters as workloads.
+Each DOKS cluster with coverage enabled counts as one workload and is evaluated using workload rules.
+For more information, see Workloads and Billing .
+In public preview , you can now create spend alerts for Serverless Inference model access keys .
 Each key’s spend is tracked against its own monthly budget, and you receive email alerts as it crosses the thresholds you choose.
 You can also have the alert pause the key when its spend reaches 100% of its budget, which stops Serverless Inference requests for that key without affecting other keys.
 Paused keys resume at the start of the next billing cycle, or sooner if you raise the budget, turn off pausing, or delete the alert.
