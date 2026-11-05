@@ -5016,6 +5016,24 @@
       },
       "vendor": "moonshot"
     },
+    "moonshot/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "moonshot": [
+          "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
+    },
+    "moonshot/kimi-k3.1-pro-highspeed": {
+      "curated": false,
+      "sources": {
+        "moonshot": [
+          "kimi-k3.1-pro-highspeed"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "moonshot/moonshot-v1-128k": {
       "curated": false,
       "sources": {
