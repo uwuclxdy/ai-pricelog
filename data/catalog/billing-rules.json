@@ -358,6 +358,16 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "google-gemini-omni-1.1-flash-routing-2026-12-03",
+      "provider": "google",
+      "effective": "2026-12-03",
+      "timezone": "UTC",
+      "statement": "the changelog's 2026-11-05 Gemini Omni 1.1 Flash automatic routing notice: effective 2026-12-03 all API requests to gemini-omni-1.1-flash automatically route to gemini-omni-1.2-flash and bill at Gemini Omni 1.2 Flash rates, so the stored gemini-omni-1.1-flash row's own rates stop applying from that instant; the same entry's Gemini Omni 1.2 Flash GA note puts video output at $12.00 per 1M tokens, 30% below the 1.1 section's $17.50 video output (the store carries no video-output axis). the entry names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
     }
   ]
 }
