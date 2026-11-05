@@ -5643,6 +5643,24 @@
       },
       "vendor": "openai"
     },
+    "openai/gpt-image-2.6-flare": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-2.6-flare"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-image-2.6-sunburst": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-image-2.6-sunburst"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/aion-labs/aion-2.0": {
       "curated": false,
       "sources": {
