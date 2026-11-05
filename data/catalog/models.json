@@ -1712,6 +1712,33 @@
       },
       "vendor": "google"
     },
+    "deepinfra/glm-4.6": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "glm-4.6"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "deepinfra/glm-4.7": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "glm-4.7"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "deepinfra/glm-5.3-flash": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "glm-5.3-flash"
+        ]
+      },
+      "vendor": "zai"
+    },
     "deepinfra/llama-3.3-70b-instruct-turbo": {
       "curated": false,
       "sources": {
