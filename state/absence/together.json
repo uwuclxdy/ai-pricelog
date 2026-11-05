@@ -1,1 +1,1 @@
-{"deepseek-v4-flash-0731": {"absent_runs": 1, "since": "2026-11-04"}, "gemma-4-31b": {"absent_runs": 1, "since": "2026-11-04"}, "llama-3.3-70b": {"absent_runs": 1, "since": "2026-11-04"}, "minimax-m2.7": {"absent_runs": 1, "since": "2026-11-04"}}
+{"deepseek-v4-flash-0731": {"absent_runs": 2, "since": "2026-11-04"}, "gemma-4-31b": {"absent_runs": 2, "since": "2026-11-04"}, "llama-3.3-70b": {"absent_runs": 2, "since": "2026-11-04"}, "minimax-m2.7": {"absent_runs": 2, "since": "2026-11-04"}}
