@@ -9444,6 +9444,24 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-image-2.6-flare": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-2.6-flare"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-image-2.6-sunburst": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-image-2.6-sunburst"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-transcribe": {
       "curated": false,
       "sources": {
