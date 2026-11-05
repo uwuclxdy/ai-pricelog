@@ -14,10 +14,7 @@ SSO configuration no longer requires your IdP to send a team_role claim.
 When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.
 See the SSO configuration how-to for generic OIDC setup and provider-specific guidance .
 October 2026 30 October The following OpenAI model is now available on DigitalOcean Inference for serverless inference : GPT-6.1 Terra For more information, see the Available Models page .
-28 October Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
-Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
-To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
-Kafka 4.3 is now available for database clusters .
+28 October Kafka 4.3 is now available for database clusters .
 New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.
 Kafka versions 3.9 and 4.2 remain available.
 Kafka 4.3 reaches end of availability for new clusters on 25 June 2027 and end of life on 25 September 2027.

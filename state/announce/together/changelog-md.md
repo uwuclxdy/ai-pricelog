@@ -1,5 +1,8 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **October 23, 2026** ## Post-training: MiniMax M3.1 Flash `MiniMaxAI/MiniMax-M3.1-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 262,144-token context for both training and sampling, rank up to 32, and up to three adapter sessions per resource.
+# Changelog **November 2, 2026** ## Post-training: GLM-5.3 Flash `zai-org/GLM-5.3-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and up to five adapter sessions per resource.
+The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the GLM codec.
+To deploy a GLM-5.3 Flash adapter on dedicated model inference, first [prepare it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
+**October 23, 2026** ## Post-training: MiniMax M3.1 Flash `MiniMaxAI/MiniMax-M3.1-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 262,144-token context for both training and sampling, rank up to 32, and up to three adapter sessions per resource.
 The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the MiniMax codec.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
 **October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
