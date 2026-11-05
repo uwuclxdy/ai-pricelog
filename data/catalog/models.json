@@ -450,6 +450,15 @@
       },
       "vendor": "nvidia"
     },
+    "cerebras/moonshotai-kimi-k3": {
+      "curated": false,
+      "sources": {
+        "cerebras": [
+          "moonshotai-kimi-k3"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "cerebras/qwen-3.8-27b": {
       "curated": false,
       "sources": {
