@@ -1,5 +1,8 @@
 > ## AI Agent Context > Get the complete documentation index at: https://aistudio.google.com/llms.txt > Use this file to discover all available pages.
 > For the full documentation in a single file, fetch: https://aistudio.google.com/llms-full.txt # Release notes This page documents updates to the Gemini API.
+## November 4, 2026 {% id="11-04-2026" %} * **Voice remixing for Gemini 3.8 TTS**: Released [Voice remixing](/docs/voice-remixing), which lets you modify an existing prebuilt or [designed](/docs/voice-design) voice using natural-language instructions to create a new, independent stored voice.
+Use `POST /v1beta/voices` with `gemini-3.8-flash-tts` (or remix interactively in [Google AI Studio](https://aistudio.google.com/generate-speech)) to generate a `voice_...` ID, then synthesize speech with [Gemini 3.8 Flash TTS](/docs/models/gemini-3.8-flash-tts) or [Gemini 3.8 Flash-Lite TTS](/docs/models/gemini-3.8-flash-lite-tts).
+See the [Voice remixing guide](/docs/voice-remixing) to get started.
 ## November 2, 2026 {% id="11-02-2026" %} * **Gemini 2.5 Pro deprecation**: [`gemini-2.5-pro`](/docs/models/gemini-2.5-pro) is [deprecated](/docs/deprecations#gemini-2.5-pro-models) and is no longer available to select in Google AI Studio.
 Effective December 1, 2026, all API requests to `gemini-2.5-pro` will automatically route to [`gemini-3.8-flash`](/docs/models/gemini-3.8-flash) and be billed at [Gemini 3.8 Flash rates](/docs/pricing#gemini-3.8-flash).
 Before December 1, 2026, update your model string to `gemini-3.8-flash` and review the [Gemini 3.8 Flash migration guide](/docs/whats-new-gemini-3.8#migrate-to-gemini-3-8-flash).

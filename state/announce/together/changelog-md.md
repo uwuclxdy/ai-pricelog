@@ -1,5 +1,8 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 3, 2026** ## Messages API and Responses API Together AI now supports the Anthropic [Messages API](https://docs.together.ai/docs/inference/messages-api.md) at `POST /v1/messages` and the OpenAI [Responses API](https://docs.together.ai/docs/inference/responses-api.md) at `POST /v1/responses`.
+# Changelog **November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
+You can't deploy its adapters on dedicated model inference yet.
+See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
+**November 3, 2026** ## Messages API and Responses API Together AI now supports the Anthropic [Messages API](https://docs.together.ai/docs/inference/messages-api.md) at `POST /v1/messages` and the OpenAI [Responses API](https://docs.together.ai/docs/inference/responses-api.md) at `POST /v1/responses`.
 To run an app built on either API on Together, change its API key, base URL, and model.
 Both APIs support `zai-org/GLM-5.3` and `zai-org/GLM-5.2` on serverless inference, and `zai-org/GLM-5.3-Flash` and `zai-org/GLM-5.2` on dedicated model inference.
 ## Post-training: FP4 preparation for MiniMax M3.1 Flash You can now deploy a MiniMax M3.1 Flash adapter on dedicated model inference by first [preparing it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
