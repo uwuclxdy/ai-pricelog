@@ -262,12 +262,6 @@ For details, see How to Pull AI Images from DOCR Mirror Registries and How to Pu
 DigitalOcean has patched “Safe RET” across our AMD Droplet fleet.
 We applied the fix at the infrastructure level, and no customer action is required.
 For more information, see AMD’s security bulletin, AMD-SB-7061 .
-5 August Spend alerts are now generally available for teams and organizations, replacing billing alerts.
-You can create multiple alerts with incremental percentage thresholds, scoped to total spend, specific products, or, for organizations, specific teams.
-Notifications arrive within an hour of your spend crossing a threshold.
-Existing billing alerts have been migrated to the Spend alerts page as an alert named Account Spend Alert .
-The following Anthropic model is deprecated from DigitalOcean Inference as of 5 August 2026: Claude Opus 4.1 Migrate to Claude Opus 4.8 ( anthropic-claude-opus-4.8 ) to avoid service disruption.
-For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
