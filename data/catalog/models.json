@@ -9642,6 +9642,15 @@
       },
       "vendor": "openrouter"
     },
+    "openrouter/openrouter/auto-code": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openrouter/auto-code"
+        ]
+      },
+      "vendor": "openrouter"
+    },
     "openrouter/openrouter/bodybuilder": {
       "curated": false,
       "sources": {

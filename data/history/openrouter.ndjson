@@ -391,6 +391,7 @@
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-10-27","rates":{"input":0.44,"output":1.32,"cache_read":0.014},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-10-27","rates":{"input":0.119,"output":0.238,"cache_read":0.0238},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-11-03","rates":{"input":0.059,"output":0.3,"cache_read":0.035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
+{"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-11-05","rates":{"input":0.0553,"output":0.3,"cache_read":0.035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-08-29","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-09-08","rates":{"input":0.11,"output":0.33,"cache_read":0.0035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-09-22","removed":true,"rates":{"input":0.11,"output":0.33,"cache_read":0.0035},"limits":{"context":1048576}}
@@ -1019,6 +1020,7 @@
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-09-27","rates":{"input":0.21,"output":0.84,"cache_read":0.042},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-10-15","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7","observed_at":"2026-11-05","rates":{"input":0.21,"output":0.84,"cache_read":0.042},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.7"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":196608},"provenance":{"name":"MiniMax M2.7 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.7:free","observed_at":"2026-09-09","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":196608}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m3","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.06},"limits":{"context":1048576},"provenance":{"name":"MiniMax M3"}}
@@ -1675,6 +1677,7 @@
 {"schema":4,"source":"openrouter","model_id":"openai/whisper-large-v3-turbo","observed_at":"2026-10-26","modality":"transcription","rates":{"input":3.33,"output":0.0},"provenance":{"name":"Whisper Large V3 Turbo"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/auto","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Auto Router"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/auto-beta","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Auto Router (Beta)"}}
+{"schema":4,"source":"openrouter","model_id":"openrouter/auto-code","observed_at":"2026-11-05","limits":{"context":2000000},"provenance":{"name":"Auto Code"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/bodybuilder","observed_at":"2026-08-26","limits":{"context":128000},"provenance":{"name":"Body Builder (beta)"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/free","observed_at":"2026-02-23","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://openrouter.ai/blog/announcements/february-release-spotlight/"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":200000},"provenance":{"name":"Free Models Router"}}
