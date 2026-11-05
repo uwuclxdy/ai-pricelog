@@ -330,31 +330,11 @@
       ]
     },
     {
-      "id": "google-gemini-2.5-pro-2.5-flash-deprecation-2026-11-02",
-      "provider": "google",
-      "effective": "2026-12-01",
-      "timezone": "UTC",
-      "statement": "the changelog's 2026-11-02 entry deprecates gemini-2.5-pro and gemini-2.5-flash: neither is available to select in Google AI Studio any longer, and effective 2026-12-01 all API requests to gemini-2.5-pro route automatically to gemini-3.8-flash and are billed at Gemini 3.8 Flash rates, and all API requests to gemini-2.5-flash route automatically to gemini-3.5-flash-lite and are billed at Gemini 3.5 Flash-Lite rates; the entry says to update the model strings to gemini-3.8-flash and gemini-3.5-flash-lite before that date. it names no timezone; UTC is the recorded frame",
-      "citation": [
-        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
-      ]
-    },
-    {
       "id": "google-gemini-2.5-deprecation-2026-11-02",
       "provider": "google",
       "effective": "2026-12-01",
       "timezone": "UTC",
       "statement": "the changelog's 2026-11-02 entry deprecates gemini-2.5-pro and gemini-2.5-flash and removes both from Google AI Studio: effective 2026-12-01 all API requests to gemini-2.5-pro automatically route to gemini-3.8-flash and bill at Gemini 3.8 Flash rates, and all requests to gemini-2.5-flash automatically route to gemini-3.5-flash-lite and bill at Gemini 3.5 Flash-Lite rates; the stored 2.5 rows' rates stop applying at that instant. the entry names no timezone; UTC is the recorded frame",
-      "citation": [
-        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
-      ]
-    },
-    {
-      "id": "google-gemini-2.5-pro-flash-deprecation-2026-11-02",
-      "provider": "google",
-      "effective": "2026-12-01",
-      "timezone": "UTC",
-      "statement": "the changelog's 2026-11-02 entry deprecates gemini-2.5-pro and gemini-2.5-flash (neither is selectable in Google AI Studio any longer) and moves their billing from 2026-12-01: every API request to gemini-2.5-pro routes automatically to gemini-3.8-flash and bills at Gemini 3.8 Flash rates, and every request to gemini-2.5-flash routes automatically to gemini-3.5-flash-lite and bills at Gemini 3.5 Flash-Lite rates; the entry says to update the model string before that date and names no timezone, so UTC is the recorded frame",
       "citation": [
         "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
       ]
