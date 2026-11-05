@@ -2,6 +2,7 @@
 {"schema":4,"source":"novita","model_id":"baidu/cobuddy","observed_at":"2026-06-09","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://blogs.novita.ai/cobuddy-on-novita-ai-coding-llm-api/"}}
 {"schema":4,"source":"novita","model_id":"baidu/cobuddy","observed_at":"2026-08-26","rates":{"input":0.28,"output":1.13,"cache_read":0.07},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"baidu/ernie-4.5-21B-a3b","observed_at":"2026-08-26","rates":{"input":0.07,"output":0.28},"limits":{"context":120000},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"baidu/ernie-4.5-21B-a3b","observed_at":"2026-11-05","removed":true,"rates":{"input":0.07,"output":0.28},"limits":{"context":120000}}
 {"schema":4,"source":"novita","model_id":"baidu/ernie-4.5-vl-424b-a47b","observed_at":"2026-08-26","rates":{"input":0.42,"output":1.25},"limits":{"context":123000},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"baidu/ernie-4.5-vl-424b-a47b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.42,"output":1.25},"limits":{"context":123000}}
 {"schema":4,"source":"novita","model_id":"deepseek/deepseek-ocr-2","observed_at":"2026-02-20","rates":{"input":0.03,"output":0.03},"provenance":{"url":"https://blogs.novita.ai/deepseek-ocr2-api-provider/"}}
