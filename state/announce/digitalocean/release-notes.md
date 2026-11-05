@@ -19,6 +19,9 @@ Secrets Manager stores passwords, API keys, access tokens, and other credentials
 You can create and update secrets in the DigitalOcean Control Panel or with doctl secrets .
 For rates and the monthly allowance, see Secrets Manager Pricing .
 For more information, see Secrets Manager Overview .
+Persistent workspaces for DigitalOcean Harness Runtime are in public preview and are enabled per team.
+A persistent workspace keeps the files in /workspace after you remove the session or take a checkpoint, so a later session can start from those files.
+To create one and attach it to a session, see How to Use Persistent Workspaces with Harness Runtime .
 October 2026 30 October The following OpenAI model is now available on DigitalOcean Inference for serverless inference : GPT-6.1 Terra For more information, see the Available Models page .
 28 October Kafka 4.3 is now available for database clusters .
 New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.

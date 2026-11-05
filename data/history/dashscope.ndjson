@@ -14,6 +14,7 @@
 {"schema":4,"source":"dashscope","model_id":"kimi-k2.7-code","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"kimi-k2.7-code","observed_at":"2026-08-31","removed":true,"rates":{"input":0.95,"output":4.0}}
 {"schema":4,"source":"dashscope","model_id":"kimi-k3","observed_at":"2026-10-28","rates":{"input":3.0,"output":15.0},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
+{"schema":4,"source":"dashscope","model_id":"kimi-k3.1-pro","observed_at":"2026-11-05","rates":{"input":2.0,"output":10.0},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"qvq-max","observed_at":"2026-08-29","rates":{"input":1.2,"output":4.8},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"qvq-max","observed_at":"2026-10-28","removed":true,"rates":{"input":1.2,"output":4.8}}
 {"schema":4,"source":"dashscope","model_id":"qwen-flash","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.4},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
