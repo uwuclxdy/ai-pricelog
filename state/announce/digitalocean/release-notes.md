@@ -260,10 +260,6 @@ DigitalOcean Container Registry (DOCR) now provides mirror registries: DigitalOc
 You can pull nvidia/pytorch and rocm/pytorch images from a region-local mirror using standard Docker tooling, or use SOCI lazy loading to start containers in seconds while image layers stream on demand.
 DOCR also supports pushing your own SOCI-enabled images to your registry.
 For details, see How to Pull AI Images from DOCR Mirror Registries and How to Push SOCI-Enabled Images to Your Container Registry .
-6 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : DeepSeek V4 Flash 0731 For more information, see the Available Models page .
-DigitalOcean has patched “Safe RET” across our AMD Droplet fleet.
-We applied the fix at the infrastructure level, and no customer action is required.
-For more information, see AMD’s security bulletin, AMD-SB-7061 .
 In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
