@@ -45,6 +45,7 @@ the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/m
 
 a confirmed deprecation or retirement of priced models (the channel prose names the models and the change in when their rates apply):
 
+- check first whether HEAD's or any queued sibling's `data/catalog/billing-rules.json` already carries the change: the merge unions identical appends, but an id minted differently per run (`<what>` is freeform) lands as semantic duplicates — reuse an existing rule's exact `id` when one names the same change, else spell `<provider>-<what>-<date>` once and keep it
 - append ONE entry at the END of the `rules` array in `data/catalog/billing-rules.json`: `id` as `<provider>-<what>-<date>`, `provider`, `effective` (YYYY-MM-DD), `timezone`, `statement` naming the models and their migrations, `citation` = the channel url
 - read every statement off the channel's snapshot on the newest branch that carries it (`git show origin/<branch>:state/announce/<source>/<slug>.md`) before writing it, never off an older PR's copy
 - in the SAME commit bump the count pin: `tests/test_billing_rules.py` `test_committed_billing_rules_pass_schema` asserts `len(rules) == N`. the rules and the pin land atomically, or the next CI run reds
