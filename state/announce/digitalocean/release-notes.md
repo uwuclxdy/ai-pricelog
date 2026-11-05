@@ -13,6 +13,11 @@ November 2026 2 November Teams can use Microsoft Entra ID as an identity provide
 SSO configuration no longer requires your IdP to send a team_role claim.
 When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.
 See the SSO configuration how-to for generic OIDC setup and provider-specific guidance .
+DigitalOcean Secrets Manager is now available in public preview .
+Secrets Manager stores passwords, API keys, access tokens, and other credentials as named secrets in a DigitalOcean region.
+You can create and update secrets in the DigitalOcean Control Panel or with doctl secrets .
+For rates and the monthly allowance, see Secrets Manager Pricing .
+For more information, see Secrets Manager Overview .
 October 2026 30 October The following OpenAI model is now available on DigitalOcean Inference for serverless inference : GPT-6.1 Terra For more information, see the Available Models page .
 28 October Kafka 4.3 is now available for database clusters .
 New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.

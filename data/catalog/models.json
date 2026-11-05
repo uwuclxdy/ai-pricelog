@@ -6543,6 +6543,24 @@
       },
       "vendor": "cohere"
     },
+    "openrouter/cohere/embed-5-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/embed-5-fast"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/cohere/embed-5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/embed-5-pro"
+        ]
+      },
+      "vendor": "cohere"
+    },
     "openrouter/cohere/north-mini-code:free": {
       "curated": false,
       "sources": {
@@ -6566,6 +6584,24 @@
       "sources": {
         "openrouter": [
           "cohere/rerank-4-pro"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/cohere/rerank-5-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/rerank-5-fast"
+        ]
+      },
+      "vendor": "cohere"
+    },
+    "openrouter/cohere/rerank-5-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "cohere/rerank-5-pro"
         ]
       },
       "vendor": "cohere"
@@ -8297,6 +8333,15 @@
       "sources": {
         "openrouter": [
           "moondream/moondream3.1-9b-a2b"
+        ]
+      },
+      "vendor": "moondream"
+    },
+    "openrouter/moondream/parakeet-ultra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "moondream/parakeet-ultra"
         ]
       },
       "vendor": "moondream"
@@ -10406,6 +10451,15 @@
         ]
       },
       "vendor": "sourceful"
+    },
+    "openrouter/stealth/crouton-alpha": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "stealth/crouton-alpha"
+        ]
+      },
+      "vendor": "stealth"
     },
     "openrouter/stealth/ox-alpha": {
       "curated": false,
