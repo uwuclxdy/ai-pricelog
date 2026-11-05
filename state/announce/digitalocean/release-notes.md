@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
+November 2026 4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
+2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
 SSO configuration no longer requires your IdP to send a team_role claim.
 When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.
 See the SSO configuration how-to for generic OIDC setup and provider-specific guidance .
