@@ -30,8 +30,8 @@ GPT-5.6 Sol on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/g
 Sol leads pass@1 by 3.7 points; GLM-5.3 wins pass@4 at half the cost, and a GLM-first cascade hits 85.9%.
 GLM-5.3 vs.
 Claude Fable 5 on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/glm-5-3-vs-claude-fable-5-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/glm-5-3-vs-claude-fable-5-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on GLM-5.3 and Claude Fable 5.
-A tie on pass@1, but GLM-5.3 wins pass@4 and costs 5.4x less: \$3.99 per rollout vs.
-\$21.63.
+A tie on pass@1, but GLM-5.3 wins pass@4 and costs 5.4x less: $3.99 per rollout vs.
+$21.63.
 https://www.together.ai/blog/deepseek-v4-pro-0813-vs-gpt-5-6-sol-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-gpt-5-6-sol-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on DeepSeek V4 Pro 0813 and GPT-5.6 Sol.
 Sol leads pass@1 by 10 points at 35x the cost; Pro wins pass@4, and a Pro-first cascade hits 83.0%.
 DeepSeek V4 Pro 0813 vs Claude Fable 5 on DeepSWE: Cost, Coding, and Routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-claude-fable-5-on-deepswe-cost-coding-and-routing https://www.together.ai/blog/deepseek-v4-pro-0813-vs-claude-fable-5-on-deepswe-cost-coding-and-routing We ran 904 DeepSWE rollouts on DeepSeek V4 Pro 0813 and Claude Fable 5.
