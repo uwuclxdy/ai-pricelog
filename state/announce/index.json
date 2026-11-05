@@ -103,8 +103,8 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "57d36c7590ccd593f50f08bed8399691343e91a19df8356e88cc12739018cd84",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "63e4c379b216d1f98c6826791cb1ca8077c4c635baa24c007133dc27b042ff78",
+      "fetched": "2026-11-05T04:00:13Z"
     }
   },
   "fireworks": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "576f7a741d74de7bbfd3d3abd8f0b83beab66fce9a680203db2c65e042c6d2ca",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "2bbdf2cbcce84a3df3367377d1b04da1cb3c0d332af3aef9cda032690b9bf85c",
+      "fetched": "2026-11-05T04:00:13Z"
     }
   },
   "databricks": {
