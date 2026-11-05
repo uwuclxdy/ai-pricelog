@@ -53,8 +53,8 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "0ab1f633abff73e1c946952ab4092ced38d2add987c3c32d9502e58f5bb8b06f",
-      "fetched": "2026-10-26T20:00:11Z"
+      "sha256": "a688576e27ffe73bcdf61d3ba16125db86cb63f9f8f7306334990498107a0e35",
+      "fetched": "2026-11-05T09:00:26Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
@@ -103,15 +103,15 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "63e4c379b216d1f98c6826791cb1ca8077c4c635baa24c007133dc27b042ff78",
-      "fetched": "2026-11-05T04:00:13Z"
+      "sha256": "b882bcb442852a20965be551518fe8608e6e56da2c6a556e7acbf0c267849cdc",
+      "fetched": "2026-11-05T09:00:26Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "3b1a40448a1559bc4477d04a438c9f567ca03b454ea0abb3219842ce47f753e9",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "5fcc03bbc8ffb6e65ea4123dc89dc5d9494c80385888fd0ac2031260b5ab9a3a",
+      "fetched": "2026-11-05T09:00:26Z"
     }
   },
   "cohere": {
@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "efd020d73bda9f19ec2de024a1f176652cf65c9cf5ae0257a120db4267467440",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "ddaf98415ee47909d45f25c9bbced935e0e01cdf18168e1b3d8fd9f945c2ea3c",
+      "fetched": "2026-11-05T09:00:26Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
