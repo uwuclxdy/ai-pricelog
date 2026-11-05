@@ -1339,6 +1339,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-super-vl","observed_at":"2026-10-20","rates":{"input":0.15,"output":0.5,"cache_read":0.02},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3.5 Super VL"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-super-vl:free","observed_at":"2026-10-15","rates":{"input":0.0,"output":0.0},"limits":{"context":1000000},"provenance":{"name":"Nemotron 3.5 Super VL (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-transcribe","observed_at":"2026-10-29","modality":"transcription","rates":{"input":33.3,"output":0.0},"provenance":{"name":"Nemotron 3.5 Transcribe"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3.5-transcribe","observed_at":"2026-11-05","modality":"transcription","rates":{"input":16.6667,"output":0.0},"provenance":{"name":"Nemotron 3.5 Transcribe"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/parakeet-tdt-0.6b-v3","observed_at":"2026-10-26","modality":"transcription","rates":{"input":25.0,"output":0.0},"provenance":{"name":"Parakeet TDT 0.6B v3"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/parakeet-tdt-0.6b-v3","observed_at":"2026-11-03","modality":"transcription","rates":{"input":16.6667,"output":0.0},"provenance":{"name":"Parakeet TDT 0.6B v3"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/switchyard","observed_at":"2026-10-02","limits":{"context":1000000},"provenance":{"name":"Switchyard"}}
@@ -1839,6 +1840,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-10-20","rates":{"input":0.1,"output":1.1,"cache_read":0.07},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-10-21","rates":{"input":0.09,"output":1.1},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-11-03","rates":{"input":0.1,"output":1.1,"cache_read":0.07},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-11-05","rates":{"input":0.09,"output":1.1},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.2},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-10-28","removed":true,"rates":{"input":0.15,"output":1.2},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-reranker-8b","observed_at":"2026-10-26","modality":"rerank","rates":{"input":0.0,"output":0.0},"limits":{"context":40960},"provenance":{"name":"Qwen3 Reranker 8B"}}
