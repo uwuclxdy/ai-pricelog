@@ -47,7 +47,7 @@
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
       "sha256": "aa062006f51248b7ff0c04701dc1c036ae9414fc84d04ff706a8be93cd624b4c",
-      "fetched": "2026-11-02T09:00:15Z"
+      "fetched": "2026-11-02T14:00:13Z"
     }
   },
   "minimax": {
@@ -59,7 +59,7 @@
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
       "sha256": "49ef35ce109b5f7a708cc78a03909e7ad3dd78364bbf3682dae108966df7a2e0",
-      "fetched": "2026-11-02T09:00:15Z"
+      "fetched": "2026-11-02T14:00:13Z"
     }
   },
   "xai": {
@@ -104,7 +104,7 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "2eb8802f1ec5aa5690ec78efb1e902f17ad7256c5b41932405907c81684f4963",
-      "fetched": "2026-11-02T09:00:15Z"
+      "fetched": "2026-11-02T14:00:13Z"
     }
   },
   "fireworks": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "c4042ecd966c6880f80018aecb66fb76daa162b8bab0a87c244f78afbdb516be",
-      "fetched": "2026-10-30T19:00:15Z"
+      "sha256": "2b6e958f5616895defd9f7fabed5751c1801b1cb9ee943049198cc9251ec5606",
+      "fetched": "2026-11-02T14:00:13Z"
     }
   },
   "databricks": {

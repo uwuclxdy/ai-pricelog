@@ -10839,6 +10839,15 @@
       },
       "vendor": "z-ai"
     },
+    "openrouter/z-ai/glm-5.3-flashx-legal": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "z-ai/glm-5.3-flashx-legal"
+        ]
+      },
+      "vendor": "z-ai"
+    },
     "openrouter/z-ai/glm-5.3-prime": {
       "curated": false,
       "sources": {
