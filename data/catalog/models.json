@@ -8400,6 +8400,15 @@
       },
       "vendor": "morph"
     },
+    "openrouter/morph/reflex": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "morph/reflex"
+        ]
+      },
+      "vendor": "morph"
+    },
     "openrouter/nace-ai/drex-max": {
       "curated": false,
       "sources": {
