@@ -1,8 +1,21 @@
 Release Notes | Cohere For AI agents: a documentation index is available at the root level at /llms.txt.
 Append /llms.txt to any URL for a page-level index, or .md for the markdown version of any page.
 docs v2 API v2 API Search / Ask AI DASHBOARD PLAYGROUND DOCS COMMUNITY LOG IN Guides and concepts API Reference Release Notes LLMU Cookbooks Search / Ask AI Skip to navigation This page is for version v2 API (default).
-For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page November 3, 2026 Key features Calling open models Availability October 21, 2026 Key features Upgrading Example query with Context Focus Availability September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability May 20, 2026 Key Features Technical Details
-Availability April 4, 2026 Retirement notice March 26, 2026 Technical details Getting started Availability Release Notes Subscribe via RSS November 3, 2026 November 3, 2026 Open Models and Regional Serving in Model Vault Model Vault and Model Vault Encrypted now run leading third-party open models alongside Cohere’s models, on fully managed, dedicated infrastructure.
+For other versions, use one of these documentation indexes: - v2 API (default): https://docs.cohere.com/v2/llms.txt - v1 API: https://docs.cohere.com/v1/llms.txt On this page November 4, 2026 Available models Getting started November 3, 2026 Key features Calling open models Availability October 21, 2026 Key features Upgrading Example query with Context Focus Availability September 30, 2026 Key features Availability September 9, 2026 Key features Technical details Availability August 27, 2026 Availability July 7, 2026 Technical Details Availability June 9, 2026 Technical Details Availability
+May 20, 2026 Key Features Technical Details Availability April 4, 2026 Retirement notice Release Notes Subscribe via RSS November 4, 2026 November 4, 2026 Embed 5 and Rerank 5 Are Now Available on OpenRouter Cohere’s Embed 5 and Rerank 5 models are now available on OpenRouter .
+If you build on OpenRouter, you can now add Cohere embeddings and reranking to your search and RAG pipelines with your existing OpenRouter API key.
+Available models Embed 5 Pro ( cohere/embed-5-pro ): Optimized for the highest retrieval quality, particularly for offline indexing and quality-critical retrieval.
+Embed 5 Fast ( cohere/embed-5-fast ): Optimized for low latency and high throughput, particularly for interactive search, agent loops, and high-volume query traffic.
+Rerank 5 Pro ( cohere/rerank-5-pro ): Optimized for the highest ranking quality, particularly for complex, reasoning-heavy queries and long or domain-specific documents.
+Rerank 5 Fast ( cohere/rerank-5-fast ): Rerank 5 quality for latency- and cost-sensitive workloads.
+Outperforms Rerank 4 Pro.
+Embed 5 accepts text, images, and mixed text-and-image inputs such as PDF pages.
+Embed 5 Pro and Fast share an embedding space, so you can index your corpus with Pro and embed queries with Fast.
+For pricing, see each model’s OpenRouter page.
+Getting started See Using Cohere Models on OpenRouter for the full list of Cohere models on OpenRouter, a setup checklist, and the differences from the Cohere API.
+For an end-to-end retrieval pipeline, see OpenRouter’s RAG with Embeddings & Rerank cookbook.
+For more on the models themselves, see the Embed 5 announcement and the Rerank 5 announcement .
+November 3, 2026 November 3, 2026 Open Models and Regional Serving in Model Vault Model Vault and Model Vault Encrypted now run leading third-party open models alongside Cohere’s models, on fully managed, dedicated infrastructure.
 You can choose the right model for each task and run every one of them with the same protections.
 Key features Open models in Model Vault : deploy models from DeepSeek, Z.ai (GLM), Xiaomi (MiMo), NVIDIA (Nemotron), Google (Gemma), OpenAI (GPT-OSS), Microsoft (Phi), Alibaba (Qwen), and Mistral AI.
 See Standard Vault supported models .
@@ -95,18 +108,4 @@ April 4, 2026 April 4, 2026 Retirement of Embed v2.0 and Aya Expanse / Vision 8B
 Requests using these model IDs will fail.
 Retired models: embed-english-v2.0 embed-english-light-v2.0 embed-multilingual-v2.0 c4ai-aya-expanse-8b c4ai-aya-vision-8b We recommend these replacements: Embedding tasks embed-english-v3.0 embed-multilingual-v3.0 embed-v4.0 Chat tasks command-r7b-12-2024 command-a-03-2025 command-a-reasoning-08-2025 For the full announcement and lifecycle context, see the Deprecations page.
 For questions or assistance, contact support@cohere.com .
-March 26, 2026 March 26, 2026 Announcing the Cohere Transcribe model We’re pleased to announce the release of Cohere Transcribe , our first transcription model.
-Cohere Transcribe specializes in audio-in, text-out, automatic speech recognition (ASR).
-Technical details Model name : cohere-transcribe-03-2026 Input : Audio waveform Output : Text Languages covered : English, German, French, Italian, Spanish, Portuguese, Greek, Dutch, Polish, Vietnamese, Chinese, Arabic, Japanese, Korean.
-License : Apache 2.0 API endpoint : Audio Transcriptions API Getting started The model is available immediately through Cohere’s Audio Transcriptions API endpoint .
-You can start transcribing audio using the following example query: PYTHON import cohere co = cohere .
-ClientV2 () response = co .
-audio .
-transcriptions .
-create ( model = " cohere-transcribe-03-2026 " , language = " en " , file = open ( " ./sample.wav " , " rb " ), ) print ( response ) Availability You can access Cohere Transcribe via our API for free, low-setup experimentation subject to rate limits.
-See the Different Types of API Keys and Rate Limits page for usage details and integration guidance.
-For production deployment without rate limits, provision a dedicated Model Vault .
-This enables low-latency, private cloud inference without having to manage infrastructure.
-Pricing is calculated per hour-instance, with discounted plans for longer-term commitments.
-Contact our team to discuss your requirements.
 Older posts Next Built with Guides and concepts API Reference Release Notes LLMU Cookbooks v2 API v1 API

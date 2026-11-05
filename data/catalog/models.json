@@ -5448,6 +5448,15 @@
       },
       "vendor": "zai-org"
     },
+    "novita/zai-org/glm-5.3-flashX": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "zai-org/glm-5.3-flashX"
+        ]
+      },
+      "vendor": "zai-org"
+    },
     "o1": {
       "curated": true,
       "name": "o1",
