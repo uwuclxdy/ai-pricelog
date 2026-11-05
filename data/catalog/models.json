@@ -7462,6 +7462,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.0-tiny": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-tiny"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/inclusionai/ling-3.1-flash": {
       "curated": false,
       "sources": {
