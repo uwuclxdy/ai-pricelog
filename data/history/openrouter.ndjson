@@ -392,6 +392,7 @@
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-10-27","rates":{"input":0.119,"output":0.238,"cache_read":0.0238},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-11-03","rates":{"input":0.059,"output":0.3,"cache_read":0.035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-11-05","rates":{"input":0.0553,"output":0.3,"cache_read":0.035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
+{"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731","observed_at":"2026-11-05","rates":{"input":0.0527,"output":0.3,"cache_read":0.035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-08-29","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-09-08","rates":{"input":0.11,"output":0.33,"cache_read":0.0035},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4 Flash 0731 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4-flash-0731:batch","observed_at":"2026-09-22","removed":true,"rates":{"input":0.11,"output":0.33,"cache_read":0.0035},"limits":{"context":1048576}}
@@ -994,6 +995,7 @@
 {"schema":4,"source":"openrouter","model_id":"minimax/hailuo-3-max","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"H3 Max"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-01","observed_at":"2025-09-22","rates":{"input":0.2,"output":1.1},"limits":{"context":1000192},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-01","observed_at":"2026-08-26","rates":{"input":0.2,"output":1.1},"limits":{"context":1000192},"provenance":{"name":"MiniMax-01"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-01","observed_at":"2026-11-05","removed":true,"rates":{"input":0.2,"output":1.1},"limits":{"context":1000192}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2025-09-22","rates":{"input":0.3,"output":1.65},"limits":{"context":1000000},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2025-12-28","rates":{"input":0.4,"output":2.2},"limits":{"context":1000000},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m1","observed_at":"2026-01-25","rates":{"input":0.44,"output":1.76},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=minimax/minimax-m1&shape=v4&range=all"}}
@@ -1008,9 +1010,12 @@
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-08-26","rates":{"input":0.255,"output":1.02},"limits":{"context":204800},"provenance":{"name":"MiniMax M2"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-09-24","rates":{"input":0.3,"output":1.2},"limits":{"context":204800},"provenance":{"name":"MiniMax M2"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-09-27","rates":{"input":0.255,"output":1.02},"limits":{"context":204800},"provenance":{"name":"MiniMax M2"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2","observed_at":"2026-11-05","removed":true,"rates":{"input":0.255,"output":1.02},"limits":{"context":204800}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2-her","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":65536},"provenance":{"name":"MiniMax M2-her"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2-her","observed_at":"2026-11-05","removed":true,"rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.1","observed_at":"2025-12-28","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.1","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.1"}}
+{"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.1","observed_at":"2026-11-05","removed":true,"rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-08-26","rates":{"input":0.27,"output":1.08,"cache_read":0.027},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-09-10","rates":{"input":0.3,"output":1.2,"cache_read":0.03},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
 {"schema":4,"source":"openrouter","model_id":"minimax/minimax-m2.5","observed_at":"2026-09-11","rates":{"input":0.27,"output":1.08,"cache_read":0.027},"limits":{"context":204800},"provenance":{"name":"MiniMax M2.5"}}
@@ -1179,6 +1184,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-10-28","rates":{"input":0.6725,"output":3.1,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-10-28","rates":{"input":0.56,"output":3.1,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-10-30","rates":{"input":0.6,"output":3.5,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-11-05","rates":{"input":0.6,"output":3.5,"cache_read":0.16},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-26","rates":{"input":0.95,"output":4.0,"cache_read":0.19},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
