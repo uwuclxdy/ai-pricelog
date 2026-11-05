@@ -78,18 +78,6 @@ SCRAPE_CASES = [
         1000.14,
     ),
     Case(
-        "google",
-        google_page,
-        "google_page/pricing.html",
-        "gemini-2.5-flash",
-        "$0.30 (text / image / video)",
-        "$0.30",
-        "$0,30",
-        "$1,000.30",
-        "input_cost_per_token",
-        1000.30,
-    ),
-    Case(
         "baseten",
         baseten_page,
         "baseten_page/pricing.html",
@@ -298,6 +286,45 @@ def test_moonshot_scrape_reads_a_thousands_group(monkeypatch):
     pricing = scrape_moonshot_k3(monkeypatch, "1,000.30")
     assert pricing is not None
     assert pricing.cache_read_cost_per_token == pytest.approx(1000.30 / 1e6)
+
+
+GOOGLE_PAGE_URL = "https://aistudio.google.com/docs/pricing.md"
+GOOGLE_25_FLASH_INPUT = "$0.30 (text / image / video)"
+
+
+def scrape_google_25_flash(monkeypatch: pytest.MonkeyPatch, input_cell: str):
+    """serve the markdown twin with `input_cell` swapped into the 2.5-flash
+    Standard input row: the text-surface twin of the soup-based Case serve."""
+    text = (FIXTURES / "google_page" / "pricing.md").read_text(encoding="utf-8")
+    assert text.count(GOOGLE_25_FLASH_INPUT) == 1
+    monkeypatch.setattr(
+        google_page, "fetch_text", lambda url: text.replace(GOOGLE_25_FLASH_INPUT, input_cell)
+    )
+    return google_page.scrape(
+        ProviderCfg(
+            key="google",
+            provider="Google",
+            detector="google_page",
+            detector_url=GOOGLE_PAGE_URL,
+            scraper="google_page",
+            scraper_url=GOOGLE_PAGE_URL,
+        ),
+        "gemini-2.5-flash",
+    )
+
+
+def test_google_scrape_rejects_a_comma_decimal_amount(monkeypatch):
+    with pytest.raises(FetchError) as excinfo:
+        scrape_google_25_flash(monkeypatch, "$0,30 (text / image / video)")
+    message = str(excinfo.value)
+    assert "gemini-2.5" in message
+    assert "0,30" in message
+
+
+def test_google_scrape_reads_a_thousands_group(monkeypatch):
+    pricing = scrape_google_25_flash(monkeypatch, "$1,000.30 (text / image / video)")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(1000.30 / 1e6)
 
 
 def test_cohere_prose_rate_with_a_comma_decimal_skips_with_a_warning(monkeypatch, caplog):

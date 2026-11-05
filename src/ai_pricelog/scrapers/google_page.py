@@ -1,14 +1,17 @@
-"""scrape per-token pricing for google models from the gemini-api pricing page.
+"""scrape per-token pricing for google models from the AI Studio pricing
+markdown twin.
 
-same page and model sections as detection. the watched table is the Standard
-tier: the table under the "Standard" h3 when the section carries tier tabs,
-the section's single table otherwise. Batch/Flex/Priority tabs are ignored.
+same markdown surface and sections as detection (the detector module owns
+the parsing; see its docstring). the watched table is the Standard tier: the
+table under the `{% tab title="Standard" %}` block when the section carries
+tabs, the section's single table otherwise. Batch/Flex/Priority/Contributor
+tabs are ignored.
 
 rows are keyed by their first cell: "Input price*" -> input, "Output price*"
 -> output, "Context caching price" -> cache read; the paid column is the
 header cell holding "Paid Tier". every cell's first dollar amount is the base
-rate: promo cells list the current rate first ($0.75 through December 31,
-2026. $1.50 starting January 1, 2027.), tiered cells list the <=200k base
+rate: two-step cells list the in-force rate first ($2.00 through November 30,
+2026. $4.00 starting December 1, 2026.), tiered cells list the <=200k base
 first ($2.00, prompts <= 200k tokens $4.00, prompts > 200k tokens), and
 cache cells list the read rate before the storage price. a cell carrying a
 `> N` tier marker (`> 200k tokens`, `> 200k`) also emits the `$` amount right
@@ -25,8 +28,8 @@ Not available) are unpriced -> None. sections without an output row
 (embedding models) price with output 0: embeddings bill input tokens only
 (the litellm convention); their input label is "Input price" or "Text input
 price". max_tokens_in comes from a "1M token context window" mention in the
-section's description paragraphs (only Gemini 2.5 Flash carries one), else 0.
-mode is chat.
+section's prose, the body outside its table blocks (only Gemini 2.5 Flash
+carries one), else 0. mode is chat.
 
 dedup_keys maps page spellings the store holds under a different id:
 - gemini-3.1-flash-image / gemini-3-pro-image -> the stored -preview
@@ -39,22 +42,21 @@ from __future__ import annotations
 
 import re
 
-from bs4 import BeautifulSoup, Tag
-
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors.google_page import (
     _PAID_HEADER,
-    _section_elements,
+    _Section,
+    _section_prose,
+    _section_tables,
     _sections,
     _slugs,
+    _Table,
 )
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import (
     FetchError,
     amount_scan,
-    fetch_soup,
-    own_cells,
-    own_table_rows,
+    fetch_text,
     unreadable_rate_error,
 )
 
@@ -67,7 +69,7 @@ _GA_IMAGE_IDS = {
 }
 _DATED_PREVIEW_IDS = {
     r"^gemini-2\.5-flash-native-audio-preview(-\d{2}-\d{4})?$": "gemini-live-2.5-flash",
-    r"^gemini-2\.5-flash-lite-preview(-\d{2}-\d{4})?$": "gemini-2.5-flash-lite",
+    r"^gemini-2.5-flash-lite-preview(-\d{2}-\d{4})?$": "gemini-2.5-flash-lite",
 }
 
 
@@ -81,43 +83,39 @@ def dedup_keys(model_id: str) -> list[str]:
     return []
 
 
-def _find_section(soup: BeautifulSoup, model_id: str) -> Tag | None:
-    for h2 in _sections(soup):
-        if model_id in _slugs(h2):
-            return h2
-    return None
+def _find_section(sections: list[_Section], model_id: str) -> _Section | None:
+    """the section spelling `model_id`, by link text or heading anchor."""
+    return next((section for section in sections if model_id in _slugs(section)), None)
 
 
-def _standard_table(h2: Tag, model_id: str, url: str) -> Tag:
-    elements = list(_section_elements(h2))
-    for element in elements:
-        if element.name == "devsite-selector":
-            for tier in element.find_all("section", recursive=False):
-                heading = tier.find("h3")
-                if heading is not None and heading.get_text(" ", strip=True) == "Standard":
-                    table = tier.find("table")
-                    if table is not None:
-                        return table
+def _standard_table(section: _Section, model_id: str, url: str) -> _Table:
+    """the section's Standard-tier table: the table under the `{% tab
+    title="Standard" %}` block when the section carries tabs, its single
+    table otherwise."""
+    tables = list(_section_tables(section))
+    if any(title is not None for title, _ in tables):
+        standard = next((table for title, table in tables if title == "Standard"), None)
+        if standard is None:
             raise FetchError(f"no Standard tier table for {model_id} on {url}")
-    for element in elements:
-        if element.name == "table":
-            return element
-    raise FetchError(f"no pricing table for {model_id} on {url}")
+        return standard
+    if not tables:
+        raise FetchError(f"no pricing table for {model_id} on {url}")
+    return tables[0][1]
 
 
-def _rows(table: Tag, model_id: str, url: str) -> dict[str, str]:
-    rows = list(own_table_rows(table))
-    if not rows:
+def _rows(table: _Table, model_id: str, url: str) -> dict[str, str]:
+    """label -> paid-cell text, keyed by the row's first cell."""
+    if not table.header:
         raise FetchError(f"malformed pricing table for {model_id} on {url}: no header row")
-    header = [cell.get_text(" ", strip=True) for cell in own_cells(rows[0])]
-    paid_index = next((index for index, cell in enumerate(header) if _PAID_HEADER in cell), None)
+    paid_index = next(
+        (index for index, cell in enumerate(table.header) if _PAID_HEADER in cell), None
+    )
     if paid_index is None:
         raise FetchError(f"malformed pricing table for {model_id} on {url}: no Paid Tier column")
     priced: dict[str, str] = {}
-    for row in rows[1:]:
-        cells = [cell.get_text(" ", strip=True) for cell in own_cells(row)]
-        if cells and cells[0] and len(cells) > paid_index:
-            priced[cells[0]] = cells[paid_index]
+    for row in table.rows:
+        if row and row[0] and len(row) > paid_index:
+            priced[row[0]] = row[paid_index]
     return priced
 
 
@@ -204,25 +202,22 @@ def _window_rates(
     return (entry,)
 
 
-def _context_window(h2: Tag) -> int:
-    for element in _section_elements(h2):
-        if element.name != "p":
-            continue
-        match = _CONTEXT_WINDOW_RE.search(element.get_text(" ", strip=True))
-        if match is None:
-            continue
-        value = float(match.group(1).replace(",", ""))
-        scale = 1_000 if match.group(2) in ("k", "K") else 1_000_000
-        return int(value * scale)
-    return 0
+def _context_window(section: _Section) -> int:
+    """the context window the section's prose names, 0 when none."""
+    match = _CONTEXT_WINDOW_RE.search(_section_prose(section))
+    if match is None:
+        return 0
+    value = float(match.group(1).replace(",", ""))
+    scale = 1_000 if match.group(2) in ("k", "K") else 1_000_000
+    return int(value * scale)
 
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
-    soup = fetch_soup(cfg.scraper_url)
-    h2 = _find_section(soup, model_id)
-    if h2 is None:
+    sections = _sections(fetch_text(cfg.scraper_url))
+    section = _find_section(sections, model_id)
+    if section is None:
         return None
-    rows = _rows(_standard_table(h2, model_id, cfg.scraper_url), model_id, cfg.scraper_url)
+    rows = _rows(_standard_table(section, model_id, cfg.scraper_url), model_id, cfg.scraper_url)
     input_cell = _cell_value(rows, "Input price")
     input_cost = _per_token(input_cell, model_id, cfg.scraper_url)
     if input_cost is None:
@@ -242,7 +237,7 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
         input_cost_per_token=input_cost / 1e6,
         output_cost_per_token=output_cost / 1e6,
         mode="chat",
-        max_tokens_in=_context_window(h2),
+        max_tokens_in=_context_window(section),
         cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
         window_rates=_window_rates(input_cell, output_cell, cache_cell, model_id, cfg.scraper_url),
     )
