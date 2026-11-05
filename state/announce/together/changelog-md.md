@@ -1,10 +1,30 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
+# Changelog **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
+Pricing: \$2.00 input / \$10.00 output / \$0.20 cached input (per 1M tokens).
+**November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
 You can't deploy its adapters on dedicated model inference yet.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
 **November 3, 2026** ## Messages API and Responses API Together AI now supports the Anthropic [Messages API](https://docs.together.ai/docs/inference/messages-api.md) at `POST /v1/messages` and the OpenAI [Responses API](https://docs.together.ai/docs/inference/responses-api.md) at `POST /v1/responses`.
 To run an app built on either API on Together, change its API key, base URL, and model.
 Both APIs support `zai-org/GLM-5.3` and `zai-org/GLM-5.2` on serverless inference, and `zai-org/GLM-5.3-Flash` and `zai-org/GLM-5.2` on dedicated model inference.
+## Together Python SDK and CLI 3.1.0 Together Python SDK 3.1.0 and Together CLI 3.1.0 are now available.
+> [!WARNING] > > `tg beta jig deploy` no longer stores your API key as a `TOGETHER_API_KEY` secret on new deployments.
+Existing deployments keep the secret they already have.
+> > Sprocket 0.1.8 and later authenticate with the deployment's service token instead.
+Before you deploy with CLI 3.1.0, raise the `sprocket` pin in your image to 0.1.8 or later.
+If your own code reads `TOGETHER_API_KEY`, [set it as a secret](https://docs.together.ai/reference/cli/jig.md#jig-secrets-set).
+**What's new:** * **Deploy after `tg login`:** `tg beta jig deploy` now works with a `tg login` session, so you don't need an API key to [deploy a container](https://docs.together.ai/docs/containers-quickstart.md).
+* **Expiring secrets:** `client.beta.jig.secrets.create` and `update` take `ttl_seconds`, which sets how long a secret lives before it's deleted, from one to 14 days.
+Secrets return their deletion time as `expires_at`.
+To set an expiry from the CLI, pass `--ttl` to [`tg beta jig secrets set`](https://docs.together.ai/reference/cli/jig#jig-secrets-set).
+* **`--debug` replaces `TOGETHER_DEBUG`:** `tg beta jig` no longer reads the `TOGETHER_DEBUG` environment variable.
+For debug output, pass `--debug`.
+* **Idle timeout in the SDK:** `ModelResourcesClient.create` takes `inactive_timeout`, the number of seconds a resource stays `READY` without activity before it stops.
+To keep a resource from [stopping for inactivity](https://docs.together.ai/docs/post-training/model-resources.md#idle-timeout) while you aren't running operations, call `extend_expiry`.
+* **`ready_timeout` replaces `timeout`:** `ModelResourcesClient.create` now takes `ready_timeout`, which caps how long it [waits for the resource](https://docs.together.ai/docs/post-training/model-resources.md#create-a-resource) to become `READY`.
+`timeout` still works but shows a `FutureWarning`.
+* **GB200 GPU clusters:** `client.clusters.create` and [`tg clusters create`](https://docs.together.ai/reference/cli/clusters#create-a-cluster) accept `GB200_SXM` as a GPU type.
+* **Applied credit in the SDK:** Line items from `client.organization.usage.costs.list()` now include a typed `applied_credit` object.
 ## Post-training: FP4 preparation for MiniMax M3.1 Flash You can now deploy a MiniMax M3.1 Flash adapter on dedicated model inference by first [preparing it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
 The base model already ships in its serving format, so the job only merges the adapter, which takes about 1 hour.
 **November 2, 2026** ## Post-training: GLM-5.3 Flash `zai-org/GLM-5.3-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and up to five adapter sessions per resource.
@@ -58,6 +78,10 @@ The `adapter_object_id` and `adapter_revision_id` names are deprecated but still
 A request can use either pair, but not both.
 A job's `params` list the adapter under both pairs of names, with the same values.
 See [Prepare for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md#find-the-adapter-id) for details.
+## Batch jobs are single-model Each batch job now runs against one model.
+Every line in the input file must name the same model in `body.model`, and a file that mixes models fails during `VALIDATING` instead of running.
+To run the same prompts through several models, submit one input file and one batch job per model.
+See [Batch processing overview](https://docs.together.ai/docs/inference/batch/overview.md) for details.
 **October 15, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `meta-models/Muse-Spark-Open-816B-A42B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$1.25 input / \$4.25 output / \$0.15 cached input (per 1M tokens).
 * `nvidia/NVIDIA-Nemotron-3.5-Super-VL`: 262,144 context length, NVFP4 quantization, image input, function calling, and structured outputs.
@@ -182,6 +206,16 @@ See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration 
 **September 14, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `MiniMaxAI/MiniMax-H3`: Pricing: \$0.1391/sec at 2k.
 **September 11, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash`: 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
+## Pricing update Fine-tuning is now priced per model instead of by parameter-count tier, and many models cost less.
+Each model has its own per-token rates for supervised (SFT) and preference (DPO) training, with separate rates for LoRA and full fine-tuning.
+See [Fine-tuning pricing](https://docs.together.ai/docs/fine-tuning/pricing.md).
+## Expert LoRA removed from FP4-served MoE models LoRA fine-tuning jobs can no longer target the expert layers (`w_up`, `w_gate`, `w_down`) of mixture-of-experts models served in FP4, MXFP4, or NVFP4, including `deepseek-ai/DeepSeek-V3.1`.
+These models support attention-only LoRA, and creating a job that lists an expert module returns a validation error.
+See [Target MoE expert layers](https://docs.together.ai/docs/fine-tuning/lora-vs-full.md#target-moe-expert-layers).
+## Model deprecations The following models have been deprecated and are no longer available for [fine-tuning](https://docs.together.ai/docs/fine-tuning/supported-models.md): * `nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16`.
+* `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16`.
+* `Qwen/Qwen3.5-35B-A3B-Base`.
+Recommended replacement: `Qwen/Qwen3.5-35B-A3B`.
 **September 10, 2026** ## Preemptible compute for GPU clusters Preemptible compute is now in public preview for Kubernetes GPU clusters.
 Alongside standard nodes, you can set a preemptible GPU target, and Together provisions toward it as spare capacity becomes available, at a flat discounted rate relative to on-demand.
 **What's new:** * **Preemptible GPU targets:** Set `num_preemptible_gpus` at cluster create or update from the console, CLI, or API.
