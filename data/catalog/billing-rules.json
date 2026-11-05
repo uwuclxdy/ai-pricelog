@@ -348,6 +348,16 @@
       "citation": [
         "https://docs.x.ai/developers/release-notes"
       ]
+    },
+    {
+      "id": "novita-model-retirement-2026-11-26",
+      "provider": "novita",
+      "effective": "2026-11-26",
+      "timezone": "UTC",
+      "statement": "the changelog's Nov 26, 2026 Model Deprecation Notice retires 13 models at 16:00 UTC on 2026-11-26: Sao10K/L3-8B-Stheno-v3.2, google/gemma-3-27b-it, google/gemma-4-26b-a4b-it, google/gemma-4-31b-it, meta-llama/llama-3.1-8b-instruct, meta-llama/llama-3.3-70b-instruct, openai/gpt-oss-120b, zai-org/autoglm-phone-9b-multilingual, nvidia/nemotron-3-nano-30b-a3b, deepseek/deepseek-ocr-2, baai/bge-reranker-v2-m3, qwen/qwen3-omni-30b-a3b-thinking and minimaxai/minimax-m1-80k. no replacement models are provided; requests to these models return an error after the cutoff, so their stored rates stop applying from that instant",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }

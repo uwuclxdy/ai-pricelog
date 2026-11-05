@@ -1235,6 +1235,15 @@
       },
       "vendor": "moonshot"
     },
+    "dashscope/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
+    },
     "dashscope/qvq-max": {
       "curated": false,
       "sources": {
