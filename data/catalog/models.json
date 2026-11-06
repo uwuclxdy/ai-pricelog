@@ -7209,6 +7209,24 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-omni-1.1-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-omni-1.1-flash"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-omni-1.2-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-omni-1.2-flash"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemma-2-27b-it": {
       "curated": false,
       "sources": {
