@@ -85,14 +85,14 @@
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "692c1be2726050b271dd88033ec72d785849348d8297f9822d7f0f0d07e8d9ad",
-      "fetched": "2026-11-06T16:00:17Z"
+      "fetched": "2026-11-06T19:00:13Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "7c044743a484c525f2692034d8c1ea1d4ecbd3505d388d46ceb958995102101f",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "1e8425df16c28d441a1ac20a6f4a40c67cf787e66ab49d998009cbef13a183c7",
+      "fetched": "2026-11-06T19:00:13Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -104,14 +104,14 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "fba7f705df2da9651149d95d01eaee8e967620c4b16a039440362d0af4a22b0f",
-      "fetched": "2026-11-06T16:00:17Z"
+      "fetched": "2026-11-06T19:00:13Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "281124412483cc9288f0f52346b1a0435389656597ee923db1762bfb524fe2d1",
-      "fetched": "2026-11-06T16:00:17Z"
+      "fetched": "2026-11-06T19:00:13Z"
     }
   },
   "cohere": {
@@ -124,13 +124,13 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "267dce7c8a02c39bf8b9c42493d1d2ff5ee2439a1813f8771846688ed708edc0",
-      "fetched": "2026-11-06T16:00:17Z"
+      "sha256": "13ab14f0eda28e8775cacb6a4b15743b8fdc7278781d46da8b88c0365dc623b7",
+      "fetched": "2026-11-06T19:00:13Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "92995ab94e1f436446e016706cc0d4343f8a3bd11b7cb9d926de93e93f4379c0",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "2cbdb8a069c351f9660be66898a737338466bac26863f31f05c4486bf7a08435",
+      "fetched": "2026-11-06T19:00:13Z"
     }
   },
   "cloudflare": {
@@ -144,7 +144,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "dda0878f91d3f9ea361e3ca1d7d7aec1fa81215392e12151f19b02dd64b226d9",
-      "fetched": "2026-11-06T16:00:17Z"
+      "fetched": "2026-11-06T19:00:13Z"
     }
   },
   "databricks": {

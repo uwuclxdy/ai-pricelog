@@ -368,6 +368,16 @@
       "citation": [
         "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
       ]
+    },
+    {
+      "id": "google-gemini-embedding-2-preview-deprecation-2026-11-06",
+      "provider": "google",
+      "effective": "2026-11-06",
+      "timezone": "UTC",
+      "statement": "the changelog's November 6, 2026 entry deprecates gemini-embedding-2-preview: effective 2026-11-06 all API requests to gemini-embedding-2-preview route to gemini-embedding-2 and bill at Gemini Embedding 2 rates, with the same API schema, pricing and embedding space, so the preview id stops being served under its own rates from that instant; the index carries no gemini-embedding-2-preview row (its embedding rows are gemini-embedding-2 and gemini-embedding-001), so no store row changes. the entry names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
+      ]
     }
   ]
 }

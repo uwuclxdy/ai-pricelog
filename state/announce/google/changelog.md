@@ -1,5 +1,9 @@
 > ## AI Agent Context > Get the complete documentation index at: https://aistudio.google.com/llms.txt > Use this file to discover all available pages.
 > For the full documentation in a single file, fetch: https://aistudio.google.com/llms-full.txt # Release notes This page documents updates to the Gemini API.
+## November 6, 2026 {% id="11-06-2026" %} * **Gemini Embedding 2 Preview deprecation**: [`gemini-embedding-2-preview`](/docs/models/gemini-embedding-2-preview) is [deprecated](/docs/deprecations#embedding-deprecated-models).
+Effective November 6, 2026, API requests to `gemini-embedding-2-preview` route to [`gemini-embedding-2`](/docs/models/gemini-embedding-2) at [Gemini Embedding 2 rates](/docs/pricing#gemini-embedding-2).
+Update your model string to `gemini-embedding-2`.
+`gemini-embedding-2` uses the same API schema, pricing, and embedding space, so no other code changes or vector re-indexing are needed.
 ## November 5, 2026 {% id="11-05-2026" %} * **Gemini Omni 1.2 Flash generally available (GA)**: Released [Gemini Omni 1.2 Flash](/docs/models/gemini-omni-flash) (`gemini-omni-1.2-flash`), featuring up to 15-second video generation and conversational editing (3 to 10 seconds for first and last frame interpolation, and 3 to 10 seconds per-turn video extension up to 30 seconds total length), improved character and subject consistency across up to 6 reference images, 30% lower video output [pricing](/docs/pricing#gemini-omni-1.2-flash) ($12.00 per 1M tokens), and doubled paid-tier [rate
 limits](/docs/rate-limits#gemini-omni-flash-rate-limits).
 See the [Gemini Omni Flash guide](/docs/omni) to get started.
