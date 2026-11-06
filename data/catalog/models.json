@@ -9768,6 +9768,15 @@
       },
       "vendor": "parallel"
     },
+    "openrouter/parallel/decisions-fast:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "parallel/decisions-fast:free"
+        ]
+      },
+      "vendor": "parallel"
+    },
     "openrouter/particle-ai/particle-1": {
       "curated": false,
       "sources": {
@@ -10142,6 +10151,15 @@
       "sources": {
         "openrouter": [
           "qwen/qwen3.8-2.4t-a95b:batch"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3.8-27b:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3.8-27b:batch"
         ]
       },
       "vendor": "qwen"
