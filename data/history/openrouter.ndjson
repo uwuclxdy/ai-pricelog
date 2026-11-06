@@ -1320,6 +1320,7 @@
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-28","rates":{"input":0.08,"output":0.45},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-28","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-10-31","rates":{"input":0.3,"output":2.4,"cache_read":0.15},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3 Super"}}
+{"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b","observed_at":"2026-11-06","rates":{"input":0.075,"output":0.4},"limits":{"context":1048576},"provenance":{"name":"Nemotron 3 Super"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Nemotron 3 Super (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-super-120b-a12b:free","observed_at":"2026-10-27","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"nvidia/nemotron-3-ultra-550b-a55b","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"limits":{"context":512288},"provenance":{"name":"Nemotron 3 Ultra"}}
