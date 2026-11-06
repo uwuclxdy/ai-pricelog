@@ -1,4 +1,4 @@
-Release Notes | DigitalOcean Documentation Docs Platform Products Reference Support Sign Up Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) Release Notes Give Feedback For AI agents: The documentation index is at https://docs.digitalocean.com/llms.txt .
+Release Notes | DigitalOcean Documentation Docs Platform Products Reference Support Sign Up Release Notes Give Feedback For AI agents: The documentation index is at https://docs.digitalocean.com/llms.txt .
 Markdown versions of pages use the same URL with index.html.md in place of the HTML page (for example, append index.html.md to the directory path instead of opening the HTML document).
 Release Notes Last verified 30 Jul 2026 Copy page as Markdown View page as Markdown Release notes track incremental improvements and major releases for the DigitalOcean cloud platform.
 This page lists notes from the last 90 days .
@@ -11,6 +11,10 @@ Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
 November 2026 5 November You can now remove a Droplet snapshot’s copy from a single region without deleting the snapshot or its copies in other regions, using the DigitalOcean API or the Control Panel.
 Read How to Add or Remove Droplet Snapshots in Other Regions to learn how to remove a regional copy.
+The DigitalOcean Documentation MCP server searches the full documentation site index, and each search result includes an excerpt from the page body.
+You can restrict docs-search results to one product with the Product parameter, and read long pages in sections with the StartIndex and MaxLength parameters of docs-get-page .
+The server does not require authentication or a DigitalOcean account.
+To add it to Claude, Claude Desktop, Claude Code, Cursor, Visual Studio Code, or Codex, see Connect the Documentation MCP Server .
 Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
 To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
@@ -269,7 +273,7 @@ DigitalOcean Container Registry (DOCR) now provides mirror registries: DigitalOc
 You can pull nvidia/pytorch and rocm/pytorch images from a region-local mirror using standard Docker tooling, or use SOCI lazy loading to start containers in seconds while image layers stream on demand.
 DOCR also supports pushing your own SOCI-enabled images to your registry.
 For details, see How to Pull AI Images from DOCR Mirror Registries and How to Push SOCI-Enabled Images to Your Container Registry .
-In this article...
+Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
 Try using different keywords or simplifying your search terms.
