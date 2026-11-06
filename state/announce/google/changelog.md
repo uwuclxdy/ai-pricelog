@@ -1,6 +1,10 @@
 > ## AI Agent Context > Get the complete documentation index at: https://aistudio.google.com/llms.txt > Use this file to discover all available pages.
 > For the full documentation in a single file, fetch: https://aistudio.google.com/llms-full.txt # Release notes This page documents updates to the Gemini API.
-## November 5, 2026 {% id="11-05-2026" %} * **Expanded Office and OpenDocument file support**: The Gemini API now accepts PowerPoint 97-2003 (PPT), OpenDocument Presentation (ODP), and OpenDocument Spreadsheet (ODS) files as input, and adds page-image processing for Word 97-2003 (DOC) files.
+## November 5, 2026 {% id="11-05-2026" %} * **Gemini Omni 1.2 Flash generally available (GA)**: Released [Gemini Omni 1.2 Flash](/docs/models/gemini-omni-flash) (`gemini-omni-1.2-flash`), featuring up to 15-second video generation and conversational editing (3 to 10 seconds for first and last frame interpolation, and 3 to 10 seconds per-turn video extension up to 30 seconds total length), improved character and subject consistency across up to 6 reference images, 30% lower video output [pricing](/docs/pricing#gemini-omni-1.2-flash) ($12.00 per 1M tokens), and doubled paid-tier [rate
+limits](/docs/rate-limits#gemini-omni-flash-rate-limits).
+See the [Gemini Omni Flash guide](/docs/omni) to get started.
+* **Gemini Omni 1.1 Flash automatic routing notice**: Effective **December 3, 2026**, API requests to `gemini-omni-1.1-flash` will automatically route to `gemini-omni-1.2-flash` at [Gemini Omni 1.2 Flash rates](/docs/pricing#gemini-omni-1.2-flash).
+* **Expanded Office and OpenDocument file support**: The Gemini API now accepts PowerPoint 97-2003 (PPT), OpenDocument Presentation (ODP), and OpenDocument Spreadsheet (ODS) files as input, and adds page-image processing for Word 97-2003 (DOC) files.
 DOC, PPT, and ODP files are rendered as page images.
 For ODS files, the model receives the data and formulas from the first sheet.
 Processing for DOCX, DOTX, ODT, PPTX, XLSX, and XLS files is unchanged.
