@@ -17,7 +17,7 @@ The server does not require authentication or a DigitalOcean account.
 To add it to Claude, Claude Desktop, Claude Code, Cursor, Visual Studio Code, or Codex, see Connect the Documentation MCP Server .
 Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
-To get started, see How to Supervise Harness Runtime Sessions from the Cuttlefish iOS App .
+To get started, see How to Steer and Approve Harness Runtime Sessions from the Cuttlefish iOS App .
 4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
 SSO configuration no longer requires your IdP to send a team_role claim.
