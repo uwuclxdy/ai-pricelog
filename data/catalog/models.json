@@ -1676,6 +1676,15 @@
       },
       "vendor": null
     },
+    "deepinfra/deepseek-v4-pro-0813": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "deepseek-v4-pro-0813"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "deepinfra/gemini-3.1-pro": {
       "curated": false,
       "sources": {
