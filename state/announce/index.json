@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "2cd20e4c74e515e605aa4cd77a0b763cad060498382169b39043cd10e96f65bd",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "692c1be2726050b271dd88033ec72d785849348d8297f9822d7f0f0d07e8d9ad",
+      "fetched": "2026-11-06T15:00:16Z"
     }
   },
   "together": {
@@ -103,15 +103,15 @@
   "novita": {
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
-      "sha256": "b3267bd1537885510571edaadcfbeed591c397508a8fb666aad1b65431de0666",
-      "fetched": "2026-11-05T14:00:26Z"
+      "sha256": "fba7f705df2da9651149d95d01eaee8e967620c4b16a039440362d0af4a22b0f",
+      "fetched": "2026-11-06T15:00:16Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "5fcc03bbc8ffb6e65ea4123dc89dc5d9494c80385888fd0ac2031260b5ab9a3a",
-      "fetched": "2026-11-05T09:00:26Z"
+      "sha256": "281124412483cc9288f0f52346b1a0435389656597ee923db1762bfb524fe2d1",
+      "fetched": "2026-11-06T15:00:16Z"
     }
   },
   "cohere": {
@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "ddaf98415ee47909d45f25c9bbced935e0e01cdf18168e1b3d8fd9f945c2ea3c",
-      "fetched": "2026-11-05T09:00:26Z"
+      "sha256": "267dce7c8a02c39bf8b9c42493d1d2ff5ee2439a1813f8771846688ed708edc0",
+      "fetched": "2026-11-06T15:00:16Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "e7910324e118049347d0a7206b23f1ce8be8482f03cef6456582c58ab13e5964",
-      "fetched": "2026-11-05T16:00:20Z"
+      "sha256": "dda0878f91d3f9ea361e3ca1d7d7aec1fa81215392e12151f19b02dd64b226d9",
+      "fetched": "2026-11-06T15:00:16Z"
     }
   },
   "databricks": {

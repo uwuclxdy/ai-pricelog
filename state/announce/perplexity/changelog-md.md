@@ -2,6 +2,10 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** ### Agent API: the `ultra` effort level **New: `ultra` (`ultra@2026-11-05.0`).** The Agent API accepts `effort="ultra"` for broad research and data-gathering tasks where coverage matters most.
+Runs can take a long time, so you can also run it in [background mode](https://docs.perplexity.ai/docs/agent-api/background-mode.md).
+`ultra` runs on `anthropic/claude-opus-5-5` and has no frozen configuration; call it by name or pin the returned version.
+See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md#choosing-an-effort-level).
 **November 2026** ### Decisions API: URL fetching and page freshness Pass a page URL as `state` with `mode: "web_grounding"` to fetch its text before searching.
 The fetched text replaces the URL before search.
 The response returns the page in `fetched_results` and search evidence in `search_results`.
