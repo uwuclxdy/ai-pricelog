@@ -104,14 +104,14 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "fba7f705df2da9651149d95d01eaee8e967620c4b16a039440362d0af4a22b0f",
-      "fetched": "2026-11-05T20:00:14Z"
+      "fetched": "2026-11-05T21:00:17Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "a1332a745397b2f352649c43ca266694d8de442d5a04d1528e7f976777fad25d",
-      "fetched": "2026-11-05T20:00:14Z"
+      "sha256": "e104666bee0c2e81aaafdc73c717a6a64154ee2263b7e477eee43b4040eb49bc",
+      "fetched": "2026-11-05T21:00:17Z"
     }
   },
   "cohere": {
@@ -125,7 +125,7 @@
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
       "sha256": "267dce7c8a02c39bf8b9c42493d1d2ff5ee2439a1813f8771846688ed708edc0",
-      "fetched": "2026-11-05T20:00:14Z"
+      "fetched": "2026-11-05T21:00:17Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
@@ -144,7 +144,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "980dd8220dd9171943f60606d996af4b577939687776277990bc2f5006a740d5",
-      "fetched": "2026-11-05T20:00:14Z"
+      "fetched": "2026-11-05T21:00:17Z"
     }
   },
   "databricks": {
