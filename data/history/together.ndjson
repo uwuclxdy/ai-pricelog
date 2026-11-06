@@ -1,3 +1,4 @@
+{"schema":4,"source":"together","model_id":"beam-1.0-501b-a23b","observed_at":"2026-11-06","rates":{"input":0.4,"output":1.2,"cache_read":0.04},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"cogito-v2.1-671b","observed_at":"2026-08-26","rates":{"input":1.25,"output":1.25},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-03","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"limits":{"context":1000000},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-26","rates":{"input":0.14,"output":0.28,"cache_read":0.03},"provenance":{"url":"https://www.together.ai/pricing"}}
@@ -63,6 +64,7 @@
 {"schema":4,"source":"together","model_id":"muse-glimmer-30b","observed_at":"2026-08-11","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"limits":{"context":131072},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"muse-glimmer-30b","observed_at":"2026-08-26","rates":{"input":0.35,"output":1.5,"cache_read":0.04},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"muse-spark-open","observed_at":"2026-10-15","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"muse-spark-open-816b-a42b","observed_at":"2026-11-06","rates":{"input":1.25,"output":4.25,"cache_read":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-26","rates":{"input":0.6,"output":3.6,"cache_read":0.2},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"nvidia-nemotron-3-ultra","observed_at":"2026-08-28","removed":true}
 {"schema":4,"source":"together","model_id":"nvidia-nemotron-3.5-super-vl","observed_at":"2026-10-15","rates":{"input":0.15,"output":0.5,"cache_read":0.02},"provenance":{"url":"https://www.together.ai/pricing"}}
