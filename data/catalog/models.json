@@ -12190,6 +12190,15 @@
       },
       "vendor": "stepfun"
     },
+    "together/beam-1.0-501b-a23b": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "beam-1.0-501b-a23b"
+        ]
+      },
+      "vendor": null
+    },
     "together/cogito-v2.1-671b": {
       "curated": false,
       "sources": {
@@ -12276,6 +12285,15 @@
       "sources": {
         "together": [
           "muse-spark-open"
+        ]
+      },
+      "vendor": "meta"
+    },
+    "together/muse-spark-open-816b-a42b": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "muse-spark-open-816b-a42b"
         ]
       },
       "vendor": "meta"
