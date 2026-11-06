@@ -1700,6 +1700,7 @@
 {"schema":4,"source":"openrouter","model_id":"openrouter/free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":200000},"provenance":{"name":"Free Models Router"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/fusion","observed_at":"2026-08-26","limits":{"context":1000000},"provenance":{"name":"Fusion"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/pareto-code","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Pareto Code Router"}}
+{"schema":4,"source":"openrouter","model_id":"parallel/decisions-fast","observed_at":"2026-11-06","modality":"decisions","rates":{"input":0.0,"output":0.0},"limits":{"context":32000},"unmapped":{"request":"0"},"provenance":{"name":"Decisions Fast"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-28","rates":{"input":0.25,"output":1.0,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.25,"output":1.0,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.1,"output":1.0,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}

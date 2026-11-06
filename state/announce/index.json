@@ -85,7 +85,7 @@
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
       "sha256": "692c1be2726050b271dd88033ec72d785849348d8297f9822d7f0f0d07e8d9ad",
-      "fetched": "2026-11-06T15:00:16Z"
+      "fetched": "2026-11-06T16:00:17Z"
     }
   },
   "together": {
@@ -104,14 +104,14 @@
     "https://novita.ai/docs/changelog": {
       "file": "state/announce/novita/changelog.md",
       "sha256": "fba7f705df2da9651149d95d01eaee8e967620c4b16a039440362d0af4a22b0f",
-      "fetched": "2026-11-06T15:00:16Z"
+      "fetched": "2026-11-06T16:00:17Z"
     }
   },
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
       "sha256": "281124412483cc9288f0f52346b1a0435389656597ee923db1762bfb524fe2d1",
-      "fetched": "2026-11-06T15:00:16Z"
+      "fetched": "2026-11-06T16:00:17Z"
     }
   },
   "cohere": {
@@ -125,7 +125,7 @@
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
       "sha256": "267dce7c8a02c39bf8b9c42493d1d2ff5ee2439a1813f8771846688ed708edc0",
-      "fetched": "2026-11-06T15:00:16Z"
+      "fetched": "2026-11-06T16:00:17Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
@@ -144,7 +144,7 @@
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
       "sha256": "dda0878f91d3f9ea361e3ca1d7d7aec1fa81215392e12151f19b02dd64b226d9",
-      "fetched": "2026-11-06T15:00:16Z"
+      "fetched": "2026-11-06T16:00:17Z"
     }
   },
   "databricks": {

@@ -9759,6 +9759,15 @@
       },
       "vendor": "openrouter"
     },
+    "openrouter/parallel/decisions-fast": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "parallel/decisions-fast"
+        ]
+      },
+      "vendor": "parallel"
+    },
     "openrouter/particle-ai/particle-1": {
       "curated": false,
       "sources": {
