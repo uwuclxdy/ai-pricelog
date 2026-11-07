@@ -293,6 +293,35 @@ def test_main_retries_a_transient_ls_remote_failure(monkeypatch, capsys):
     assert "skipping pricelog/gone-12345678" in capsys.readouterr().out
 
 
+def test_main_no_push_or_publish_when_every_branch_already_merged(monkeypatch, capsys):
+    # a burst whose every eligible branch is already merged (stranded PRs
+    # the automerge skipped) lands nothing: no pushed line, no publish
+    # dispatch — a push never happened, so publish has nothing to serve
+    head = "b" * 40
+    runner = FakeRunner()
+    runner.on(
+        "pr list",
+        output=json.dumps(
+            [{"number": 846, "headRefName": "pricelog/merged-11111111", "headRefOid": head}]
+        ),
+    )
+    runner.on("api user", output="cldbot\n")
+    runner.on(
+        "issues/846/comments",
+        output=_comments(("cldbot", f"automerge: yes {head}", "2026-11-06T22:00:00Z")),
+    )
+    runner.on("repo view", output="mommy\n")
+    runner.on("pricelog/merged-11111111", output=head + "\n")
+    monkeypatch.setattr(pr.PrRunner, "run", runner.run)
+    # an unscripted FakeRunner command raises, so an attempted publish
+    # dispatch fails this test on its own
+    monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
+    assert merge_verified.main([]) == 0
+    out = capsys.readouterr().out
+    assert "already merged" in out
+    assert not any(line.startswith("pushed ") for line in out.splitlines())
+
+
 def _channel_index(sha: str, url: str, file: str, fetched: str = "2026-10-16") -> str:
     return json.dumps({"perplexity": {url: {"file": file, "sha256": sha * 64, "fetched": fetched}}})
 
@@ -1306,7 +1335,11 @@ def test_main_dispatches_publish_after_a_pushed_merge(monkeypatch):
     _yes_marked_pr(runner)
     runner.on("workflow run publish.yml", output="")
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
-    monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
+    monkeypatch.setattr(
+        automerge,
+        "merge_branches",
+        lambda *a, **k: ("f" * 40, [automerge.MergeResult("pricelog/stale-99999999", "f" * 40, 3)]),
+    )
     assert merge_verified.main([]) == 0
     assert _dispatches(runner) == [["gh", "workflow", "run", "publish.yml", "--ref", "mommy"]]
 
@@ -1350,7 +1383,7 @@ def test_main_dispatches_publish_after_merge_branches_returns(monkeypatch):
 
     def _fake_merge(branches, repo_root, runner_arg, base, push, held_channels=None):
         events.append("merge_branches")
-        return ("f" * 40, [])
+        return ("f" * 40, [automerge.MergeResult("pricelog/stale-99999999", "f" * 40, 3)])
 
     def _fake_dispatch(runner_arg, repo_root, base):
         events.append("dispatch")
@@ -1372,7 +1405,11 @@ def test_main_keeps_the_merge_when_the_publish_dispatch_fails(monkeypatch, capsy
         failure=pr.PrError("HTTP 403: Resource not accessible by integration"),
     )
     monkeypatch.setattr(pr.PrRunner, "run", runner.run)
-    monkeypatch.setattr(automerge, "merge_branches", lambda *a, **k: ("f" * 40, []))
+    monkeypatch.setattr(
+        automerge,
+        "merge_branches",
+        lambda *a, **k: ("f" * 40, [automerge.MergeResult("pricelog/stale-99999999", "f" * 40, 3)]),
+    )
     assert merge_verified.main([]) == 0
     assert "::warning::" in capsys.readouterr().out
 

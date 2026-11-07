@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -958,22 +959,231 @@ def test_no_push_lands_locally_and_keeps_refs(tmp_path):
     assert any("pricelog/delta-33333333" in ref for ref in refs)
 
 
-def test_merged_branch_refused_by_name(tmp_path):
-    # git prints "Already up to date." (capital A); a case-sensitive match
-    # reads as a clean no-op and the run dies later at git commit with no
-    # diagnosis. observed 2026-09-09: automerge run from a checkout already
-    # on the target branch
+def test_merged_branch_skipped_without_a_push(tmp_path):
+    # a branch whose tip HEAD already holds (the state a failed branch-ref
+    # cleanup strands: the merge landed, the PR stayed open) must skip
+    # instead of red-ing every later run on "Already up to date".
+    # observed 2026-11-05..06: PR 846's branch-ref cleanup failed once and
+    # the open PR red-ed 30 hourly runs while 18 verified PRs piled up.
+    # with --no-push the skip lands nothing and keeps the ref for the
+    # pushing run to clean up
     repo, _bare = build_repo(tmp_path)
     make_branch(repo, "pricelog/merged-99999999", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
-    # land the branch on main directly, the state a double-merge attempt sees
+    # land the branch on main directly, the state a stranded PR sits in
     git(repo, "push", "origin", "origin/pricelog/merged-99999999:refs/heads/main")
     git(repo, "switch", "main")
     git(repo, "pull", "--ff-only", "origin", "main")
-    with pytest.raises(automerge.AutoMergeError, match="merged-99999999.*already merged"):
-        automerge.merge_branches(
-            ["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False
-        )
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    sha, results = automerge.merge_branches(
+        ["pricelog/merged-99999999"], repo, pr.PrRunner(), "main", push=False
+    )
+    assert results == []
+    assert sha == head_before
+    assert git(repo, "rev-parse", "HEAD").strip() == head_before
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert any("pricelog/merged-99999999" in ref for ref in refs)
     assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merged_branch_skipped_and_ref_deleted(tmp_path, capsys):
+    # the pushing merge heals the stranded state: the skip deletes the
+    # branch ref, which is what closes the stuck PR on github (the merge
+    # push alone left PR 846 open: github does not auto-close a PR whose
+    # commits land by push)
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-99999998", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/merged-99999998:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    sha, results = automerge.merge_branches(
+        ["pricelog/merged-99999998"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert results == []
+    assert sha == head_before
+    assert git(repo, "rev-parse", "HEAD").strip() == head_before
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert not any("pricelog/merged-99999998" in ref for ref in refs)
+    assert "skipping pricelog/merged-99999998: already merged into HEAD" in (
+        capsys.readouterr().out
+    )
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_partial_burst_skips_the_merged_branch(tmp_path):
+    # one stuck branch must not red the burst or strand its siblings: the
+    # skip drops it and the rest still merge and push
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/stuck-22222222", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/stuck-22222222:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    make_branch(repo, "pricelog/fresh-33333333", [make_row("zai", "glm-6", "2026-09-01", 0.2)])
+    sha, results = automerge.merge_branches(
+        ["pricelog/stuck-22222222", "pricelog/fresh-33333333"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=True,
+    )
+    assert [result.branch for result in results] == ["pricelog/fresh-33333333"]
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert not any("pricelog/stuck-22222222" in ref for ref in refs)
+    assert not any("pricelog/fresh-33333333" in ref for ref in refs)
+    assert "glm-6" in "\n".join(shard_lines(repo, "zai"))
+
+
+def test_merged_branch_ref_deletion_retries(monkeypatch, tmp_path):
+    # the observed failure (2026-11-05, PR 846): one failed branch-ref
+    # deletion stranded a merged PR and red-ed 30 runs. a deletion blip
+    # retries a bounded number of times before warning
+    monkeypatch.setattr(automerge, "_RETRY_DELAYS", (0, 0))
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-22222223", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/merged-22222223:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    real_run = pr.PrRunner.run
+    deletes = 0
+
+    def flaky_run(self, cmd, cwd):
+        nonlocal deletes
+        if "--delete" in cmd:
+            deletes += 1
+            if deletes == 1:
+                raise pr.PrError("failed to delete ref (transient)")
+        return real_run(self, cmd, cwd)
+
+    monkeypatch.setattr(pr.PrRunner, "run", flaky_run)
+    _sha, results = automerge.merge_branches(
+        ["pricelog/merged-22222223"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert results == []
+    assert deletes == 2
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert not any("pricelog/merged-22222223" in ref for ref in refs)
+
+
+def test_pushed_merge_ref_deletion_retries(monkeypatch, tmp_path):
+    # the post-push cleanup shares the retry: a blip there is what stranded
+    # PR 846 in the first place
+    monkeypatch.setattr(automerge, "_RETRY_DELAYS", (0, 0))
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/fresh-44444444", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    real_run = pr.PrRunner.run
+    deletes = 0
+
+    def flaky_run(self, cmd, cwd):
+        nonlocal deletes
+        if "--delete" in cmd:
+            deletes += 1
+            if deletes == 1:
+                raise pr.PrError("failed to delete ref (transient)")
+        return real_run(self, cmd, cwd)
+
+    monkeypatch.setattr(pr.PrRunner, "run", flaky_run)
+    _sha, results = automerge.merge_branches(
+        ["pricelog/fresh-44444444"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert [result.branch for result in results] == ["pricelog/fresh-44444444"]
+    assert deletes == 2
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert not any("pricelog/fresh-44444444" in ref for ref in refs)
+
+
+def test_merged_branch_strict_ancestor_skipped_and_ref_deleted(tmp_path):
+    # the real stranded shape is a strict ancestor: the merge commit advanced
+    # the base past the branch tip, so an ancestry check that really answers
+    # tip == HEAD must fail here, not pass
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-55555555", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/merged-55555555:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    (repo / "notes.txt").write_text("advance\n")
+    git(repo, "add", "notes.txt")
+    git(repo, "commit", "-m", "advance base past the branch tip")
+    git(repo, "push", "origin", "main")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    sha, results = automerge.merge_branches(
+        ["pricelog/merged-55555555"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert results == []
+    assert sha == head_before
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert not any("pricelog/merged-55555555" in ref for ref in refs)
+
+
+def test_merged_branch_local_only_rows_keep_the_ref(tmp_path, capsys):
+    # a checkout ahead of origin/main (the sanctioned --no-push rerun state)
+    # holds the branch's rows only locally: deleting the ref there would
+    # close the PR with its rows never landed on the base, so the push path
+    # keeps the ref by name
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/local-66666666", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "switch", "main")
+    git(repo, "merge", "--no-ff", "--no-commit", "origin/pricelog/local-66666666")
+    git(repo, "commit", "-m", "land locally, nothing pushed")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    sha, results = automerge.merge_branches(
+        ["pricelog/local-66666666"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert results == []
+    assert sha == head_before
+    assert "keeping pricelog/local-66666666" in capsys.readouterr().out
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert any("pricelog/local-66666666" in ref for ref in refs)
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merged_branch_ref_deletion_warns_after_the_retry_cap(monkeypatch, tmp_path, capsys):
+    # the cleanup must never red the run: every attempt failing warns once
+    # and keeps the ref for the next run's skip path to retry
+    monkeypatch.setattr(automerge, "_RETRY_DELAYS", (0, 0))
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-77777777", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/merged-77777777:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    real_run = pr.PrRunner.run
+    deletes = 0
+
+    def failing_run(self, cmd, cwd):
+        nonlocal deletes
+        if "--delete" in cmd:
+            deletes += 1
+            raise pr.PrError("failed to delete ref (permanent)")
+        return real_run(self, cmd, cwd)
+
+    monkeypatch.setattr(pr.PrRunner, "run", failing_run)
+    _sha, results = automerge.merge_branches(
+        ["pricelog/merged-77777777"], repo, pr.PrRunner(), "main", push=True
+    )
+    assert results == []
+    assert deletes == automerge._RETRY_ATTEMPTS
+    assert "warning: remote branch cleanup for pricelog/merged-77777777 failed" in (
+        capsys.readouterr().err
+    )
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert any("pricelog/merged-77777777" in ref for ref in refs)
+
+
+def test_cli_all_merged_prints_nothing_to_push(tmp_path, monkeypatch, capsys):
+    # the human CLI path keeps its tail honest the same way: an all-skipped
+    # burst prints the already-merged line and never claims a push
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/merged-88888888", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "push", "origin", "origin/pricelog/merged-88888888:refs/heads/main")
+    git(repo, "switch", "main")
+    git(repo, "pull", "--ff-only", "origin", "main")
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(
+        sys, "argv", ["ai-pricelog-automerge", "pricelog/merged-88888888", "--base", "main"]
+    )
+    assert automerge.main() == 0
+    out = capsys.readouterr().out
+    assert "every branch already merged into main; nothing to push" in out
+    assert not any(line.startswith("pushed ") for line in out.splitlines())
 
 
 def test_merge_refused_from_a_non_base_checkout(tmp_path):

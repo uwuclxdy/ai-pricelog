@@ -701,6 +701,9 @@ def main(argv: list[str] | None = None) -> int:
         # the script's own semantics: every PR stays open, nothing merged
         print(f"error: {exc}", file=sys.stderr)
         return 1
+    if not results:
+        print(f"every branch already merged into {base}; nothing to push")
+        return 0
     for result in results:
         print(f"merged {result.branch} ({result.appended} rows) as {result.commit[:7]}")
     print(f"pushed {sha[:7]} to {base}, branch refs deleted")

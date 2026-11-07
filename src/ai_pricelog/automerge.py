@@ -52,7 +52,9 @@ as a merged PR. the step passes only branches the pass marked
   the union dedupes rules by id (HEAD's copy wins) and recomputes the
   `len(rules) == N` pin from the landed count
 
-the push and the ref deletions happen only after every merge commit landed.
+a merged branch's ref deletion happens only after every merge commit landed and
+the push succeeded; an already-merged branch's ref is deleted on the skip path,
+before any merge commit, when its rows are provably on origin/<base>.
 """
 
 from __future__ import annotations
@@ -105,9 +107,11 @@ class MergeResult:
 
 # the merge step runs hourly, so a single transient git read (a fetch or
 # ls-remote blip) must not red a run that would otherwise change nothing; the
-# retry is bounded and re-raises on the last attempt. the read-only gh reads
-# already retry a 5xx inside pr.PrRunner, so only the git commands use this
-# (one retry layer). tests patch _RETRY_DELAYS to zero to skip the sleeps.
+# retry is bounded and re-raises on the last attempt on the read path, while
+# the ref-deletion path warns instead — a cleanup failure must never red a
+# run. the read-only gh reads already retry a 5xx inside pr.PrRunner, so only
+# the git commands use this (one retry layer). tests patch _RETRY_DELAYS to
+# zero to skip the sleeps.
 _RETRY_ATTEMPTS = 3
 _RETRY_DELAYS = (5.0, 15.0)
 
@@ -121,6 +125,24 @@ def _retry_read(runner: pr.PrRunner, repo_root: Path, cmd: list[str]) -> str:
                 raise
             time.sleep(_RETRY_DELAYS[attempt])
     raise AssertionError("unreachable: the last attempt re-raises")
+
+
+def _delete_remote_branch(runner: pr.PrRunner, repo_root: Path, branch: str) -> None:
+    """Delete one branch's remote ref, retrying a transient failure.
+
+    The deletion is what closes the PR on github, so a final failure warns
+    instead of raising: the push already landed, and the next run either
+    retries the deletion on its own path or skips the now-merged branch.
+    """
+    for attempt in range(_RETRY_ATTEMPTS):
+        try:
+            runner.run(["git", "push", "origin", "--delete", branch], cwd=repo_root)
+            return
+        except pr.PrError:
+            if attempt == _RETRY_ATTEMPTS - 1:
+                print(f"warning: remote branch cleanup for {branch} failed", file=sys.stderr)
+                return
+            time.sleep(_RETRY_DELAYS[attempt])
 
 
 def _branch_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
@@ -886,8 +908,13 @@ def merge_branches(
     run, so a held older-run branch never reverts newer counters). every
     branch pre-flights the churn bounds (waived with a logged count under
     `human`) and the catalog-claim check (never waived) before the first merge
-    commit.
-    a failure anywhere leaves the refs in place and raises; nothing is pushed.
+    commit. a branch whose tip HEAD already holds (the state a failed branch-ref
+    cleanup strands: the merge landed, the PR stayed open) is dropped with a
+    skip line, its remote ref deleted under push — that deletion closes the
+    PR — and an all-dropped burst returns (HEAD, []) with nothing merged or
+    pushed.
+    any other failure leaves the surviving branches' refs in place and raises;
+    nothing is pushed.
     """
     if not branches:
         raise AutoMergeError("no branches given; nothing to merge")
@@ -900,6 +927,32 @@ def merge_branches(
     _retry_read(runner, repo_root, ["git", "fetch", "origin", base, *branches])
     _check_branches(branches, repo_root, runner)
     _check_checkout(repo_root, runner, base)
+    # a branch whose tip HEAD already holds (the state a failed branch-ref
+    # cleanup strands: the merge landed, the PR stayed open) drops out here:
+    # git merge would answer "Already up to date." and red the run. under
+    # push the skip deletes the ref — that deletion is what closes the
+    # stranded PR — and a failed deletion warns for the next run to retry.
+    # the deletion needs the branch landed on origin/<base>, never HEAD
+    # alone: a checkout ahead of origin/<base> (the sanctioned --no-push
+    # rerun state) holds rows upstream has never seen, so deleting there
+    # would close a PR whose rows never landed (measured 2026-11-06); that
+    # ref is kept by name for a pushing run
+    kept: list[str] = []
+    for branch in branches:
+        if _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD"):
+            print(f"skipping {branch}: already merged into HEAD")
+            if push and _is_ancestor(runner, repo_root, f"origin/{branch}", f"origin/{base}"):
+                _delete_remote_branch(runner, repo_root, branch)
+            elif push:
+                print(
+                    f"keeping {branch}: its rows are not on origin/{base} yet;"
+                    " the ref stays until a pushing run lands them"
+                )
+            continue
+        kept.append(branch)
+    if not kept:
+        return runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip(), []
+    branches = kept
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
     keys = validate.load_schema_keys(repo_root)
@@ -943,12 +996,6 @@ def merge_branches(
             capture_output=True,
             text=True,
         )
-        # git prints "Already up to date." (capital A); match case-insensitively
-        # or a merged branch falls through to a bare `git commit` failure
-        if "already up to date" in merge.stdout.lower():
-            raise AutoMergeError(
-                f"branch {branch}: already merged into HEAD; drop it from the merge list"
-            )
         # an exit code 1 with CONFLICT lines is the expected sibling-branch
         # state on the data files; anything else is a real merge failure
         if merge.returncode not in (0, 1) or (
@@ -1076,8 +1123,9 @@ def merge_branches(
             "the merged pipeline files are not clean; nothing was pushed: " + "; ".join(leftover)
         )
     for branch in branches:
-        # the auto-mark precondition: every merged branch head must be an
-        # ancestor of the push target, or github leaves its PR open
+        # every merged branch head must be an ancestor of the push target:
+        # the pushed history must contain each PR's tip, which the branch-ref
+        # deletion below closes the PR against
         try:
             runner.run(
                 ["git", "merge-base", "--is-ancestor", f"origin/{branch}", "HEAD"],
@@ -1086,7 +1134,8 @@ def merge_branches(
         except pr.PrError:
             raise AutoMergeError(
                 f"branch {branch}: its head is not an ancestor of the merge result;"
-                " refusing the push, its PR would not auto-mark merged"
+                " refusing the push, its ref deletion would close the PR with"
+                " nothing landed"
             ) from None
     sha = runner.run(["git", "rev-parse", "HEAD"], cwd=repo_root).strip()
     if not push:
@@ -1094,13 +1143,7 @@ def merge_branches(
 
     runner.run(["git", "push", "origin", f"HEAD:refs/heads/{base}"], cwd=repo_root)
     for result in results:
-        try:
-            runner.run(["git", "push", "origin", "--delete", result.branch], cwd=repo_root)
-        except pr.PrError:
-            print(
-                f"warning: remote branch cleanup for {result.branch} failed",
-                file=sys.stderr,
-            )
+        _delete_remote_branch(runner, repo_root, result.branch)
     return sha, results
 
 
@@ -1141,7 +1184,9 @@ def main() -> int:
         return 1
     for result in results:
         print(f"merged {result.branch} ({result.appended} rows) as {result.commit[:7]}")
-    if args.no_push:
+    if not results:
+        print(f"every branch already merged into {base}; nothing to push")
+    elif args.no_push:
         print(f"landed {sha[:7]} locally, nothing pushed")
     else:
         print(f"pushed {sha[:7]} to {base}, branch refs deleted")
