@@ -27,16 +27,14 @@ To keep a resource from [stopping for inactivity](https://docs.together.ai/docs/
 * **Applied credit in the SDK:** Line items from `client.organization.usage.costs.list()` now include a typed `applied_credit` object.
 ## Post-training: FP4 preparation for MiniMax M3.1 Flash You can now deploy a MiniMax M3.1 Flash adapter on dedicated model inference by first [preparing it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
 The base model already ships in its serving format, so the job only merges the adapter, which takes about 1 hour.
-**November 3, 2026** ## Post-training: MiniMax M3 retired `MiniMaxAI/MiniMax-M3` is no longer available for new [post-training](https://docs.together.ai/docs/post-training/overview.md) model resources.
+## Post-training: MiniMax M3 retired `MiniMaxAI/MiniMax-M3` is no longer available for new [post-training](https://docs.together.ai/docs/post-training/overview.md) model resources.
 Use `MiniMaxAI/MiniMax-M3.1-Flash` instead.
 Existing MiniMax M3 model resources keep running, and their checkpoints stay available for download.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
 **November 2, 2026** ## Post-training: GLM-5.3 Flash `zai-org/GLM-5.3-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and up to five adapter sessions per resource.
 The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the GLM codec.
 To deploy a GLM-5.3 Flash adapter on dedicated model inference, first [prepare it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
-**October 23, 2026** ## Post-training: MiniMax M3.1 Flash `MiniMaxAI/MiniMax-M3.1-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 262,144-token context for both training and sampling, rank up to 32, and up to three adapter sessions per resource.
-The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the MiniMax codec.
-See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
+**October 23, 2026** ## New post-training models The following models are now available for [post-training](https://docs.together.ai/docs/post-training/supported-models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 262,144 context length, low-rank adapter (LoRA) training on `B200-SXM` GPUs.
 **October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
 > [!WARNING] > > 3.0 is a major release with breaking changes.
 The `beta` paths for dedicated model inference and GPU clusters no longer work, the SDK base URL drops `/v1`, and `whoami` returns a new response shape.

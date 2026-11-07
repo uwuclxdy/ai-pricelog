@@ -7761,6 +7761,24 @@
       },
       "vendor": "liquid"
     },
+    "openrouter/liquid/lfm-3-1.7b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/lfm-3-1.7b"
+        ]
+      },
+      "vendor": "liquid"
+    },
+    "openrouter/liquid/lfm-3-1.7b:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/lfm-3-1.7b:free"
+        ]
+      },
+      "vendor": "liquid"
+    },
     "openrouter/mancer/weaver": {
       "curated": false,
       "sources": {
