@@ -866,6 +866,7 @@
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-10-02","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.1 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-10-15","rates":{"input":0.075,"output":0.225,"cache_read":0.015},"limits":{"context":262144},"provenance":{"name":"Ling 3.1 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-10-28","rates":{"input":0.075,"output":0.225,"cache_read":0.015},"limits":{"context":1000000},"provenance":{"name":"Ling 3.1 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-11-07","rates":{"input":0.045,"output":0.135,"cache_read":0.009},"limits":{"context":1000000},"provenance":{"name":"Ling 3.1 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-12","rates":{"input":0.05,"output":0.23},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-13","rates":{"input":0.05,"output":0.23,"cache_read":0.05},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-turbo","observed_at":"2026-09-12","rates":{"input":0.03,"output":0.15},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Turbo"}}
@@ -1707,6 +1708,7 @@
 {"schema":4,"source":"openrouter","model_id":"openrouter/fusion","observed_at":"2026-08-26","limits":{"context":1000000},"provenance":{"name":"Fusion"}}
 {"schema":4,"source":"openrouter","model_id":"openrouter/pareto-code","observed_at":"2026-08-26","limits":{"context":2000000},"provenance":{"name":"Pareto Code Router"}}
 {"schema":4,"source":"openrouter","model_id":"parallel/decisions-fast","observed_at":"2026-11-06","modality":"decisions","rates":{"input":0.0,"output":0.0},"limits":{"context":32000},"unmapped":{"request":"0"},"provenance":{"name":"Decisions Fast"}}
+{"schema":4,"source":"openrouter","model_id":"parallel/decisions-fast","observed_at":"2026-11-07","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":32000},"unmapped":{"request":"0"}}
 {"schema":4,"source":"openrouter","model_id":"parallel/decisions-fast:free","observed_at":"2026-11-06","modality":"decisions","rates":{"input":0.0,"output":0.0},"limits":{"context":32000},"provenance":{"name":"Decisions Fast (free)"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-28","rates":{"input":0.25,"output":1.0,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.25,"output":1.0,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
