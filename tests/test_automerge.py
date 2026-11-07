@@ -238,8 +238,8 @@ def test_merge_lands_union(tmp_path):
     assert (repo / channel_file).read_text(encoding="utf-8") == announce.wrap("newer")
     absence = json.loads((repo / "state" / "absence" / "deepseek.json").read_text(encoding="utf-8"))
     assert absence == {"gone": {"absent_runs": 1, "since": "2026-08-31"}}
-    # every merge commit has two parents: the branch heads are ancestors, so
-    # github auto-marks the PRs merged
+    # every merge commit has two parents: each branch head is an ancestor of
+    # the pushed head, which the branch-ref deletion closes the PR against
     merge_commits = git(repo, "log", "--merges", "--format=%P").splitlines()
     assert len(merge_commits) == 2
     for line in merge_commits:

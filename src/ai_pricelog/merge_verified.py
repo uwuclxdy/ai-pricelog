@@ -698,7 +698,8 @@ def main(argv: list[str] | None = None) -> int:
             branches, repo_root, runner, base, push=True, held_channels=held
         )
     except (automerge.AutoMergeError, pr.PrError) as exc:
-        # the script's own semantics: every PR stays open, nothing merged
+        # the surviving branches' refs stay in place; a skip-deleted branch's
+        # PR is already closed
         print(f"error: {exc}", file=sys.stderr)
         return 1
     if not results:

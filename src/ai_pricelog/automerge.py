@@ -131,8 +131,8 @@ def _delete_remote_branch(runner: pr.PrRunner, repo_root: Path, branch: str) -> 
     """Delete one branch's remote ref, retrying a transient failure.
 
     The deletion is what closes the PR on github, so a final failure warns
-    instead of raising: the push already landed, and the next run either
-    retries the deletion on its own path or skips the now-merged branch.
+    instead of raising: the push already landed, and the next run's skip path
+    retries the deletion while the PR is still open.
     """
     for attempt in range(_RETRY_ATTEMPTS):
         try:
@@ -910,9 +910,9 @@ def merge_branches(
     `human`) and the catalog-claim check (never waived) before the first merge
     commit. a branch whose tip HEAD already holds (the state a failed branch-ref
     cleanup strands: the merge landed, the PR stayed open) is dropped with a
-    skip line, its remote ref deleted under push — that deletion closes the
-    PR — and an all-dropped burst returns (HEAD, []) with nothing merged or
-    pushed.
+    skip line, its remote ref deleted under push once its rows are provably on
+    origin/<base> — that deletion closes the PR — and an all-dropped burst
+    returns (HEAD, []) with nothing merged or pushed.
     any other failure leaves the surviving branches' refs in place and raises;
     nothing is pushed.
     """
