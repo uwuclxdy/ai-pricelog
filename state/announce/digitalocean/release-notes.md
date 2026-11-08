@@ -261,18 +261,6 @@ Workloads that already request GPUs with extended resources such as nvidia.com/g
 Cloud Security Posture Management (CSPM) paid plans support Managed Rules, which let you enable or disable CSPM rules for your entire team.
 To exclude specific resources while keeping a rule enabled for the rest of the team, suppress findings for those resources.
 For more information, see How to Manage Rules and How to Suppress Findings .
-10 August We have launched the Memphis, Tennessee, USA ( mem1 ) datacenter, which supports AMD Instinct MI355X Spot GPU Droplets and many other products.
-For the full list of supported products, see the regional availability matrix .
-AMD Instinct MI355X GPUs are now available in MEM1 as Spot GPU Droplets in 1- and 8-GPU configurations.
-Spot prices vary daily based on available capacity.
-For pricing, see Spot GPU Droplet pricing .
-Spot GPU Droplets are now available in public preview for supported GPUs in single-GPU and 8-GPU configurations.
-Pricing may change daily based on capacity.
-To compare the capacity tiers, see Spot GPU Droplets vs On-Demand GPU Droplets .
-DigitalOcean Container Registry (DOCR) now provides mirror registries: DigitalOcean-curated regional mirrors of popular AI container images, available in 11 datacenter regions.
-You can pull nvidia/pytorch and rocm/pytorch images from a region-local mirror using standard Docker tooling, or use SOCI lazy loading to start containers in seconds while image layers stream on demand.
-DOCR also supports pushing your own SOCI-enabled images to your registry.
-For details, see How to Pull AI Images from DOCR Mirror Registries and How to Push SOCI-Enabled Images to Your Container Registry .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
