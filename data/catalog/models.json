@@ -6831,6 +6831,15 @@
       },
       "vendor": "deepseek"
     },
+    "openrouter/deepseek/deepseek-v4.1-flash-1017:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "deepseek/deepseek-v4.1-flash-1017:batch"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "openrouter/deepseek/deepseek-v4.1-flash:batch": {
       "curated": false,
       "sources": {
