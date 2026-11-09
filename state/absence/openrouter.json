@@ -1,1 +1,1 @@
-{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}}
+{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}, "stealth/crouton-alpha": {"absent_runs": 1, "since": "2026-11-09"}}
