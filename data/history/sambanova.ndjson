@@ -1,5 +1,7 @@
 {"schema":4,"source":"sambanova","model_id":"deepseek-v3.1","observed_at":"2026-08-29","rates":{"input":3.0,"output":4.5},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
+{"schema":4,"source":"sambanova","model_id":"deepseek-v3.1","observed_at":"2026-11-09","removed":true,"rates":{"input":3.0,"output":4.5}}
 {"schema":4,"source":"sambanova","model_id":"deepseek-v3.2","observed_at":"2026-08-29","rates":{"input":3.0,"output":4.5},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
+{"schema":4,"source":"sambanova","model_id":"deepseek-v3.2","observed_at":"2026-11-09","removed":true,"rates":{"input":3.0,"output":4.5}}
 {"schema":4,"source":"sambanova","model_id":"gemma-4-31b-it","observed_at":"2026-08-29","rates":{"input":0.38,"output":1.15},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"glm-5.3","observed_at":"2026-10-21","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"glm-5.3","observed_at":"2026-10-23","removed":true,"rates":{"input":1.4,"output":4.4,"cache_read":0.14}}
