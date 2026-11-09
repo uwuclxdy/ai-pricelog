@@ -157,9 +157,9 @@ API keys continue to work for clients without OAuth support.
 Promotional pricing through December 31, 2026 is \$0.75 per million uncached-input tokens, \$0.075 per million cached-input tokens, and \$3.75 per million output and reasoning tokens.
 See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **September 2026** **GLM 5.3 Flash** The Agent API and Orchestrator API now support `perplexity/glm-5.3-flash` at \$0.15 per million uncached-input tokens, \$0.03 per million cached-input tokens, and \$0.50 per million output tokens.
-See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/orchestrator/models.md).
 **August 2026** **GLM 5.3** The Agent API and Orchestrator API now support `perplexity/glm-5.3` at \$1.40 per million uncached-input tokens, \$0.26 per million cached-input tokens, and \$4.40 per million output tokens.
-See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/orchestrator/models.md).
 **August 2026** **Prompt caching for presets** Agent API presets now use stable prompt cache keys automatically, allowing independent requests with the same preset to reuse the shared prompt prefix (system prompt and tool definitions).
 No request changes are required, and an explicit `prompt_cache_key` still overrides the preset default.
 This can reduce costs by about 5% for applications that use presets frequently, depending on cache utilization.
@@ -173,12 +173,12 @@ See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/m
 **August 2026** **Grok 4.6** The Agent API now supports `xai/grok-4.6`, xAI's latest flagship reasoning and agentic model.
 See pricing in the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **August 2026** **NVIDIA Nemotron 3 Ultra** The Agent API and Orchestrator API now support `perplexity/nemotron-3-ultra-550b-a55b` at \$0.25 per million input or cached-input tokens and \$2.50 per million output tokens.
-See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/router/models.md).
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) or the [Router model catalog](https://docs.perplexity.ai/docs/orchestrator/models.md).
 **July 2026** **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
 GPT-5.6 Terra now costs \$2 per million input tokens and \$12 per million output tokens.
 GPT-5.6 Sol now supports Fast mode at 2× standard token pricing; send `service_tier: "priority"` to use it.
 **July 2026** **New: Orchestrator API** Unified access to open-weight models hosted by Perplexity through a single endpoint — with your existing Perplexity API key.
-**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](https://docs.perplexity.ai/docs/router/quickstart.md) **July 2026** **Remote MCP Server** The [Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
+**Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](https://docs.perplexity.ai/docs/orchestrator/quickstart.md) **July 2026** **Remote MCP Server** The [Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
 Connect any MCP client that supports Streamable HTTP using your API key as a bearer token, with no local installation and nothing to update.
 Tools and behavior are identical to the local server, and usage is billed to your API key at standard API pricing.
 **July 2026** **Low preset updated** The Agent API `low` preset now uses `openai/gpt-5.6-luna` with `minimal` reasoning effort and a 32,768-token maximum output.

@@ -40,7 +40,7 @@ Existing projects keep their current setting.
 To opt out, set `store=false` on individual requests or turn off Generate Content API logging in the **Settings** panel of the [Logs and Datasets](/logs) dashboard.
 See [Logs and datasets](/docs/logs-datasets#configure-logging) for details.
 ## October 13, 2026 {% id="10-13-2026" %} * **Gemini 4 Argon (`gemini-4-argon`) generally available (GA)**: Released [Gemini 4 Argon](/docs/models/gemini-4-argon) (`gemini-4-argon`), our most capable model built for complex coding, agentic, math, and science tasks.
-For API changes, pricing, and migration guidance, see [What's new in Gemini 4 Argon](/docs/latest-model).
+For API changes, pricing, and migration guidance, see [What's new in Gemini 4 Argon](/docs/whats-new-gemini-4-argon).
 ## October 8, 2026 {% id="10-08-2026" %} * **Gemini 3.7 Flash deprecation**: [`gemini-3.7-flash`](/docs/whats-new-gemini-3.7) is deprecated and has been replaced by [`gemini-3.8-flash`](/docs/whats-new-gemini-3.8).
 It is no longer available to select in Google AI Studio, and API requests to `gemini-3.7-flash` are automatically routed to `gemini-3.8-flash`.
 Update your model string to `gemini-3.8-flash` and review the [Gemini 3.8 Flash guide](/docs/whats-new-gemini-3.8).
