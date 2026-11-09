@@ -378,6 +378,16 @@
       "citation": [
         "https://ai.google.dev/gemini-api/docs/changelog?hl=en"
       ]
+    },
+    {
+      "id": "digitalocean-nemotron-serverless-deprecation-2026-11-05",
+      "provider": "digitalocean",
+      "effective": "2026-11-05",
+      "timezone": "UTC",
+      "statement": "the release notes' 5 November 2026 entry deprecates Nemotron 3 Diarization, Nemotron 3 Ultra (nemotron-3-ultra), Nemotron 3 Nano Omni (nemotron-nano-3-omni) and Nemotron Nano 12B v2 VL (nemotron-nano-12b-v2-vl) from DigitalOcean Serverless Inference as of 5 November 2026, migrating serverless workloads to NVIDIA Nemotron 3.5 Super VL (nemotron-3.5-super-vl), so the serverless rates of the stored nemotron-3-ultra, nemotron-nano-3-omni and nemotron-nano-12b-v2-vl rows stop applying from that instant; the models remain available on Dedicated Inference. the entry names no timezone; UTC is the recorded frame. the stored rows get removal rows through the absence machinery",
+      "citation": [
+        "https://docs.digitalocean.com/release-notes/"
+      ]
     }
   ]
 }

@@ -18,6 +18,9 @@ To add it to Claude, Claude Desktop, Claude Code, Cursor, Visual Studio Code, or
 Cuttlefish, an iOS app for DigitalOcean Harness Runtime , is available in public preview on the App Store .
 Follow and steer sessions, approve or deny tool calls, and work with workspace files and checkpoints from your iPhone.
 To get started, see How to Steer and Approve Harness Runtime Sessions from the Cuttlefish iOS App .
+The following NVIDIA models are deprecated from DigitalOcean Serverless Inference as of 5 November 2026: Nemotron 3 Diarization Nemotron 3 Ultra Nemotron 3 Nano Omni Nemotron Nano 12B v2 VL These models remain available on Dedicated Inference.
+Migrate serverless workloads to NVIDIA Nemotron 3.5 Super VL ( nemotron-3.5-super-vl ) to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
 SSO configuration no longer requires your IdP to send a team_role claim.
