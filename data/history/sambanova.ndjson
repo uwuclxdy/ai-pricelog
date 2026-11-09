@@ -3,6 +3,7 @@
 {"schema":4,"source":"sambanova","model_id":"gemma-4-31b-it","observed_at":"2026-08-29","rates":{"input":0.38,"output":1.15},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"glm-5.3","observed_at":"2026-10-21","rates":{"input":1.4,"output":4.4,"cache_read":0.14},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"glm-5.3","observed_at":"2026-10-23","removed":true,"rates":{"input":1.4,"output":4.4,"cache_read":0.14}}
+{"schema":4,"source":"sambanova","model_id":"glm-5.3","observed_at":"2026-11-09","rates":{"input":2.8,"output":8.8,"cache_read":0.14},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"gpt-oss-120b","observed_at":"2026-08-29","rates":{"input":0.22,"output":0.59},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"meta-llama-3.3-70b-instruct","observed_at":"2026-08-29","rates":{"input":0.6,"output":1.2},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
 {"schema":4,"source":"sambanova","model_id":"minimax-m2.7","observed_at":"2026-08-29","rates":{"input":0.6,"output":2.4,"cache_read":0.06},"provenance":{"url":"https://cloud.sambanova.ai/pricing"}}
