@@ -6057,6 +6057,24 @@
       },
       "vendor": "anthropic"
     },
+    "openrouter/anthropic/claude-fable-5.2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "anthropic/claude-fable-5.2"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "openrouter/anthropic/claude-fable-5.2:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "anthropic/claude-fable-5.2:batch"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "openrouter/anthropic/claude-fable-5:batch": {
       "curated": false,
       "sources": {
