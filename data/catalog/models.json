@@ -135,6 +135,15 @@
       },
       "vendor": "anthropic"
     },
+    "anthropic/claude-fable-5-2": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-fable-5-2"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "anthropic/claude-haiku-3-5": {
       "curated": false,
       "sources": {
@@ -158,6 +167,15 @@
       "sources": {
         "anthropic": [
           "claude-mythos-5-1"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "anthropic/claude-mythos-5-2": {
+      "curated": false,
+      "sources": {
+        "anthropic": [
+          "claude-mythos-5-2"
         ]
       },
       "vendor": "anthropic"
