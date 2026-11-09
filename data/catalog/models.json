@@ -10947,6 +10947,15 @@
       },
       "vendor": "thenlper"
     },
+    "openrouter/thinkingmachines/inkling-2-small:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "thinkingmachines/inkling-2-small:free"
+        ]
+      },
+      "vendor": "thinkingmachines"
+    },
     "openrouter/thinkingmachines/inkling-small:batch": {
       "curated": false,
       "sources": {
