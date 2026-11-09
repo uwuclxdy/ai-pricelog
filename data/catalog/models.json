@@ -7860,6 +7860,15 @@
       },
       "vendor": "meta-llama"
     },
+    "openrouter/meta/muse-ember": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "meta/muse-ember"
+        ]
+      },
+      "vendor": "meta"
+    },
     "openrouter/meta/muse-glimmer-30b:batch": {
       "curated": false,
       "sources": {
