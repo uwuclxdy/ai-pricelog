@@ -27,7 +27,7 @@ Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Pr
 2, 2025 Feb.
 15, 2025 Feb.
 11, 2025 Jan.
-15, 2025 Models Copy page Copy page Stay updated on MiniMax’s latest model releases across language, audio, video, image, and music.
+15, 2025 Models Copy page Copy page Stay updated on MiniMax’s latest model releases across language, video, image, audio, and music.
 Copy page Copy page ​ Nov.
 10, 2026 MiniMax H3 Image A leading open-weight image model.
 From ideas to new worlds.
