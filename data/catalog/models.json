@@ -12550,6 +12550,15 @@
       },
       "vendor": null
     },
+    "together/tev1-4b-experimental": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "tev1-4b-experimental"
+        ]
+      },
+      "vendor": null
+    },
     "watsonx/granite-4h-small": {
       "curated": false,
       "sources": {

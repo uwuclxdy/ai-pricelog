@@ -104,3 +104,4 @@
 {"schema":4,"source":"together","model_id":"ripple-65b-preview","observed_at":"2026-11-05","rates":{"input":0.2,"output":0.6,"cache_read":0.02},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"rnj-1-instruct","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"ternary-bonsai-27b","observed_at":"2026-08-29","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"tev1-4b-experimental","observed_at":"2026-11-10","rates":{"input":0.042,"output":0.0},"provenance":{"url":"https://www.together.ai/pricing"}}
