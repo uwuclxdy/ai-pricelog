@@ -1,5 +1,7 @@
 > ## AI Agent Context > Get the complete documentation index at: https://aistudio.google.com/llms.txt > Use this file to discover all available pages.
 > For the full documentation in a single file, fetch: https://aistudio.google.com/llms-full.txt # Release notes This page documents updates to the Gemini API.
+## November 10, 2026 {% id="11-10-2026" %} * **Gemini 4 Carbon (`gemini-4-carbon`) generally available (GA)**: Released [Gemini 4 Carbon](/docs/models/gemini-4-carbon) (`gemini-4-carbon`), our most capable reasoning model built for sustained agentic coding, multimodal knowledge work, scientific reasoning, and cybersecurity defense, available at introductory [pricing](/docs/pricing#gemini-4-carbon) of $2.00 per 1M input tokens and $10.00 per 1M output tokens through November 30, 2026.
+See [What's new in Gemini 4 Carbon](/docs/whats-new-gemini-4-carbon) to get started.
 ## November 6, 2026 {% id="11-06-2026" %} * **Gemini Embedding 2 Preview deprecation**: [`gemini-embedding-2-preview`](/docs/models/gemini-embedding-2-preview) is [deprecated](/docs/deprecations#embedding-deprecated-models).
 Effective November 6, 2026, API requests to `gemini-embedding-2-preview` route to [`gemini-embedding-2`](/docs/models/gemini-embedding-2) at [Gemini Embedding 2 rates](/docs/pricing#gemini-embedding-2).
 Update your model string to `gemini-embedding-2`.
@@ -190,7 +192,7 @@ Read the [model page](/docs/models/gemini-3.1-flash-lite-preview) for specs, spe
 ## January 13, 2026 {% id="01-13-2026" %} * Added 4k output resolutions for [Veo](/docs/video) and more support for portrait videos in all resolutions.
 ## January 12, 2026 {% id="01-12-2026" %} * Launched model lifecycle feature.
 Some models will now specify the lifecycle stage and deprecation timeline.
-See the following documentation for more information: * [Model stages](https://ai.google.dev/api/generate-content#ModelStatus) ## January 8, 2026 {% id="01-08-2026" %} * Launched support for Cloud Storage buckets and any public and private DB pre-signed URL as data input source for the Gemini API.
+See the following documentation for more information: * [Model stages](/api-reference/generate-content) ## January 8, 2026 {% id="01-08-2026" %} * Launched support for Cloud Storage buckets and any public and private DB pre-signed URL as data input source for the Gemini API.
 The file size limit has also increased from 20MB to 100MB.
 For details, see [File input methods guide](/docs/file-input-methods).
 ## December 19, 2025 {% id="12-19-2025" %} * Introduced a breaking change to the Interactions API in v1beta.
@@ -291,7 +293,7 @@ To learn more, see [Gemini 2.5 Flash Preview](/docs/models) and [Thinking](/docs
 To learn more, see the [Live API guide](/docs/live-api/capabilities#native-audio-output) and [Gemini 2.5 Flash Native Audio](/docs/models).
 * Released `gemma-3n-e4b-it` preview, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 3n](https://ai.google.dev/gemma/docs/3n) launch.
 ## May 7, 2025 {% id="05-07-2025" %} * Released `gemini-2.0-flash-preview-image-generation`, a preview model for generating and editing images.
-To learn more, see [Image generation](https://ai.google.dev/docs/image-generation) and [Gemini 2.0 Flash Preview Image Generation](https://ai.google.dev/docs/models#gemini-2.0-flash-preview-image-generation).
+To learn more, see [Image generation](/docs/image-generation) and [Gemini 2.0 Flash Preview Image Generation](/docs/models).
 ## May 6, 2025 {% id="05-06-2025" %} * Released `gemini-2.5-pro-preview-05-06`, a new version of our most powerful model, with improvements on code and function calling.
 `gemini-2.5-pro-preview-03-25` will automatically point to the new version of the model.
 ## April 17, 2025 {% id="04-17-2025" %} * Released `gemini-2.5-flash-preview-04-17`, a Gemini [preview](/docs/models#model-versions) model optimized for price-performance and adaptive thinking.
@@ -325,11 +327,11 @@ To learn more, see [Gemini 2.5 Pro Experimental](/docs/models).
 ## March 7, 2025 {% id="03-07-2025" %} **Model updates:** * Released `gemini-embedding-exp-03-07`, an [experimental](/docs/models) Gemini-based embeddings model in public preview.
 ## February 28, 2025 {% id="02-28-2025" %} **API updates:** * Support for [Search as a tool](/docs/google-search) added to `gemini-2.0-pro-exp-02-05`, an experimental model based on Gemini 2.0 Pro.
 ## February 25, 2025 {% id="02-25-2025" %} **Model updates:** * Released `gemini-2.0-flash-lite`, a generally available (GA) version of [Gemini 2.0 Flash-Lite](/docs/models), which is optimized for speed, scale, and cost efficiency.
-## February 19, 2025 {% id="02-19-2025" %} **AI Studio updates:** * Support for [additional regions](https://ai.google.dev/docs/available-regions) (Kosovo, Greenland and Faroe Islands).
-**API updates:** * Support for [additional regions](https://ai.google.dev/docs/available-regions) (Kosovo, Greenland and Faroe Islands).
+## February 19, 2025 {% id="02-19-2025" %} **AI Studio updates:** * Support for [additional regions](/docs/available-regions) (Kosovo, Greenland and Faroe Islands).
+**API updates:** * Support for [additional regions](/docs/available-regions) (Kosovo, Greenland and Faroe Islands).
 ## February 18, 2025 {% id="02-18-2025" %} **Model updates:** * Gemini 1.0 Pro is no longer supported.
 For the list of supported models, see [Gemini models](/docs/models).
-## February 11, 2025 {% id="02-11-2025" %} **API updates:** * Updates on the [OpenAI libraries compatibility](https://ai.google.dev/docs/openai).
+## February 11, 2025 {% id="02-11-2025" %} **API updates:** * Updates on the [OpenAI libraries compatibility](/docs/openai).
 ## February 6, 2025 {% id="02-06-2025" %} **Model updates:** * Released `imagen-3.0-generate-002`, a generally available (GA) version of [Imagen 3 in the Gemini API](/docs/image-generation).
 **SDK updates:** * Released the [Google Gen AI SDK for Java](https://github.com/googleapis/java-genai) for public preview.
 ## February 5, 2025 {% id="02-05-2025" %} **Model updates:** * Released `gemini-2.0-flash-001`, a generally available (GA) version of [Gemini 2.0 Flash](/docs/models) that supports text-only output.
@@ -355,7 +357,7 @@ Values greater than 40 will be changed to 40.
 * Updated the `gemini-1.5-pro-latest` model code to use `gemini-1.5-pro-002` and the `gemini-1.5-flash-latest` model code to use `gemini-1.5-flash-002`.
 * Released `gemini-1.5-flash-8b-exp-0924` to replace `gemini-1.5-flash-8b-exp-0827`.
 * Released the [civic integrity safety filter](/docs/safety-settings#safety-filters) for the Gemini API and AI Studio.
-* Released support for two new parameters for Gemini 1.5 Pro and 1.5 Flash in Python and NodeJS: [`frequencyPenalty`](https://ai.google.dev/api/generate-content#FIELDS.frequency_penalty) and [`presencePenalty`](https://ai.google.dev/api/generate-content#FIELDS.presence_penalty).
+* Released support for two new parameters for Gemini 1.5 Pro and 1.5 Flash in Python and NodeJS: [`frequencyPenalty`](/api-reference/generate-content/generate-content#request-body) and [`presencePenalty`](/api-reference/generate-content/generate-content#request-body).
 ## September 19, 2024 {% id="09-19-24" %} **AI Studio updates:** * Added thumb-up and thumb-down buttons to model responses, to enable users to provide feedback on the quality of a response.
 **API updates:** * Added support for Google Cloud credits, which can now be used towards Gemini API usage.
 ## September 17, 2024 {% id="09-17-24" %} **AI Studio updates:** * Added an **Open in Colab** button that exports a prompt – and the code to run it – to a Colab notebook.
@@ -375,18 +377,18 @@ The feature doesn't yet support prompting with tools (JSON mode, function callin
 ## May 14, 2024 {% id="05-14-24" %} **API updates:** * Introduced a 2M context window for Gemini 1.5 Pro (waitlist).
 * Introduced pay-as-you-go [billing](/docs/billing) for Gemini 1.0 Pro, with Gemini 1.5 Pro and Gemini 1.5 Flash billing coming soon.
 * Introduced increased rate limits for the upcoming paid tier of Gemini 1.5 Pro.
-* Added built-in video support to the [File API](https://ai.google.dev/api/rest/v1beta/files).
-* Added plain text support to the [File API](https://ai.google.dev/api/rest/v1beta/files).
+* Added built-in video support to the [File API](/api-reference/files).
+* Added plain text support to the [File API](/api-reference/files).
 * Added support for parallel function calling, which returns more than one call at a time.
 ## May 10, 2024 {% id="05-10-24" %} **Model updates:** * Released [Gemini 1.5 Flash](/docs/models) (`gemini-1.5-flash-latest`) in preview.
 ## April 9, 2024 {% id="04-09-24" %} **Model updates:** * Released [Gemini 1.5 Pro](/docs/models) (`gemini-1.5-pro-latest`) in preview.
 * Released a new text embedding model, `text-embeddings-004`, which supports [elastic embedding](/docs/embeddings) sizes under 768.
-**API updates:** * Released the [File API](https://ai.google.dev/api/rest/v1beta/files) for temporarily storing media files for use in prompting.
+**API updates:** * Released the [File API](/api-reference/files) for temporarily storing media files for use in prompting.
 * Added support for prompting with text, image, and audio data, also known as *multimodal* prompting.
 To learn more, see [Prompting with media](/docs/files#prompt-guide).
 * Released [System instructions](/docs/text-generation) in beta.
 * Added [Function calling mode](/docs/function-calling#function_calling_modes), which defines the execution behavior for function calling.
-* Added support for the `response_mime_type` configuration option, which lets you request responses in [JSON format](https://ai.google.dev/api#json).
+* Added support for the `response_mime_type` configuration option, which lets you request responses in [JSON format](/api-reference/generate-content/generate-content#request-body).
 ## March 19, 2024 {% id="03-09-24" %} **Model updates:** * Added support for [tuning Gemini 1.0 Pro](https://developers.googleblog.com/en/tune-gemini-pro-in-google-ai-studio-or-with-the-gemini-api/) in Google AI Studio or with the Gemini API.
 ## December 13 2023 {% id="12-13-23" %} **Model updates:** * gemini-pro: New text model for a wide variety of tasks.
 Balances capability and efficiency.
@@ -398,7 +400,7 @@ See [Gemini models](/docs/models) for more details.
 **API version updates:** * v1: The stable API channel.
 * v1beta: Beta channel.
 This channel has features that may be under development.
-See [the API versions topic](https://ai.google.dev/gemini-api/docs/api-versions) for more details.
+See [the API versions topic](/api-reference/api-versions) for more details.
 **API updates:** * `GenerateContent` is a single unified endpoint for chat and text.
 * Streaming available through the `StreamGenerateContent` method.
 * Multimodal capability: Image is a new supported modality * New beta features: * [Function Calling](/docs/function-calling) * Semantic Retriever * Attributed Question Answering (AQA) * Updated candidate count: Gemini models only return 1 candidate.

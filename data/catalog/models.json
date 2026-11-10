@@ -6390,6 +6390,24 @@
       },
       "vendor": "baidu"
     },
+    "openrouter/baidu/ernie-5.5-flash-preview": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baidu/ernie-5.5-flash-preview"
+        ]
+      },
+      "vendor": "baidu"
+    },
+    "openrouter/baidu/ernie-light-dt-1.0-intl": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baidu/ernie-light-dt-1.0-intl"
+        ]
+      },
+      "vendor": "baidu"
+    },
     "openrouter/baseten/elephant-1": {
       "curated": false,
       "sources": {
