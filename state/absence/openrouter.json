@@ -1,1 +1,1 @@
-{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}}
+{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}, "qwen/qwen-2.5-7b-instruct": {"absent_runs": 1, "since": "2026-11-10"}, "xingchen-agi/xing4.0-29b-a4b:free": {"absent_runs": 1, "since": "2026-11-10"}}
