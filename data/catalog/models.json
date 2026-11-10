@@ -8634,6 +8634,15 @@
       },
       "vendor": "nace-ai"
     },
+    "openrouter/nace-ai/drex-max-finance": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nace-ai/drex-max-finance"
+        ]
+      },
+      "vendor": "nace-ai"
+    },
     "openrouter/nace-ai/drex-v1.5": {
       "curated": false,
       "sources": {
