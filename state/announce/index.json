@@ -53,8 +53,8 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "a688576e27ffe73bcdf61d3ba16125db86cb63f9f8f7306334990498107a0e35",
-      "fetched": "2026-11-05T09:00:26Z"
+      "sha256": "6966bb429ab051828c46f66cd875fc194e5f27d5e65b56c19b4d22f4fd47f63b",
+      "fetched": "2026-11-10T14:00:18Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",

@@ -3,7 +3,8 @@ Skip to main content 🎉 The new-generation MiniMax M3.1 Flash is now available
 ➔ View docs .
 MiniMax API Docs home page Search...
 ⌘ K Console Console Search...
-Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Back to top Oct.
+Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Back to top Nov.
+10, 2026 Oct.
 19, 2026 Jul.
 31, 2026 Jul.
 16, 2026 Jun.
@@ -27,7 +28,10 @@ Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Pr
 15, 2025 Feb.
 11, 2025 Jan.
 15, 2025 Models Copy page Copy page Stay updated on MiniMax’s latest model releases across language, audio, video, image, and music.
-Copy page Copy page ​ Oct.
+Copy page Copy page ​ Nov.
+10, 2026 MiniMax H3 Image A leading open-weight image model.
+From ideas to new worlds.
+Learn More ​ Oct.
 19, 2026 MiniMax M3.1 Flash An ultra-efficient open-weight model for everyday work.
 Learn More ​ Jul.
 31, 2026 MiniMax H3 A new-generation open general-purpose multimodal video model.
