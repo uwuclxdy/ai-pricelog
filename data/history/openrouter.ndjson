@@ -1298,6 +1298,7 @@
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.06,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-27","modality":"decisions","rates":{"input":0.12,"output":0.0,"cache_read":0.12},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max","observed_at":"2026-10-27","modality":"decisions","rates":{"input":0.06,"output":0.0,"cache_read":0.06},"limits":{"context":262144},"provenance":{"name":"Drex Max"}}
+{"schema":4,"source":"openrouter","model_id":"nace-ai/drex-max-finance","observed_at":"2026-11-10","modality":"decisions","rates":{"input":0.06,"output":0.0,"cache_read":0.06},"limits":{"context":262144},"provenance":{"name":"Drex Max Finance"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-v1.5","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.04,"output":0.0},"limits":{"context":131072},"provenance":{"name":"Drex v1.5"}}
 {"schema":4,"source":"openrouter","model_id":"nace-ai/drex-v2.0","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.06,"output":0.0},"limits":{"context":131072},"provenance":{"name":"Drex v2.0"}}
 {"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2-mini","observed_at":"2026-08-26","rates":{"input":0.025,"output":0.1,"cache_read":0.0025},"limits":{"context":262144},"provenance":{"name":"Nex-N2-Mini"}}
