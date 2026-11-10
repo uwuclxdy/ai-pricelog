@@ -53,13 +53,13 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "0d5a5f3185ce96c1d6c3e7571bb82951dc800c9789408e08dc465983006f10db",
-      "fetched": "2026-11-10T15:00:17Z"
+      "sha256": "471fbae836d7891cefbc6f94020a868b59eec4987482e625112001b6e03f45ac",
+      "fetched": "2026-11-10T22:00:17Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "348d7114f3b583632c76ac08618014451da260e3fc2da13f4b4b3748c1c99517",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "b00e52db858b2a5c168a10750abb2a29129ea2f100b5843ede71706e7e7e8c89",
+      "fetched": "2026-11-10T22:00:17Z"
     }
   },
   "xai": {
@@ -84,15 +84,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "74a34ab080c775ecd5f78a5d03124a14ee6004768f18c07eaef3f7b19b57042d",
-      "fetched": "2026-11-09T15:00:17Z"
+      "sha256": "5a600ab98e8e38713a9fe36bbe0d48758f534feacd5a7ce949401aa64d577186",
+      "fetched": "2026-11-10T22:00:17Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "9c8ac569c2c3fdd4c1d8e9ca4d8e7917069a6edb4db66f6baf5ec0305e7d8772",
-      "fetched": "2026-11-07T01:00:14Z"
+      "sha256": "6750a81cc96687f14e303f778883431a5606bef0dd5bd752a4d46530d3e03e16",
+      "fetched": "2026-11-10T22:00:17Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -124,13 +124,13 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "283e8c408bc152bb0b1d87504d370e356cfe3e3a64c0e81932d92978c4d3c86a",
-      "fetched": "2026-11-09T15:00:17Z"
+      "sha256": "91eb974b6d0815603747bd980632d151b467e3d0026e7f02a8d1a6d97eb0bc34",
+      "fetched": "2026-11-10T22:00:17Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "9ef553dfbf9524c497e6e7c9450ad0350a2a5ab2deae6a28bc311fd4680d6d1d",
-      "fetched": "2026-11-09T23:00:14Z"
+      "sha256": "5744da6a0b6de151dc9696ae5e38ff0063eec010abbf28d126e31e5e7dd340cf",
+      "fetched": "2026-11-10T22:00:17Z"
     }
   },
   "cloudflare": {
