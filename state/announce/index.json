@@ -53,8 +53,8 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "6966bb429ab051828c46f66cd875fc194e5f27d5e65b56c19b4d22f4fd47f63b",
-      "fetched": "2026-11-10T14:00:18Z"
+      "sha256": "0d5a5f3185ce96c1d6c3e7571bb82951dc800c9789408e08dc465983006f10db",
+      "fetched": "2026-11-10T15:00:17Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "29132e3510573c25afaf7d7f25ceaef73729190ff6d8b15618bdd0561a657639",
-      "fetched": "2026-11-10T01:00:16Z"
+      "sha256": "68e5764b5b0864ed546280d5a80c34690443f969723048b7090721e78612b839",
+      "fetched": "2026-11-10T15:00:17Z"
     }
   },
   "databricks": {
