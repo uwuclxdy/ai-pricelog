@@ -8715,6 +8715,15 @@
       },
       "vendor": "nex-agi"
     },
+    "openrouter/nex-agi/nex-n2.6": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "nex-agi/nex-n2.6"
+        ]
+      },
+      "vendor": "nex-agi"
+    },
     "openrouter/nousresearch/hermes-3-llama-3.1-405b": {
       "curated": false,
       "sources": {
@@ -10133,6 +10142,15 @@
       "sources": {
         "openrouter": [
           "qwen/qwen3-embedding-8b"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-reranker-0.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-reranker-0.6b"
         ]
       },
       "vendor": "qwen"
