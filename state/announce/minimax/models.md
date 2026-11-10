@@ -1,7 +1,6 @@
 Models - MiniMax API Docs Documentation Index Fetch the complete documentation index at: /docs/llms.txt Use this file to discover all available pages before exploring further.
-Skip to main content 🎉 The new-generation MiniMax M3.1 Flash is now available!
-➔ View docs .
-MiniMax API Docs home page Search...
+Skip to main content The next-generation image model MiniMax H3 Image is now available!
+View docs → MiniMax API Docs home page Search...
 ⌘ K Console Console Search...
 Navigation Models Developer Guides API M Plan Pricing Release Notes Developer Program Models APIs On this page Back to top Nov.
 10, 2026 Oct.
