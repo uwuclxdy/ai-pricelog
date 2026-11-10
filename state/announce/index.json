@@ -53,8 +53,8 @@
   "minimax": {
     "https://platform.minimax.io/docs/release-notes/models": {
       "file": "state/announce/minimax/models.md",
-      "sha256": "0d5a5f3185ce96c1d6c3e7571bb82951dc800c9789408e08dc465983006f10db",
-      "fetched": "2026-11-10T15:00:17Z"
+      "sha256": "471fbae836d7891cefbc6f94020a868b59eec4987482e625112001b6e03f45ac",
+      "fetched": "2026-11-10T17:00:19Z"
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "283e8c408bc152bb0b1d87504d370e356cfe3e3a64c0e81932d92978c4d3c86a",
-      "fetched": "2026-11-09T15:00:17Z"
+      "sha256": "3285faaf1d99504b9fd80595ee0c37c305524bf8206655afaa2ea9cbc5ea0a9d",
+      "fetched": "2026-11-10T17:00:19Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
