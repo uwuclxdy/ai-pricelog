@@ -3738,6 +3738,15 @@
       },
       "vendor": "google"
     },
+    "google/gemini-4-carbon": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-4-carbon"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-embedding-001": {
       "curated": false,
       "sources": {
