@@ -1694,6 +1694,24 @@
       },
       "vendor": null
     },
+    "deepinfra/claude-opus-5-5": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "claude-opus-5-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "deepinfra/claude-sonnet-5-5": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "claude-sonnet-5-5"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "deepinfra/deepseek-v4-pro-0813": {
       "curated": false,
       "sources": {
@@ -1708,6 +1726,15 @@
       "sources": {
         "deepinfra": [
           "gemini-3.1-pro"
+        ]
+      },
+      "vendor": "google"
+    },
+    "deepinfra/gemini-3.7-flash": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "gemini-3.7-flash"
         ]
       },
       "vendor": "google"
@@ -1861,6 +1888,15 @@
       "sources": {
         "deepinfra": [
           "qwen3-coder-480b-a35b-instruct-turbo"
+        ]
+      },
+      "vendor": null
+    },
+    "deepinfra/qwen3.8-flash": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "qwen3.8-flash"
         ]
       },
       "vendor": null

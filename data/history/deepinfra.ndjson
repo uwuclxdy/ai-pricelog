@@ -3,9 +3,11 @@
 {"schema":4,"source":"deepinfra","model_id":"claude-opus-4-7","observed_at":"2026-08-29","rates":{"input":5.0,"output":25.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"claude-opus-4-8","observed_at":"2026-08-29","rates":{"input":5.0,"output":25.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"claude-opus-5","observed_at":"2026-08-29","rates":{"input":5.0,"output":25.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"claude-opus-5-5","observed_at":"2026-11-10","rates":{"input":4.0,"output":20.0,"cache_read":0.2},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"claude-sonnet-4-6","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"claude-sonnet-5","observed_at":"2026-08-29","rates":{"input":2.0,"output":10.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"claude-sonnet-5","observed_at":"2026-09-01","rates":{"input":3.0,"output":15.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"claude-sonnet-5-5","observed_at":"2026-11-10","rates":{"input":2.0,"output":10.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"deepseek-r1-0528","observed_at":"2026-08-29","rates":{"input":0.5,"output":2.15,"cache_read":0.35},"limits":{"context":163840},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"deepseek-v3","observed_at":"2026-08-29","rates":{"input":0.32,"output":0.89},"limits":{"context":163840},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"deepseek-v3-0324","observed_at":"2026-08-29","rates":{"input":0.24,"output":0.9,"cache_read":0.135},"limits":{"context":163840},"provenance":{"url":"https://deepinfra.com/pricing"}}
@@ -25,6 +27,7 @@
 {"schema":4,"source":"deepinfra","model_id":"gemini-3.1-flash-lite","observed_at":"2026-08-29","rates":{"input":0.25,"output":1.5},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemini-3.1-pro","observed_at":"2026-08-29","rates":{"input":2.0,"output":12.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemini-3.5-flash","observed_at":"2026-08-29","rates":{"input":1.5,"output":9.0},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"gemini-3.7-flash","observed_at":"2026-11-10","rates":{"input":0.75,"output":3.75},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-3-12b-it","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.15},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-3-27b-it","observed_at":"2026-08-29","rates":{"input":0.08,"output":0.16},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"gemma-3-4b-it","observed_at":"2026-08-29","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"url":"https://deepinfra.com/pricing"}}
@@ -96,4 +99,5 @@
 {"schema":4,"source":"deepinfra","model_id":"qwen3.6-35b-a3b","observed_at":"2026-08-29","rates":{"input":0.1,"output":0.95},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3.6-35b-a3b","observed_at":"2026-10-02","rates":{"input":0.1,"output":0.95,"cache_read":0.1},"limits":{"context":262144},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3.7-max","observed_at":"2026-08-29","rates":{"input":2.5,"output":7.5,"cache_read":0.5},"limits":{"context":256000},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"qwen3.8-flash","observed_at":"2026-11-10","rates":{"input":0.113,"output":0.382,"cache_read":0.0141},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3.8-max","observed_at":"2026-08-29","rates":{"input":1.65,"output":4.951,"cache_read":0.206},"limits":{"context":256000},"provenance":{"url":"https://deepinfra.com/pricing"}}
