@@ -260,10 +260,6 @@ For information on our model deprecation policy and recommended replacement mode
 13 August DigitalOcean Kubernetes (DOKS) now supports Dynamic Resource Allocation (DRA) drivers for NVIDIA and AMD GPU node pools in public preview , starting with DOKS 1.36.3-do.0 .
 DRA is an opt-in alternative to the managed GPU device plugins.
 Workloads that already request GPUs with extended resources such as nvidia.com/gpu or amd.com/gpu continue to work without changes after switching to DRA.
-12 August The following Alibaba model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Qwen3.8-2.4T-A95B For more information, see the Available Models page .
-Cloud Security Posture Management (CSPM) paid plans support Managed Rules, which let you enable or disable CSPM rules for your entire team.
-To exclude specific resources while keeping a rule enabled for the rest of the team, suppress findings for those resources.
-For more information, see How to Manage Rules and How to Suppress Findings .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
