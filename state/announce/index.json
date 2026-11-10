@@ -12,8 +12,8 @@
     },
     "https://api-docs.deepseek.com/guides/search": {
       "file": "state/announce/deepseek/search.md",
-      "sha256": "da613d1d56abb7f05d6d40e916246ebee2b3709548dfeb6bd732b16c71d47066",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "7aed21abd7c75ea4780d3d43876df161952a46639d53058fb25f50be9a8c0f76",
+      "fetched": "2026-11-10T08:00:16Z"
     }
   },
   "zai": {
@@ -46,8 +46,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "aa062006f51248b7ff0c04701dc1c036ae9414fc84d04ff706a8be93cd624b4c",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "67398b27c67d3010cf1fb94c10611ae9b039afc6d9509c9ae8bbe2f23e4d2e7b",
+      "fetched": "2026-11-10T08:00:16Z"
     }
   },
   "minimax": {

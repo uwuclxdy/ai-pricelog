@@ -64,7 +64,7 @@ Do not retry other 4xx errors without changing the request.
 Billing ​ Search and Fetch are billed per successful request, not by tokens or by the number of returned results: API Unit Price Search Per 1,000 successful requests $0.75 Fetch Per 1,000 successful requests $0.75 A request is billable only when it returns HTTP 200 and produces a result (Search must return a non-empty results array, and Fetch must return page content).
 Failed requests, empty search results, and timeouts are not billed.
 count only controls how many results are returned and does not affect the per-request price.
-Search and Fetch calls triggered by server-side tools when using the DeepSeek API through DeepSeek Harness, Claude Code, or Codex are also billed per successful request.
+Search and Fetch calls triggered by tools when using the DeepSeek API through DeepSeek Harness, Claude Code, or Codex, including Codex Alpha Search , are also billed per successful request.
 Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 100 Fetch 25 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
 Requests above the account-level QPS limit receive HTTP 429.
 In addition to the account-level limit, Fetch is also subject to a per-domain QPS limit, and requests above that limit also receive HTTP 429.
