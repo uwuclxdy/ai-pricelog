@@ -1315,6 +1315,7 @@
 {"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2.5-pro","observed_at":"2026-09-28","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":262144},"provenance":{"name":"Nex-N2.5-Pro"}}
 {"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2.5-pro:free","observed_at":"2026-09-08","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Nex-N2.5-Pro (free)"}}
 {"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2.5-pro:free","observed_at":"2026-09-29","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
+{"schema":4,"source":"openrouter","model_id":"nex-agi/nex-n2.6","observed_at":"2026-11-10","rates":{"input":0.12,"output":0.4,"cache_read":0.024},"limits":{"context":262144},"provenance":{"name":"Nex-N2.6"}}
 {"schema":4,"source":"openrouter","model_id":"nousresearch/hermes-3-llama-3.1-405b","observed_at":"2024-08-27","rates":{"input":0.0,"output":0.0},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"nousresearch/hermes-3-llama-3.1-405b","observed_at":"2025-09-22","rates":{"input":0.8,"output":0.8},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"nousresearch/hermes-3-llama-3.1-405b","observed_at":"2025-12-28","rates":{"input":1.0,"output":1.0},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826/https://openrouter.ai/api/v1/models"}}
@@ -1906,6 +1907,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-instruct","observed_at":"2026-11-05","rates":{"input":0.09,"output":1.1},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Instruct"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.2},"limits":{"context":262144},"provenance":{"name":"Qwen3 Next 80B A3B Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-next-80b-a3b-thinking","observed_at":"2026-10-28","removed":true,"rates":{"input":0.15,"output":1.2},"limits":{"context":262144}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3-reranker-0.6b","observed_at":"2026-11-10","modality":"rerank","rates":{"input":0.0,"output":0.0},"limits":{"context":32768},"provenance":{"name":"Qwen3 Reranker 0.6B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-reranker-8b","observed_at":"2026-10-26","modality":"rerank","rates":{"input":0.0,"output":0.0},"limits":{"context":40960},"provenance":{"name":"Qwen3 Reranker 8B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-vl-235b-a22b-instruct","observed_at":"2025-12-28","rates":{"input":0.2,"output":1.2},"limits":{"context":262144},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-vl-235b-a22b-instruct","observed_at":"2026-03-13","rates":{"input":0.25,"output":1.5},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=qwen/qwen3-vl-235b-a22b-instruct&shape=v4&range=all"}}
@@ -2058,6 +2060,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-10-31","rates":{"input":0.04,"output":2.3,"cache_read":0.02},"limits":{"context":1000000},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-01","rates":{"input":0.15,"output":1.875,"cache_read":0.0375},"limits":{"context":1000000},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-04","rates":{"input":0.15,"output":1.875,"cache_read":0.0375},"limits":{"context":1024000},"provenance":{"name":"Qwen3.8 27B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-10","rates":{"input":0.15,"output":1.875,"cache_read":0.0375},"limits":{"context":1048575},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:batch","observed_at":"2026-11-06","rates":{"input":0.16,"output":2.0,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Qwen3.8 27B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:free","observed_at":"2026-09-17","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Qwen3.8 27B (free)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:free","observed_at":"2026-10-15","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
@@ -2495,6 +2498,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-09","rates":{"input":0.454,"output":1.271,"cache_read":0.153},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-09","rates":{"input":0.504,"output":1.271,"cache_read":0.17},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-09","rates":{"input":0.623,"output":1.271,"cache_read":0.21},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-10","rates":{"input":0.573,"output":1.169,"cache_read":0.194},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":256000},"provenance":{"name":"GLM 5.2 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-09-07","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":256000}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-09-15","rates":{"input":0.0,"output":0.0},"limits":{"context":256000},"provenance":{"name":"GLM 5.2 (free)"}}
