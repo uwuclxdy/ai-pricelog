@@ -1,5 +1,7 @@
 > ## AI Agent Context > Get the complete documentation index at: https://aistudio.google.com/llms.txt > Use this file to discover all available pages.
 > For the full documentation in a single file, fetch: https://aistudio.google.com/llms-full.txt # Release notes This page documents updates to the Gemini API.
+## November 10, 2026 {% id="11-10-2026" %} * **Gemini 4 Carbon (`gemini-4-carbon`) generally available (GA)**: Released [Gemini 4 Carbon](/docs/models/gemini-4-carbon) (`gemini-4-carbon`), our most capable reasoning model built for sustained agentic coding, multimodal knowledge work, scientific reasoning, and cybersecurity defense, available at introductory [pricing](/docs/pricing#gemini-4-carbon) of $2.00 per 1M input tokens and $10.00 per 1M output tokens through November 30, 2026.
+See [What's new in Gemini 4 Carbon](/docs/whats-new-gemini-4-carbon) to get started.
 ## November 6, 2026 {% id="11-06-2026" %} * **Gemini Embedding 2 Preview deprecation**: [`gemini-embedding-2-preview`](/docs/models/gemini-embedding-2-preview) is [deprecated](/docs/deprecations#embedding-deprecated-models).
 Effective November 6, 2026, API requests to `gemini-embedding-2-preview` route to [`gemini-embedding-2`](/docs/models/gemini-embedding-2) at [Gemini Embedding 2 rates](/docs/pricing#gemini-embedding-2).
 Update your model string to `gemini-embedding-2`.

@@ -27,6 +27,7 @@
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash","observed_at":"2026-08-29","rates":{"input":0.068,"output":0.168,"cache_read":0.017},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash","observed_at":"2026-09-18","rates":{"input":0.0679,"output":0.168,"cache_read":0.0168},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash","observed_at":"2026-09-22","rates":{"input":0.14,"output":0.28,"cache_read":0.028},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash","observed_at":"2026-11-10","removed":true,"rates":{"input":0.14,"output":0.28,"cache_read":0.028}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash-0731","observed_at":"2026-08-29","rates":{"input":0.08,"output":0.252,"cache_read":0.025},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash-0731","observed_at":"2026-09-18","rates":{"input":0.08,"output":0.252,"cache_read":0.0252},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"deepseek-v4-flash-0731","observed_at":"2026-09-22","rates":{"input":0.14,"output":0.28,"cache_read":0.028},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
@@ -133,10 +134,13 @@
 {"schema":4,"source":"digitalocean","model_id":"nemotron-3-super-120b","observed_at":"2026-09-11","removed":true,"rates":{"input":0.3,"output":0.65,"cache_read":0.06}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-3-ultra","observed_at":"2026-08-29","rates":{"input":0.9,"output":1.7},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-3-ultra","observed_at":"2026-09-29","rates":{"input":0.9,"output":1.7,"cache_read":0.18},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"nemotron-3-ultra","observed_at":"2026-11-10","removed":true,"rates":{"input":0.9,"output":1.7,"cache_read":0.18}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-nano-12b-v2-vl","observed_at":"2026-08-29","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-nano-12b-v2-vl","observed_at":"2026-09-29","rates":{"input":0.2,"output":0.6,"cache_read":0.04},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"nemotron-nano-12b-v2-vl","observed_at":"2026-11-10","removed":true,"rates":{"input":0.2,"output":0.6,"cache_read":0.04}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-nano-3-omni","observed_at":"2026-08-29","rates":{"input":0.5,"output":0.9},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"nemotron-nano-3-omni","observed_at":"2026-09-29","rates":{"input":0.5,"output":0.9,"cache_read":0.1},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
+{"schema":4,"source":"digitalocean","model_id":"nemotron-nano-3-omni","observed_at":"2026-11-10","removed":true,"rates":{"input":0.5,"output":0.9,"cache_read":0.1}}
 {"schema":4,"source":"digitalocean","model_id":"nvidia-nemotron-3.5-super-vl","observed_at":"2026-10-15","rates":{"input":0.3,"output":0.65,"cache_read":0.06},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"o1","observed_at":"2026-08-29","rates":{"input":15.0,"output":60.0,"cache_read":7.5},"provenance":{"url":"https://docs.digitalocean.com/products/inference/details/pricing/"}}
 {"schema":4,"source":"digitalocean","model_id":"o1","observed_at":"2026-10-30","removed":true,"rates":{"input":15.0,"output":60.0,"cache_read":7.5}}
