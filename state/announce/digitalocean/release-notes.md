@@ -9,7 +9,8 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 5 November You can now remove a Droplet snapshot’s copy from a single region without deleting the snapshot or its copies in other regions, using the DigitalOcean API or the Control Panel.
+November 2026 9 November The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Fable 5.2 For more information, see the Available Models page .
+5 November You can now remove a Droplet snapshot’s copy from a single region without deleting the snapshot or its copies in other regions, using the DigitalOcean API or the Control Panel.
 Read How to Add or Remove Droplet Snapshots in Other Regions to learn how to remove a regional copy.
 The DigitalOcean Documentation MCP server searches the full documentation site index, and each search result includes an excerpt from the page body.
 You can restrict docs-search results to one product with the Product parameter, and read long pages in sections with the StartIndex and MaxLength parameters of docs-get-page .

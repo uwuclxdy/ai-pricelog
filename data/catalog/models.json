@@ -2226,6 +2226,24 @@
       },
       "vendor": "anthropic"
     },
+    "digitalocean/claude-fable-5.2": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-fable-5.2"
+        ]
+      },
+      "vendor": "anthropic"
+    },
+    "digitalocean/claude-fable-5.2-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "claude-fable-5.2-fast-mode"
+        ]
+      },
+      "vendor": "anthropic"
+    },
     "digitalocean/claude-opus-4.8-fast-mode": {
       "curated": false,
       "sources": {
