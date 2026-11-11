@@ -10911,6 +10911,15 @@
       },
       "vendor": "sourceful"
     },
+    "openrouter/speechify/simba-3.5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "speechify/simba-3.5"
+        ]
+      },
+      "vendor": "speechify"
+    },
     "openrouter/stealth/crouton-alpha": {
       "curated": false,
       "sources": {
