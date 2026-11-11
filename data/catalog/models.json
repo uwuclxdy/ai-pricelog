@@ -7317,6 +7317,24 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-4-carbon": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-carbon"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-4-carbon:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-carbon:batch"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-decision-1": {
       "curated": false,
       "sources": {
@@ -11384,6 +11402,15 @@
       "sources": {
         "openrouter": [
           "x-ai/grok-stt-1.0"
+        ]
+      },
+      "vendor": "x-ai"
+    },
+    "openrouter/x-ai/grok-stt-2.0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "x-ai/grok-stt-2.0"
         ]
       },
       "vendor": "x-ai"
