@@ -2,6 +2,14 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **Automatic output-token limits** You can omit `max_output_tokens` when using any model, including Anthropic models.
+Each generation can produce up to 128,000 output tokens, capped by the model's supported limit.
+Without an explicit budget, output tokens from earlier steps do not reduce the next generation's limit.
+The new `2026-11-11.0` versions of `fast`, `low`, `medium`, `high`, `xhigh`, and `ultra` use this default.
+Calling an effort level by name, such as `effort="fast"`, selects the new version.
+Earlier pinned versions keep their configured budgets.
+Set `max_output_tokens` only when you want a total output-token budget across the run.
+See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md) and [Models](https://docs.perplexity.ai/docs/agent-api/models.md).
 **November 2026** **Gemini 4 Carbon** The Agent API now supports `google/gemini-4-carbon`.
 Introductory pricing through November 30, 2026 is \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens, including reasoning tokens.
 See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
