@@ -7308,6 +7308,15 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-decision-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-decision-1"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-embedding-001": {
       "curated": false,
       "sources": {

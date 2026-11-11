@@ -9,7 +9,16 @@ Due to the high frequency of its updates, we keep a separate changelog for Kuber
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 9 November The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Fable 5.2 For more information, see the Available Models page .
+November 2026 10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
+For serverless inference, migrate DeepSeek V4 Flash to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ), Llama 4 Maverick 17B 128E Instruct to DeepSeek V4.1 Flash ( deepseek-v4.1-flash ), Qwen 3.5 397B A17B to Qwen3.8-Max ( qwen3.8-max ), Gemma 4 to GLM-5.3 Flash ( glm-5.3-flash ), and gpt-oss-20b to gpt-oss-120b ( openai-gpt-oss-120b ) to avoid service disruption.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+9 November The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Fable 5.2 For more information, see the Available Models page .
+7 November High Performance Block Storage is now available in private preview in the NYC2, SFO3, ATL1, RIC1, MKC1, and MEM1 datacenters.
+High Performance volumes use network-attached NVMe storage over NVMe/TCP and deliver up to 60,000 IOPS and 1,200 MB/s per volume, regardless of Droplet type.
+You can create High Performance volumes in the Control Panel or through the API by setting performance_class to b2 .
+Volumes require a minimum size of 128 GiB and are free during the preview.
+To request access, contact your Technical Account Manager (TAM).
+For more information, see How to Create High Performance Block Storage Volumes .
 5 November You can now remove a Droplet snapshot’s copy from a single region without deleting the snapshot or its copies in other regions, using the DigitalOcean API or the Control Panel.
 Read How to Add or Remove Droplet Snapshots in Other Regions to learn how to remove a regional copy.
 The DigitalOcean Documentation MCP server searches the full documentation site index, and each search result includes an excerpt from the page body.
@@ -258,9 +267,6 @@ For more information, see Use Prompt Caching .
 18 August The following open-source models are deprecated from DigitalOcean Inference as of 18 August 2026: Llama 3.3 Instruct-70B DeepSeek R1 Distill Llama 70B Qwen3-32B Qwen3 Coder Flash Migrate Llama 3.3 Instruct-70B to Llama 4 Maverick 17B 128E Instruct ( llama-4-maverick ), DeepSeek R1 Distill Llama 70B to DeepSeek V4 Flash ( deepseek-4-flash ), and Qwen3-32B and Qwen3 Coder Flash to Qwen 3.5 397B A17B ( qwen3.5-397b-a17b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 14 August The following DeepSeek model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : DeepSeek V4 Pro 0813 For more information, see the Available Models page .
-13 August DigitalOcean Kubernetes (DOKS) now supports Dynamic Resource Allocation (DRA) drivers for NVIDIA and AMD GPU node pools in public preview , starting with DOKS 1.36.3-do.0 .
-DRA is an opt-in alternative to the managed GPU device plugins.
-Workloads that already request GPUs with extended resources such as nvidia.com/gpu or amd.com/gpu continue to work without changes after switching to DRA.
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
