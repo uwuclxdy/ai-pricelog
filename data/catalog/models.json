@@ -7743,6 +7743,15 @@
       },
       "vendor": "krea"
     },
+    "openrouter/kt/midm-k-3.0-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "kt/midm-k-3.0-pro"
+        ]
+      },
+      "vendor": "kt"
+    },
     "openrouter/kwaipilot/kat-coder-air-v2.5": {
       "curated": false,
       "sources": {
@@ -8678,6 +8687,15 @@
         ]
       },
       "vendor": "morph"
+    },
+    "openrouter/motif-technologies/motif-3": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "motif-technologies/motif-3"
+        ]
+      },
+      "vendor": "motif-technologies"
     },
     "openrouter/nace-ai/drex-max": {
       "curated": false,
