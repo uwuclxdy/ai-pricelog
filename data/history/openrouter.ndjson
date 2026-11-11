@@ -1244,6 +1244,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-10-30","rates":{"input":0.6,"output":3.5,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-11-05","rates":{"input":0.6,"output":3.5,"cache_read":0.16},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-11-11","rates":{"input":0.7125,"output":3.5,"cache_read":0.16},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code","observed_at":"2026-11-11","rates":{"input":0.6,"output":3.5,"cache_read":0.16},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-26","rates":{"input":0.95,"output":4.0,"cache_read":0.19},"limits":{"context":262144},"provenance":{"name":"Kimi K2.7 Code (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k2.7-code:batch","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-08-26","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
@@ -2348,6 +2349,7 @@
 {"schema":4,"source":"openrouter","model_id":"unbiased/pareto-26.10","observed_at":"2026-10-17","rates":{"input":0.8,"output":3.2,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Pareto 26.10"}}
 {"schema":4,"source":"openrouter","model_id":"unbiased/pareto-26.10-preview","observed_at":"2026-10-01","rates":{"input":0.8,"output":3.2,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Pareto 26.10 Preview"}}
 {"schema":4,"source":"openrouter","model_id":"unbiased/pareto-26.10-preview","observed_at":"2026-10-15","removed":true,"rates":{"input":0.8,"output":3.2,"cache_read":0.03},"limits":{"context":1048576}}
+{"schema":4,"source":"openrouter","model_id":"unbiased/pareto-26.10-preview","observed_at":"2026-11-11","rates":{"input":0.8,"output":3.2,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Pareto 26.10 Preview"}}
 {"schema":4,"source":"openrouter","model_id":"unbiased/pareto-26.9","observed_at":"2026-10-13","rates":{"input":2.5,"output":7.5,"cache_read":0.25},"limits":{"context":262144},"provenance":{"name":"Pareto 26.9"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2024-08-27","rates":{"input":0.27,"output":0.27},"limits":{"context":4096},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2025-09-22","rates":{"input":0.45,"output":0.65},"limits":{"context":6144},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342/https://openrouter.ai/api/v1/models"}}
