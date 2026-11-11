@@ -390,11 +390,11 @@
       ]
     },
     {
-      "id": "digitalocean-model-deprecation-2026-11-10",
+      "id": "digitalocean-serverless-deprecation-2026-11-10",
       "provider": "digitalocean",
       "effective": "2026-11-10",
       "timezone": "UTC",
-      "statement": "the release notes' 10 November 2026 entry deprecates DeepSeek V4 Flash, Llama 4 Maverick 17B 128E Instruct, Qwen 3.5 397B A17B, Gemma 4 and gpt-oss-20b from DigitalOcean Serverless Inference as of 10 November 2026, with migrations: DeepSeek V4 Flash to DeepSeek V4.1 Flash 1017 (deepseek-v4.1-flash-1017), Llama 4 Maverick 17B 128E Instruct to DeepSeek V4.1 Flash (deepseek-v4.1-flash), Qwen 3.5 397B A17B to Qwen3.8-Max (qwen3.8-max), Gemma 4 to GLM-5.3 Flash (glm-5.3-flash) and gpt-oss-20b to gpt-oss-120b (openai-gpt-oss-120b), to avoid service disruption; the five remain available on dedicated inference. the page names no timezone; UTC is the recorded frame. the stored rows get removal rows through the absence machinery",
+      "statement": "the release notes' 10 November 2026 entry deprecates DeepSeek V4 Flash (deepseek-v4-flash), Llama 4 Maverick 17B 128E Instruct (llama-4-maverick-17b-128e-instruct), Qwen 3.5 397B A17B (qwen-3.5-397b-a17b), Gemma 4 (gemma-4) and gpt-oss-20b (gpt-oss-20b) from DigitalOcean Serverless Inference as of 10 November 2026, migrating serverless workloads to DeepSeek V4.1 Flash 1017 (deepseek-v4.1-flash-1017), DeepSeek V4.1 Flash (deepseek-v4.1-flash), Qwen3.8-Max (qwen3.8-max), GLM-5.3 Flash (glm-5.3-flash) and gpt-oss-120b (openai-gpt-oss-120b) to avoid service disruption; the models remain available on dedicated inference. the entry names no timezone; UTC is the recorded frame. the stored rows get removal rows through the absence machinery",
       "citation": [
         "https://docs.digitalocean.com/release-notes/"
       ]
