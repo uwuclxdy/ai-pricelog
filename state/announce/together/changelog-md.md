@@ -189,9 +189,7 @@ See [Automatic idle shutdown](https://docs.together.ai/docs/dedicated-endpoints/
 **September 15, 2026** ## Rollouts for dedicated model inference [Rollouts](https://docs.together.ai/docs/dedicated-endpoints/rollouts.md) shift live traffic from one deployment to another under the same endpoint, without changing the endpoint URL.
 Pick a canary, blue-green, or rolling strategy to determine how traffic moves, and optionally gate a canary rollout on [live metrics](https://docs.together.ai/docs/dedicated-endpoints/rollout-metric-gates.md) so it pauses automatically if the new deployment regresses.
 Start a rollout with the `tg beta endpoints rollout` CLI command or from the endpoint's **Rollouts** tab in the console, then pause, resume, promote, or cancel it at any point while it runs.
-## Together CLI v2.34.0 Version 2.34.0 of the Together CLI and Python SDK carries the rollouts release above (the SDK surface is `client.beta.endpoints.rollouts`) and also adds: * **[HIPAA placement](https://docs.together.ai/docs/dedicated-endpoints/manage.md#compliance-policy):** `tg beta endpoints deploy` accepts `--placement.hipaa` to restrict a deployment to HIPAA-attested clusters.
-The Python SDK takes the same policy as `compliance_policy` on inline placement.
-* `tg files check` now rejects Parquet files larger than the maximum supported file size instead of passing them through format validation.
+## Together CLI v2.34.0 Version 2.34.0 of the Together CLI and Python SDK carries the rollouts release above (the SDK surface is `client.beta.endpoints.rollouts`) and also adds: * `tg files check` now rejects Parquet files larger than the maximum supported file size instead of passing them through format validation.
 See the [CLI reference](https://docs.together.ai/reference/cli/getting-started.md).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `openai/gpt-oss-20b`.
 Recommended replacement: `Qwen/Qwen3.5-9B`.
@@ -394,11 +392,7 @@ Pricing: \$0.35 input / \$1.50 output / \$0.04 cached input (per 1M tokens).
 * `ByteDance/Seedance-2.5`: Pricing: \$0.115/sec at 480p.
 ## New models available for fine-tuning You can now fine-tune the following models: * `deepseek-ai/DeepSeek-V4-Flash-0731`.
 See [Supported models](https://docs.together.ai/docs/fine-tuning/supported-models.md) for the full list.
-**August 10, 2026** ## HIPAA compliance policy on dedicated endpoint placement Inline placement on [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/manage.md#choose-where-a-deployment-runs) deployments now accepts an optional `compliancePolicy` object.
-Set `hipaa: true` so replicas only schedule on HIPAA-attested clusters.
-The policy is always enforced strictly, regardless of `constraint`, and the deployment stays unscheduled while no qualifying cluster is available.
-See [Compliance policy](https://docs.together.ai/docs/dedicated-endpoints/manage.md#compliance-policy).
-## Tokenized dataset download in the fine-tuning console Open a job on the [fine-tuning jobs dashboard](https://api.together.ai/fine-tuning).
+**August 10, 2026** ## Tokenized dataset download in the fine-tuning console Open a job on the [fine-tuning jobs dashboard](https://api.together.ai/fine-tuning).
 When the job has a tokenized dataset archive, the job details show a **Tokenized dataset** row with **Download**.
 Selecting **Download** opens a presigned archive URL in a new tab.
 The same archive is available from the API and CLI.
