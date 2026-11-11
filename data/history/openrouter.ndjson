@@ -924,6 +924,7 @@
 {"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-08-26","rates":{"input":0.5,"output":0.75},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
 {"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-09-01","rates":{"input":0.4,"output":0.75},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
 {"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-11-07","rates":{"input":0.4,"output":0.75,"cache_read":0.4},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
+{"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-11-10","rates":{"input":0.3,"output":0.5,"cache_read":0.3},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
 {"schema":4,"source":"openrouter","model_id":"meituan/longcat-2.0","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"limits":{"context":1048756},"provenance":{"name":"LongCat 2.0"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.1-70b-instruct","observed_at":"2024-08-27","rates":{"input":0.35,"output":0.4},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.1-70b-instruct","observed_at":"2025-09-22","rates":{"input":0.1,"output":0.28},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
@@ -2333,6 +2334,7 @@
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-08-26","rates":{"input":0.45,"output":0.65},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-09-04","rates":{"input":0.35,"output":0.65},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
 {"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-11-07","rates":{"input":0.35,"output":0.65,"cache_read":0.35},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
+{"schema":4,"source":"openrouter","model_id":"undi95/remm-slerp-l2-13b","observed_at":"2026-11-10","rates":{"input":0.3,"output":0.5,"cache_read":0.2},"limits":{"context":6144},"provenance":{"name":"ReMM SLERP 13B"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-decide","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.05,"output":0.0,"cache_read":0.05},"limits":{"context":524288},"provenance":{"name":"Solar Decide"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-decide-flash","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.05,"output":0.0,"cache_read":0.05},"limits":{"context":524288},"provenance":{"name":"Solar Decide Flash"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-mini4","observed_at":"2026-09-23","rates":{"input":0.05,"output":0.2,"cache_read":0.005},"limits":{"context":524288},"provenance":{"name":"Solar Mini 4"}}
