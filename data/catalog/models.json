@@ -8175,6 +8175,15 @@
       },
       "vendor": "minimax"
     },
+    "openrouter/minimax/minimax-h3-image-highspeed": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "minimax/minimax-h3-image-highspeed"
+        ]
+      },
+      "vendor": "minimax"
+    },
     "openrouter/minimax/minimax-m1": {
       "curated": false,
       "sources": {
