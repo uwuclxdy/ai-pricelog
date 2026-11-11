@@ -6390,6 +6390,15 @@
       },
       "vendor": "baidu"
     },
+    "openrouter/baidu/ernie-5.5-flash-preview:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baidu/ernie-5.5-flash-preview:free"
+        ]
+      },
+      "vendor": "baidu"
+    },
     "openrouter/baseten/elephant-1": {
       "curated": false,
       "sources": {
