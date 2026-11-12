@@ -6642,6 +6642,15 @@
       },
       "vendor": "bytedance-seed"
     },
+    "openrouter/bytedance-seed/seedream-5-5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seedream-5-5"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
     "openrouter/bytedance/seedance-1-5-pro": {
       "curated": false,
       "sources": {
@@ -10056,6 +10065,15 @@
       },
       "vendor": "particle-ai"
     },
+    "openrouter/particle-ai/particle-1:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "particle-ai/particle-1:free"
+        ]
+      },
+      "vendor": "particle-ai"
+    },
     "openrouter/perceptron/perceptron-mk1": {
       "curated": false,
       "sources": {
@@ -11180,6 +11198,15 @@
         ]
       },
       "vendor": "thenlper"
+    },
+    "openrouter/thinkingmachines/inkling-2-small": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "thinkingmachines/inkling-2-small"
+        ]
+      },
+      "vendor": "thinkingmachines"
     },
     "openrouter/thinkingmachines/inkling-2-small:free": {
       "curated": false,
