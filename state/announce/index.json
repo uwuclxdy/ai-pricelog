@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "00ce48cf95f6f8de2ad368aa50f1617fac44203269d8f9e3c7651881fb098164",
-      "fetched": "2026-11-12T18:00:17Z"
+      "sha256": "bbd5f7d1229a6b8cc6faa907fc6a536da5e209fac81d61610794e83084706ea8",
+      "fetched": "2026-11-12T19:00:18Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
