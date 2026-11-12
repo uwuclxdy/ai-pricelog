@@ -8715,6 +8715,15 @@
       },
       "vendor": "moonshotai"
     },
+    "openrouter/moonshotai/kimi-k3.1-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "moonshotai/kimi-k3.1-pro:batch"
+        ]
+      },
+      "vendor": "moonshotai"
+    },
     "openrouter/moonshotai/kimi-k3:batch": {
       "curated": false,
       "sources": {

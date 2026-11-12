@@ -1,11 +1,9 @@
 # Kimi API Platform > Kimi K3.1 Pro is our flagship model for long-horizon coding and end-to-end knowledge work, with a 1M-token context window and industry-leading intelligence.
-The Kimi API Platform provides K3.1 Pro, the previous-generation K3, K2.7 Code, K2.6 and other large language model APIs, supporting long context, multimodal understanding, and Tool Calling.
+The Kimi API Platform provides a range of large language model APIs with long context, multimodal understanding, and Tool Calling.
 - [Quickstart](https://platform.kimi.ai/docs/get-your-api-key.md): Create an API Key and complete your first Kimi API call.
 - [Features overview](https://platform.kimi.ai/docs/features.md): Explore Kimi Open Platform capabilities for model inference, tool calling, integrations, and operations, with links to the relevant guides.
 - [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
-- [Kimi K2.7 Code](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md): Explore Kimi K2.7 Code and its high-speed variant for coding, multimodal input, thinking, tool calling, and 256K-token contexts.
-- [Kimi K2.6](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md): Explore Kimi K2.6 text, image, and video understanding, thinking mode, tool calling, and its 256K-token context window.
 - [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Thinking Models](https://platform.kimi.ai/docs/guide/use-thinking-models.md): Understand Kimi thinking modes, model selection, `reasoning_content`, multi-turn retention, tool calling, and reasoning-token billing.
 - [Reasoning Effort](https://platform.kimi.ai/docs/guide/use-reasoning-effort.md): Use `reasoning_effort` values `low`, `high`, and `max` to balance Kimi K3.1 Pro reasoning depth, latency, and token usage.
@@ -38,7 +36,7 @@ Install OpenClaw and configure your Kimi API key.
 - [Manage Your Organization with the Admin API](https://platform.kimi.ai/docs/guide/org-admin-api.md): Connect the Admin API to your existing systems to automate member onboarding and offboarding, project and access management, financial reconciliation, and security auditing.
 - [Manage Your Organization in the Console](https://platform.kimi.ai/docs/guide/org-best-practice.md): Understand the hierarchy of organizations, projects, and API keys, and use the console to set project budgets and rate limits, manage members, configure an IP whitelist, and review organization and project consumption.
 - [API Overview](https://platform.kimi.ai/docs/api/overview.md): Review Kimi API base URLs, authentication, request conventions, compatibility, and links to the main API endpoints.
-- [Model Parameter Reference](https://platform.kimi.ai/docs/api/models-overview.md): Compare default values, supported ranges, and constraints for Chat Completions API parameters across Kimi model families.
+- [Model Parameter Reference](https://platform.kimi.ai/docs/api/models-overview.md): Compare Chat Completions API parameter defaults and constraints for the K3 series, Kimi K2.7 Code, and Kimi K2.6.
 - [Common Error Codes](https://platform.kimi.ai/docs/api/errors.md): Look up Kimi API HTTP status codes, error types, common causes, and recommended troubleshooting steps.
 - [Chat Completions API](https://platform.kimi.ai/docs/api/chat.md): Create a chat completion: send messages to Kimi models and get replies, with streaming, tool calling, and vision input.
 - [Responses API](https://platform.kimi.ai/docs/api/responses.md): Creates a model response.
@@ -104,8 +102,6 @@ Each field has three semantics: omitted keeps the current value; `null` clears t
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
 - [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
 - [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
-- [Kimi K2.7 Code](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md): Explore Kimi K2.7 Code and its high-speed variant for coding, multimodal input, thinking, tool calling, and 256K-token contexts.
-- [Kimi K2.6](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md): Explore Kimi K2.6 text, image, and video understanding, thinking mode, tool calling, and its 256K-token context window.
 - [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Account and Billing](https://platform.kimi.ai/docs/guide/account-and-payments.md): Find answers about Kimi Open Platform recharge, balances, credits, invoices, billing, and organization verification.
@@ -118,7 +114,7 @@ It is different from products such as Kimi Membership and Kimi Code — please d
 - [Ask questions about PDF content](https://platform.kimi.ai/docs/guide/ask-questions-about-pdf-content.md): Ask questions about PDF content with the Kimi API, with real run outputs.
 - [AI-Readable Docs](https://platform.kimi.ai/docs/guide/ai-readable-docs.md): Provide the Kimi API Platform documentation to AI coding assistants, enterprise bots, or RAG systems through llms.txt, llms-full.txt, the OpenAPI schema, and per-page Markdown.
 - [Best Practices for Prompts](https://platform.kimi.ai/docs/guide/prompt-best-practice.md): Write more reliable and controllable Kimi system and user prompts with clear instructions, examples, roles, and output constraints.
-- [Best Practices for Benchmarking](https://platform.kimi.ai/docs/guide/benchmark-best-practice.md): Run reproducible Kimi model benchmarks with recommended parameters, sample counts, streaming requests, and retry strategies.
+- [Best Practices for Benchmarking](https://platform.kimi.ai/docs/guide/benchmark-best-practice.md): Run reproducible Kimi model benchmarks with streaming requests, appropriate sampling, and retry strategies.
 - [Using the Console for Batch Inference](https://platform.kimi.ai/docs/guide/use-batch-inference.md): Create, monitor, and download batch inference results from the Kimi Open Platform console without writing code.
 - [Build an Agent with Kimi K3](https://platform.kimi.ai/docs/guide/use-kimi-k3-to-setup-agent.md): Build a runnable industry-research agent by combining Kimi K3, the official web-search tool, and a custom tool.
 - [Manage Email and Google Sign-In](https://platform.kimi.ai/docs/guide/account-security-and-sign-in.md): Bind or update an email address, connect a Google account, and understand how sign-in methods affect your Kimi Platform account.
