@@ -12577,6 +12577,15 @@
       },
       "vendor": "google"
     },
+    "together/inkling-2-small": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "inkling-2-small"
+        ]
+      },
+      "vendor": "thinkingmachines"
+    },
     "together/kimi-k3.1-pro": {
       "curated": false,
       "sources": {

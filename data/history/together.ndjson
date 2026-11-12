@@ -39,6 +39,7 @@
 {"schema":4,"source":"together","model_id":"inkling","observed_at":"2026-07-16","rates":{"input":1.0,"output":4.05,"cache_read":0.17},"limits":{"context":524288},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"inkling","observed_at":"2026-08-26","rates":{"input":1.0,"output":4.05,"cache_read":0.17},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"inkling","observed_at":"2026-11-07","removed":true,"rates":{"input":1.0,"output":4.05,"cache_read":0.17}}
+{"schema":4,"source":"together","model_id":"inkling-2-small","observed_at":"2026-11-12","rates":{"input":0.3,"output":1.0,"cache_read":0.03},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"inkling-small","observed_at":"2026-07-31","rates":{"input":0.5,"output":1.2},"limits":{"context":524288},"provenance":{"url":"https://docs.together.ai/docs/changelog"}}
 {"schema":4,"source":"together","model_id":"inkling-small","observed_at":"2026-08-26","rates":{"input":0.5,"output":1.2,"cache_read":0.1},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"inkling-small","observed_at":"2026-09-02","removed":true,"rates":{"input":0.5,"output":1.2,"cache_read":0.1}}
