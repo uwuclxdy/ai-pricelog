@@ -1074,6 +1074,15 @@
       },
       "vendor": "qwen"
     },
+    "cloudflare/@cf/thinkingmachines/inkling-2-small": {
+      "curated": false,
+      "sources": {
+        "cloudflare": [
+          "@cf/thinkingmachines/inkling-2-small"
+        ]
+      },
+      "vendor": "thinkingmachines"
+    },
     "cloudflare/@cf/zai-org/glm-4.7-flash": {
       "curated": false,
       "sources": {
