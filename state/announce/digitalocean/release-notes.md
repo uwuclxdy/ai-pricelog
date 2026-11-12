@@ -5,7 +5,11 @@ This page lists notes from the last 90 days .
 For AI tools, prefer Recent Release Notes ( /release-notes/recent/ or JSON ).
 For the full history, see the release notes archive .
 You can subscribe to the release notes RSS feed .
-Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates Upcoming Changes Beginning 15 October 2026 for accounts that have never created a PostgreSQL or MySQL database cluster and 30 November 2026 for all accounts, PostgreSQL and MySQL Standard Edition no longer offer plans with more than 4 GiB of RAM or support standby and read-only nodes.
+Due to the high frequency of its updates, we keep a separate changelog for Kubernetes version updates Upcoming Changes Beginning on 1 January 2027, new and existing copies of a Droplet snapshot in additional regions are billed at the same price as the original snapshot.
+Until then, there is no additional charge for making a Droplet snapshot available in multiple regions.
+See Snapshots pricing .
+Learn more on Droplet Snapshot Regional Copy Pricing Beginning 1 January 2027 .
+Beginning 15 October 2026 for accounts that have never created a PostgreSQL or MySQL database cluster and 30 November 2026 for all accounts, PostgreSQL and MySQL Standard Edition no longer offer plans with more than 4 GiB of RAM or support standby and read-only nodes.
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
