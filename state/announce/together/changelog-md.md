@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
+# Changelog **November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
+Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
+**November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$2.00 input / \$10.00 output / \$0.20 cached input (per 1M tokens).
 **November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
 You can't deploy its adapters on dedicated model inference yet.
