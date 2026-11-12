@@ -398,6 +398,16 @@
       "citation": [
         "https://docs.digitalocean.com/release-notes/"
       ]
+    },
+    {
+      "id": "novita-model-retirement-2026-11-29",
+      "provider": "novita",
+      "effective": "2026-11-29",
+      "timezone": "UTC",
+      "statement": "the changelog's Nov 29 and Dec 6, 2026 Model Deprecation Notice retires deepseek/deepseek-v4-flash-vision-exp at 00:00 UTC on 2026-11-29 and tencent/hy4-preview at 00:00 UTC on 2026-12-06: after each cutoff API requests to the retired id return an error, so its stored rates stop applying from that instant; migrate to deepseek/deepseek-v4.1-flash and tencent/hy4 respectively. the notice names UTC as its frame; the stored rows get removal rows through the absence machinery",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }
