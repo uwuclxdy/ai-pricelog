@@ -65,8 +65,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "f1e72ab62fcaf7668383e9339c980ea5b604b08bee0847fff52ecd988ece6087",
-      "fetched": "2026-11-05T00:00:16Z"
+      "sha256": "0ea05fdaa3ab9557bdbf2a51504c53d607d380ddf6642046d2df66d571a08978",
+      "fetched": "2026-11-12T22:00:15Z"
     }
   },
   "mistral": {
@@ -84,15 +84,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "557bfc093aba5955e6b6c4c9838b971014fcd222238458b9066c9b676cbf1b95",
-      "fetched": "2026-11-11T22:00:19Z"
+      "sha256": "82222261017a45b79be6d5d64689272392fa462134e308021e856dc0bc3990aa",
+      "fetched": "2026-11-12T22:00:15Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "3860f9de686485759d922c4fb050b95243ffcf4fbf1bdc6e0b54a126e92a4d31",
-      "fetched": "2026-11-12T17:00:15Z"
+      "sha256": "9abcaa9efcba6bb3afa060dbb45e51848f9663119c416728c4c37ff394ade00b",
+      "fetched": "2026-11-12T22:00:15Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "d9d13a0226f632ff7e17a21c0d4858ff1786cdacee1a81980a6692caa90f0f56",
-      "fetched": "2026-11-11T19:00:15Z"
+      "sha256": "d73524c8dc24aeab9ca59cb896cf8cfe2e93a816bf6c2d264fcd8f93f916cd04",
+      "fetched": "2026-11-12T22:00:15Z"
     }
   },
   "cloudflare": {

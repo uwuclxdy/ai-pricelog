@@ -2,6 +2,16 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** ### Decisions API: pplx-decider-v1.3, pplx-decider-flash-v1.3, and `locate` questions **New models.** `pplx-decider-v1.3` (27B) and `pplx-decider-flash-v1.3` (4B) are the new decision models, at the same prices as v1.2: \$0.02 and \$0.01 per million input tokens.
+Output tokens stay free.
+Both accept text and images (`locate` questions read text only) and answer several questions about the same `state` in one pass, with each question isolated from the others.
+See [Grouping questions in one request](https://docs.perplexity.ai/docs/decisions/quickstart.md#grouping-questions-in-one-request).
+**New question type: `locate`.** A `locate` question returns the spans of a string `state` that match a description, with character offsets and a score for each span.
+Only the v1.3 models serve it, and it doesn't work with web grounding.
+See [`locate`](https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content).
+**Aliases.** `pplx-decider-latest` now selects `pplx-decider-v1.3`, and `pplx-decider-flash-latest` selects `pplx-decider-flash-v1.3`.
+Probabilities can change with the model, so revalidate any thresholds you tuned on v1.2.
+To stay on v1.2 while you do, name `pplx-decider-v1.2` or `pplx-decider-flash-v1.2`; both remain available.
 **November 2026** **Automatic output-token limits** You can omit `max_output_tokens` when using any model, including Anthropic models.
 Each generation can produce up to 128,000 output tokens, capped by the model's supported limit.
 Without an explicit budget, output tokens from earlier steps do not reduce the next generation's limit.

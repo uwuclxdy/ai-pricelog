@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
+# Changelog **November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
+Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
+**November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
 **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$2.00 input / \$10.00 output / \$0.20 cached input (per 1M tokens).
