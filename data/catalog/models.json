@@ -3747,6 +3747,15 @@
       },
       "vendor": "google"
     },
+    "google/gemini-4-hydrogen": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "gemini-4-hydrogen"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/gemini-embedding-001": {
       "curated": false,
       "sources": {
