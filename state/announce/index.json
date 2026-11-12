@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "6750a81cc96687f14e303f778883431a5606bef0dd5bd752a4d46530d3e03e16",
-      "fetched": "2026-11-11T19:00:15Z"
+      "sha256": "3860f9de686485759d922c4fb050b95243ffcf4fbf1bdc6e0b54a126e92a4d31",
+      "fetched": "2026-11-12T17:00:15Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
