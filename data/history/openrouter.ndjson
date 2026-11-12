@@ -235,6 +235,7 @@
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.019,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-10-28","modality":"decisions","rates":{"input":0.038,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-11-12","modality":"decisions","rates":{"input":0.019,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
+{"schema":4,"source":"openrouter","model_id":"cloudflare/clef-flash","observed_at":"2026-11-12","modality":"decisions","rates":{"input":0.038,"output":0.0},"limits":{"context":24576},"provenance":{"name":"Clef Flash"}}
 {"schema":4,"source":"openrouter","model_id":"cloudflare/clef-omni","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.15,"output":0.0},"limits":{"context":65536},"provenance":{"name":"Clef Omni"}}
 {"schema":4,"source":"openrouter","model_id":"cognitivecomputations/dolphin-mistral-24b-venice-edition","observed_at":"2026-08-26","rates":{"input":0.2,"output":0.9},"limits":{"context":128000},"provenance":{"name":"Uncensored"}}
 {"schema":4,"source":"openrouter","model_id":"cohere/command-a","observed_at":"2025-09-22","rates":{"input":2.5,"output":10.0},"limits":{"context":256000},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
@@ -2549,6 +2550,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-10","rates":{"input":0.573,"output":1.169,"cache_read":0.194},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-10","rates":{"input":0.527,"output":1.075,"cache_read":0.178},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-12","rates":{"input":0.35,"output":1.075,"cache_read":0.118},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:batch","observed_at":"2026-11-12","rates":{"input":0.322,"output":0.989,"cache_read":0.109},"limits":{"context":1048576},"provenance":{"name":"GLM 5.2 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":256000},"provenance":{"name":"GLM 5.2 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-09-07","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":256000}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.2:free","observed_at":"2026-09-15","rates":{"input":0.0,"output":0.0},"limits":{"context":256000},"provenance":{"name":"GLM 5.2 (free)"}}
@@ -2656,4 +2658,5 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-11-09","rates":{"input":0.431,"output":1.271,"cache_read":0.146},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-11-09","rates":{"input":0.45,"output":2.0,"cache_read":0.1},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-11-12","rates":{"input":0.35,"output":1.075,"cache_read":0.118},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3:batch","observed_at":"2026-11-12","rates":{"input":0.322,"output":0.989,"cache_read":0.109},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5v-turbo","observed_at":"2026-08-26","rates":{"input":1.2,"output":4.0,"cache_read":0.24},"limits":{"context":202752},"provenance":{"name":"GLM 5V Turbo"}}
