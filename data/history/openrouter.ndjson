@@ -1303,6 +1303,7 @@
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3","observed_at":"2026-11-05","rates":{"input":0.192,"output":16.0,"cache_read":0.182},"limits":{"context":1048576},"provenance":{"name":"Kimi K3"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-10-23","rates":{"input":2.0,"output":10.0,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-11-12","rates":{"input":0.2375,"output":8.4085,"cache_read":0.2},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
+{"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro","observed_at":"2026-11-12","rates":{"input":0.2375,"output":8.7856,"cache_read":0.19},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3.1-pro:batch","observed_at":"2026-11-12","rates":{"input":0.7,"output":6.0,"cache_read":0.1},"limits":{"context":1048576},"provenance":{"name":"Kimi K3.1 Pro (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-08-29","rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576},"provenance":{"name":"Kimi K3 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"moonshotai/kimi-k3:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":3.0,"output":15.0,"cache_read":0.3},"limits":{"context":1048576}}
@@ -1853,6 +1854,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-14b","observed_at":"2026-09-28","rates":{"input":0.2275,"output":0.91},"limits":{"context":131072},"provenance":{"name":"Qwen3 14B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-14b","observed_at":"2026-10-15","rates":{"input":0.12,"output":0.24},"limits":{"context":40960},"provenance":{"name":"Qwen3 14B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-14b","observed_at":"2026-11-10","rates":{"input":0.1,"output":0.22},"limits":{"context":40960},"provenance":{"name":"Qwen3 14B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3-14b","observed_at":"2026-11-12","rates":{"input":0.12,"output":0.24},"limits":{"context":40960},"provenance":{"name":"Qwen3 14B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-235b-a22b","observed_at":"2026-08-26","rates":{"input":0.455,"output":1.82},"limits":{"context":131072},"provenance":{"name":"Qwen3 235B A22B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-235b-a22b","observed_at":"2026-10-15","removed":true,"rates":{"input":0.455,"output":1.82},"limits":{"context":131072}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3-235b-a22b-2507","observed_at":"2026-08-26","rates":{"input":0.09,"output":0.55},"limits":{"context":262144},"provenance":{"name":"Qwen3 235B A22B Instruct 2507"}}
