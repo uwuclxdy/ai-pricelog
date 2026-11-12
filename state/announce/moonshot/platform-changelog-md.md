@@ -19,12 +19,12 @@ See the [Kimi K3 Quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickst
 At the same time, `kimi-k2.5` and the `moonshot-v1` series are no longer offered to newly registered users; the Global edition added email verification-code sign-up/login and email & Google account binding management.
 The account overview now shows current-day spending, and the platform Terms of Service have been updated.
 **June 2026** * Added organization-level API IP allowlists for finer enterprise security control.
-* Released Kimi K2.7 Code through the Open Platform API, followed by a HighSpeed variant — see the [Kimi K2.7 Code Quickstart](https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md); custom top-up amounts are now supported.
+* Released Kimi K2.7 Code through the Open Platform API, followed by a HighSpeed variant; custom top-up amounts are now supported.
 **May 2026** * The `kimi-k2` series (including `kimi-k2-0905-preview`, `kimi-k2-0711-preview`, `kimi-k2-turbo-preview`, `kimi-k2-thinking`, and `kimi-k2-thinking-turbo`) was retired and is no longer maintained or supported.
 Please migrate to [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md).
 * Added automatic balance top-up and top-up amount configuration.
 **April 2026** * The Batch API is now open to all users for lower-cost large-scale asynchronous inference — see [Use the Batch API](https://platform.kimi.ai/docs/guide/use-batch-api.md).
-* Released Kimi K2.6 through the Open Platform API — see the [Kimi K2.6 Quickstart](https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md).
+* Released Kimi K2.6 through the Open Platform API.
 **January 2026** * Released Kimi K2.5 through the Open Platform API; discontinued `kimi-latest`.
 **December 2025** * Added organization verification, member invitations, and multi-account organization support to the Global Open Platform.
 **November 2025** * Released Kimi K2 Thinking and its Turbo variant, increased default TPM limits across tiers, and reduced Kimi Turbo prices; discontinued `kimi-thinking-preview`.
