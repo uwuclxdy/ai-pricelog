@@ -7353,6 +7353,24 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-4-hydrogen": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-hydrogen"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-4-hydrogen:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-hydrogen:batch"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-decision-1": {
       "curated": false,
       "sources": {
@@ -7655,6 +7673,15 @@
       "sources": {
         "openrouter": [
           "inclusionai/ling-3.0-flash-fin:free"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
+    "openrouter/inclusionai/ling-3.0-flash-sante": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.0-flash-sante"
         ]
       },
       "vendor": "inclusionai"
@@ -10056,11 +10083,29 @@
       },
       "vendor": "perplexity"
     },
+    "openrouter/perplexity/pplx-decider-flash-v1.3:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-decider-flash-v1.3:free"
+        ]
+      },
+      "vendor": "perplexity"
+    },
     "openrouter/perplexity/pplx-decider-v1.2": {
       "curated": false,
       "sources": {
         "openrouter": [
           "perplexity/pplx-decider-v1.2"
+        ]
+      },
+      "vendor": "perplexity"
+    },
+    "openrouter/perplexity/pplx-decider-v1.3:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-decider-v1.3:free"
         ]
       },
       "vendor": "perplexity"
