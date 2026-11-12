@@ -5,6 +5,8 @@ Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
 Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
 **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$2.00 input / \$10.00 output / \$0.20 cached input (per 1M tokens).
+## Messages API and Responses API support more models The [Messages API](https://docs.together.ai/docs/inference/messages-api.md) and [Responses API](https://docs.together.ai/docs/inference/responses-api.md) now support more models: * **Serverless inference:** `zai-org/GLM-5.3-Flash` and `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
+* **Dedicated model inference:** `zai-org/GLM-5.3` and `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
 **November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
 You can't deploy its adapters on dedicated model inference yet.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
