@@ -20,6 +20,10 @@ Calling an effort level by name, such as `effort="fast"`, selects the new versio
 Earlier pinned versions keep their configured budgets.
 Set `max_output_tokens` only when you want a total output-token budget across the run.
 See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md) and [Models](https://docs.perplexity.ai/docs/agent-api/models.md).
+**November 2026** **Gemini 4 Hydrogen; older Gemini Flash models removed from the model docs** The Agent API now supports `google/gemini-4-hydrogen`.
+Pricing is \$1.50 per million input tokens, \$0.075 per million cached input tokens, and \$7.50 per million output tokens, including reasoning tokens.
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
+`google/gemini-3.6-flash`, `google/gemini-3.7-flash`, and `google/gemini-3.8-flash` are no longer listed in the Agent API model docs, pricing calculator, or examples.
 **November 2026** **Gemini 4 Carbon** The Agent API now supports `google/gemini-4-carbon`.
 Introductory pricing through November 30, 2026 is \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens, including reasoning tokens.
 See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
