@@ -15,9 +15,9 @@ detectors scrape provider pricing pages and the openrouter api hourly. every obs
 |---|---|
 | models tracked | **1,699** |
 | sources | 30 |
-| dated rows | 4,168 |
+| dated rows | 4,169 |
 | canonical models | 202 |
-| history | since 2023-03-01 (1,353 days) |
+| history | since 2023-03-01 (1,354 days) |
 <!-- stats:end -->
 
 ## What it is
