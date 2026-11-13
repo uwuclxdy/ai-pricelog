@@ -7560,6 +7560,24 @@
       },
       "vendor": "heygen"
     },
+    "openrouter/heygen/heygen-decision-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-decision-1"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-decision-1-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-decision-1-turbo"
+        ]
+      },
+      "vendor": "heygen"
+    },
     "openrouter/heygen/heygen-video-1": {
       "curated": false,
       "sources": {
