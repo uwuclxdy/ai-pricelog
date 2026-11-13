@@ -408,6 +408,16 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "perplexity-agent-api-gemini-flash-delisting-2026-11-13",
+      "provider": "perplexity",
+      "effective": "2026-11-13",
+      "timezone": "UTC",
+      "statement": "the changelog's November 2026 entry (first observed 2026-11-13; its label is month-granular) drops google/gemini-3.6-flash, google/gemini-3.7-flash and google/gemini-3.8-flash from the perplexity Agent API catalog: none of the three is any longer listed in the Agent API model docs, pricing calculator, or examples, and the entry names no model it migrates them to and no cutoff instant. the same entry adds google/gemini-4-hydrogen at $1.50 per million input tokens, $0.075 per million cached input tokens and $7.50 per million output tokens, an addition rather than a change to an existing model's when-rates-apply, so it carries no rule of its own. no perplexity store row is keyed by this rule: the detector keys only perplexity/-prefixed Agent API rows and these ids are google-prefixed, while the index's google- and openrouter-sourced gemini rows are unaffected. the entry names no timezone; UTC is the recorded frame",
+      "citation": [
+        "https://docs.perplexity.ai/docs/resources/changelog.md"
+      ]
     }
   ]
 }
