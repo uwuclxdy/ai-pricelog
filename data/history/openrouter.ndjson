@@ -158,6 +158,7 @@
 {"schema":4,"source":"openrouter","model_id":"apodex/apodex-1.1-mini:free","observed_at":"2026-10-01","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Apodex 1.1 Mini (free)"}}
 {"schema":4,"source":"openrouter","model_id":"apodex/apodex-1.1-mini:free","observed_at":"2026-10-15","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"apodex/apodex-1.1-mini:free","observed_at":"2026-11-12","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Apodex 1.1 Mini (free)"}}
+{"schema":4,"source":"openrouter","model_id":"apodex/apodex-1.1-mini:free","observed_at":"2026-11-13","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/trinity-large-thinking","observed_at":"2026-08-26","rates":{"input":0.22,"output":0.85,"cache_read":0.06},"limits":{"context":262144},"provenance":{"name":"Trinity Large Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/trinity-large-thinking","observed_at":"2026-08-30","rates":{"input":0.25,"output":0.8,"cache_read":0.06},"limits":{"context":262144},"provenance":{"name":"Trinity Large Thinking"}}
 {"schema":4,"source":"openrouter","model_id":"arcee-ai/trinity-large-thinking","observed_at":"2026-10-26","removed":true,"rates":{"input":0.25,"output":0.8,"cache_read":0.06},"limits":{"context":262144}}
@@ -889,9 +890,11 @@
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin","observed_at":"2026-09-03","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Fin"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin","observed_at":"2026-10-15","removed":true,"rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin","observed_at":"2026-11-12","rates":{"input":0.042,"output":0.1232,"cache_read":0.0084},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Fin"}}
+{"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin","observed_at":"2026-11-13","removed":true,"rates":{"input":0.042,"output":0.1232,"cache_read":0.0084},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin:free","observed_at":"2026-08-29","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Fin (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-fin:free","observed_at":"2026-10-15","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-sante","observed_at":"2026-11-12","rates":{"input":0.042,"output":0.1232,"cache_read":0.0084},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Sante"}}
+{"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-sante","observed_at":"2026-11-13","removed":true,"rates":{"input":0.042,"output":0.1232,"cache_read":0.0084},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-sante:free","observed_at":"2026-09-04","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Ling 3.0 Flash Sante (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-sante:free","observed_at":"2026-10-15","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.0-flash-vl","observed_at":"2026-09-11","rates":{"input":0.06,"output":0.18,"cache_read":0.012},"limits":{"context":131072},"provenance":{"name":"Ling 3.0 Flash VL"}}
