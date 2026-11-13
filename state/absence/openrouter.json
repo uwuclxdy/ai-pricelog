@@ -1,1 +1,1 @@
-{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}}
+{"nvidia/nemotron-3.5-content-safety:free": {"absent_runs": 1, "since": "2026-11-06"}, "apodex/apodex-1.1-mini:free": {"absent_runs": 1, "since": "2026-11-13"}, "inclusionai/ling-3.0-flash-fin": {"absent_runs": 1, "since": "2026-11-13"}, "inclusionai/ling-3.0-flash-sante": {"absent_runs": 1, "since": "2026-11-13"}}
