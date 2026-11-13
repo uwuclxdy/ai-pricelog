@@ -940,8 +940,8 @@ When the no-packing option is chosen, the number of training dataset tokens is n
 **April 22, 2026** ## Dynamic rate limits and prepaid billing * Build Tiers 1–5, Scale, and Enterprise tier labels have been retired.
 Dynamic rate limits are now live for all users.
 * Billing has moved to a fully prepaid model.
-* Model-specific tier gates have been removed.
-The platform-wide \$5 credit purchase is the only gate.
+* Model-specific tier gates have been removed, so the platform-wide \$5 credit purchase is the only gate.
+Since October 2026, an organization's [first credit purchase](https://docs.together.ai/docs/billing-credits.md#buy-credits) must be at least \$15.
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K2.6`.
 **April 15, 2026** ## Pricing update The following model has updated pricing, effective April 15, 2026: * **`google/gemma-3n-E4B-it`:** \$0.02 → \$0.06 (input), \$0.04 → \$0.12 (output) per 1M tokens.
 **April 14, 2026** ## Model deprecations The following models have been deprecated and are no longer available: * `Qwen/Qwen3-VL-8B-Instruct`.
