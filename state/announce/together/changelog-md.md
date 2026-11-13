@@ -1,5 +1,9 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
+# Changelog **November 13, 2026** ## Post-training: Nemotron 3.5 Super VL `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): low-rank adapter (LoRA) training on `B200-SXM`, 163,840-token training and generator contexts, rank up to 32, and up to three adapter sessions per resource.
+> [!NOTE] > > The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) has no codec for it yet, so this model is currently SDK-only.
+Deployment support is coming soon.
+See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md) for more details.
+**November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
 **November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
