@@ -7768,6 +7768,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.2-flash:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.2-flash:free"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/inference-net/schematron-v2-small": {
       "curated": true,
       "name": "Schematron V2 Small",

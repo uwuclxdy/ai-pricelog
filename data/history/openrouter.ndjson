@@ -909,6 +909,7 @@
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-10-15","rates":{"input":0.075,"output":0.225,"cache_read":0.015},"limits":{"context":262144},"provenance":{"name":"Ling 3.1 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-10-28","rates":{"input":0.075,"output":0.225,"cache_read":0.015},"limits":{"context":1000000},"provenance":{"name":"Ling 3.1 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.1-flash","observed_at":"2026-11-07","rates":{"input":0.045,"output":0.135,"cache_read":0.009},"limits":{"context":1000000},"provenance":{"name":"Ling 3.1 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"inclusionai/ling-3.2-flash:free","observed_at":"2026-11-13","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"name":"Ling 3.2 Flash (free)"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-12","rates":{"input":0.05,"output":0.23},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-small","observed_at":"2026-09-13","rates":{"input":0.05,"output":0.23,"cache_read":0.05},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Small"}}
 {"schema":4,"source":"openrouter","model_id":"inference-net/schematron-v2-turbo","observed_at":"2026-09-12","rates":{"input":0.03,"output":0.15},"limits":{"context":128000},"provenance":{"name":"Schematron V2 Turbo"}}
