@@ -11,7 +11,7 @@ deepseek/deepseek-v4-flash-vision-exp at 00:00 UTC on Nov 29, 2026 and tencent/h
 Migrate to deepseek/deepseek-v4.1-flash and tencent/hy4 before the cutoff.
 Copy page Copy page The following models will be retired from the Novita platform at the times listed below.
 If your application uses an affected model, please migrate to the recommended replacement model before the retirement time.
-​ Affected models Model ID Retirement time Replacement model deepseek/deepseek-v4-flash-vision-exp Nov 29, 2026, 00:00 UTC deepseek/deepseek-v4.1-flash tencent/hy4-preview Dec 6, 2026, 00:00 UTC tencent/hy4 ​ Action required After the retirement time, API requests to these models will return an error.
+Affected models Model ID Retirement time Replacement model deepseek/deepseek-v4-flash-vision-exp Nov 29, 2026, 00:00 UTC deepseek/deepseek-v4.1-flash tencent/hy4-preview Dec 6, 2026, 00:00 UTC tencent/hy4 Action required After the retirement time, API requests to these models will return an error.
 Please migrate to the corresponding replacement model before the cutoff.
 If you need assistance, reach out to us via our Discord community or submit a support ticket.
 Last modified on November 12, 2026 Sandbox Upgrade Notice Next ⌘ I On this page Back to top Affected models Action required Novita AI Docs home page discord github x Community Discord Support Resources Pricing Models Agent Skill Company Novita AI Console discord github x Powered by This documentation is built and hosted on Mintlify, a developer documentation platform
