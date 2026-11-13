@@ -11154,6 +11154,15 @@
       },
       "vendor": "tencent"
     },
+    "openrouter/tencent/hy-world-2.1-panorama": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "tencent/hy-world-2.1-panorama"
+        ]
+      },
+      "vendor": "tencent"
+    },
     "openrouter/tencent/hy3-preview": {
       "curated": false,
       "sources": {
