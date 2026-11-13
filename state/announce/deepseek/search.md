@@ -1,10 +1,13 @@
-Search & Fetch | DeepSeek API Docs Skip to main content Search / Fetch API is now available, powered by our in-house search engine and supporting web search and fetch.
-Click here to view the guide DeepSeek API Docs Resources Integrations API Status FAQ English English 中文（中国） DeepSeek Platform 中 Quick Start API Guides API Reference News Change Log Vision Thinking Mode Multi-round Conversation Chat Prefix Completion (Beta) FIM Completion (Beta) JSON Output Tool Calls Files API Search & Fetch Context Caching Using the Responses API Using the Anthropic API Search & Fetch On this page Copy Markdown Copy Markdown Open Markdown Search & Fetch The Search API and the Fetch API give agents and RAG applications access to live web content: Search API finds web pages for
-a query and returns structured results.
+Search & Fetch | DeepSeek API Docs Skip to main content The full suite of DeepSeek application APIs is now available: web search, file input, URL reading, model safety, ASR, TTS and more.
+Click here to view the guide DeepSeek API Docs Resources Integrations API Status FAQ English English 中文（中国） DeepSeek Platform 中 Quick Start API Guides API Reference News Change Log Model Capabilities Thinking Mode Multi-round Conversation Chat Prefix Completion (Beta) FIM Completion (Beta) JSON Output Tool Calls Context Caching Vision Files API Tool APIs Search & Fetch OCR Text to Speech Speech to Text Build a Chatbot Overview Web Tools File Parsing Conversation Title User Metadata Marker Model Content Safety Protocols Using the Responses API Using the Anthropic API Tool APIs Search & Fetch On
+this page Copy Markdown Copy Markdown Open Markdown Search & Fetch The Search API and the Fetch API give agents and RAG applications access to live web content: Search API finds web pages for a query and returns structured results.
 It is powered by DeepSeek's in-house search engine.
 Fetch API retrieves a single web page and returns its content as Markdown.
 Both are raw JSON APIs.
 They use the same bearer authentication as the DeepSeek API.
+To have the model search and read pages by itself during a conversation, use the web tools instead.
+The Search API does not support image search yet; support will be added later.
+For now, image search is available only through the web tools .
 The base URL is https://api.deepseek.com : API Endpoint Search POST https://api.deepseek.com/v1/tools/search Fetch POST https://api.deepseek.com/v1/tools/fetch See the Search API Reference and Fetch API Reference for the complete request and response schemas.
 Authentication ​ Send your API key and the JSON content type in the request headers: Header Required Value Authorization Yes Bearer <DeepSeek API Key> Content-Type Yes application/json Search API ​ Request ​ curl https://api.deepseek.com/v1/tools/search \ -H "Authorization: Bearer <DeepSeek API Key>" \ -H "Content-Type: application/json" \ -d '{ "query": "DeepSeek V4 release", "count": 5, "need_content": true }' import requests response = requests .
 post ( "https://api.deepseek.com/v1/tools/search" , headers = { "Authorization" : "Bearer <DeepSeek API Key>" , } , json = { "query" : "DeepSeek V4 release" , "count" : 5 , "need_content" : True , } , ) response .
@@ -65,7 +68,8 @@ Billing ​ Search and Fetch are billed per successful request, not by tokens or
 Failed requests, empty search results, and timeouts are not billed.
 count only controls how many results are returned and does not affect the per-request price.
 Search and Fetch calls triggered by tools when using the DeepSeek API through DeepSeek Harness, Claude Code, or Codex, including Codex Alpha Search , are also billed per successful request.
+The web tools are billed at the same web search and web fetch prices.
 Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 100 Fetch 25 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
 Requests above the account-level QPS limit receive HTTP 429.
 In addition to the account-level limit, Fetch is also subject to a per-domain QPS limit, and requests above that limit also receive HTTP 429.
-Previous Files API Next Context Caching Authentication Search API Request Query Operators Response Fetch API Request Response Errors Billing Rate Limits WeChat Official Account Community Email Discord Twitter More GitHub Copyright © 2026 DeepSeek, Inc.
+Previous Files API Next OCR Authentication Search API Request Query Operators Response Fetch API Request Response Errors Billing Rate Limits WeChat Official Account Community Email Discord Twitter More GitHub Copyright © 2026 DeepSeek, Inc.
