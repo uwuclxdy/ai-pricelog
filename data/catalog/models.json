@@ -10668,6 +10668,15 @@
       },
       "vendor": "recraft"
     },
+    "openrouter/recraft/recraft-v4.1-flash-v2:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "recraft/recraft-v4.1-flash-v2:free"
+        ]
+      },
+      "vendor": "recraft"
+    },
     "openrouter/recraft/recraft-v4.1-pro": {
       "curated": false,
       "sources": {
