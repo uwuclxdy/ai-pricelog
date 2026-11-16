@@ -10569,6 +10569,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/qwen/qwen4-max": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen4-max"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "openrouter/recraft/recraft-v3": {
       "curated": false,
       "sources": {
