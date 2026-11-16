@@ -5565,6 +5565,15 @@
       },
       "vendor": "qwen"
     },
+    "novita/qwen/qwen4-max": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "qwen/qwen4-max"
+        ]
+      },
+      "vendor": "qwen"
+    },
     "novita/sao10k/l3-8b-lunaris": {
       "curated": false,
       "sources": {
