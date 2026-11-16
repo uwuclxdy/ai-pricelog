@@ -1586,6 +1586,15 @@
       },
       "vendor": "alibaba"
     },
+    "dashscope/qwen4-max": {
+      "curated": false,
+      "sources": {
+        "dashscope": [
+          "qwen4-max"
+        ]
+      },
+      "vendor": "alibaba"
+    },
     "dashscope/qwq-plus": {
       "curated": false,
       "sources": {
