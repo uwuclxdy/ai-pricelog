@@ -1,0 +1,1 @@
+{"baidu/cobuddy": {"absent_runs": 1, "since": "2026-11-16"}, "minimax/minimax-m2.5": {"absent_runs": 1, "since": "2026-11-16"}, "minimax/minimax-m2.7": {"absent_runs": 1, "since": "2026-11-16"}, "minimax/minimax-m3.1-flash": {"absent_runs": 1, "since": "2026-11-16"}, "minimaxai/minimax-m1-80k": {"absent_runs": 1, "since": "2026-11-16"}}
