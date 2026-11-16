@@ -5,6 +5,9 @@ Deployment support is coming soon.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md) for more details.
 **November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
+## Evaluations retired Evaluations have been shut down and are no longer available.
+This covers the evaluations API, the `client.evals` methods in the Python and TypeScript SDKs, the `tg evals` CLI commands, and the **Evaluations** page in the console.
+For questions, [contact support](https://portal.usepylon.com/together-ai/forms/support-request).
 **November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
 **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
@@ -51,7 +54,7 @@ The `beta` paths for dedicated model inference and GPU clusters no longer work, 
 Read [SDK v3 migration](https://docs.together.ai/docs/sdk-v3-migration-guide.md) before you upgrade.
 **What's new:** * **Dedicated model inference and GPU clusters out of `beta`:** Manage [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/overview.md) and [GPU clusters](https://docs.together.ai/docs/gpu-clusters-overview.md) with `client.endpoints`, `client.models`, and `client.clusters`, or with `tg endpoints`, `tg models`, and `tg clusters` in the CLI.
 * **Faster chat completions:** The SDKs send chat completions directly to the inference host, `https://api-inference.together.ai`, by default.
-* **Identity for any credential:** [`client.whoami()`](https://docs.together.ai/reference/whoami) returns a typed identity for project API keys, organization API keys, and user sessions, including credentials that aren't scoped to a project.
+* **Identity for any credential:** [`client.whoami()`](https://docs.together.ai/reference/whoami) returns a typed identity for project API keys and user sessions, including sessions that aren't scoped to a project.
 * **Billing usage in the SDK:** `client.organization.usage.costs.list()` returns your organization's cost line items by day or hour from the [billing usage API](https://docs.together.ai/reference/billing-usage.md), which is in beta and enabled per organization.
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.15 input / \$0.60 output / \$0.015 cached input (per 1M tokens).
@@ -568,7 +571,6 @@ See [Get started](https://docs.together.ai/reference/cli/getting-started.md#upgr
 ## Select dedicated endpoints in evaluations In the [evaluations console](https://api.together.ai/evaluations), live [dedicated model inference](https://docs.together.ai/docs/dedicated-endpoints/overview.md) endpoints now appear under **My Endpoints** in the model picker.
 Legacy dedicated endpoints appear under **My Legacy Endpoints**.
 Only endpoints with at least one live deployment are listed.
-See [Supported models](https://docs.together.ai/docs/evaluations-supported-models.md#dedicated-models).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `MiniMaxAI/MiniMax-M2.7`.
 See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration options.
 **July 27, 2026** ## GPU quota rejections return HTTP 429 Creating or updating a [dedicated endpoint](https://docs.together.ai/docs/dedicated-endpoints/manage.md) deployment that would exceed your project or organization GPU quota now returns HTTP `429` with a message that names the GPU type and the would-be usage against the limit.
@@ -674,7 +676,6 @@ See [Configure autoscaling](https://docs.together.ai/docs/dedicated-endpoints/sc
 Pricing: \$1.00 input / \$4.05 output / \$0.17 cached input (per 1M tokens).
 ## Image inputs for evaluations You can now evaluate vision-capable models on image datasets.
 Add an `image_data_urls` column to your evaluation dataset (a base64 image data URL, or a list of them) and the images are attached to the model and judge requests alongside the text prompt.
-See [Prepare a dataset](https://docs.together.ai/docs/run-an-evaluation.md#prepare-a-dataset) for details.
 ## GPU cluster GPU count breakdown Cluster retrieve and list responses now include `num_reserved_gpus` and `num_capacity_pool_gpus` alongside `num_gpus`, so you can see how total capacity splits between prepaid reserved GPUs and GPUs drawn from a capacity pool.
 See [Manage GPU clusters](https://docs.together.ai/docs/gpu-clusters-management.md#inspect-cluster-gpu-counts) for details.
 ## Remediation linked alerts Remediation retrieve and list responses now include `linked_alerts`, an array of passive health check alerts tied to the repair (including resolved alerts).
@@ -840,7 +841,6 @@ See [Slurm startup scripts](https://docs.together.ai/docs/slurm-startup-scripts.
 ## Evaluations: single-pass compare mode The `compare` evaluator now accepts a `disable_position_bias_correction` parameter.
 By default, the judge runs each comparison twice (A→B then B→A) and reconciles verdicts to cancel position bias.
 Setting `disable_position_bias_correction` to `true` runs a single pass, cutting judge cost and latency in half.
-See the [evaluations reference](https://docs.together.ai/docs/evaluations-reference.md#evaluation-type-parameters) for details.
 ## Billing documentation updates Updated billing docs for multiple payment methods, separate invoice addresses, ACH payment behavior, auto-recharge limits with bank transfers, and prepaid-only access (no negative balance limits).
 See [Payment methods & invoices](https://docs.together.ai/docs/billing-payment-methods.md), [Credits](https://docs.together.ai/docs/billing-credits.md), and [Billing troubleshooting](https://docs.together.ai/docs/billing-troubleshooting.md).
 **May 29, 2026** ## Pricing update The following models have updated pricing, effective May 29, 2026.
