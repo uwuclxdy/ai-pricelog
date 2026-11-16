@@ -1919,6 +1919,15 @@
       },
       "vendor": null
     },
+    "deepinfra/qwen4-max": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "qwen4-max"
+        ]
+      },
+      "vendor": null
+    },
     "deepseek-r1": {
       "curated": true,
       "name": "R1",

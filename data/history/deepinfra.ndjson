@@ -101,3 +101,4 @@
 {"schema":4,"source":"deepinfra","model_id":"qwen3.7-max","observed_at":"2026-08-29","rates":{"input":2.5,"output":7.5,"cache_read":0.5},"limits":{"context":256000},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3.8-flash","observed_at":"2026-11-10","rates":{"input":0.113,"output":0.382,"cache_read":0.0141},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
 {"schema":4,"source":"deepinfra","model_id":"qwen3.8-max","observed_at":"2026-08-29","rates":{"input":1.65,"output":4.951,"cache_read":0.206},"limits":{"context":256000},"provenance":{"url":"https://deepinfra.com/pricing"}}
+{"schema":4,"source":"deepinfra","model_id":"qwen4-max","observed_at":"2026-11-16","rates":{"input":1.413,"output":4.24,"cache_read":0.071},"limits":{"context":999424},"provenance":{"url":"https://deepinfra.com/pricing"}}
