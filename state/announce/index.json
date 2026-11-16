@@ -91,13 +91,13 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "8eb79b881476fd6f3ec5241b9334e68536fef55511565bb20b3da17df3e08530",
-      "fetched": "2026-11-13T22:00:15Z"
+      "sha256": "291f1b20e6e8e18b5192a2cb0609c98b9f9226e7d6a56bf7484ffc0d8bd54463",
+      "fetched": "2026-11-16T22:00:19Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "fdea7bb35b98ba42e80741df76e6cec8aed486dd9dc950baf67b93b14faec8f3",
-      "fetched": "2026-11-16T17:00:19Z"
+      "sha256": "7797686c786330ea5e5ebbdfb580cc0a54c9a2c91613e1c68324ae6e7033a796",
+      "fetched": "2026-11-16T22:00:19Z"
     }
   },
   "novita": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "757d7398d2a6da9b750646606cb845514ee512663b2f90d8f12cb9c045618b94",
-      "fetched": "2026-11-16T19:00:19Z"
+      "sha256": "173eb6c70ab2260ef0b254e6e6724953a867788dc58c1f6d8e87b13835af0f5c",
+      "fetched": "2026-11-16T22:00:19Z"
     }
   },
   "cloudflare": {
