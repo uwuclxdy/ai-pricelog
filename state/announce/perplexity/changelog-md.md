@@ -7,7 +7,7 @@ Output tokens stay free.
 Both accept text and images (`locate` questions read text only) and answer several questions about the same `state` in one pass, with each question isolated from the others.
 See [Grouping questions in one request](https://docs.perplexity.ai/docs/decisions/quickstart.md#grouping-questions-in-one-request).
 **New question type: `locate`.** A `locate` question returns the spans of a string `state` that match a description, with character offsets and a score for each span.
-Only the v1.3 models serve it, and it doesn't work with web grounding.
+Only the v1.3 models serve it.
 See [`locate`](https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content).
 **Aliases.** `pplx-decider-latest` now selects `pplx-decider-v1.3`, and `pplx-decider-flash-latest` selects `pplx-decider-flash-v1.3`.
 Probabilities can change with the model, so revalidate any thresholds you tuned on v1.2.
