@@ -1,6 +1,11 @@
 Changelog | Mistral Docs Docs & API Search docs ⌘K Vibe Studio Inference & Models Admin Resources API Reference Search docs ⌘K Toggle theme Reach out Try Studio Home Resources Build API Reference SDKs MCP Supported languages Cookbooks Migration guides Updates Release notes Changelogs Security advisories Knowledge base Glossary Error glossary Known limitations Observability integrations Deprecated features Community Ambassadors Mistral Events ↗ Resources Changelogs Changelog Find out about all the latest changes to our tool.
 You may filter by date and type of release.
-Oct 26 October 22 Z.ai GLM 5.3 Flash ( zai-glm-5-3-flash ) is now available.
+Oct 26 October 29 Mistral Large 4 ( mistral-large-4 , mistral-large-4-0 ) now supports reasoning_effort values low , medium , and high , and no longer accepts none .
+Requests that set reasoning_effort="none" return HTTP 400.
+Mistral Large 4 always reasons: use low for the least reasoning.
+If you omit reasoning_effort , the model uses high .
+For details, see Mistral Large 4 reasoning effort .
+API UPDATED October 22 Z.ai GLM 5.3 Flash ( zai-glm-5-3-flash ) is now available.
 MODEL RELEASED A multimodal 320B-parameter (18B active) Mixture-of-Experts model from Z.ai with a 1M-token context window.
 Built for developer agent workflows, visual coding, and complex tool-use tasks.
 Pricing: $0.15/M input tokens, $0.03/M cached input, $0.50/M output tokens.
