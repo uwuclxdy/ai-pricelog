@@ -268,8 +268,6 @@ For more information, see the Available Models page .
 19 August Inference Router now uses cache-aware routing to maximize prompt cache reuse and automatically applies prompt caching to eligible Anthropic requests.
 You can opt out of prompt caching for supported models with X-Model-Affinity: none and control cache-aware model switching with the x-routing-max-switch-spend-pct header.
 For more information, see Use Prompt Caching .
-18 August The following open-source models are deprecated from DigitalOcean Inference as of 18 August 2026: Llama 3.3 Instruct-70B DeepSeek R1 Distill Llama 70B Qwen3-32B Qwen3 Coder Flash Migrate Llama 3.3 Instruct-70B to Llama 4 Maverick 17B 128E Instruct ( llama-4-maverick ), DeepSeek R1 Distill Llama 70B to DeepSeek V4 Flash ( deepseek-4-flash ), and Qwen3-32B and Qwen3 Coder Flash to Qwen 3.5 397B A17B ( qwen3.5-397b-a17b ) to avoid service disruption.
-For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
