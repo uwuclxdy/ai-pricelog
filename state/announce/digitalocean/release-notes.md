@@ -265,9 +265,6 @@ For more information, see Recommended Drivers and Software for GPU Droplets .
 20 August Qwen3.8-2.4T-A95B model available on DigitalOcean Inference has been upgraded to Qwen3.8-Max .
 Qwen3.8-Max supports vision and video input and a 1M-token context window.
 For more information, see the Available Models page .
-19 August Inference Router now uses cache-aware routing to maximize prompt cache reuse and automatically applies prompt caching to eligible Anthropic requests.
-You can opt out of prompt caching for supported models with X-Model-Affinity: none and control cache-aware model switching with the x-routing-max-switch-spend-pct header.
-For more information, see Use Prompt Caching .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
