@@ -9930,6 +9930,24 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6.2-astra-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-astra-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-astra:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-astra:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-6.2-sol": {
       "curated": false,
       "sources": {
@@ -9944,6 +9962,24 @@
       "sources": {
         "openrouter": [
           "openai/gpt-6.2-sol-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-sol-pro:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-sol-pro:batch"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-sol:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-sol:batch"
         ]
       },
       "vendor": "openai"
