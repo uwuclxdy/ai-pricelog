@@ -6732,6 +6732,15 @@
       },
       "vendor": "bytedance"
     },
+    "openrouter/bytedance/seedance-2.5-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance/seedance-2.5-flash"
+        ]
+      },
+      "vendor": "bytedance"
+    },
     "openrouter/bytedance/ui-tars-1.5-7b": {
       "curated": false,
       "sources": {

@@ -96,8 +96,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "7797686c786330ea5e5ebbdfb580cc0a54c9a2c91613e1c68324ae6e7033a796",
-      "fetched": "2026-11-16T22:00:19Z"
+      "sha256": "a768e95d44f32b67b713cc16c29b81803f07d2c9a2d9b2affbbfcb0abd60f1a8",
+      "fetched": "2026-11-17T01:00:20Z"
     }
   },
   "novita": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "d7d77c09e93c7ad4b6e59a7d984d9c4e92fea63f4ce01551306410f777d029e4",
-      "fetched": "2026-11-16T14:44:42Z"
+      "sha256": "4856677f1bbbb75f0249585d4a24fde7fdc654050dd3a19ec0dc593e64e54344",
+      "fetched": "2026-11-17T01:00:20Z"
     }
   },
   "databricks": {
