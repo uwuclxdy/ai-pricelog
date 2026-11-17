@@ -7632,6 +7632,24 @@
       },
       "vendor": "heygen"
     },
+    "openrouter/heygen/heygen-avatar-6": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-avatar-6"
+        ]
+      },
+      "vendor": "heygen"
+    },
+    "openrouter/heygen/heygen-avatar-6-turbo": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "heygen/heygen-avatar-6-turbo"
+        ]
+      },
+      "vendor": "heygen"
+    },
     "openrouter/heygen/heygen-decision-1": {
       "curated": false,
       "sources": {
@@ -8292,6 +8310,24 @@
       },
       "vendor": "microsoft"
     },
+    "openrouter/microsoft/mai-image-2.7": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.7"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/mai-image-2.7-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/mai-image-2.7-flash"
+        ]
+      },
+      "vendor": "microsoft"
+    },
     "openrouter/microsoft/mai-transcribe-1.5": {
       "curated": false,
       "sources": {
@@ -8351,6 +8387,15 @@
       "sources": {
         "openrouter": [
           "microsoft/microsoft-decision-1"
+        ]
+      },
+      "vendor": "microsoft"
+    },
+    "openrouter/microsoft/microsoft-decision-1.1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "microsoft/microsoft-decision-1.1"
         ]
       },
       "vendor": "microsoft"
