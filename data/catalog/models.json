@@ -5565,6 +5565,15 @@
       },
       "vendor": "moonshotai"
     },
+    "novita/nextdayaiexternal/mn-12b-lyra-spiced-v1-fp8": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "nextdayaiexternal/mn-12b-lyra-spiced-v1-fp8"
+        ]
+      },
+      "vendor": "nextdayaiexternal"
+    },
     "novita/qwen/qwen3-235b-a22b-fp8": {
       "curated": false,
       "sources": {
