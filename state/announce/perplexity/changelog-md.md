@@ -204,7 +204,7 @@ See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/m
 **July 2026** **GPT-5.6 price cuts and Sol Fast mode** GPT-5.6 Luna now costs \$0.20 per million input tokens and \$1.20 per million output tokens.
 GPT-5.6 Terra now costs \$2 per million input tokens and \$12 per million output tokens.
 GPT-5.6 Sol now supports Fast mode at 2× standard token pricing; send `service_tier: "priority"` to use it.
-**July 2026** **New: Orchestrator API** Unified access to open-weight models hosted by Perplexity through a single endpoint — with your existing Perplexity API key.
+**July 2026** **New: Orchestrator API** Unified access to open-weight models through a single endpoint, with your existing Perplexity API key.
 **Key features:** * OpenAI Chat Completions and Anthropic Messages compatibility: switching is a base-URL change * Automatic health-based routing and failover across model deployments * Per-token pricing at each model's published rates, with no per-request fees [Get started with the Orchestrator API →](https://docs.perplexity.ai/docs/orchestrator/quickstart.md) **July 2026** **Remote MCP Server** The [Perplexity MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md) is now available as a remote server hosted by Perplexity at `https://api.perplexity.ai/mcp`.
 Connect any MCP client that supports Streamable HTTP using your API key as a bearer token, with no local installation and nothing to update.
 Tools and behavior are identical to the local server, and usage is billed to your API key at standard API pricing.

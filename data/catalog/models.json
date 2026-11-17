@@ -5877,6 +5877,24 @@
       },
       "vendor": "openai"
     },
+    "openai/gpt-6.2-astra": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-6.2-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openai/gpt-6.2-sol": {
+      "curated": false,
+      "sources": {
+        "openai": [
+          "gpt-6.2-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openai/gpt-image-1": {
       "curated": false,
       "sources": {
