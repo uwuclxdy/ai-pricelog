@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "291f1b20e6e8e18b5192a2cb0609c98b9f9226e7d6a56bf7484ffc0d8bd54463",
-      "fetched": "2026-11-16T22:00:19Z"
+      "sha256": "95f068373e189253b7eb457010045747392a825ea2ab62a83c80f9f7efddf49b",
+      "fetched": "2026-11-17T20:04:55Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "7d2a377eddc7df4ceca7a9a0e939b6b7498910b0e93bb17fcbd09f9e3b386be5",
-      "fetched": "2026-11-17T18:00:21Z"
+      "sha256": "9160aa4500b44707e92d15d4c1706a55a4f725832b1fd3d78b5c07ad701d975f",
+      "fetched": "2026-11-17T20:04:55Z"
     }
   },
   "cloudflare": {

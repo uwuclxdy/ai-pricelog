@@ -12838,6 +12838,15 @@
       },
       "vendor": "deepseek"
     },
+    "together/elorian-glimpse-1.0": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "elorian-glimpse-1.0"
+        ]
+      },
+      "vendor": null
+    },
     "together/gemma-3n-e4b-instruct": {
       "curated": false,
       "sources": {
