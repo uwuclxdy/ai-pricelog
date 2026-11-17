@@ -13,7 +13,10 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
+November 2026 17 November DigitalOcean MicroVMs are now in general availability in MKC1.
+With general availability, you can change a MicroVM’s settings without recreating it, create access tokens that reach only one MicroVM, add URLs for additional ports, and upload and download files .
+You can also restrict a MicroVM’s outbound traffic to the destinations you allow and attach credentials that the platform adds to outbound requests, open a console from the Control Panel, and monitor MicroVMs with metrics, platform logs, and traces in DigitalOcean Insights.
+10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
 For serverless inference, migrate DeepSeek V4 Flash to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ), Llama 4 Maverick 17B 128E Instruct to DeepSeek V4.1 Flash ( deepseek-v4.1-flash ), Qwen 3.5 397B A17B to Qwen3.8-Max ( qwen3.8-max ), Gemma 4 to GLM-5.3 Flash ( glm-5.3-flash ), and gpt-oss-20b to gpt-oss-120b ( openai-gpt-oss-120b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 9 November The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Fable 5.2 For more information, see the Available Models page .
