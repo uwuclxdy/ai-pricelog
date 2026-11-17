@@ -5619,6 +5619,15 @@
       },
       "vendor": "tencent"
     },
+    "novita/tencent/hy4-flash": {
+      "curated": false,
+      "sources": {
+        "novita": [
+          "tencent/hy4-flash"
+        ]
+      },
+      "vendor": "tencent"
+    },
     "novita/tencent/hy4-preview": {
       "curated": false,
       "sources": {
