@@ -78,6 +78,7 @@
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2025-09-17","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://arquivo.pt/wayback/20250917033000id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2025-12-27","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://arquivo.pt/wayback/20251227224619id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2026-08-26","rates":{"input":0.3,"output":0.3},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"qwen2.5-7b-instruct-turbo","observed_at":"2026-11-17","removed":true,"rates":{"input":0.3,"output":0.3}}
 {"schema":4,"source":"together","model_id":"qwen3-235b-a22b-instruct-2507-fp8-throughput","observed_at":"2025-09-17","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://arquivo.pt/wayback/20250917033000id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3-235b-a22b-instruct-2507-fp8-throughput","observed_at":"2025-12-27","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://arquivo.pt/wayback/20251227224619id_/https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"qwen3-235b-a22b-instruct-2507-fp8-throughput","observed_at":"2026-08-26","rates":{"input":0.2,"output":0.6},"provenance":{"url":"https://www.together.ai/pricing"}}
@@ -106,5 +107,6 @@
 {"schema":4,"source":"together","model_id":"reflection-beam","observed_at":"2026-11-07","removed":true,"rates":{"input":0.4,"output":1.2,"cache_read":0.04}}
 {"schema":4,"source":"together","model_id":"ripple-65b-preview","observed_at":"2026-11-05","rates":{"input":0.2,"output":0.6,"cache_read":0.02},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"rnj-1-instruct","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.15},"provenance":{"url":"https://www.together.ai/pricing"}}
+{"schema":4,"source":"together","model_id":"rnj-1-instruct","observed_at":"2026-11-17","removed":true,"rates":{"input":0.15,"output":0.15}}
 {"schema":4,"source":"together","model_id":"ternary-bonsai-27b","observed_at":"2026-08-29","rates":{"input":0.0,"output":0.0},"provenance":{"url":"https://www.together.ai/pricing"}}
 {"schema":4,"source":"together","model_id":"tev1-4b-experimental","observed_at":"2026-11-10","rates":{"input":0.042,"output":0.0},"provenance":{"url":"https://www.together.ai/pricing"}}
