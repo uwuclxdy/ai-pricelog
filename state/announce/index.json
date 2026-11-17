@@ -46,8 +46,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "8305a063f5893bf145f0e28cd9b5c05add18a09240a71c8e8fce4e0d6a6af817",
-      "fetched": "2026-11-12T06:00:15Z"
+      "sha256": "76a22aa82dd1aef6efeb989f9584167c33455d812dea93784af7033a416af267",
+      "fetched": "2026-11-17T18:00:21Z"
     }
   },
   "minimax": {
@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "8831c22caa61726ca6ba43252dd3bfce93de372622b6d63861ae4b8aee403969",
-      "fetched": "2026-11-16T19:00:19Z"
+      "sha256": "af7d878b0fceef5c1a35b299b76984059895d392f491524a776b17b546fd72a3",
+      "fetched": "2026-11-17T18:00:21Z"
     }
   },
   "together": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "173eb6c70ab2260ef0b254e6e6724953a867788dc58c1f6d8e87b13835af0f5c",
-      "fetched": "2026-11-16T22:00:19Z"
+      "sha256": "7d2a377eddc7df4ceca7a9a0e939b6b7498910b0e93bb17fcbd09f9e3b386be5",
+      "fetched": "2026-11-17T18:00:21Z"
     }
   },
   "cloudflare": {

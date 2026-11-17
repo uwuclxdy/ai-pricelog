@@ -100,9 +100,6 @@ Each field has three semantics: omitted keeps the current value; `null` clears t
 - [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md): Review Kimi BatchJob pricing for input, output, and cache-hit tokens, along with billing notes.
 - [WebSearch Pricing](https://platform.kimi.ai/docs/pricing/websearch.md): Review pricing, billing units, and usage notes for the Kimi web-search and fetch tools.
 - [Recharge and Rate Limiting](https://platform.kimi.ai/docs/pricing/limits.md): Review Kimi Open Platform recharge requirements, account tiers, RPM, TPM, and TPD limits, and options for requesting higher capacity.
-- [Kimi K3.1 Pro](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): Get started with the Kimi K3.1 Pro API: reasoning effort, streaming, vision input, tool calling, and a 1M-token context window.
-- [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md): Explore Kimi K3 for long-horizon coding, knowledge work, deep reasoning, visual understanding, and a 1M-token context window.
-- [Model List](https://platform.kimi.ai/docs/models.md): Review currently available Kimi multimodal and coding models, plus migration guidance for discontinued models.
 - [Join the Kimi Developer Community](https://platform.kimi.ai/docs/api/join-the-community.md): Connect with Kimi developers on Discord and the developer forum.
 - [Account and Billing](https://platform.kimi.ai/docs/guide/account-and-payments.md): Find answers about Kimi Open Platform recharge, balances, credits, invoices, billing, and organization verification.
 - [Main Concepts](https://platform.kimi.ai/docs/introduction.md): Learn the core Kimi API concepts behind models, prompts, tokens, context windows, streaming, tool calling, and multimodal input.
