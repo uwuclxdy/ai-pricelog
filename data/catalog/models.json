@@ -9867,6 +9867,42 @@
       },
       "vendor": "openai"
     },
+    "openrouter/openai/gpt-6.2-astra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-astra-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-astra-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-sol": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "openrouter/openai/gpt-6.2-sol-pro": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "openai/gpt-6.2-sol-pro"
+        ]
+      },
+      "vendor": "openai"
+    },
     "openrouter/openai/gpt-audio": {
       "curated": false,
       "sources": {
