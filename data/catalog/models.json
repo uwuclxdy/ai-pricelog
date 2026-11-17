@@ -8004,6 +8004,24 @@
       },
       "vendor": "liquid"
     },
+    "openrouter/liquid/d1.2": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/d1.2"
+        ]
+      },
+      "vendor": "liquid"
+    },
+    "openrouter/liquid/d1.2-ultra": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "liquid/d1.2-ultra"
+        ]
+      },
+      "vendor": "liquid"
+    },
     "openrouter/liquid/lfm-2.5-2.6b": {
       "curated": false,
       "sources": {
