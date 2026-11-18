@@ -37,7 +37,7 @@ def rules_file(tmp_path: Path):
 
 def test_committed_billing_rules_pass_schema():
     rules = announce.load_billing_rules(DATA)
-    assert len(rules) == 41
+    assert len(rules) == 42
     rule = rules[0]
     assert rule["id"] == "deepseek-weekend-off-peak"
     assert rule["provider"] == "deepseek"
@@ -142,6 +142,27 @@ def test_committed_billing_rules_pass_schema():
     assert "$0.75 per 1,000" in ds_search["statement"]
     assert "November 1, 2026" in ds_search["statement"]
     assert "https://api-docs.deepseek.com/guides/search" in ds_search["citation"]
+    assert rules[41] == {
+        "id": "deepseek-server-side-search-unbilled-2026-11-18",
+        "provider": "deepseek",
+        "effective": "2026-11-18",
+        "timezone": "Asia/Shanghai",
+        "statement": (
+            "starting 12:00 Beijing time on 2026-11-18 (04:00 UTC), searches the model performs"
+            " through deepseek's server-side tools are not billed, only their model tokens are:"
+            " text search, image search and page fetch through the web tools, the web_search tool"
+            " in the Anthropic API and in the Responses API, Web Search in Claude Code, and"
+            " DeepSeek Harness with the DeepSeek (Legacy) search provider; Search and Fetch API"
+            " calls made directly from the client, such as DeepSeek Harness with the DeepSeek"
+            " Search API provider and Codex Alpha Search, still bill $0.75 per 1,000 successful"
+            " requests each; this ends the per-request billing of tool-triggered calls that"
+            " started on 2026-11-01"
+        ),
+        "citation": [
+            "https://api-docs.deepseek.com/guides/search",
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+        ],
+    }
 
 
 @pytest.mark.parametrize(
