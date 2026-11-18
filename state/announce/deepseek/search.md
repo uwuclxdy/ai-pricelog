@@ -69,7 +69,7 @@ Failed requests, empty search results, and timeouts are not billed.
 count only controls how many results are returned and does not affect the per-request price.
 Searches performed by the model through server-side tools are not billed (text search, image search and page fetch).
 Only model token usage is billed.
-Server-side tools include the web tools , the web_search tool in the Responses API, Web Search in Claude Code, and search in DeepSeek Harness when Web search provider is set to DeepSeek (Legacy) .
+Server-side tools include the web tools , the web_search tool in the Responses API, Web Search in Claude Code, and search in DeepSeek Harness when Web search provider is set to DeepSeek server-side search or Auto (the default).
 Searches that call the Search and Fetch APIs directly from the client are billed at the prices above, such as search in DeepSeek Harness when Web search provider is DeepSeek Search API , and Codex Alpha Search .
 Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 100 Fetch 25 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
 Requests above the account-level QPS limit receive HTTP 429.
