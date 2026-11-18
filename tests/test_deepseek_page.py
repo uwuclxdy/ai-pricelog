@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
+from ai_pricelog import store, validate
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import deepseek_page as detector
 from ai_pricelog.scrapers import deepseek_page as scraper
@@ -12,6 +13,7 @@ from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://api-docs.deepseek.com/quick_start/pricing/"
 FIXTURE = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing.html"
+SCHEMA_KEYS = validate.load_schema_keys(Path(__file__).resolve().parents[1])
 
 
 def cfg() -> ProviderCfg:
@@ -490,6 +492,129 @@ def test_guide_fees_parse_the_live_fixture():
         "search": 0.00075,
         "fetch": 0.00075,
     }
+
+
+# the 2026-11-18 captures: the guide's API cells read "Search API" / "Fetch API"
+API_LABEL_GUIDE = Path(__file__).parent / "fixtures" / "deepseek_page" / "search-2026-11-18.html"
+API_LABEL_PRICING = Path(__file__).parent / "fixtures" / "deepseek_page" / "pricing-2026-11-18.html"
+
+
+def api_label_soup_for(url: str) -> BeautifulSoup:
+    page = API_LABEL_GUIDE if url == GUIDE_URL else API_LABEL_PRICING
+    return BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser")
+
+
+def _weekday_peak(rates: dict[str, float], window: list[int]) -> dict[str, object]:
+    return {
+        "rates": rates,
+        "when": {"window": window, "days": list(WEEKDAYS), "timezone": "Asia/Shanghai"},
+    }
+
+
+def _stored_row(
+    model_id: str, rates: dict[str, float], peak: dict[str, float]
+) -> dict[str, object]:
+    return {
+        "schema": 4,
+        "source": "deepseek",
+        "model_id": model_id,
+        "observed_at": "2026-10-19",
+        "effective_at": "2026-08-23",
+        "rates": rates,
+        "overrides": [_weekday_peak(peak, [100, 400]), _weekday_peak(peak, [600, 1000])],
+        "limits": {"context": 1048576, "output": 393216},
+        "fees": {"search": 0.00075, "fetch": 0.00075},
+        "provenance": {"url": PAGE_URL},
+    }
+
+
+# the latest data/history/deepseek.ndjson row per priced model before the
+# guide relabel, copied from the shard
+STORED_ROWS = {
+    "deepseek-flash": _stored_row(
+        "deepseek-flash",
+        {"input": 0.15, "output": 0.6, "cache_read": 0.003},
+        {"input": 0.3, "output": 1.2, "cache_read": 0.006},
+    ),
+    "deepseek-v4-pro": _stored_row(
+        "deepseek-v4-pro",
+        {"input": 0.66, "output": 1.98, "cache_read": 0.022},
+        {"input": 1.32, "output": 3.96, "cache_read": 0.044},
+    ),
+}
+
+
+@pytest.mark.parametrize("model_id", ["deepseek-flash", "deepseek-v4-pro"])
+def test_scrape_reads_the_api_labelled_guide_fees(monkeypatch, model_id):
+    monkeypatch.setattr(scraper, "fetch_soup", api_label_soup_for)
+    pricing = scraper.scrape(cfg(), model_id)
+    assert pricing is not None
+    assert pricing.fees == {"search": 0.00075, "fetch": 0.00075}
+
+
+@pytest.mark.parametrize("model_id", ["deepseek-flash", "deepseek-v4-pro"])
+def test_api_labelled_captures_build_the_stored_rows(monkeypatch, model_id):
+    # the relabel moved no price, so the refresh must append no row
+    monkeypatch.setattr(scraper, "fetch_soup", api_label_soup_for)
+    pricing = scraper.scrape(cfg(), model_id)
+    assert pricing is not None
+    row = store.build_row(
+        "deepseek", model_id, pricing, "2026-11-18", PAGE_URL, SCHEMA_KEYS.version
+    )
+    validate.validate_row(row, SCHEMA_KEYS)
+    assert store.changed(row, STORED_ROWS[model_id]) is False
+
+
+def guide_table(*rows: tuple[str, str]) -> BeautifulSoup:
+    """an API/Unit/Price table, one (label, price) pair per row, per 1,000 requests."""
+    body = "".join(
+        f"<tr><td>{label}</td><td>Per 1,000 successful requests</td><td>{price}</td></tr>"
+        for label, price in rows
+    )
+    return BeautifulSoup(
+        "<table><thead><tr><th>API</th><th>Unit</th><th>Price</th></tr></thead>"
+        f"<tbody>{body}</tbody></table>",
+        "html.parser",
+    )
+
+
+def test_guide_fees_api_label_without_fetch_row_raises():
+    with pytest.raises(FetchError, match="missing fetch fee"):
+        scraper._guide_fees(guide_table(("Search API", "$0.75")), GUIDE_URL)
+
+
+def test_guide_fees_other_search_word_is_not_the_search_fee():
+    with pytest.raises(FetchError, match="missing search fee"):
+        scraper._guide_fees(guide_table(("Search Pro", "$0.75"), ("Fetch API", "$0.75")), GUIDE_URL)
+
+
+def test_guide_fees_skip_other_word_rows():
+    table = guide_table(
+        ("Search API Pro", "$5.00"),
+        ("Search Pro", "$5.00"),
+        ("Search API", "$0.75"),
+        ("Fetch Pro", "$5.00"),
+        ("Fetch API", "$0.75"),
+    )
+    assert scraper._guide_fees(table, GUIDE_URL) == {"search": 0.00075, "fetch": 0.00075}
+
+
+@pytest.mark.parametrize(
+    ("rows", "message"),
+    [
+        (
+            (("Search", "$0.00"), ("Search API", "$0.75"), ("Fetch API", "$0.75")),
+            "second search fee row 'Search API'",
+        ),
+        (
+            (("Search API", "$0.75"), ("Fetch", "$0.00"), ("Fetch API", "$0.75")),
+            "second fetch fee row 'Fetch API'",
+        ),
+    ],
+)
+def test_guide_fees_second_row_for_one_fee_raises(rows, message):
+    with pytest.raises(FetchError, match=message):
+        scraper._guide_fees(guide_table(*rows), GUIDE_URL)
 
 
 def test_guide_fees_missing_fetch_fee_raises(monkeypatch):

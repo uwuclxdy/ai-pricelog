@@ -26,13 +26,14 @@ silently mis-scheduling.
 
 the search/fetch guide (api-docs.deepseek.com/guides/search) supplies the
 per-request search and fetch fees (USD per the Unit cell's N successful
-requests, 1,000 on the live page); a missing or unreadable fee, or an
-unrecognized unit, is a scrape failure.
+requests, 1,000 on the live page); a missing, repeated or unreadable fee, or
+an unrecognized unit, is a scrape failure.
 
 None = the model id is not on the page, or a needed price is missing.
 FetchError = the fetch failed, the page has no MODEL header table, a
 price cell carries an amount the grammar cannot read, a token-count cell
-is unreadable, or the guide fee or its unit is missing or unreadable.
+is unreadable, or the guide fee or its unit is missing, repeated or
+unreadable.
 """
 
 from __future__ import annotations
@@ -253,10 +254,11 @@ def _per_token(dollars: float | None) -> float | None:
 def _guide_fees(soup: BeautifulSoup, url: str) -> dict[str, float]:
     """the search + fetch per-request fees from the guide's API/Unit/Price table.
 
-    each row's price cell is USD per the row's own Unit cell ("Per 1,000
-    successful requests" -> /1000 per request). either fee missing, a cell
-    carrying an amount the grammar cannot read, or an unrecognized unit, is a
-    page-shape break.
+    a row's API cell reads "Search" / "Fetch" or "Search API" / "Fetch API";
+    any other label is not a fee row. each row's price cell is USD per the
+    row's own Unit cell ("Per 1,000 successful requests" -> /1000 per
+    request). either fee missing or listed twice, a cell carrying an amount
+    the grammar cannot read, or an unrecognized unit, is a page-shape break.
     """
     for table in extract_tables(soup):
         if not table or not table[0]:
@@ -267,9 +269,14 @@ def _guide_fees(soup: BeautifulSoup, url: str) -> dict[str, float]:
         for row in table[1:]:
             if len(row) < 3:
                 continue
-            key = fold_heading(row[0])
-            if key not in ("search", "fetch") or key in fees:
+            key = fold_heading(row[0]).removesuffix(" api")
+            if key not in ("search", "fetch"):
                 continue
+            if key in fees:
+                raise FetchError(
+                    f"second {key} fee row {row[0]!r} on {url};"
+                    " fix: re-verify the guide's billing table"
+                )
             divisor = _guide_divisor(row[1], url)
             amounts, malformed = amount_scan(row[2], before="$")
             if malformed or len(amounts) != 1:
