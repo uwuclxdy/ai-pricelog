@@ -2142,6 +2142,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-11-12","rates":{"input":0.149,"output":0.219,"cache_read":0.134},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-11-18","rates":{"input":0.17,"output":0.25,"cache_read":0.153},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-11-18","rates":{"input":0.154,"output":0.226,"cache_read":0.138},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b","observed_at":"2026-11-18","rates":{"input":0.159,"output":0.234,"cache_read":0.143},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b:batch","observed_at":"2026-08-29","rates":{"input":0.17,"output":0.25},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-9B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-9b:batch","observed_at":"2026-09-21","removed":true,"rates":{"input":0.17,"output":0.25},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-flash-02-23","observed_at":"2026-08-26","rates":{"input":0.065,"output":0.26},"limits":{"context":1000000},"provenance":{"name":"Qwen3.5-Flash"}}
