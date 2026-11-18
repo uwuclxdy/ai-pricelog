@@ -32,7 +32,7 @@ after every listed PR is judged, read `.github/claude-pass/automerge.md` and fol
 each source's rows live in `data/history/<source>.ndjson`, one json object per line:
 
 ```json
-{"schema":4,"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","effective_at":"2026-08-23","currency":"EUR","rates":{"input":0.66,"output":1.98,"cache_read":0.022},"overrides":[{"when":{"days":["monday"],"window":[100,400],"timezone":"Asia/Shanghai"},"rates":{"input":1.32}},{"when":{"min_tokens":128000},"rates":{"input":0.5}},{"quota_multiplier":0.4}],"fees":{"web_search":0.005},"limits":{"context":1048576,"output":393216},"unmapped":{"someNewSourceKey":1},"provenance":{"url":"https://api-docs.deepseek.com/quick_start/pricing/","name":"DeepSeek V4 Pro","fx_rate":1.1643,"fx_rate_date":"2026-08-28"}}
+{"schema":4,"source":"deepseek","model_id":"deepseek-v4-pro","observed_at":"2026-08-30","effective_at":"2026-08-23","currency":"EUR","rates":{"input":0.66,"output":1.98,"cache_read":0.022},"overrides":[{"when":{"days":["monday"],"window":[100,400],"timezone":"UTC"},"rates":{"input":1.32}},{"when":{"min_tokens":128000},"rates":{"input":0.5}},{"quota_multiplier":0.4}],"fees":{"web_search":0.005},"limits":{"context":1048576,"output":393216},"unmapped":{"someNewSourceKey":1},"provenance":{"url":"https://api-docs.deepseek.com/quick_start/pricing/","name":"DeepSeek V4 Pro","fx_rate":1.1643,"fx_rate_date":"2026-08-28"}}
 ```
 
 - `rates` holds every per-token price, USD per 1M tokens, keyed by axis (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`, plus the modality axes `image`, `audio`, `input_audio_cache`, `internal_reasoning`, `image_output`, `audio_output`).
@@ -42,7 +42,7 @@ each source's rows live in `data/history/<source>.ndjson`, one json object per l
 - `provenance` carries `url`, `name`, and the fx pair. `effective_at` (optional) is the date the rate or schedule becomes effective; absent = valid at observation.
 - a change = any present comparable field differs from the last row for `(source, model_id)`. `observed_at` and `provenance` are excluded from the diff.
 - `overrides` is the one list for every conditional price. an entry carries `rates` and/or `quota_multiplier` (a consumption weight; consumers never price from a multiplier) plus a `when`:
-  - optional `days` (lowercase weekday names, absent = every day), optional `window` (`[start_hhmm, end_hhmm]`, absent = whole day), optional `min_tokens` (a volume threshold), optional `mode` (the request mode the override prices, e.g. anthropic fast mode), optional `timezone`.
+  - optional `days` (lowercase weekday names, UTC calendar days, absent = every day), optional `window` (`[start_hhmm, end_hhmm]` on the UTC clock, absent = whole day), optional `min_tokens` (a volume threshold), optional `mode` (the request mode the override prices, e.g. anthropic fast mode), optional `timezone` (always `"UTC"`: a source's local schedule is converted to UTC values, and validate refuses any other zone).
   - an absent rate axis inherits the base `rates` value; later entries override earlier matching ones. `timezone` rides inside the override's `when`, never the row.
   - deepseek peak rows map onto override entries: the base `rates` are the off-peak rates, one entry per peak window carries the peak rates plus the weekday day-set.
 - openrouter rows add `provenance.name` and keep only unmapped pricing keys verbatim under `unmapped`. alias entries and dated-canonical snapshots get no row. `web_search` is a per-request USD fee under `fees`, never per-token.
