@@ -884,6 +884,7 @@
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomist-7b","observed_at":"2024-08-27","rates":{"input":0.375,"output":0.375},"limits":{"context":32768},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"gryphe/mythomist-7b","observed_at":"2026-08-29","removed":true}
 {"schema":4,"source":"openrouter","model_id":"hexgrad/kokoro-82m","observed_at":"2026-10-26","modality":"speech","rates":{"input":0.62,"output":0.0},"limits":{"context":4096},"provenance":{"name":"Kokoro 82M"}}
+{"schema":4,"source":"openrouter","model_id":"hexgrad/kokoro-82m","observed_at":"2026-11-18","modality":"speech","rates":{"input":0.99,"output":0.0},"limits":{"context":4096},"provenance":{"name":"Kokoro 82M"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/avatar-iv","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Avatar IV"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-avatar-6","observed_at":"2026-11-17","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Avatar 6"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-avatar-6-turbo","observed_at":"2026-11-17","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Avatar 6 Turbo"}}
