@@ -265,9 +265,6 @@ For details, see How to Create a Droplet , Choosing the Right CPU Droplet Plan ,
 The images are based on Ubuntu 24.04 (upgraded from Ubuntu 22.04) and include NVIDIA driver 580.173.02 and CUDA 13.1, providing the latest NVIDIA GPU support for AI/ML workloads.
 Despite their slug names, these images are compatible with all NVIDIA GPU Droplet types we offer.
 For more information, see Recommended Drivers and Software for GPU Droplets .
-20 August Qwen3.8-2.4T-A95B model available on DigitalOcean Inference has been upgraded to Qwen3.8-Max .
-Qwen3.8-Max supports vision and video input and a 1M-token context window.
-For more information, see the Available Models page .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
