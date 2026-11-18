@@ -8,8 +8,11 @@ from pathlib import Path
 
 import pytest
 
+import test_dashscope_page as dashscope_fixtures
 from ai_pricelog import absence, announce, config, health, openrouter, pipeline, pr, store, web
+from ai_pricelog.detectors import dashscope_page as dashscope_detector
 from ai_pricelog.pricing import Pricing
+from ai_pricelog.scrapers import dashscope_page as dashscope_scraper
 from conftest import git, git_init_repo, register_fake_module
 
 TODAY = "2026-08-26"
@@ -2878,6 +2881,73 @@ def test_absence_skips_when_priced_detection_fails(tmp_path, fake_modules, repo_
     tree = git(repo_root, "ls-tree", "-r", "--name-only", batch_branch("zai"))
     assert not any(path.startswith("state/absence/") for path in tree.splitlines())
     assert report.providers["mistral"].errors
+
+
+def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monkeypatch):
+    # the real dashscope pair on the 2026-11-18 captures: the CN page lists
+    # official versions only, so absence keyed on it counted every dated and
+    # preview spelling absent (PR #839's 14 removals). keyed on the pricing
+    # page's priced rows, none of the stored ids counts absent, the landed
+    # counters clear, and candidates still come from the CN page only
+    today = "2026-11-18"
+    pcfg = config.ProviderCfg(
+        key="dashscope",
+        provider="DashScope",
+        detector="dashscope_page",
+        detector_url=dashscope_fixtures.CN_URL,
+        scraper="dashscope_page",
+        scraper_url=dashscope_fixtures.EN_URL,
+    )
+    pages = {
+        dashscope_fixtures.CN_URL: "textgen-cn.html",
+        dashscope_fixtures.EN_URL: "model-pricing-intl.html",
+    }
+    soups = {
+        url: web.parse_html((dashscope_fixtures.FIXTURES / name).read_text(encoding="utf-8"))
+        for url, name in pages.items()
+    }
+    monkeypatch.setattr(dashscope_detector, "fetch_soup", lambda url: soups[url])
+    monkeypatch.setattr(dashscope_scraper, "fetch_soup", lambda url: soups[url])
+    seed_store(
+        repo_root,
+        [
+            store.build_row(
+                "dashscope",
+                model_id,
+                Pricing(input_rate / 1e6, output_rate / 1e6, "chat"),
+                "2026-11-16",
+                dashscope_fixtures.EN_URL,
+                VERSION,
+            )
+            for model_id, (input_rate, output_rate) in dashscope_fixtures.LIVE_STORED.items()
+        ],
+    )
+    seed_absence(
+        repo_root,
+        {
+            "dashscope": {
+                model_id: {"absent_runs": 1, "since": "2026-11-05"}
+                for model_id in dashscope_fixtures.FALSE_REMOVALS
+            }
+        },
+    )
+    runner = PipelineRunner()
+
+    report = pipeline.run(
+        config.Config(providers=(pcfg,)), repo_root, runner, today=today, now="000000"
+    )
+
+    assert report.providers["dashscope"].errors == []
+    branch = batch_branch("dashscope", today=today)
+    shard = branch_rows(repo_root, branch, "dashscope")
+    appended = [row for row in shard if row["observed_at"] == today]
+    # the one row the run appends is the promo rate in force; no removal, and
+    # no candidate row for the pricing page's image model
+    assert [(row["model_id"], row["rates"], row.get("removed")) for row in appended] == [
+        ("qwen3.7-plus", {"input": 0.32, "output": 1.28}, None)
+    ]
+    assert branch_absence(repo_root, branch).get("dashscope", {}) == {}
+    assert [head for _title, _body, head in runner.created] == [branch]
 
 
 def test_removals_batch_without_cap(tmp_path, fake_modules, repo_root):

@@ -539,9 +539,9 @@ LEGACY_CASES = [
         dashscope_page,
         False,
         "dashscope_page/model-pricing-intl.html",
-        "qwen3.7-plus",
-        "ce</span> $0.4 <s",
-        "$0.4",
+        "qwen4-max",
+        "qwen4-max</p>",
+        "$1.5",
         "input_cost_per_token",
     ),
     LegacyCase(
