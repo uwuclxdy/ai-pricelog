@@ -7524,6 +7524,24 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-4-neon": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-neon"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-4-neon:batch": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-4-neon:batch"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-decision-1": {
       "curated": false,
       "sources": {
