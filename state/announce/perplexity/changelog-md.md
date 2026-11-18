@@ -2,6 +2,12 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **GPT-6.2 Sol and GPT-6.2 Astra** The [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) and pricing calculator include `openai/gpt-6.2-sol` and `openai/gpt-6.2-astra`.
+For requests with up to 272,000 input tokens, GPT-6.2 Sol costs \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens.
+GPT-6.2 Astra costs \$8.00, \$0.40, and \$40.00, respectively.
+Above that input threshold, input and cache-read prices double, and output prices increase by 50%.
+Cache creation costs \$2.50 per million cache-write tokens for GPT-6.2 Sol and \$10.00 for GPT-6.2 Astra up to 272,000 input tokens; these rates double above that threshold.
+These are default-processing rates; see the Models reference for service tiers and calculator limitations.
 **November 2026** ### Decisions API: pplx-decider-v1.3, pplx-decider-flash-v1.3, and `locate` questions **New models.** `pplx-decider-v1.3` (27B) and `pplx-decider-flash-v1.3` (4B) are the new decision models, at the same prices as v1.2: \$0.02 and \$0.01 per million input tokens.
 Output tokens stay free.
 Both accept text and images (`locate` questions read text only) and answer several questions about the same `state` in one pass, with each question isolated from the others.
