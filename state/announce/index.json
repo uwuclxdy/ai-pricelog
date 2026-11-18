@@ -136,15 +136,15 @@
   "cloudflare": {
     "https://developers.cloudflare.com/workers-ai/changelog/": {
       "file": "state/announce/cloudflare/changelog.md",
-      "sha256": "29255252b3403c8394302ad907ed446e89b26d176f11da758ffacd8f37d1c794",
-      "fetched": "2026-10-27T22:00:14Z"
+      "sha256": "14840de96bf1610690a31017ab9c363122d863b251bf79f322e4be5dfc2cbaa6",
+      "fetched": "2026-11-18T18:00:17Z"
     }
   },
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "1d44ced072cbdeeee168f3fb9926d72f983f85b691be17e961d0b86708944f36",
-      "fetched": "2026-11-18T01:00:16Z"
+      "sha256": "92ec995d3284e101fbe494c9adb337baf3e03f1bf7d6b29c6fce083d72910c3c",
+      "fetched": "2026-11-18T18:00:17Z"
     }
   },
   "databricks": {

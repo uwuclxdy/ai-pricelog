@@ -13,7 +13,11 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 17 November DigitalOcean MicroVMs are now in general availability in MKC1.
+November 2026 18 November Interactive stdin for DigitalOcean Harness Runtime sandbox commands is enabled per team.
+Start a command with keep_stdin_open on an event stream, then write base64 chunks to /v2/harness-runtime/sessions/{session_id}/sandbox/exec/{exec_id}/stdin while stdout and stderr continue to stream.
+Use this to drive a REPL, answer a prompt, or feed a long-running process.
+For more information, see How to Send Interactive Stdin to a Sandbox Command .
+17 November DigitalOcean MicroVMs are now in general availability in MKC1.
 With general availability, you can change a MicroVM’s settings without recreating it, create access tokens that reach only one MicroVM, add URLs for additional ports, and upload and download files .
 You can also restrict a MicroVM’s outbound traffic to the destinations you allow and attach credentials that the platform adds to outbound requests, open a console from the Control Panel, and monitor MicroVMs with metrics, platform logs, and traces in DigitalOcean Insights.
 10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
