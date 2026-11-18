@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
+from ai_pricelog import store
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import dashscope_page as dashscope_detect
 from ai_pricelog.pricing import to_mtok
@@ -17,6 +18,7 @@ EN_URL = "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
 # the 2026-08-19 capture: `Input price` / `Output price` headers, every cell
 # in its grid position
 OLD_EN_FIXTURE = "model-pricing-intl-2026-08-19.html"
+VERSION = 4
 
 # the 14 ids PR #839 proposed as delisted, at their removal-snapshot rates
 # (their last priced rows on c9a9e682, USD per 1M tokens)
@@ -323,9 +325,248 @@ def test_scrape_old_list_price_promo_records_the_discounted_rate(dashscope_cfg, 
     assert rates(dashscope_cfg, "qwen3.7-plus") == (0.32, 1.28)
 
 
+# --- peak and off-peak cells: the off-peak base and a peak override ----------
+
+# the 2026-11-18 EN capture's four scheduled ids: (off-peak base, peak
+# override) USD per 1M tokens, as the cells print them
+PEAK_CELL_IDS = {
+    "deepseek-v4.1-flash-1017": ((0.15, 0.6), (0.3, 1.2)),
+    "deepseek-v4.1-flash": ((0.15, 0.6), (0.3, 1.2)),
+    "deepseek-v4-pro-0813": ((0.66, 1.98), (1.32, 3.96)),
+    "deepseek-v4-flash-0731": ((0.22, 0.66), (0.44, 1.32)),
+}
+# the capture's note: off-peak 22:00-08:00 UTC+8, so peak 08:00-22:00 UTC+8 =
+# 00:00-14:00 UTC
+PEAK_WINDOW = [0, 1400]
+OFF_PEAK_NOTE = (
+    "<p>Some models are billed at peak and off-peak rates (see the peak and"
+    " off-peak unit prices marked in the table below): Peak hours are from"
+    " 08:00 to 22:00 (UTC+8), and off-peak hours are from 22:00 to 08:00 the"
+    " next day (UTC+8).</p>"
+)
+
+
+def schedule_page(cell_in: str, cell_out: str, note: str = OFF_PEAK_NOTE) -> str:
+    rows = (
+        "<tr><td>qwen-x</td><td>International</td><td>0&lt;Token≤1M</td>"
+        f"<td>{cell_in}</td><td>{cell_out}</td><td>None</td></tr>"
+    )
+    return note + pricing_table(rows)
+
+
+def test_scrape_peak_cells_store_the_off_peak_base_and_a_peak_override(dashscope_cfg, monkeypatch):
+    serve_pages(monkeypatch)
+    for model_id, (off_peak, peak) in PEAK_CELL_IDS.items():
+        pricing = dashscope_scrape.scrape(dashscope_cfg, model_id)
+        assert pricing is not None
+        row = store.build_row("dashscope", model_id, pricing, "2026-11-18", EN_URL, VERSION)
+        assert row["rates"] == {"input": off_peak[0], "output": off_peak[1]}
+        assert row["overrides"] == [
+            {
+                "rates": {"input": peak[0], "output": peak[1]},
+                "when": {"window": PEAK_WINDOW, "timezone": "UTC"},
+            }
+        ]
+
+
+@pytest.mark.parametrize(
+    ("note", "windows"),
+    [
+        # off-peak 02:00-04:00 UTC+8 = 18:00-20:00 UTC, so peak 20:00-18:00
+        # past midnight splits into two same-day entries
+        ("<p>Off-peak hours are from 02:00 to 04:00 (UTC+8).</p>", [[2000, 2400], [0, 1800]]),
+        # off-peak 02:00-14:00 UTC+8 = 18:00-06:00 UTC, so peak 06:00-18:00
+        ("<p>Off-peak hours are from 02:00 to 14:00 (UTC+8).</p>", [[600, 1800]]),
+        # off-peak 08:00-12:00 UTC+8 = 00:00-04:00 UTC, so peak 04:00-24:00:
+        # the midnight start drops the empty `[0, 0]` entry
+        ("<p>Off-peak hours are from 08:00 to 12:00 (UTC+8).</p>", [[400, 2400]]),
+    ],
+)
+def test_scrape_peak_window_derives_from_the_pages_stated_hours(
+    dashscope_cfg, monkeypatch, note, windows
+):
+    serve_html(
+        monkeypatch, schedule_page("Peak $0.3 Off-peak $0.15", "Peak $0.9 Off-peak $0.5", note)
+    )
+    pricing = dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+    assert pricing is not None
+    row = store.build_row("dashscope", "qwen-x", pricing, "2026-11-18", EN_URL, VERSION)
+    assert row["rates"] == {"input": 0.15, "output": 0.5}
+    assert [override["when"]["window"] for override in row["overrides"]] == windows
+    assert [override["rates"] for override in row["overrides"]] == [
+        {"input": 0.3, "output": 0.9}
+    ] * len(windows)
+
+
+@pytest.mark.parametrize(
+    "note",
+    [
+        # the note is gone from a page whose cells still print both amounts
+        "",
+        "<p>Off-peak hours are next to the price.</p>",
+        "<p>Off-peak hours are from 02:00 to 04:00 (UTC+X).</p>",
+        "<p>Off-peak hours are from 25:00 to 04:00 (UTC+8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:60 (UTC+8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC+15).</p>",
+        # the zone must print an explicit `+N` offset
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC +8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC 8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC-8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC+5:30).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC−8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC＋8).</p>",
+        # equal hours name no peak window
+        "<p>Off-peak hours are from 22:00 to 22:00 (UTC+8).</p>",
+        # the peak table's sentence is gone; the promo notes' form stays
+        "<p>Off-peak hours are 22:00 to 8:00 the next day in UTC+8, and all"
+        " other hours are peak hours, based on the billing time.</p>",
+        # the peak table's sentence is reworded beside the promo notes
+        "<p>Peak hours: 09:00-21:00 (UTC+8); off-peak hours: 21:00-09:00 (UTC+8).</p>"
+        "<p>Off-peak hours are 22:00 to 8:00 the next day in UTC+8, and all"
+        " other hours are peak hours, based on the billing time.</p>",
+        # the sentence states the peak hours too, and they disagree with the
+        # off-peak complement (22:00-08:00 UTC+8 leaves 00:00-14:00 UTC)
+        "<p>Peak hours are from 09:00 to 21:00 (UTC+8), and off-peak hours are"
+        " from 22:00 to 08:00 the next day (UTC+8).</p>",
+        "<p>Peak hours are from 00:00 to 23:59 (UTC+8), and off-peak hours are"
+        " from 22:00 to 08:00 the next day (UTC+8).</p>",
+        # the peak half is read only in the `, and ` sentence form; the same
+        # hours joined or placed any other way raise rather than read
+        "<p>Peak hours are from 08:00 to 22:00 (UTC+8); off-peak hours are from"
+        " 22:00 to 08:00 the next day (UTC+8).</p>",
+        "<p>Peak hours are from 08:00 to 22:00 (UTC+8) and off-peak hours are from"
+        " 22:00 to 08:00 the next day (UTC+8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC+8), and peak"
+        " hours are from 08:00 to 22:00 (UTC+8).</p>",
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC+8).</p>"
+        "<p>Peak hours are from 08:00 to 22:00 (UTC+8).</p>",
+    ],
+)
+def test_scrape_peak_cells_without_a_readable_off_peak_note_raise(dashscope_cfg, monkeypatch, note):
+    serve_html(
+        monkeypatch, schedule_page("Peak $0.3 Off-peak $0.15", "Peak $0.9 Off-peak $0.5", note)
+    )
+    with pytest.raises(FetchError, match="qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "Peak $0.3",
+        "Peak $0.3 Off-peak $0.15 $0.2",
+        "Peak $0.3 Off-peak $0.15 Cache hit input: $0.2",
+        "Peak $0.30 Peak $0.3 Off-peak $0.15",
+        "Original$0.3 Off-peak $0.15",
+        "Peak $0.3 Off-peak $0.15 $1234567890123",
+        # an off-peak amount with no peak amount: no schedule, and a raise
+        # rather than an index error
+        "Standard $0.3 Off-peak $0.15",
+        # the audio rows' amount form names no schedule
+        "Peak 0.3 USD/million tokens Off-peak 0.15 USD/million tokens",
+    ],
+)
+def test_scrape_unreadable_peak_cell_raises(dashscope_cfg, monkeypatch, cell):
+    serve_html(monkeypatch, schedule_page(cell, "Peak $0.9 Off-peak $0.5"))
+    with pytest.raises(FetchError, match="qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+def test_scrape_row_with_one_scheduled_cell_raises(dashscope_cfg, monkeypatch):
+    serve_html(monkeypatch, schedule_page("Peak $0.3 Off-peak $0.15", "$0.9"))
+    with pytest.raises(FetchError, match="mixed peak and off-peak cells for qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+def test_scrape_two_stated_schedules_raise(dashscope_cfg, monkeypatch):
+    serve_html(
+        monkeypatch,
+        "<p>Off-peak hours are from 22:00 to 08:00 the next day (UTC+8).</p>"
+        "<p>Off-peak hours are from 02:00 to 04:00 (UTC+8).</p>"
+        + schedule_page("Peak $0.3 Off-peak $0.15", "Peak $0.9 Off-peak $0.5", note=""),
+    )
+    with pytest.raises(FetchError, match="more than one off-peak"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+@pytest.mark.parametrize(
+    ("cell_in", "cell_out"),
+    [
+        # a discount marker beside the pair
+        ("Peak $0.3 Off-peak $0.15 (limited-time 50% off)", "Peak $0.9 Off-peak $0.5 (50% off)"),
+        # a list label that places no amount
+        ("Peak $0.3 Off-peak $0.15 Original", "Peak $0.9 Off-peak $0.5 Original"),
+    ],
+)
+def test_scrape_a_marked_peak_cell_raises(dashscope_cfg, monkeypatch, cell_in, cell_out):
+    serve_html(monkeypatch, schedule_page(cell_in, cell_out))
+    with pytest.raises(FetchError, match="qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+def test_scrape_a_suffix_form_peak_pair_raises(dashscope_cfg, monkeypatch):
+    # a pair in the audio rows' amount form names no schedule: the label
+    # starts the check and the `$`-only grammar then raises
+    serve_html(
+        monkeypatch,
+        schedule_page(
+            "Peak 0.3 USD/million tokens Off-peak 0.15 USD/million tokens",
+            "Peak 0.9 USD/million tokens Off-peak 0.5 USD/million tokens",
+        ),
+    )
+    with pytest.raises(FetchError, match="qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+@pytest.mark.parametrize(
+    ("cell_in", "cell_out"),
+    [
+        # a colon or a bracket between a label and its amount still names a
+        # schedule, so the pair raises instead of reading the peak amount as
+        # the all-day base
+        ("Peak: $0.3 Off-peak: $0.15", "Peak: $0.9 Off-peak: $0.5"),
+        ("$0.3 (peak) $0.15 (off-peak)", "$0.9 (peak) $0.5 (off-peak)"),
+        # a hyphen-prefixed label still names a schedule
+        ("x-peak $0.3 x-off-peak $0.15", "x-peak $0.9 x-off-peak $0.5"),
+        # an inflected or glued peak word still names a schedule
+        ("$0.3 (peaks) $0.15", "$0.9 (peaks) $0.5"),
+        ("Offpeak $0.3 Offpeak $0.15", "Offpeak $0.9 Offpeak $0.5"),
+    ],
+)
+def test_scrape_a_peak_pair_in_another_label_form_raises(
+    dashscope_cfg, monkeypatch, cell_in, cell_out
+):
+    serve_html(monkeypatch, schedule_page(cell_in, cell_out))
+    with pytest.raises(FetchError, match="qwen-x"):
+        dashscope_scrape.scrape(dashscope_cfg, "qwen-x")
+
+
+def test_scrape_a_plain_row_builds_no_override(dashscope_cfg, monkeypatch):
+    serve_pages(monkeypatch)
+    pricing = dashscope_scrape.scrape(dashscope_cfg, "qwen4-max")
+    assert pricing is not None
+    row = store.build_row("dashscope", "qwen4-max", pricing, "2026-11-18", EN_URL, VERSION)
+    assert row["rates"] == {"input": 1.5, "output": 4.5}
+    assert "overrides" not in row
+
+
+def test_scrape_only_the_peak_cell_ids_carry_a_schedule(dashscope_cfg, monkeypatch):
+    serve_pages(monkeypatch)
+    windows = {}
+    for model_id in EN_PRICED_IDS:
+        pricing = dashscope_scrape.scrape(dashscope_cfg, model_id)
+        assert pricing is not None
+        windows[model_id] = pricing.peak_windows
+    carrying = {model_id for model_id, peak in windows.items() if peak}
+    assert carrying == set(PEAK_CELL_IDS)
+    assert {windows[model_id] for model_id in carrying} == {((0, 1400),)}
+
+
 # every International row's input and output cell of the fixtures, as the
 # parser at 705c7cd1 priced them (measured 2026-11-18): a grammar change keeps
-# every value here
+# every value here. the peak cells keep the per-cell first amount; scrape
+# reads them as an off-peak/peak pair (the schedule section above)
 FROZEN_CELLS = {
     "model-pricing-intl.html": [
         ("qwen4-max", 1.5, 4.5),
@@ -470,6 +711,10 @@ def test_scrape_rate_in_force_per_cell_form(dashscope_cfg, monkeypatch, cell, ex
 @pytest.mark.parametrize(
     "cell",
     [
+        # a peak word in the promo prose names a peak rate, not a single rate
+        # in force
+        "Original$0.4 (20% off for off-peak usage)",
+        "Original$0.4 (20% off during peak hours)",
         # two discounts: a peak and an off-peak rate, no single rate in force
         "Original$0.276 (limited-time 60% off for off-peak usage) 20% off during peak hours",
         # a discount marker beside one unlabelled amount: list or charged is unknown

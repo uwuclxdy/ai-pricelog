@@ -2941,10 +2941,25 @@ def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monk
     branch = batch_branch("dashscope", today=today)
     shard = branch_rows(repo_root, branch, "dashscope")
     appended = [row for row in shard if row["observed_at"] == today]
-    # the one row the run appends is the promo rate in force; no removal, and
-    # no candidate row for the pricing page's image model
-    assert [(row["model_id"], row["rates"], row.get("removed")) for row in appended] == [
-        ("qwen3.7-plus", {"input": 0.32, "output": 1.28}, None)
+    # the run appends the stored scheduled id's off-peak base with its peak
+    # override, and the promo rate in force; no removal, and no candidate row
+    # for the pricing page's image model
+    assert [
+        (row["model_id"], row["rates"], row.get("overrides"), row.get("removed"))
+        for row in appended
+    ] == [
+        (
+            "deepseek-v4.1-flash-1017",
+            {"input": 0.15, "output": 0.6},
+            [
+                {
+                    "rates": {"input": 0.3, "output": 1.2},
+                    "when": {"window": [0, 1400], "timezone": "UTC"},
+                }
+            ],
+            None,
+        ),
+        ("qwen3.7-plus", {"input": 0.32, "output": 1.28}, None, None),
     ]
     assert branch_absence(repo_root, branch).get("dashscope", {}) == {}
     assert [head for _title, _body, head in runner.created] == [branch]
