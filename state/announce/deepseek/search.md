@@ -64,11 +64,13 @@ Search and Fetch are read-only.
 For HTTP 408, 429, or 5xx errors, wait and retry.
 For HTTP 402, top up your account before retrying.
 Do not retry other 4xx errors without changing the request.
-Billing ​ Search and Fetch are billed per successful request, not by tokens or by the number of returned results: API Unit Price Search Per 1,000 successful requests $0.75 Fetch Per 1,000 successful requests $0.75 A request is billable only when it returns HTTP 200 and produces a result (Search must return a non-empty results array, and Fetch must return page content).
+Billing ​ The Search and Fetch APIs are billed per successful request, not by tokens or by the number of returned results: API Unit Price Search API Per 1,000 successful requests $0.75 Fetch API Per 1,000 successful requests $0.75 A standalone request is billable only when it returns HTTP 200 and produces a result (Search must return a non-empty results array, and Fetch must return page content).
 Failed requests, empty search results, and timeouts are not billed.
 count only controls how many results are returned and does not affect the per-request price.
-Search and Fetch calls triggered by tools when using the DeepSeek API through DeepSeek Harness, Claude Code, or Codex, including Codex Alpha Search , are also billed per successful request.
-The web tools are billed at the same web search and web fetch prices.
+Searches performed by the model through server-side tools are not billed (text search, image search and page fetch).
+Only model token usage is billed.
+Server-side tools include the web tools , the web_search tool in the Responses API, Web Search in Claude Code, and search in DeepSeek Harness when Web search provider is set to DeepSeek (Legacy) .
+Searches that call the Search and Fetch APIs directly from the client are billed at the prices above, such as search in DeepSeek Harness when Web search provider is DeepSeek Search API , and Codex Alpha Search .
 Rate Limits ​ For each account, Search and Fetch are limited independently, and traffic to one does not consume the other's quota: API QPS Limit Search 100 Fetch 25 The QPS (requests per second) limits are calculated at the account level, regardless of which API key is used, and are separate from the model concurrency limits.
 Requests above the account-level QPS limit receive HTTP 429.
 In addition to the account-level limit, Fetch is also subject to a per-domain QPS limit, and requests above that limit also receive HTTP 429.
