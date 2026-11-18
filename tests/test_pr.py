@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import subprocess
 import time
 from pathlib import Path
@@ -508,6 +509,59 @@ def test_fetch_pending_rows_reads_branch_shards(tmp_path):
     assert pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS) == [
         json.loads(line) for line in lines.splitlines()
     ]
+
+
+def scheduled_row(model_id: str, observed_at: str, zone: str) -> dict:
+    row = pending_row(model_id)
+    row["observed_at"] = observed_at
+    row["overrides"] = [
+        {
+            "when": {"days": ["monday"], "window": [100, 400], "timezone": zone},
+            "rates": {"input": 0.5},
+        }
+    ]
+    return row
+
+
+def pending_scan_over_landed(tmp_path, landed: dict, appended: dict) -> pr.PendingScan:
+    landed_line = json.dumps(landed) + "\n"
+    shard = tmp_path / "data" / "history" / "deepseek.ndjson"
+    shard.parent.mkdir(parents=True)
+    shard.write_text(landed_line, encoding="utf-8")
+    fake = (
+        FakeRunner()
+        .on("git fetch")
+        .on("git for-each-ref", output="refs/remotes/pending/x-12345678\n")
+        .on("git ls-tree", output="data/history/deepseek.ndjson\n")
+        .on("git show", output=landed_line + json.dumps(appended) + "\n")
+    )
+    open_prs = [pr.OpenPr("Add x pricing", "", "pricelog/x-12345678")]
+    return pr.fetch_pending_rows(fake, tmp_path, "data/history", open_prs, SCHEMA_KEYS)
+
+
+def test_fetch_pending_rows_passes_landed_lines_through(tmp_path, caplog):
+    # a branch shard carries the landed shard's lines, legacy-zone rows stored
+    # before the UTC-only contract included; those already sit in the
+    # append-only store, so only the appended line meets the row contract
+    legacy = scheduled_row("deepseek-flash", "2026-10-19", "Asia/Shanghai")
+    fresh = scheduled_row("deepseek-flash", "2026-11-18", "UTC")
+    with caplog.at_level(logging.WARNING):
+        scan = pending_scan_over_landed(tmp_path, legacy, fresh)
+    assert list(scan) == [legacy, fresh]
+    assert scan.held_keys == frozenset({("deepseek", "deepseek-flash")})
+    assert caplog.records == []
+
+
+def test_fetch_pending_rows_drops_an_appended_non_utc_line_and_holds_its_key(tmp_path, caplog):
+    legacy = scheduled_row("deepseek-flash", "2026-10-19", "Asia/Shanghai")
+    hand_edit = scheduled_row("deepseek-v4-pro", "2026-11-18", "Asia/Shanghai")
+    with caplog.at_level(logging.WARNING):
+        scan = pending_scan_over_landed(tmp_path, legacy, hand_edit)
+    assert list(scan) == [legacy]
+    assert scan.held_keys == frozenset({("deepseek", "deepseek-v4-pro")})
+    assert len(caplog.records) == 1
+    assert "row failed the row contract" in caplog.text
+    assert "'Asia/Shanghai'" in caplog.text
 
 
 def test_fetch_pending_rows_holds_key_when_name_has_a_line_separator(tmp_path):

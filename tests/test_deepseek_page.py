@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 
 import pytest
@@ -118,7 +119,7 @@ def test_scrape_flash_split_pricing(monkeypatch):
     assert pricing.peak_windows == WINDOWS
     assert pricing.peak_days == WEEKDAYS
     assert pricing.effective_at == "2026-08-23"
-    assert pricing.timezone == "Asia/Shanghai"
+    assert pricing.timezone == "UTC"
     assert pricing.mode == "chat"
     assert pricing.max_tokens_out == 384 * 1024
     assert pricing.max_tokens_in == 1024 * 1024
@@ -553,8 +554,26 @@ def test_scrape_reads_the_api_labelled_guide_fees(monkeypatch, model_id):
 
 
 @pytest.mark.parametrize("model_id", ["deepseek-flash", "deepseek-v4-pro"])
-def test_api_labelled_captures_build_the_stored_rows(monkeypatch, model_id):
-    # the relabel moved no price, so the refresh must append no row
+def test_api_labelled_captures_build_utc_schedules(monkeypatch, model_id):
+    # the footnote's clock windows and weekday names are UTC values, so the
+    # built overrides stamp UTC and keep the page's numbers
+    monkeypatch.setattr(scraper, "fetch_soup", api_label_soup_for)
+    pricing = scraper.scrape(cfg(), model_id)
+    assert pricing is not None
+    row = store.build_row(
+        "deepseek", model_id, pricing, "2026-11-18", PAGE_URL, SCHEMA_KEYS.version
+    )
+    assert [override["when"] for override in row["overrides"]] == [
+        {"window": [100, 400], "days": list(WEEKDAYS), "timezone": "UTC"},
+        {"window": [600, 1000], "days": list(WEEKDAYS), "timezone": "UTC"},
+    ]
+
+
+@pytest.mark.parametrize("model_id", ["deepseek-flash", "deepseek-v4-pro"])
+def test_api_labelled_captures_move_only_the_schedule_zone(monkeypatch, model_id):
+    # the relabel moved no price, so the zone stamp is the one comparable
+    # change between the capture and the stored row: the next run appends one
+    # refresh row per model, and no rate, limit or fee moves with it
     monkeypatch.setattr(scraper, "fetch_soup", api_label_soup_for)
     pricing = scraper.scrape(cfg(), model_id)
     assert pricing is not None
@@ -562,7 +581,13 @@ def test_api_labelled_captures_build_the_stored_rows(monkeypatch, model_id):
         "deepseek", model_id, pricing, "2026-11-18", PAGE_URL, SCHEMA_KEYS.version
     )
     validate.validate_row(row, SCHEMA_KEYS)
-    assert store.changed(row, STORED_ROWS[model_id]) is False
+    assert store.changed(row, STORED_ROWS[model_id]) is True
+    unstamped = copy.deepcopy(row)
+    stored_unstamped = copy.deepcopy(STORED_ROWS[model_id])
+    for side in (unstamped, stored_unstamped):
+        for override in side["overrides"]:
+            override["when"].pop("timezone")
+    assert store.changed(unstamped, stored_unstamped) is False
 
 
 def guide_table(*rows: tuple[str, str]) -> BeautifulSoup:

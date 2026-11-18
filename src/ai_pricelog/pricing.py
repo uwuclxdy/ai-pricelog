@@ -46,8 +46,8 @@ class Pricing:
     # appends them after the peak-derived entries. entries carry rate keys, a
     # quota_multiplier, or both
     window_rates: tuple[dict[str, object], ...] = ()
-    # the IANA zone of the schedule, stamped on rows carrying window_rates
-    # (deepseek: Asia/Shanghai, the beijing-derived weekday rule)
+    # "UTC", stamped on rows carrying a scheduled override
+    # (data/schema/row.v4.json $defs/when/timezone)
     timezone: str | None = None
     # non-text token rates (image, audio, image output); appended at the end
     # so positional constructions keep their meaning

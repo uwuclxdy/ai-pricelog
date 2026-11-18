@@ -17,7 +17,6 @@ import math
 import re
 from pathlib import Path
 from typing import Any, NamedTuple
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class ValidationError(ValueError):
@@ -223,18 +222,12 @@ def _check_override(entry: Any, keys: SchemaKeys) -> None:
             )
         timezone = when.get("timezone")
         if timezone is not None:
-            if not isinstance(timezone, str):
+            if timezone != "UTC":
                 raise ValidationError(
-                    f"row field 'overrides' entry 'when' has bad timezone {timezone!r};"
-                    " fix: an IANA zone name"
+                    f"row field 'overrides' entry 'when' has timezone {timezone!r};"
+                    ' fix: stamp "UTC" with window and days on the UTC clock'
+                    " (data/schema/row.v4.json $defs/when)"
                 )
-            try:
-                ZoneInfo(timezone)
-            except (ZoneInfoNotFoundError, ValueError) as exc:
-                raise ValidationError(
-                    f"row field 'overrides' entry 'when' has unknown zone {timezone!r};"
-                    " fix: an IANA zone name"
-                ) from exc
             if "days" not in when and "window" not in when:
                 raise ValidationError(
                     "row field 'overrides' entry 'when' carries 'timezone' with no"

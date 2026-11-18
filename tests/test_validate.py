@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -113,13 +114,14 @@ def test_when_with_only_timezone_rejected():
         check(row(overrides=[{"when": {"timezone": "UTC"}, "rates": {"input": 1.0}}]))
 
 
-def test_unknown_timezone_rejected():
-    with pytest.raises(ValidationError, match="unknown zone"):
+@pytest.mark.parametrize("zone", ["Asia/Shanghai", "Asia/Singapore", "Mars/Olympus", "utc"])
+def test_non_utc_timezone_rejected(zone):
+    with pytest.raises(ValidationError, match="timezone"):
         check(
             row(
                 overrides=[
                     {
-                        "when": {"days": ["monday"], "timezone": "Mars/Olympus"},
+                        "when": {"days": ["monday"], "timezone": zone},
                         "rates": {"input": 1.0},
                     }
                 ]
@@ -127,12 +129,12 @@ def test_unknown_timezone_rejected():
         )
 
 
-def test_valid_timezone_beside_days_accepted():
+def test_utc_timezone_beside_days_accepted():
     check(
         row(
             overrides=[
                 {
-                    "when": {"days": ["monday"], "timezone": "Asia/Shanghai"},
+                    "when": {"days": ["monday"], "timezone": "UTC"},
                     "rates": {"input": 1.0},
                 }
             ]
@@ -208,8 +210,8 @@ def test_mode_beside_a_schedule_accepted():
 
 
 def test_mode_with_timezone_alone_still_rejected():
-    # the timezone rule is unchanged: a zone names the schedule days/window
-    # describe, and a mode override carrying one describes nothing
+    # a zone names the schedule days/window describe, and a mode override
+    # carrying one describes nothing
     with pytest.raises(ValidationError, match="timezone"):
         check(
             row(overrides=[{"when": {"timezone": "UTC", "mode": "fast"}, "rates": {"input": 1.0}}])
@@ -405,3 +407,16 @@ def test_non_text_row_carries_one_modality(modality):
 def test_bad_modality_rejected(bad):
     with pytest.raises(ValidationError, match="row field 'modality'"):
         check(row(modality=bad))
+
+
+SCHEMA = json.loads((ROOT / "data" / "schema" / "row.v4.json").read_text(encoding="utf-8"))
+
+
+def test_schema_documents_utc_schedules():
+    # the schema is the published contract a consumer reads, so it names the
+    # clock the window numbers sit on and the one stamp a built row carries
+    when = SCHEMA["$defs"]["when"]["properties"]
+    assert "on the UTC clock" in when["window"]["description"]
+    timezone = when["timezone"]["description"]
+    assert '"UTC" on every row built from 2026-11-18' in timezone
+    assert "validate refuses any other value" in timezone

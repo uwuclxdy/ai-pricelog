@@ -147,12 +147,12 @@
           "minItems": 2,
           "maxItems": 2,
           "items": {"type": "integer", "minimum": 0, "maximum": 2400},
-          "description": "[start, end] HHMM clock numbers. validate enforces start < end and minutes under 60."
+          "description": "[start, end] HHMM clock numbers on the UTC clock. validate enforces start < end and minutes under 60."
         },
         "timezone": {
           "type": "string",
           "minLength": 1,
-          "description": "IANA zone, provenance on the schedule. validate enforces that it resolves."
+          "description": "\"UTC\" on every row built from 2026-11-18; older rows may name the source's zone, and the schedule they describe is UTC either way. validate refuses any other value."
         },
         "min_tokens": {
           "type": "integer",

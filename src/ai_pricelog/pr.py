@@ -538,10 +538,10 @@ def open_pull_requests(runner: PrRunner, cwd: Path) -> list[OpenPr]:
 
 
 class PendingScan(list[dict[str, object]]):
-    """The valid pending rows (the list) plus the keys their branches hold.
+    """The pending rows (the list) plus the keys their branches hold.
 
-    The union takes the list: a row the contract refuses never shapes this
-    run's branches. ``held_keys`` is the (source, model_id) keys of the exact
+    The union takes the list: an appended row the contract refuses never
+    shapes this run's branches. ``held_keys`` is the (source, model_id) keys of the exact
     lines each open branch shard would append over HEAD's shard text, so a
     hand-edited row on an open PR still holds its model while the PR is open.
     """
@@ -617,13 +617,15 @@ def fetch_pending_rows(
     checks without riding this run's branch. A branch whose pr was closed
     keeps its head ref out of open_prs and contributes no rows, so a rejected
     pr's rows drop out of the union and its model re-candidates on the next
-    run. Each row must pass validate_row: the pass is authorized to hand-edit
-    a branch row, so a shape the contract refuses drops out of the union
-    (logged; automerge rejects it before the store) instead of shaping this
-    run's branches. ``held_keys`` holds the (source, model_id) keys of the
-    exact lines each open branch shard would append over HEAD's shard text
-    (the merge's own partition), so a hand-edited row still holds its model
-    while the PR is open.
+    run. Each line a branch shard would append over the landed shard text
+    (the merge's own partition) must pass validate_row: the pass is
+    authorized to hand-edit a branch row, so a shape the contract refuses
+    drops out of the union (logged; automerge rejects it before the store)
+    instead of shaping this run's branches. A line the landed shard holds
+    passes through unvalidated, as automerge._validate_appended exempts it:
+    it already sits in the append-only store. ``held_keys`` holds the
+    (source, model_id) keys of the appended lines, refused ones included, so
+    a hand-edited row still holds its model while the PR is open.
 
     With at least one open pricelog PR (the seed included), any failure to
     read the branches — the fetch, the ref listing, an open PR's missing ref,
@@ -695,24 +697,22 @@ def fetch_pending_rows(
             branch_lines = store.shard_lines(text)
             appended = set(store.appended_lines(_landed_shard_lines(repo_root, path), branch_lines))
             for line, row in zip(branch_lines, branch_rows, strict=True):
-                if line not in appended:
-                    continue
-                source = row.get("source")
-                model_id = row.get("model_id")
-                if isinstance(source, str) and isinstance(model_id, str):
-                    held_keys.add((source, model_id))
-            for row in branch_rows:
-                try:
-                    validate.validate_row(row, keys)
-                except validate.ValidationError as exc:
-                    log.warning(
-                        "pending branch %s shard %s row failed the row contract;"
-                        " dropping it from the union: %s",
-                        ref,
-                        path,
-                        exc,
-                    )
-                    continue
+                if line in appended:
+                    source = row.get("source")
+                    model_id = row.get("model_id")
+                    if isinstance(source, str) and isinstance(model_id, str):
+                        held_keys.add((source, model_id))
+                    try:
+                        validate.validate_row(row, keys)
+                    except validate.ValidationError as exc:
+                        log.warning(
+                            "pending branch %s shard %s row failed the row contract;"
+                            " dropping it from the union: %s",
+                            ref,
+                            path,
+                            exc,
+                        )
+                        continue
                 rows.append(row)
     return PendingScan(rows, frozenset(held_keys))
 

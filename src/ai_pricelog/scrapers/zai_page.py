@@ -116,9 +116,9 @@ def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
             mode="chat",
             cache_read_cost_per_token=cache_read / 1e6 if cache_read is not None else None,
             window_rates=window_rates,
-            # the peak-hours rule derives from Singapore time; the entries
-            # themselves are UTC clock windows
-            timezone="Asia/Singapore" if window_rates else None,
+            # the notice quotes Singapore time; _peak_schedule subtracts the
+            # offset, so the entries are UTC clock windows
+            timezone="UTC" if window_rates else None,
         )
     return None
 

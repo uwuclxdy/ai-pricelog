@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
+from ai_pricelog import store, validate
 from ai_pricelog.config import ProviderCfg
 from ai_pricelog.detectors import zai_page as detector
 from ai_pricelog.scrapers import zai_page as scraper
@@ -12,6 +13,7 @@ from ai_pricelog.web import FetchError
 
 PAGE_URL = "https://docs.z.ai/guides/overview/pricing"
 FIXTURE = Path(__file__).parent / "fixtures" / "zai_page" / "pricing.html"
+SCHEMA_KEYS = validate.load_schema_keys(Path(__file__).resolve().parents[1])
 
 EXPECTED_IDS = [
     "glm-5.3-flash",
@@ -220,8 +222,29 @@ def test_scrape_glm53_attaches_quota_multiplier_entries(monkeypatch):
             "quota_multiplier": 3.0,
         },
     )
-    # the peak-hours rule derives from Singapore time
-    assert pricing.timezone == "Asia/Singapore"
+    # the notice quotes Singapore time; the scraper converts it to UTC clock
+    # windows, so the stamp is UTC
+    assert pricing.timezone == "UTC"
+
+
+def test_scrape_glm53_builds_utc_window_entries(monkeypatch):
+    # the converted [start, end] pair is a UTC clock pair, so the built entry
+    # stamps UTC and keeps the pair
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch)
+    pricing = scraper.scrape(notice_cfg(), "glm-5.3")
+    assert pricing is not None
+    row = store.build_row("zai", "glm-5.3", pricing, "2026-11-18", PAGE_URL, SCHEMA_KEYS.version)
+    assert row["overrides"] == [
+        {
+            "when": {
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                "window": [600, 1000],
+                "timezone": "UTC",
+            },
+            "quota_multiplier": 3.0,
+        }
+    ]
 
 
 def test_scrape_glm53_flash_attaches_whole_day_and_peak_entries(monkeypatch):

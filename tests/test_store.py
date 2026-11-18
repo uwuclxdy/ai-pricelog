@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 
 import pytest
 
@@ -29,8 +30,10 @@ from ai_pricelog.store import (
     union,
     write_index,
 )
+from ai_pricelog.validate import ValidationError, load_schema_keys, validate_row
 
 VERSION = 4
+ROOT = Path(__file__).resolve().parents[1]
 
 EUR_FX: dict[str, dict[str, float]] = {
     "EUR": {"2026-08-20": 1.05, "2026-08-26": 1.1, "2026-08-28": 1.1643}
@@ -617,16 +620,39 @@ def test_build_row_stamps_timezone_inside_scheduled_override_when():
             {"quota_multiplier": 0.4},
             {"days": ["monday"], "window": [600, 1000], "quota_multiplier": 1.2},
         ),
-        timezone="Asia/Singapore",
+        timezone="UTC",
     )
     row = build_row("a", "m", pricing, "t", "u", VERSION)
     assert row["overrides"] == [
         {"quota_multiplier": 0.4},
         {
-            "when": {"days": ["monday"], "window": [600, 1000], "timezone": "Asia/Singapore"},
+            "when": {"days": ["monday"], "window": [600, 1000], "timezone": "UTC"},
             "quota_multiplier": 1.2,
         },
     ]
+
+
+def test_legacy_schedule_zone_rows_still_load(tmp_path):
+    # rows written before schedules were stamped UTC name their source's zone;
+    # the history read path returns them as stored, and a row built later from
+    # one restamps the schedule (store.build_removal_row)
+    legacy = {
+        "schema": VERSION,
+        "source": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "observed_at": "2026-10-19",
+        "overrides": [
+            {
+                "when": {"days": ["monday"], "window": [100, 400], "timezone": "Asia/Shanghai"},
+                "rates": {"input": 1.0},
+            }
+        ],
+    }
+    directory = tmp_path / "history"
+    save_shard([legacy], directory, "deepseek")
+    assert load_shard(directory, "deepseek") == [legacy]
+    with pytest.raises(ValidationError, match="timezone"):
+        validate_row(legacy, load_schema_keys(ROOT))
 
 
 def test_build_row_stamps_the_page_the_scraper_read():
@@ -803,6 +829,36 @@ def test_build_removal_row_copies_the_final_price_snapshot():
         "limits": {"context": 4096},
         "provenance": {"fx_rate": 1.1643, "fx_rate_date": "2026-08-28"},
     }
+
+
+def test_build_removal_row_restamps_a_legacy_schedule_utc():
+    # a row stored before the UTC-only contract names its source's zone; the
+    # removal row restamps it (store._utc_snapshot_overrides) and leaves the
+    # stored row as written
+    last_row = {
+        "schema": 4,
+        "source": "zai",
+        "model_id": "glm-5.3",
+        "observed_at": "2026-10-19",
+        "rates": {"input": 1.0, "output": 2.0},
+        "overrides": [
+            {
+                "when": {"days": ["monday"], "window": [600, 1000], "timezone": "Asia/Singapore"},
+                "quota_multiplier": 1.2,
+            },
+            {"quota_multiplier": 0.4},
+        ],
+    }
+    removal = build_removal_row("zai", "glm-5.3", "2026-11-18", VERSION, last_row)
+    assert removal["overrides"] == [
+        {
+            "when": {"days": ["monday"], "window": [600, 1000], "timezone": "UTC"},
+            "quota_multiplier": 1.2,
+        },
+        {"quota_multiplier": 0.4},
+    ]
+    assert last_row["overrides"][0]["when"]["timezone"] == "Asia/Singapore"
+    validate_row(removal, load_schema_keys(ROOT))
 
 
 def test_build_removal_row_without_a_last_row_stays_bare():

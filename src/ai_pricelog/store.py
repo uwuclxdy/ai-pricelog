@@ -9,6 +9,7 @@ committed fx table and the provider's configured rate.
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import os
@@ -620,9 +621,10 @@ def build_removal_row(
     price snapshot so the closing record stays self-contained.
 
     `last_row` is the last priced row for the key (store.last); its comparable
-    fields ride the removal row. the fx pair is conversion provenance but
-    rides along when the snapshot quotes non-USD, so the row still validates.
-    a missing last row builds the bare removal row.
+    fields ride the removal row, its schedule overrides restamped UTC
+    (_utc_snapshot_overrides). the fx pair is conversion provenance but rides
+    along when the snapshot quotes non-USD, so the row still validates. a
+    missing last row builds the bare removal row.
     """
     row: dict[str, object] = {
         "schema": schema_version,
@@ -639,7 +641,7 @@ def build_removal_row(
     if "rates" in comparable:
         row["rates"] = comparable["rates"]
     if "overrides" in comparable:
-        row["overrides"] = comparable["overrides"]
+        row["overrides"] = _utc_snapshot_overrides(comparable["overrides"])
     if "fees" in comparable:
         row["fees"] = comparable["fees"]
     if "limits" in comparable:
@@ -652,6 +654,24 @@ def build_removal_row(
         if fx:
             row["provenance"] = fx
     return row
+
+
+def _utc_snapshot_overrides(overrides: object) -> object:
+    """The carried overrides, copied, with every zone stamp set to UTC.
+
+    A snapshot stored before the UTC-only contract may name its source's zone;
+    the window and days it holds are UTC values either way, so the removal row
+    stamps UTC instead of repeating a zone the producer refuses. The copy keeps
+    the last stored row unmodified.
+    """
+    carried = copy.deepcopy(overrides)
+    if not isinstance(carried, list):
+        return carried
+    for entry in carried:
+        when = entry.get("when") if isinstance(entry, dict) else None
+        if isinstance(when, dict) and "timezone" in when:
+            when["timezone"] = "UTC"
+    return carried
 
 
 def _atomic_write(payload: str, path: Path) -> None:

@@ -2584,6 +2584,42 @@ def test_absent_on_two_landed_runs_appends_removal_row(tmp_path, fake_modules, r
     assert_default_branch_clean(repo_root, tip="merge deepseek pr")
 
 
+def test_absent_on_two_landed_runs_restamps_a_legacy_schedule(tmp_path, fake_modules, repo_root):
+    # a last priced row stored before the UTC-only contract names its source's
+    # zone; the removal row still lands, its carried schedule stamped UTC
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-new"]
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    cfg = make_cfg("deepseek")
+    prior = deepseek_prior()
+    prior["overrides"] = [
+        {
+            "when": {"days": ["monday"], "window": [100, 400], "timezone": "Asia/Shanghai"},
+            "rates": {"input": 1.0},
+        }
+    ]
+    seed_store(repo_root, [prior])
+    runner = PipelineRunner()
+
+    pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
+    git(repo_root, "merge", "--no-ff", batch_branch("deepseek"), "-m", "merge deepseek pr")
+    runner.open_prs = []
+
+    second = pipeline.run(cfg, repo_root, runner, today="2026-08-27", now="000000")
+
+    assert [model_id for model_id, _url in second.providers["deepseek"].prs] == ["deepseek-chat"]
+    removal_branch = batch_branch("deepseek", today="2026-08-27")
+    removal = branch_rows(repo_root, removal_branch, "deepseek")[1]
+    assert removal["removed"] is True
+    assert removal["overrides"] == [
+        {
+            "when": {"days": ["monday"], "window": [100, 400], "timezone": "UTC"},
+            "rates": {"input": 1.0},
+        }
+    ]
+    assert_default_branch_clean(repo_root, tip="merge deepseek pr")
+
+
 def test_same_day_duplicate_removal_line_is_not_replanned(tmp_path, fake_modules, repo_root):
     # a delist -> revival -> re-delist whose removal snapshot repeats an
     # earlier same-day removal builds a byte-identical line; the merge would
