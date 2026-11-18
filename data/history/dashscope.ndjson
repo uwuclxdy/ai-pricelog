@@ -5,6 +5,7 @@
 {"schema":4,"source":"dashscope","model_id":"deepseek-v4-pro","observed_at":"2026-08-29","rates":{"input":2.4,"output":4.8},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"deepseek-v4-pro","observed_at":"2026-08-31","removed":true,"rates":{"input":2.4,"output":4.8}}
 {"schema":4,"source":"dashscope","model_id":"deepseek-v4.1-flash-1017","observed_at":"2026-10-28","rates":{"input":0.3,"output":1.2},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
+{"schema":4,"source":"dashscope","model_id":"deepseek-v4.1-flash-1017","observed_at":"2026-11-18","rates":{"input":0.15,"output":0.6},"overrides":[{"rates":{"input":0.3,"output":1.2},"when":{"window":[0,1400],"timezone":"UTC"}}],"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"glm-5.1","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}
 {"schema":4,"source":"dashscope","model_id":"glm-5.1","observed_at":"2026-08-31","removed":true,"rates":{"input":1.4,"output":4.4}}
 {"schema":4,"source":"dashscope","model_id":"glm-5.2","observed_at":"2026-08-29","rates":{"input":1.4,"output":4.4},"provenance":{"url":"https://www.alibabacloud.com/help/en/model-studio/model-pricing"}}

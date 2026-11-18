@@ -13,7 +13,10 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 18 November Interactive stdin for DigitalOcean Harness Runtime sandbox commands is enabled per team.
+November 2026 18 November Action Gateway now lets you pin a tool to a released version and keep calling it after newer versions are released.
+List a tool’s versions with a changelog that marks breaking changes, and see the latest version in _meta.latest_version when a call uses an older one.
+For more information, see Tool Versions .
+Interactive stdin for DigitalOcean Harness Runtime sandbox commands is enabled per team.
 Start a command with keep_stdin_open on an event stream, then write base64 chunks to /v2/harness-runtime/sessions/{session_id}/sandbox/exec/{exec_id}/stdin while stdout and stderr continue to stream.
 Use this to drive a REPL, answer a prompt, or feed a long-running process.
 For more information, see How to Send Interactive Stdin to a Sandbox Command .
