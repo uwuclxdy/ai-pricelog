@@ -2640,6 +2640,42 @@
       },
       "vendor": "openai"
     },
+    "digitalocean/gpt-6.2-astra": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6.2-astra"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6.2-astra-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6.2-astra-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6.2-sol": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6.2-sol"
+        ]
+      },
+      "vendor": "openai"
+    },
+    "digitalocean/gpt-6.2-sol-fast-mode": {
+      "curated": false,
+      "sources": {
+        "digitalocean": [
+          "gpt-6.2-sol-fast-mode"
+        ]
+      },
+      "vendor": "openai"
+    },
     "digitalocean/jev": {
       "curated": false,
       "sources": {
