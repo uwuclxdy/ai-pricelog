@@ -3,6 +3,20 @@
 Pricing: \$1.425 input / \$4.275 output / \$0.07125 cached input (per 1M tokens).
 ## New models available for fine-tuning You can now fine-tune the following models: * `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B` * `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B` Both models support [function-calling](https://docs.together.ai/docs/fine-tuning/function-calling.md) and [reasoning](https://docs.together.ai/docs/fine-tuning/reasoning.md) fine-tuning.
 See [Supported models](https://docs.together.ai/docs/fine-tuning/supported-models.md) for the full list.
+## Together Python SDK and CLI 3.2.1 **What's new:** * **Forced cleanup of model resources:** A `ModelResourcesClient` handle that created its resource now [stops it](https://docs.together.ai/docs/post-training/model-resources.md#create-a-resource) with `force=True` when its context manager exits, which also stops every session still attached.
+The cleanup after a failed `create` forces the stop too, and raises the stop's error if the stop fails.
+* **`stop` returns sooner:** `ModelResourcesClient.stop` now returns as soon as the API accepts the [stop](https://docs.together.ai/docs/post-training/model-resources.md#stop-a-resource), which is when billing ends.
+It no longer waits for the resource to finish stopping.
+* **Evaluations removed from the CLI:** Following the Evaluations shutdown, `tg evals` commands fail with `Service discontinued`, and [`tg files upload`](https://docs.together.ai/reference/cli/files#upload) no longer accepts `--purpose eval`.
+The `client.evals` methods are marked as deprecated.
+**November 16, 2026** ## Together Python SDK and CLI 3.2.0 **What's new:** * **Rollout capacity budgets:** [`tg endpoints rollout`](https://docs.together.ai/reference/cli/endpoints#rollout) takes two flags that set a rollout's [capacity budgets](https://docs.together.ai/docs/dedicated-endpoints/rollouts.md#set-capacity-budgets).
+`--max-surge` caps how many replicas each canary step adds to the target.
+`--max-unavailable` lets a rollout start from a `DEGRADED` source, or shut down source replicas to make room for the target.
+* **Config revision lookup:** [`tg models configs get`](https://docs.together.ai/reference/cli/models#configs-get) returns a config revision by its ID (`cr_...`).
+* **New shared volumes in scripted cluster creates:** [`tg clusters create`](https://docs.together.ai/reference/cli/clusters#create-a-cluster) takes `--shared-volume-name` and `--shared-volume-size-tib`, which create a shared volume with the cluster.
+Before this release, a `--non-interactive` create could only attach an existing volume.
+* **Attached model resources keep running:** An [attached `ModelResourcesClient` handle](https://docs.together.ai/docs/post-training/model-resources#attach-to-an-existing-resource) used as a context manager now detaches on exit and leaves the resource running.
+Before this release, it stopped the resource.
 **November 13, 2026** ## Post-training: Nemotron 3.5 Super VL `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): low-rank adapter (LoRA) training on `B200-SXM`, 163,840-token training and generator contexts, rank up to 32, and up to three adapter sessions per resource.
 > [!NOTE] > > The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) has no codec for it yet, so this model is currently SDK-only.
 Deployment support is coming soon.
