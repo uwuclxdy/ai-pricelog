@@ -323,6 +323,120 @@ def test_scrape_old_list_price_promo_records_the_discounted_rate(dashscope_cfg, 
     assert rates(dashscope_cfg, "qwen3.7-plus") == (0.32, 1.28)
 
 
+# every International row's input and output cell of the fixtures, as the
+# parser at 705c7cd1 priced them (measured 2026-11-18): a grammar change keeps
+# every value here
+FROZEN_CELLS = {
+    "model-pricing-intl.html": [
+        ("qwen4-max", 1.5, 4.5),
+        ("qwen3.8-max", 2.0, 6.0),
+        ("qwen3.8-max-0902", 2.0, 6.0),
+        ("qwen3.7-max", 2.5, 7.5),
+        ("qwen3.7-max-2026-06-08", 2.5, 7.5),
+        ("qwen3.7-max-2026-05-20", 2.5, 7.5),
+        ("qwen3.7-max-preview", 2.5, 7.5),
+        ("qwen3.7-max-2026-05-17", 2.5, 7.5),
+        ("qwen-max", 1.6, 6.4),
+        ("qwen3.7-plus", 0.32, 1.28),
+        ("qwen3.7-plus-2026-05-26", 0.4, 1.6),
+        ("qwen3.6-plus", 0.5, 3.0),
+        ("qwen3.6-plus-2026-04-02", 0.5, 3.0),
+        ("qwen3.5-plus", 0.4, 2.4),
+        ("qwen3.5-plus-2026-04-20", 0.4, 2.4),
+        ("qwen3.5-plus-2026-02-15", 0.4, 2.4),
+        ("qwen-plus", 0.4, 1.2),
+        ("qwen-plus-latest", 0.4, 1.2),
+        ("qwen-plus-2025-12-01", 0.4, 1.2),
+        ("qwen-plus-2025-07-14", 0.4, 1.2),
+        ("qwen-plus-2025-04-28", 0.4, 1.2),
+        ("qwen-plus-2025-01-25", 0.4, 1.2),
+        ("qwen3.8-flash", 0.15, 0.47),
+        ("qwen3.7-flash", 0.03, 0.13),
+        ("qwen3.7-flash-2026-07-15", 0.03, 0.13),
+        ("qwen3.6-flash", 0.25, 1.5),
+        ("qwen3.6-flash-2026-04-16", 0.25, 1.5),
+        ("qwen3.5-flash", 0.1, 0.4),
+        ("qwen3.5-flash-2026-02-23", 0.1, 0.4),
+        ("qwen-flash", 0.05, 0.4),
+        ("qwen-flash-2025-07-28", 0.05, 0.4),
+        ("qwen3-coder-flash", 0.3, 1.5),
+        ("qwen3-coder-flash-2025-07-28", 0.3, 1.5),
+        ("qwen-mt-plus", 2.46, 7.37),
+        ("qwen-mt-flash", 0.16, 0.49),
+        ("qwen-mt-lite", 0.12, 0.36),
+        ("qwen3.6-35b-a3b", 0.375, 2.25),
+        ("qwen3.6-27b", 0.6, 3.6),
+        ("qwen3.5-397b-a17b", 0.6, 3.6),
+        ("qwen3.5-122b-a10b", 0.4, 3.2),
+        ("qwen3.5-27b", 0.3, 2.4),
+        ("qwen3.5-35b-a3b", 0.25, 2.0),
+        ("deepseek-v4.1-flash-1017", 0.3, 1.2),
+        ("deepseek-v4.1-flash", 0.3, 1.2),
+        ("deepseek-v4-pro", 2.4, 4.8),
+        ("deepseek-v4-pro-0813", 1.32, 3.96),
+        ("deepseek-v4-flash-0731", 0.44, 1.32),
+        ("kimi-k3", 3.0, 15.0),
+        ("kimi-k3.1-pro", 2.0, 10.0),
+        ("kimi-k3", 3.0, 15.0),
+        ("kimi-k2.7-code", 0.95, 4.0),
+        ("glm-5.3", 1.4, 4.4),
+        ("glm-5.2", 1.4, 4.4),
+        ("glm-5.2-fast-preview", 2.8, 8.8),
+        ("glm-5.3-prime", 2.8, 8.8),
+        ("glm-5.1", 1.4, 4.4),
+        ("qwen-image-3.0-pro", 0.003, 0.04),
+        ("qwen-image-3.0", 0.003, 0.03),
+        ("qwen-plus-character", 0.5, 1.4),
+        ("qwen-flash-character", 0.05, 0.4),
+        ("qwen-plus-character-ja", 0.5, 1.4),
+    ],
+    OLD_EN_FIXTURE: [
+        ("qwen3.7-plus", 0.32, 1.28),
+        ("qwen3.7-plus-2026-05-26", 0.4, 1.6),
+        ("qwen3.6-plus", 0.5, 3.0),
+        ("qwen3.6-plus-2026-04-02", 0.5, 3.0),
+        ("qwen3.5-plus", 0.4, 2.4),
+        ("qwen3.5-plus-2026-04-20", 0.4, 2.4),
+        ("qwen3.5-plus-2026-02-15", 0.4, 2.4),
+        ("qwen-plus", 0.4, 1.2),
+        ("qwen-plus-latest", 0.4, 1.2),
+        ("qwen-plus-2025-12-01", 0.4, 1.2),
+        ("qwen-plus-2025-09-11", 0.4, 1.2),
+        ("qwen-plus-2025-07-28", 0.4, 1.2),
+        ("qwen-plus-2025-07-14", 0.4, 1.2),
+        ("qwen-plus-2025-04-28", 0.4, 1.2),
+        ("qwen-plus-2025-01-25", 0.4, 1.2),
+        ("glm-5.2", 1.4, 4.4),
+        ("glm-5.2-fast-preview", 2.8, 8.8),
+        ("glm-5.1", 1.4, 4.4),
+    ],
+}
+
+
+def test_every_fixture_price_cell_keeps_its_rate():
+    walked = {
+        name: [
+            (
+                row.model_id,
+                dashscope_scrape._rate_in_force(row.input_cell, row.model_id, EN_URL),
+                dashscope_scrape._rate_in_force(row.output_cell, row.model_id, EN_URL),
+            )
+            for row in dashscope_detect.international_rows(
+                BeautifulSoup((FIXTURES / name).read_text(), "html.parser"), EN_URL
+            )
+        ]
+        for name in FROZEN_CELLS
+    }
+    assert walked == FROZEN_CELLS
+    # the CN page carries no English pricing table, so it adds no price cell
+    with pytest.raises(FetchError, match="no pricing tables"):
+        list(
+            dashscope_detect.international_rows(
+                BeautifulSoup((FIXTURES / "textgen-cn.html").read_text(), "html.parser"), CN_URL
+            )
+        )
+
+
 @pytest.mark.parametrize(
     ("cell", "expected"),
     [
@@ -342,12 +456,6 @@ def test_scrape_old_list_price_promo_records_the_discounted_rate(dashscope_cfg, 
         # both currency forms in one plain cell: the first amount still wins
         ("$0.4 0.3 USD/million tokens", 0.4),
         ("$0.15 0.15 USD/million tokens", 0.15),
-        # a complete amount right before the percent is no split token
-        ("Original$0.4 20% off for a limited time", 0.32),
-        ("Original $1,234.5 20% off", 987.6),
-        # the list label also attaches to a suffix-form amount
-        ("Original 0.4 USD/million tokens (20% off for a limited time)", 0.32),
-        ("List price 0.4 USD/million tokens (20% off for a limited time)", 0.32),
     ],
 )
 def test_scrape_rate_in_force_per_cell_form(dashscope_cfg, monkeypatch, cell, expected):
@@ -397,6 +505,18 @@ def test_scrape_rate_in_force_per_cell_form(dashscope_cfg, monkeypatch, cell, ex
         # a split percent behind a dollar-led fragment
         "Original$0.4 ($1 000% off for a limited time)",
         "Original$0.4 $12 000% off",
+        # a percent token that does not start behind the amount: a `$` amount,
+        # a separator or a space right before it
+        "Original$0.4 20% off for a limited time",
+        "Original$0.4 20% off",
+        "Original $1,234.5 20% off",
+        # a run of whitespace before the percent counts as one space
+        "Original$0.4  20% off for a limited time",
+        "Original$0.4 (1  000% off for a limited time)",
+        "Original$0.4 (1 ,000% off for a limited time)",
+        "Original$0.4 ($1.5 000% off for a limited time)",
+        # a marker without `off` is no discount token
+        "$0.4 (50% discount)",
         # a percent token glued to the end of the amount reads the amount as
         # the percent
         "Original$0.420% off for a limited time",
@@ -406,6 +526,11 @@ def test_scrape_rate_in_force_per_cell_form(dashscope_cfg, monkeypatch, cell, ex
         "Original$0.3 Peak 0.15 USD/million tokens (50% off for a limited time)",
         "Original$2 (20% off for a limited time) Cache hit input: 2 USD/million tokens",
         "Original$0.4 0.4 USD/million tokens (20% off for a limited time)",
+        # a list label whose amount sits in the suffix form places no list
+        # amount, so the charged rate is unknown
+        "Original 0.4 USD (20% off)",
+        "Original 0.4 USD/million tokens (20% off for a limited time)",
+        "List price 0.4 USD/million tokens (20% off for a limited time)",
         # the page's `cached` spelling names another priced axis too
         "Original$0.4 $0.3 cached (20% off for a limited time)",
         "Original$0.4 $0.3 Cached (20% off for a limited time)",

@@ -17,9 +17,11 @@ on another priced axis (cache, peak), names no single charged rate and
 raises; when it prints only the labelled list amount (`Original$0.4 (20% off
 for a limited time)`, `List price $0.4 Limited-time 20% off`), the rate is
 list x (100 - NN) / 100. the percent runs to the whole token, so `1000%` and
-`1,000%` are past the cap; a percent split across elements (`1 000%`) is never
-read as its trailing fragment, and a percent glued to its amount (`$0.420%`)
-is never read as the percent. a list-labelled amount with no discount marker
+`1,000%` are past the cap; every `%` in a cell that carries an amount must
+start an `NN% off` token, so one split across elements (`1 000%`), one glued
+to its amount (`$0.420%`) and a notation the parser does not read
+(`50% discount`) are page-shape breaks. a list-labelled amount with no
+discount marker
 names no charged rate; a promo cell naming two different discounts
 (`Original$0.276 (limited-time 60% off for off-peak usage) 20% off during
 peak hours`), two different list amounts, a list label that places no
@@ -38,40 +40,16 @@ from ai_pricelog.detectors.dashscope_page import cell_amounts, international_row
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.web import FetchError, fetch_soup, unreadable_rate_error
 
-_DISCOUNT_RE = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*%\s*off", re.IGNORECASE)
+# a percent token starts behind neither an amount's digit, separator or `$`,
+# nor a number one space back: every `%` in a priced cell starts such a token
+_DISCOUNT_RE = re.compile(r"(?<![\d.,$])(?<![\d.,]\s)(\d[\d,]*(?:\.\d+)?)\s*%\s*off", re.IGNORECASE)
 _LIST_LABEL_RE = re.compile(r"Original|List price", re.IGNORECASE)
 _LIST_AMOUNT_RE = re.compile(
     r"(?:Original|List price)\s*\$([0-9][0-9,]*(?:\.[0-9]+)?)", re.IGNORECASE
 )
-_LIST_SUFFIX_RE = re.compile(
-    r"(?:Original|List price)\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*USD", re.IGNORECASE
-)
 # a price cell naming another priced axis beside the marker leaves which
 # amount the discount applies to unknown
 _SECOND_AXIS_RE = re.compile(r"\b(?:Cached?|Peak|Off-peak)\b", re.IGNORECASE)
-# the cell text joins element boundaries with a space, so a percent token
-# split across elements sits right behind a whitespace-separated number
-_SPLIT_DIGITS_RE = re.compile(r"(?<![\d,.])[\d,.]+\s+$")
-# a `$`-led decimal amount directly before the percent is the complete list
-# amount, not the leading half of a split number
-_CURRENCY_AMOUNT_RE = re.compile(r"\$[\d,]*\.\d+\s+$")
-
-
-def _split_percent(cell: str) -> bool:
-    """whether an `NN% off` token continues a whitespace-separated number."""
-    for match in _DISCOUNT_RE.finditer(cell):
-        prefix = cell[: match.start(1)]
-        if _SPLIT_DIGITS_RE.search(prefix) and not _CURRENCY_AMOUNT_RE.search(prefix):
-            return True
-    return False
-
-
-def _glued_percent(cell: str) -> bool:
-    """whether an `NN% off` token starts inside an amount (`$0.420% off`)."""
-    return any(
-        match.start(1) > 0 and cell[match.start(1) - 1] in "$.0123456789"
-        for match in _DISCOUNT_RE.finditer(cell)
-    )
 
 
 def _rate_in_force(cell: str, model_id: str, url: str) -> float | None:
@@ -82,20 +60,21 @@ def _rate_in_force(cell: str, model_id: str, url: str) -> float | None:
     if not amounts:
         return None
     values = [Decimal(amount.replace(",", "")) for amount in amounts]
-    list_values = [
-        Decimal(text.replace(",", ""))
-        for text in _LIST_AMOUNT_RE.findall(cell) + _LIST_SUFFIX_RE.findall(cell)
-    ]
+    list_values = [Decimal(text.replace(",", "")) for text in _LIST_AMOUNT_RE.findall(cell)]
     labelled = _LIST_LABEL_RE.search(cell) is not None
-    discounts = set(_DISCOUNT_RE.findall(cell))
+    # a cell may print runs of whitespace; the marker's look-behind measures
+    # one space, so fold them before counting the tokens
+    probe = " ".join(cell.split())
+    markers = _DISCOUNT_RE.findall(probe)
+    if probe.count("%") != len(markers):
+        raise unreadable_rate_error(cell, model_id, url)
+    discounts = set(markers)
     if not discounts:
         # the label says the amount is not what the page charges, and no
         # marker gives the discount
         if labelled:
             raise unreadable_rate_error(cell, model_id, url)
         return float(values[0])
-    if _split_percent(cell) or _glued_percent(cell):
-        raise unreadable_rate_error(cell, model_id, url)
     if len(discounts) > 1:
         raise FetchError(f"promo cell {cell!r} names more than one rate for {model_id} on {url}")
     if len(values) == 2:
