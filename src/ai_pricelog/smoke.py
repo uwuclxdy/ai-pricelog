@@ -2,11 +2,11 @@
 
 kimi's pricing page is read from two surfaces: the static .md twin when its
 tables carry rates (models.md for detection, llms.txt resolving the merged
-pricing chat page), and the rendered page's flight payload otherwise. the
-fixture tests pin saved
-copies and cannot catch the upstream pages changing shape or disappearing,
-so the cron workflow runs this probe against the live endpoints. exit 0 =
-every endpoint still serves what the pipeline expects.
+pricing chat page), and the rendered page's flight payload or manifest
+otherwise. the fixture tests pin saved copies and cannot catch the upstream
+pages changing shape or disappearing, so the cron workflow runs this probe
+against the live endpoints. exit 0 = every endpoint still serves what the
+pipeline expects.
 
 checks are small functions over fetched text so the offline tests cover them
 with a monkeypatched fetch_text; live runs flow through the moonshot

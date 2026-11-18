@@ -26,10 +26,17 @@ nearest row group is a tfoot); a table with no data row carrying printable
 text is no pricing table, so the empty <thead><tr /></thead><tbody /> shell
 raises instead of reading every model absent. since 2026-10-23 the
 markdown export renders both series tables as that empty shell, while the
-rendered page (the resolved url without its .md suffix) still carries them
-as _jsx(DocTable,{...}) calls in its Next.js flight payload: when the
-export yields no table at all, the scraper decodes the page's
-self.__next_f.push([1,"..."]) chunks, concatenates them and reads every
+rendered page (the resolved url without its .md suffix) carries them as
+_jsx(DocTable,{...}) calls: when the export carries no priced table, the
+scraper reads them out of the page's Next.js flight payload (each
+self.__next_f.push([1,"..."]) chunk's literal decoded and the chunks
+concatenated) or, when the page ships no flight chunk (failing since
+2026-11-05, measured 2026-11-18), out of its Mintlify manifest's compiled
+MDX source (the JSON under a
+<template data-mint="manifest"> tag, key page.mdx.mdxSource.compiledSource);
+a manifest template that does not decode, more than one such template, or
+one without a string compiled source raises rather than guess. both streams
+feed one reader, which scans every
 _jsx(DocTable,{ call, balanced-brace to its closing }. the call head, never
 the bare name, is matched, because the DocTable module source in the same
 stream spells the name with empty columns/rows defaults and would otherwise
@@ -38,15 +45,18 @@ rows is a prop-less shell and contributes no table; a call whose props do
 not parse raises. the rendered titles (Model, Input, Output, Cached Input,
 5m writes, 1h writes) fold onto the markdown vocabulary before the shared
 read, and a cell or title wrapped in _jsx/_jsxs carries its text in a
-backtick children string. a non-pricing table the export does carry keeps
-the no Model pricing table raise; the fallback fires only when the export
-yields no table at all. a pricing candidate carries a
+backtick children string. the fallback fires when the export carries no
+table with pricing columns. a non-pricing table the export does carry falls
+back the same way; when the rendered surfaces price nothing either, an
+export that carried such a table keeps the no Model pricing table raise. a
+pricing candidate carries a
 Model column plus an input price column (Input Price (Cache Miss), or the
 K3 series table's plain "Input Price") and an Output Price column; an
 incidental Model-headed table without them names no rate and is skipped,
-and a page whose tables are all incidental raises `no Model pricing
-table`. the Model column is matched exactly against the model id
-and the model is searched across every candidate table; Input Price (Cache
+and an export whose tables are all incidental raises `no Model pricing
+table` when the rendered page prices nothing too. the Model column is
+matched exactly against the model id and the model is searched across
+every candidate table; Input Price (Cache
 Miss) -> input_cost, Input Price (Cache Hit) or Cached Input Price (the K3
 spelling) -> cache_read_cost_per_token when the column exists, Output Price
 -> output_cost, Cache Write Price (TTL 5min) -> cache_write_cost_per_token,
@@ -54,15 +64,15 @@ Cache Write Price (TTL 1h) -> cache_write_1h_cost_per_token, USD per 1M ->
 /1e6, Context Window digits -> max_tokens_in.
 
 the Pricing url names the page the rate was read from (the resolved chat
-page, or the rendered page when the rate came from its flight payload;
-never the index); build_row stamps it as the row's url.
+page, or the rendered page when the rate came from its flight payload or
+manifest; never the index); build_row stamps it as the row's url.
 
 None = no row for the model. FetchError = the fetch failed, the index
 resolves no (or an ambiguous) chat page, the page's DocTable props, html
-tables or flight payload do not parse, no pricing table (or no Model pricing
-table) is on the page, a price cell carries an unreadable amount, or a
-context cell carries an oversized digit run. a page whose export and
-rendered payload both carry no table raises naming both urls.
+tables, flight payload or manifest do not parse, no pricing table (or no
+Model pricing table) is on the page, a price cell carries an unreadable
+amount, or a context cell carries an oversized digit run. a page whose
+export and rendered page both carry no table raises naming both urls.
 """
 
 from __future__ import annotations
@@ -96,10 +106,11 @@ _BARE_KEY_PATTERN = re.compile(r'(?<![A-Za-z0-9_"])([A-Za-z_][A-Za-z0-9_]*)(\s*)
 _CONTEXT_PATTERN = re.compile(r"\d[\d,]*")
 _FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}(?!.*`)|~{3,})")
 _FLIGHT_PUSH_RE = re.compile(r'<script>self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)</script>')
+_MANIFEST_RE = re.compile(r'<template data-mint="manifest">(.*?)</template>', re.S)
 _IDENTIFIER_RE = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*")
 _NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
 _JS_SPACE = " \t\r\n"
-_FLIGHT_TITLES = {
+_RENDERED_TITLES = {
     "Input": "Input Price",
     "Output": "Output Price",
     "Cached Input": "Cached Input Price",
@@ -171,24 +182,30 @@ def _page_text(url: str) -> str:
 def pricing_tables(cfg: ProviderCfg) -> tuple[list[tuple[list[str], list[list[str]]]], str]:
     """the model-inference page's pricing tables and the url they came from.
 
-    the markdown export's tables when it carries a priced one, else the
-    rendered page's flight payload; a page whose tables are all incidental
-    raises the no-Model-pricing-table break, and a page carrying no table on
-    either surface raises naming both urls."""
+    the markdown export's tables when it carries one with pricing columns,
+    else the rendered page's flight payload or, when that yields no priced
+    table, its manifest's compiled MDX source. when nothing prices, an
+    export that carried an incidental table keeps the no-Model-pricing-table
+    break, and a page carrying no pricing table anywhere raises the
+    no-pricing-table break naming both urls."""
     page_url = _load_index(cfg.scraper_url)
     docs = _doc_tables(_strip_code_fences(_page_text(page_url)))
     if any(_pricing_columns(titles) is not None for titles, _ in docs):
         return docs, page_url
     rendered_url = page_url.removesuffix(".md")
-    payload_docs = _flight_docs(
-        _flight_stream(_page_text(rendered_url), rendered_url), rendered_url
-    )
-    if payload_docs:
-        return payload_docs, rendered_url
+    rendered_page = _page_text(rendered_url)
+    rendered_docs = _jsx_docs(_flight_stream(rendered_page, rendered_url), rendered_url)
+    if not rendered_docs:
+        source = _manifest_source(rendered_page, rendered_url)
+        if source is not None:
+            rendered_docs = _jsx_docs(source, rendered_url)
+    if rendered_docs:
+        return rendered_docs, rendered_url
     if docs:
         raise FetchError(f"no Model pricing table on {page_url} or {rendered_url}")
     raise FetchError(
-        f"no pricing table (DocTable, html or flight payload) on {page_url} or {rendered_url}"
+        f"no pricing table (DocTable, html, flight payload or manifest) on"
+        f" {page_url} or {rendered_url}"
     )
 
 
@@ -273,7 +290,7 @@ def _carries_data(row: list[str]) -> bool:
 
 
 class _JsxElement(NamedTuple):
-    """a component call in the rendered page's flight payload."""
+    """a component call in a rendered page's JSX stream."""
 
     name: str
     props: dict[str, object]
@@ -294,6 +311,45 @@ def _flight_stream(page: str, page_url: str) -> str:
                 f"flight payload on {page_url} does not decode: {match.group(1)[:80]!r}: {exc}"
             ) from exc
     return "".join(chunks)
+
+
+def _manifest_source(page: str, page_url: str) -> str | None:
+    """the rendered page's compiled MDX source, where the DocTable calls ride
+    since the 2026-11-05 restructure: the JSON under the page's one
+    <template data-mint="manifest"> tag, key page.mdx.mdxSource.compiledSource.
+    None when the page carries no such template (the pre-2026-11 shape).
+
+    the manifest is the page's own data, so a template that does not decode,
+    more than one template, or a manifest without a string compiled source
+    raises instead of reading as a page without tables."""
+    templates = _MANIFEST_RE.findall(page)
+    if not templates:
+        return None
+    if len(templates) > 1:
+        raise FetchError(f"expected one manifest template on {page_url}, found {len(templates)}")
+    try:
+        manifest = json.loads(templates[0])
+    except json.JSONDecodeError as exc:
+        raise FetchError(
+            f"manifest template on {page_url} does not decode: {templates[0][:80]!r}: {exc}"
+        ) from exc
+    node: object = manifest
+    path = ""
+    for key in ("page", "mdx", "mdxSource", "compiledSource"):
+        if not isinstance(node, dict):
+            raise FetchError(
+                f"manifest on {page_url} carries no compiled MDX source:"
+                f" {path or 'the manifest'} is not an object"
+            )
+        if key not in node:
+            raise FetchError(f"manifest on {page_url} carries no compiled MDX source: no {key!r}")
+        node = node[key]
+        path = f"{path}.{key}" if path else key
+    if not isinstance(node, str):
+        raise FetchError(
+            f"manifest on {page_url} carries no compiled MDX source: {str(node)[:120]!r}"
+        )
+    return node
 
 
 def _doc_table_calls(stream: str) -> list[int]:
@@ -322,9 +378,10 @@ def _doc_table_calls(stream: str) -> list[int]:
     return positions
 
 
-def _flight_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[str]]]]:
-    """every priced DocTable call in the flight payload as (column titles,
-    rows) pairs; [] when the payload carries no priced one.
+def _jsx_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[str]]]]:
+    """every priced DocTable call in a rendered page's JSX stream (its flight
+    payload, or its manifest's compiled MDX source) as (column titles, rows)
+    pairs; [] when the stream carries no priced one.
 
     the scan keys on the `_jsx(DocTable,{` call head, never the bare name:
     the component's module source in the same stream spells the name with
@@ -348,10 +405,10 @@ def _flight_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[
                 continue
             if not isinstance(columns, list) or not isinstance(rows, list):
                 raise ValueError("missing columns or rows props")
-            titles = _flight_titles(columns)
+            titles = _jsx_titles(columns)
             if _pricing_columns(titles) is None:
                 continue
-            data = _flight_rows(rows)
+            data = _jsx_rows(rows)
             if not any(_carries_data(row) for row in data):
                 continue
             docs.append((titles, data))
@@ -362,28 +419,28 @@ def _flight_docs(stream: str, page_url: str) -> list[tuple[list[str], list[list[
     return docs
 
 
-def _flight_titles(columns: list[object]) -> list[str]:
+def _jsx_titles(columns: list[object]) -> list[str]:
     """the rendered column titles folded onto the markdown table's
     vocabulary, so the shared pricing read sees one spelling per column."""
     titles: list[str] = []
     for column in columns:
         if not isinstance(column, dict):
             raise ValueError("a DocTable column is not an object")
-        title = _flight_text(column.get("title"))
-        titles.append(_FLIGHT_TITLES.get(title, title))
+        title = _jsx_text(column.get("title"))
+        titles.append(_RENDERED_TITLES.get(title, title))
     return titles
 
 
-def _flight_rows(rows: list[object]) -> list[list[str]]:
+def _jsx_rows(rows: list[object]) -> list[list[str]]:
     converted: list[list[str]] = []
     for row in rows:
         if not isinstance(row, list):
             raise ValueError("a DocTable row is not an array")
-        converted.append([_flight_text(cell) for cell in row])
+        converted.append([_jsx_text(cell) for cell in row])
     return converted
 
 
-def _flight_text(value: object) -> str:
+def _jsx_text(value: object) -> str:
     """a rendered cell's or column title's text: a plain string, or the
     children string of the _jsx/_jsxs call the page wraps it in."""
     if isinstance(value, str):

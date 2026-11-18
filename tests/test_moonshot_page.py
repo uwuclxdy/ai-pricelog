@@ -21,6 +21,8 @@ PAGES = {
     "models": (MODELS_URL, "models.md"),
     "llms": (INDEX_URL, "llms.txt"),
     "chat": (CHAT_URL, "chat.md"),
+    "chat-2026-11-18": (CHAT_URL, "chat-2026-11-18.md"),
+    "rendered-2026-11-18": (FLIGHT_URL, "chat-rendered-2026-11-18.html"),
 }
 
 EXPECTED_IDS = [
@@ -739,3 +741,181 @@ def test_a_tfoot_summary_row_is_no_data(monkeypatch):
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(0.30 / 1e6)
+
+
+# --- the 2026-11-18 rendered page: the Mintlify manifest template ----------
+
+# every kimi row of the live page's two series tables, page order: (input,
+# output, cached input, 5m writes, 1h writes) USD per MTok as the page prints
+# them; the K2 series carries no cache-write columns
+LIVE_ROWS = {
+    "kimi-k3.1-pro": (2.00, 10.00, 0.20, 2.00, 4.00),
+    "kimi-k3.1-pro-highspeed": (4.00, 20.00, 0.20, 4.00, 8.00),
+    "kimi-k3": (3.00, 15.00, 0.30, 3.00, 6.00),
+    "kimi-k2.7-code": (0.95, 4.00, 0.19, None, None),
+    "kimi-k2.7-code-highspeed": (1.90, 8.00, 0.38, None, None),
+    "kimi-k2.6": (0.95, 4.00, 0.16, None, None),
+}
+
+
+def _manifest(source: str) -> dict[str, object]:
+    return {"page": {"mdx": {"mdxSource": {"compiledSource": source}}}}
+
+
+def _manifest_template(manifest: object) -> str:
+    return f'<template data-mint="manifest">{json.dumps(manifest)}</template>'
+
+
+def _manifest_page(manifest: object) -> str:
+    """a rendered page carrying one Mintlify manifest template, the shape
+    https://platform.kimi.ai/docs/pricing/chat served on 2026-11-18."""
+    return f"<!doctype html><html><body>{_manifest_template(manifest)}</body></html>"
+
+
+def _priced_source(input_price: float) -> str:
+    """a compiled MDX source holding one priced DocTable call for kimi-k3."""
+    return (
+        f"_jsx(DocTable,{{columns:[{{title:`Model`}},{{title:`Input`}},{{title:`Output`}}],"
+        f"rows:[[`kimi-k3`,`${input_price:.2f} / MTok`,`$15.00 / MTok`]]}})"
+    )
+
+
+def _serve_rendered(monkeypatch: pytest.MonkeyPatch, export_text: str, rendered_text: str) -> None:
+    """serve the markdown export and an arbitrary rendered page."""
+    scraper._page_text.cache_clear()
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return export_text
+        if url == FLIGHT_URL:
+            return rendered_text
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+
+
+def test_scrape_prices_every_row_of_the_live_rendered_page(monkeypatch):
+    # 2026-11-18: the export renders two empty shells and the rendered page
+    # ships no self.__next_f chunk; both series tables ride the manifest
+    # template's compiled MDX source
+    monkeypatch.setattr(
+        scraper, "fetch_text", fixture_fetch("llms", "chat-2026-11-18", "rendered-2026-11-18")
+    )
+    for model_id, expected in LIVE_ROWS.items():
+        input_cost, output_cost, cached, write, write_1h = expected
+        pricing = scraper.scrape(cfg(), model_id)
+        assert pricing is not None, model_id
+        assert pricing.input_cost_per_token == pytest.approx(input_cost / 1e6)
+        assert pricing.output_cost_per_token == pytest.approx(output_cost / 1e6)
+        assert pricing.cache_read_cost_per_token == pytest.approx(cached / 1e6)
+        assert pricing.cache_write_cost_per_token == (
+            None if write is None else pytest.approx(write / 1e6)
+        )
+        assert pricing.cache_write_1h_cost_per_token == (
+            None if write_1h is None else pytest.approx(write_1h / 1e6)
+        )
+        assert pricing.url == FLIGHT_URL
+
+
+def test_a_manifest_source_without_a_doctable_raises_the_no_pricing_table_error(monkeypatch):
+    # a compiled source carrying no priced call is a dark page, never every
+    # model absent
+    source = "const DocTable=({columns=[],rows=[],groups=[],corner=null,className=``})=>null;"
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(source)))
+    with pytest.raises(FetchError, match="no pricing table") as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert str(exc.value).endswith(FLIGHT_URL)
+
+
+def test_a_manifest_template_that_does_not_decode_raises(monkeypatch):
+    # a manifest whose JSON does not decode is a shape break: the reader
+    # raises naming the page instead of reading the page as no table
+    _serve_rendered(
+        monkeypatch, _EMPTY_SHELL, '<template data-mint="manifest">{not json</template>'
+    )
+    with pytest.raises(FetchError, match="does not decode") as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert FLIGHT_URL in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    ("manifest", "anchor"),
+    [
+        ([], "the manifest is not an object"),
+        ({"page": "x"}, "page is not an object"),
+        ({"page": {}}, "no 'mdx'"),
+        ({"page": {"mdx": {"mdxSource": {}}}}, "no 'compiledSource'"),
+        ({"page": {"mdx": {"mdxSource": None}}}, "page.mdx.mdxSource is not an object"),
+    ],
+    ids=[
+        "manifest-not-object",
+        "page-not-object",
+        "no-mdx",
+        "no-compiled-source",
+        "source-not-object",
+    ],
+)
+def test_a_manifest_node_the_reader_needs_is_missing_or_wrong(monkeypatch, manifest, anchor):
+    # a shape no capture shows: the raise names the node that failed instead
+    # of guessing another key or another surface
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(manifest))
+    with pytest.raises(FetchError, match=anchor) as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert FLIGHT_URL in str(exc.value)
+
+
+def test_a_compiled_source_that_is_not_a_string_raises(monkeypatch):
+    _serve_rendered(
+        monkeypatch,
+        _EMPTY_SHELL,
+        _manifest_page({"page": {"mdx": {"mdxSource": {"compiledSource": 42}}}}),
+    )
+    with pytest.raises(FetchError, match="compiled MDX source") as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert FLIGHT_URL in str(exc.value)
+
+
+def test_two_manifest_templates_raise(monkeypatch):
+    # which of two manifests carries the tables is unknowable, so the reader
+    # raises the way the index's ambiguous chat link does; either manifest
+    # alone would price kimi-k3, so a reader that picks one returns a rate
+    _serve_rendered(
+        monkeypatch,
+        _EMPTY_SHELL,
+        _manifest_page(_manifest(_priced_source(9.00)))
+        + _manifest_page(_manifest(_priced_source(1.00))),
+    )
+    with pytest.raises(FetchError, match="expected one manifest template") as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert FLIGHT_URL in str(exc.value)
+
+
+def test_the_flight_payload_is_read_before_the_manifest(monkeypatch):
+    # no capture carries both surfaces; the flight payload is the one the
+    # reader has always read, so it wins over a manifest on the same page
+    template = _manifest_template(_manifest(_priced_source(9.00)))
+    rendered = _flight_page(_K3_FLIGHT_CALL).replace("</body>", template + "</body>")
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, rendered)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_the_2026_11_18_captures_carry_the_shapes_this_fix_reads():
+    # the fixtures are the live bytes: the export renders empty table shells
+    # and the rendered page carries one manifest template holding the series
+    # tables' DocTable calls, with no flight chunk
+    export = (FIXTURES / "chat-2026-11-18.md").read_text()
+    rendered = (FIXTURES / "chat-rendered-2026-11-18.html").read_text()
+    assert "<thead>\n    <tr />\n  </thead>" in export
+    assert "<tbody />" in export
+    assert "$" not in export
+    assert "self.__next_f" not in rendered
+    assert rendered.count('<template data-mint="manifest">') == 1
+    assert "_jsx(DocTable,{" in rendered
+    # positive controls: the old export carries the dollar amounts and the
+    # flight fixture carries the chunk spelling the live page dropped
+    assert "$" in (FIXTURES / "chat.md").read_text()
+    assert "self.__next_f" in _flight_page("<payload/>")
