@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "c8c198a625d9c3db13894af2fa8ad7f1b22b4fe7a6a35e3b031301a4e3e312f6",
-      "fetched": "2026-11-18T12:00:16Z"
+      "sha256": "c63f4ddfabbd68821c5eabc3305dbaa97a4a40762a07d7bad0538e9f7800fd14",
+      "fetched": "2026-11-18T21:00:17Z"
     }
   },
   "together": {
@@ -124,8 +124,8 @@
   "google": {
     "https://ai.google.dev/gemini-api/docs/changelog?hl=en": {
       "file": "state/announce/google/changelog.md",
-      "sha256": "91e593aad9bf0f89995ba5d0b478da974e3605a0529c27841242676970e20cf6",
-      "fetched": "2026-11-18T12:00:16Z"
+      "sha256": "819714d3bdc9971c08969b63c4aeb6ab57c2ee37b02562bc15479270a863792b",
+      "fetched": "2026-11-18T21:00:17Z"
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
