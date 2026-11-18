@@ -12,8 +12,8 @@
     },
     "https://api-docs.deepseek.com/guides/search": {
       "file": "state/announce/deepseek/search.md",
-      "sha256": "5fa93057b8cb1c94f7387f615b1257b2f3ef833ca004a3d90929f5b1c552f81c",
-      "fetched": "2026-11-18T12:00:16Z"
+      "sha256": "98d9f2afb0db35a28d94180a5797604811b989c9e23ddabefc00c69567cd87b9",
+      "fetched": "2026-11-18T17:00:17Z"
     }
   },
   "zai": {
@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "237ac032a8336ec4afbbd0123502db06a358d4deeb0dffe6b9189922336175c6",
-      "fetched": "2026-11-18T16:00:17Z"
+      "sha256": "c315ffd5e2871a1e6083fcef10c812561e9660de3845620ed780796d26a21fd7",
+      "fetched": "2026-11-18T17:00:17Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
