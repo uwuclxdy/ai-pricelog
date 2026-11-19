@@ -288,6 +288,17 @@ It also shows an estimated cost.
 See [Request capacity](https://docs.together.ai/docs/gpu-clusters-management.md#request-capacity).
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `zai-org/GLM-5.3`: 1,000,000 context length, FP4 quantization, function calling and structured outputs.
 Pricing: \$1.40 input / \$4.40 output / \$0.26 cached input (per 1M tokens).
+**August 27, 2026** ## Together Storage Accelerator for GPU clusters Together Storage Accelerator (TSA) is now available as a free add-on for GPU clusters.
+TSA is a distributed read-through cache on your cluster's GPU nodes: each object is fetched from the origin once per cluster and served from local NVMe after that, with no application changes required.
+**What's new:** * **S3-compatible read-through cache:** Point `AWS_ENDPOINT_URL` at the in-cluster endpoint `http://tsa.tsa.svc.cluster.local:18080` and prefix object paths with the backend name to cache reads from AWS S3, Cloudflare R2, and any S3-compatible store.
+Configure up to three backends per cluster.
+TSA signs origin requests with the credentials you configure.
+* **Hugging Face Hub mirror:** Add a Hugging Face token to the add-on and set `HF_ENDPOINT` to the same endpoint.
+`huggingface_hub` and `transformers` work unmodified, with cache keys pinned to the resolved commit so moved branches and tags never serve stale files.
+* **Prefetch:** Warm the cache for an object across every node before a job starts with `POST /prefetch/<backend>/<bucket>/<key>`.
+* **Monitoring:** `/health` and Prometheus `/metrics` on the same endpoint.
+In preview deployments, warm reads measured up to 12x faster than the origin, at up to 3.4 GB/s per node.
+See [Together Storage Accelerator](https://docs.together.ai/docs/storage-accelerator.md) for setup and usage.
 **August 27, 2026** ## Billing usage API (beta) `GET /billing/usage` returns organization-wide usage and cost line items, filterable by month.
 The endpoint is in beta and enabled per organization.
 See [Get billing usage](https://docs.together.ai/reference/billing-usage.md).

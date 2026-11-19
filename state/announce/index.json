@@ -91,13 +91,13 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "c315ffd5e2871a1e6083fcef10c812561e9660de3845620ed780796d26a21fd7",
-      "fetched": "2026-11-18T17:00:17Z"
+      "sha256": "4072605da19645f4903bb537e52eda792dfd9d4350ea419f59a42180d3428313",
+      "fetched": "2026-11-19T22:00:16Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "a768e95d44f32b67b713cc16c29b81803f07d2c9a2d9b2affbbfcb0abd60f1a8",
-      "fetched": "2026-11-17T01:00:20Z"
+      "sha256": "15454de1a60e952a88ebaaf9d6af6b7383f17ab7be48a519e35210a883312116",
+      "fetched": "2026-11-19T22:00:16Z"
     }
   },
   "novita": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "fce7e48a6f7a3077afedd52196eac875ffacbc01e9a94cacff8279042c983ac9",
-      "fetched": "2026-11-19T21:00:14Z"
+      "sha256": "f52f6f6ef0312dc4364a7ffe5c030693837fb01d18c3603920474c89b7358cc7",
+      "fetched": "2026-11-19T22:00:16Z"
     }
   },
   "databricks": {

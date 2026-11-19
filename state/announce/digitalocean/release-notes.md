@@ -13,7 +13,9 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 19 November We have updated the following buildpack for App Platform: PHP buildpack : We updated the buildpack from version 298 to 303 and added PHP versions 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 .
+November 2026 19 November Released v2.7.0 of doctl , the official DigitalOcean CLI.
+This release adds an --enable-insights-logs flag to doctl registries create and doctl kubernetes cluster create for sending a new registry’s or cluster’s logs to Insights , and a --turn-type flag to doctl evaluation metric list and doctl evaluation custom-metric create for single-turn and multi-turn metrics.
+We have updated the following buildpack for App Platform: PHP buildpack : We updated the buildpack from version 298 to 303 and added PHP versions 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 .
 If you have an existing PHP app that uses v1, we recommend upgrading to v2 .
 PHP 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 include fixes for security vulnerabilities including CVE-2026-115560, CVE-2026-129289, and CVE-2026-129538.
 To use a patched runtime, force rebuild and deploy your app .
@@ -33,9 +35,15 @@ The following OpenAI models are now available on DigitalOcean Inference for serv
 17 November DigitalOcean MicroVMs are now in general availability in MKC1.
 With general availability, you can change a MicroVM’s settings without recreating it, create access tokens that reach only one MicroVM, add URLs for additional ports, and upload and download files .
 You can also restrict a MicroVM’s outbound traffic to the destinations you allow and attach credentials that the platform adds to outbound requests, open a console from the Control Panel, and monitor MicroVMs with metrics, platform logs, and traces in DigitalOcean Insights.
+Released v2.6.0 of doctl , the official DigitalOcean CLI.
+This release adds a doctl compute microvm update command for changing a running or paused MicroVM’s name, tags, and auto-pause idle timeout .
+13 November Released v2.5.0 of doctl , the official DigitalOcean CLI.
+This release adds a doctl harness-runtime regions list command, support for the MiniMax Code harness, and a --spec flag for doctl harness-runtime update that changes an existing session’s tools, environment variables, and secrets.
 10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
 For serverless inference, migrate DeepSeek V4 Flash to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ), Llama 4 Maverick 17B 128E Instruct to DeepSeek V4.1 Flash ( deepseek-v4.1-flash ), Qwen 3.5 397B A17B to Qwen3.8-Max ( qwen3.8-max ), Gemma 4 to GLM-5.3 Flash ( glm-5.3-flash ), and gpt-oss-20b to gpt-oss-120b ( openai-gpt-oss-120b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+Released v2.4.0 of doctl , the official DigitalOcean CLI.
+This release adds doctl insights dashboard commands for managing Insights dashboards , and a --region flag for doctl harness-runtime commands that selects which region’s resources to work with.
 9 November The following Anthropic model is now available on DigitalOcean Inference for serverless inference : Claude Fable 5.2 For more information, see the Available Models page .
 7 November High Performance Block Storage is now available in private preview in the NYC2, SFO3, ATL1, RIC1, MKC1, and MEM1 datacenters.
 High Performance volumes use network-attached NVMe storage over NVMe/TCP and deliver up to 60,000 IOPS and 1,200 MB/s per volume, regardless of Droplet type.
@@ -56,6 +64,11 @@ The following NVIDIA models are deprecated from DigitalOcean Serverless Inferenc
 Migrate serverless workloads to NVIDIA Nemotron 3.5 Super VL ( nemotron-3.5-super-vl ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 4 November The following Moonshot AI model is now available on DigitalOcean Inference for serverless inference and dedicated inference : Kimi K3.1 Pro For more information, see the Available Models page .
+Released v2.2.1 of doctl , the official DigitalOcean CLI.
+This release adds doctl harness-runtime workspace commands for managing persistent workspaces , and a doctl harness-runtime connections reconnect command for resuming a pending authorization or renewing an expired or revoked connection.
+You can also revoke a connection by actor with doctl harness-runtime connections revoke --actor .
+Released v2.3.0 of doctl , the official DigitalOcean CLI.
+This release adds doctl compute microvm access-token commands for creating, listing, and revoking access tokens that grant access to a single MicroVM’s public endpoint.
 2 November Teams can use Microsoft Entra ID as an identity provider for single sign-on (SSO) .
 SSO configuration no longer requires your IdP to send a team_role claim.
 When the claim is omitted, DigitalOcean assigns the Default role you choose during setup for users who join through SSO.
@@ -74,6 +87,8 @@ New clusters use Kafka 4.3 by default, and existing clusters can upgrade to it.
 Kafka versions 3.9 and 4.2 remain available.
 Kafka 4.3 reaches end of availability for new clusters on 25 June 2027 and end of life on 25 September 2027.
 For version support, see Kafka version support and end-of-life dates .
+Released v2.1.0 of doctl , the official DigitalOcean CLI.
+This release adds the --egress-allow and --egress-default-action flags to doctl compute microvm create for restricting a MicroVM’s outbound traffic, support for the Hermes harness in doctl harness-runtime , and a doctl harness-runtime canvas command that serves a session’s Agent Canvas UI through a local proxy.
 26 October DigitalOcean Harness Runtime can start a sandbox with no harness in it.
 Set harness: none in the environment spec, and the session boots the base image with a general-purpose toolchain and nothing running.
 You run commands with doctl harness-runtime exec , move files with upload and download , and reach services with port-forward .
@@ -113,6 +128,15 @@ If you have an existing Go app that uses v0, we recommend upgrading to v1 .
 go1.25.9-go1.25.14 go1.26.2-go1.26.10 go1.27.0-go1.27.3 21 October The following DeepSeek model is now available on DigitalOcean Inference for serverless inference : DeepSeek V4.1 Flash 1017 For more information, see the Available Models page .
 20 October The following Reflection AI model is now available on DigitalOcean Inference for serverless inference : Beam For more information, see the Available Models page .
 15 October The following NVIDIA model is now available on DigitalOcean Inference for serverless inference : NVIDIA Nemotron 3.5 Super VL For more information, see the Available Models page .
+14 October Released v2.0.0 of doctl , the official DigitalOcean CLI.
+This release masks secret values and database passwords, including passwords inside connection strings, in terminal output.
+Use the --show flag to reveal them.
+In CI environments, values are unmasked automatically so existing scripts keep working.
+doctl auth switch and doctl auth remove no longer save a token from the DIGITALOCEAN_ACCESS_TOKEN environment variable to the config file.
+doctl auth init still saves the token it validates.
+If you ran doctl auth switch or doctl auth remove with that variable set on an earlier version, check your config file and replace the token if it was saved there.
+doctl reports missing or invalid flags before calling the API, and mistyped nested commands exit with an error instead of succeeding silently.
+Commands that wait for long-running operations accept a --wait-timeout flag and write progress to stderr .
 13 October Cloud Security Posture Management (CSPM) paid plans support DigitalOcean Kubernetes (DOKS) clusters as workloads.
 Each DOKS cluster with coverage enabled counts as one workload and is evaluated using workload rules.
 For more information, see Workloads and Billing .
