@@ -13,7 +13,16 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 18 November Action Gateway now lets you pin a tool to a released version and keep calling it after newer versions are released.
+November 2026 19 November We have updated the following buildpack for App Platform: PHP buildpack : We updated the buildpack from version 298 to 303 and added PHP versions 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 .
+If you have an existing PHP app that uses v1, we recommend upgrading to v2 .
+PHP 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 include fixes for security vulnerabilities including CVE-2026-115560, CVE-2026-129289, and CVE-2026-129538.
+To use a patched runtime, force rebuild and deploy your app .
+Builds now fail if composer.json requires a PHP version affected by CVE-2026-109618 or CVE-2026-109619, such as an exact older patch version.
+To fix this, change the requirement to a range such as ^8.5.0 or ~8.2.0 .
+Composer’s preferred-install setting is now respected, so packages configured as source or auto install from source instead of dist.
+This upgrade does not include a new PHP 8.1 runtime.
+PHP 8.1 is end of life and does not receive these November 2026 security patches; upgrade to PHP 8.2 or later.
+18 November Action Gateway now lets you pin a tool to a released version and keep calling it after newer versions are released.
 List a tool’s versions with a changelog that marks breaking changes, and see the latest version in _meta.latest_version when a call uses an older one.
 For more information, see Tool Versions .
 Interactive stdin for DigitalOcean Harness Runtime sandbox commands is enabled per team.

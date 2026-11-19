@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "129dfea001ccb215004f9bb3d23aa4dec38fb714b3ff35772e2f21b669b1745c",
-      "fetched": "2026-11-18T22:00:18Z"
+      "sha256": "fce7e48a6f7a3077afedd52196eac875ffacbc01e9a94cacff8279042c983ac9",
+      "fetched": "2026-11-19T21:00:14Z"
     }
   },
   "databricks": {
