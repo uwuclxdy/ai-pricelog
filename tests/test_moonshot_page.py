@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -19,11 +20,24 @@ FIXTURES = Path(__file__).parent / "fixtures" / "moonshot_page"
 
 PAGES = {
     "models": (MODELS_URL, "models.md"),
+    "models-2026-11-19": (MODELS_URL, "models-2026-11-19.md"),
     "llms": (INDEX_URL, "llms.txt"),
     "chat": (CHAT_URL, "chat.md"),
     "chat-2026-11-18": (CHAT_URL, "chat-2026-11-18.md"),
     "rendered-2026-11-18": (FLIGHT_URL, "chat-rendered-2026-11-18.html"),
 }
+
+# the stored moonshot ids whose newest row on the branch base is no removal
+# (latest observations 2026-10-31), pinned by value so a later landed row
+# does not rewrite these tests
+STORED_LIVE_IDS = [
+    "kimi-k2.6",
+    "kimi-k2.7-code",
+    "kimi-k2.7-code-highspeed",
+    "kimi-k3",
+    "kimi-k3.1-pro",
+    "kimi-k3.1-pro-highspeed",
+]
 
 EXPECTED_IDS = [
     "kimi-k3",
@@ -919,3 +933,192 @@ def test_the_2026_11_18_captures_carry_the_shapes_this_fix_reads():
     # flight fixture carries the chunk spelling the live page dropped
     assert "$" in (FIXTURES / "chat.md").read_text()
     assert "self.__next_f" in _flight_page("<payload/>")
+
+
+# --- the chat page's priced set: what the absence counters key on ----------
+
+# every id the chat page priced on 2026-11-19, in page order. measured that
+# day: the export and the manifest's compiled source were byte-identical to
+# the 2026-11-18 captures, so those two fixtures stand for today's page;
+# models.md is the page that moved (the three K2 ids into its deprecated table)
+LIVE_PRICED_IDS = [
+    "kimi-k3.1-pro",
+    "kimi-k3.1-pro-highspeed",
+    "kimi-k3",
+    "kimi-k2.7-code",
+    "kimi-k2.7-code-highspeed",
+    "kimi-k2.6",
+]
+
+
+def test_detect_priced_lists_every_id_the_live_chat_page_prices(monkeypatch):
+    # the absence counters key on this set: a stored non-removed id it drops
+    # is planned for removal on its second absent observation
+    monkeypatch.setattr(
+        scraper, "fetch_text", fixture_fetch("llms", "chat-2026-11-18", "rendered-2026-11-18")
+    )
+    priced = detector.detect_priced(cfg())
+    assert priced == LIVE_PRICED_IDS
+    assert set(STORED_LIVE_IDS) <= set(priced)
+
+
+def test_detect_priced_reads_the_markdown_export_when_it_carries_the_table(monkeypatch):
+    # the export-first order holds for the priced set too: a restored export
+    # costs no fetch of the rendered page
+    monkeypatch.setattr(scraper, "fetch_text", fixture_fetch("llms", "chat"))
+    assert detector.detect_priced(cfg()) == [
+        "kimi-k3",
+        "kimi-k2.7-code",
+        "kimi-k2.7-code-highspeed",
+        "kimi-k2.6",
+    ]
+
+
+def test_detect_priced_skips_a_row_too_short_to_carry_a_model(monkeypatch):
+    # a row array shorter than the model column is no model row: the reader
+    # skips it the way `scrape` does, never raising IndexError
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[],[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_detect_priced_keeps_only_model_ids_once(monkeypatch):
+    # a first cell that is no model id (a display heading) and an id priced in
+    # two tables never enter the priced set twice
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`All models`,`$3.00 / MTok`,`$15.00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call + call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_detect_priced_reads_a_repeated_model_row_like_scrape(monkeypatch):
+    # `scrape` settles a repeated model cell on its first row, so a first row
+    # with no rate leaves the id unpriced even when a later copy is priced
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`tbd`,`tbd`],[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`],"
+        "[`kimi-k4`,`$1.00 / MTok`,`$2.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k4"]
+
+
+def test_priced_model_ids_lists_a_repeated_cell_once(monkeypatch):
+    # the public priced list holds one entry per model, page order; a second
+    # row for the same cell appends nothing, in its own table or a later one
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call + call)))
+    ids, _url = scraper.priced_model_ids(cfg())
+    assert ids == ["kimi-k3"]
+
+
+def test_priced_model_ids_reads_a_later_malformed_copy_like_scrape(monkeypatch):
+    # `scrape` stops at the first table that prices an id, so a later table's
+    # unreadable copy of it reaches neither read
+    first = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    later = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3, 00 / MTok`,`$1.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(first + later)))
+    assert scraper.scrape(cfg(), "kimi-k3") is not None
+    ids, _url = scraper.priced_model_ids(cfg())
+    assert ids == ["kimi-k3"]
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_detect_priced_reads_a_case_variant_copy_like_scrape(monkeypatch):
+    # `scrape` matches a model cell case-insensitively, so the first copy
+    # settles the id: a priced later copy under another case prices nothing
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`tbd`,`tbd`],[`KIMI-K3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    with pytest.raises(FetchError, match="no priced model rows"):
+        detector.detect_priced(cfg())
+
+
+def test_detect_still_omits_the_deprecated_table(monkeypatch):
+    # the 2026-11-19 models page moved the three K2 ids into its Deprecated
+    # Models table; candidates keep coming from the same read as before
+    monkeypatch.setattr(detector, "fetch_text", fixture_fetch("models-2026-11-19"))
+    assert detector.detect(cfg()) == ["kimi-k3.1-pro", "kimi-k3.1-pro-highspeed", "kimi-k3"]
+
+
+def rendered_without_row(rendered: str, model_id: str) -> str:
+    """a copy of the rendered page with the pricing row of `model_id` removed."""
+    pattern = re.compile(r"\[`" + re.escape(model_id) + r"`[^\]]*\]")
+    page, removed = pattern.subn("", rendered)
+    assert removed == 1
+    return page
+
+
+def test_detect_priced_omits_an_id_the_chat_page_stops_pricing(monkeypatch):
+    # near miss: an id whose row leaves the page is no longer priced, so the
+    # absence counters can still count it absent
+    rendered = rendered_without_row(
+        (FIXTURES / "chat-rendered-2026-11-18.html").read_text(encoding="utf-8"), "kimi-k2.6"
+    )
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text(encoding="utf-8")
+        if url == CHAT_URL:
+            return (FIXTURES / "chat-2026-11-18.md").read_text(encoding="utf-8")
+        if url == FLIGHT_URL:
+            return rendered
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    assert detector.detect_priced(cfg()) == [
+        model_id for model_id in LIVE_PRICED_IDS if model_id != "kimi-k2.6"
+    ]
+
+
+def test_detect_priced_raises_when_no_price_table_is_extracted(monkeypatch):
+    # a manifest whose compiled source holds no priced call: an empty set
+    # would mark every stored id absent, so the reader's no-pricing-table
+    # break stands
+    source = "const DocTable=({columns=[],rows=[],groups=[],corner=null,className=``})=>null;"
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(source)))
+    with pytest.raises(FetchError, match="no pricing table"):
+        detector.detect_priced(cfg())
+
+
+def test_detect_priced_raises_when_no_row_carries_a_rate(monkeypatch):
+    # a priced-columns table whose input and output cells carry no amount is
+    # no priced set either
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`tbd`,`tbd`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    with pytest.raises(FetchError, match="no priced model rows"):
+        detector.detect_priced(cfg())
+
+
+def test_detect_priced_raises_on_an_unreadable_amount(monkeypatch):
+    # an unreadable amount is never silently left out of the priced set: the
+    # read fails loud with the error a scrape of the row raises
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k3`,`$3, 00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    with pytest.raises(FetchError, match="kimi-k3"):
+        detector.detect_priced(cfg())

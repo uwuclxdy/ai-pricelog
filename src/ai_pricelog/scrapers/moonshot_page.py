@@ -211,11 +211,42 @@ def pricing_tables(cfg: ProviderCfg) -> tuple[list[tuple[list[str], list[list[st
 
 def scrape(cfg: ProviderCfg, model_id: str) -> Pricing | None:
     docs, page_url = pricing_tables(cfg)
+    return _first_pricing(docs, model_id, page_url)
+
+
+def _first_pricing(
+    docs: list[tuple[list[str], list[list[str]]]], model_id: str, page_url: str
+) -> Pricing | None:
     for doc in docs:
         pricing = _pricing(doc, model_id, page_url)
         if pricing is not None:
             return pricing
     return None
+
+
+def priced_model_ids(cfg: ProviderCfg) -> tuple[list[str], str]:
+    """the model cell of every id the reader prices, page order, and the url
+    the rates came from.
+
+    an id is priced exactly when `scrape` builds a rate for it: both read
+    the tables in page order over every distinct model cell, a table naming
+    no rate contributes nothing, a repeated cell is read once, and an
+    unreadable amount raises where a scrape of the id would. the chat page
+    keeps pricing models the docs index lists as deprecated (the K2 series,
+    measured 2026-11-19), so this set, not the candidate list, says which
+    stored ids stay live.
+    """
+    docs, page_url = pricing_tables(cfg)
+    cells: dict[str, None] = {}
+    for titles, rows in docs:
+        columns = _pricing_columns(titles)
+        if columns is None:
+            continue
+        for row in rows:
+            if len(row) > columns[0]:
+                cells[str(row[columns[0]]).strip()] = None
+    ids = [model_id for model_id in cells if _first_pricing(docs, model_id, page_url)]
+    return ids, page_url
 
 
 def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:

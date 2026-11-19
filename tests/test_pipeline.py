@@ -9,10 +9,13 @@ from pathlib import Path
 import pytest
 
 import test_dashscope_page as dashscope_fixtures
+import test_moonshot_page as moonshot_fixtures
 from ai_pricelog import absence, announce, config, health, openrouter, pipeline, pr, store, web
 from ai_pricelog.detectors import dashscope_page as dashscope_detector
+from ai_pricelog.detectors import moonshot_page as moonshot_detector
 from ai_pricelog.pricing import Pricing
 from ai_pricelog.scrapers import dashscope_page as dashscope_scraper
+from ai_pricelog.scrapers import moonshot_page as moonshot_scraper
 from conftest import git, git_init_repo, register_fake_module
 
 TODAY = "2026-08-26"
@@ -3454,6 +3457,173 @@ def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monk
     ]
     assert branch_absence(repo_root, branch).get("dashscope", {}) == {}
     assert [head for _title, _body, head in runner.created] == [branch]
+
+
+def moonshot_pages(rendered: str | None = None) -> dict[str, str]:
+    """The live moonshot captures by url; `rendered` overrides the chat page.
+
+    measured 2026-11-19: the export and the pricing table's compiled source
+    were byte-identical to the 2026-11-18 fixtures, so those stand for the
+    live page; models.md is its own 2026-11-19 capture."""
+    fixtures = moonshot_fixtures.FIXTURES
+    return {
+        moonshot_fixtures.MODELS_URL: (fixtures / "models-2026-11-19.md").read_text(
+            encoding="utf-8"
+        ),
+        moonshot_fixtures.INDEX_URL: (fixtures / "llms.txt").read_text(encoding="utf-8"),
+        moonshot_fixtures.CHAT_URL: (fixtures / "chat-2026-11-18.md").read_text(encoding="utf-8"),
+        moonshot_fixtures.FLIGHT_URL: (
+            rendered
+            if rendered is not None
+            else (fixtures / "chat-rendered-2026-11-18.html").read_text(encoding="utf-8")
+        ),
+    }
+
+
+def moonshot_cfg() -> config.ProviderCfg:
+    return config.ProviderCfg(
+        key="moonshot",
+        provider="Moonshot AI",
+        detector="moonshot_page",
+        detector_url=moonshot_fixtures.MODELS_URL,
+        scraper="moonshot_page",
+        scraper_url=moonshot_fixtures.INDEX_URL,
+    )
+
+
+@pytest.fixture(autouse=True)
+def clear_moonshot_caches():
+    # the module-level lru caches outlive a test in a shared worker, so a
+    # later test would read the previous one's fixture text
+    moonshot_scraper._load_index.cache_clear()
+    moonshot_scraper._page_text.cache_clear()
+    yield
+    moonshot_scraper._load_index.cache_clear()
+    moonshot_scraper._page_text.cache_clear()
+
+
+def serve_moonshot(monkeypatch, pages: dict[str, str]) -> None:
+    def fetch(url: str) -> str:
+        if url not in pages:
+            raise AssertionError(f"unexpected fetch of {url}")
+        return pages[url]
+
+    monkeypatch.setattr(moonshot_detector, "fetch_text", fetch)
+    monkeypatch.setattr(moonshot_scraper, "fetch_text", fetch)
+    moonshot_scraper._load_index.cache_clear()
+    moonshot_scraper._page_text.cache_clear()
+
+
+def count_moonshot_scrapes(monkeypatch) -> list[str]:
+    calls: list[str] = []
+    real_scrape = moonshot_scraper.scrape
+
+    def scrape(cfg, model_id):
+        calls.append(model_id)
+        return real_scrape(cfg, model_id)
+
+    monkeypatch.setattr(moonshot_scraper, "scrape", scrape)
+    return calls
+
+
+def moonshot_stored_row(model_id: str) -> dict:
+    """One stored moonshot row, priced as the live page prints it; the rates
+    are pinned by value so a later landed row does not rewrite the tests."""
+    input_rate, output_rate, cached, write, write_1h = moonshot_fixtures.LIVE_ROWS[model_id]
+    return store.build_row(
+        "moonshot",
+        model_id,
+        Pricing(
+            input_rate / 1e6,
+            output_rate / 1e6,
+            "chat",
+            0,
+            cached / 1e6,
+            cache_write_cost_per_token=None if write is None else write / 1e6,
+            cache_write_1h_cost_per_token=None if write_1h is None else write_1h / 1e6,
+        ),
+        "2026-10-31",
+        moonshot_fixtures.FLIGHT_URL,
+        VERSION,
+    )
+
+
+def seed_moonshot_store(repo_root: Path) -> None:
+    """The six stored live ids, plus a moved kimi-k2.6 row so a change lands."""
+    rows = [moonshot_stored_row(model_id) for model_id in moonshot_fixtures.LIVE_ROWS]
+    rows.append(
+        store.build_row(
+            "moonshot",
+            "kimi-k2.6",
+            Pricing(0.99e-6, 4.0e-6, "chat", 0, 0.16e-6),
+            "2026-11-18",
+            moonshot_fixtures.FLIGHT_URL,
+            VERSION,
+        )
+    )
+    seed_store(repo_root, rows)
+
+
+def test_moonshot_absence_keys_on_the_chat_page_priced_rows(repo_root, monkeypatch):
+    # the models page hides the three K2 ids in its deprecated table while the
+    # chat page still prices them: keyed on the chat page's priced set, the
+    # landed counter clears, every id refreshes, the moved K2 price lands, and
+    # no removal is planned for a still-priced id
+    today = "2026-11-19"
+    serve_moonshot(monkeypatch, moonshot_pages())
+    calls = count_moonshot_scrapes(monkeypatch)
+    seed_moonshot_store(repo_root)
+    seed_absence(repo_root, {"moonshot": {"kimi-k2.6": {"absent_runs": 1, "since": "2026-11-05"}}})
+    runner = PipelineRunner()
+
+    report = pipeline.run(
+        config.Config(providers=(moonshot_cfg(),)), repo_root, runner, today=today, now="000000"
+    )
+
+    assert report.providers["moonshot"].errors == []
+    assert sorted(calls) == sorted(moonshot_fixtures.LIVE_PRICED_IDS)
+    assert set(report.providers["moonshot"].tried) == set(moonshot_fixtures.LIVE_PRICED_IDS)
+    assert [model_id for model_id, _url in report.providers["moonshot"].prs] == ["kimi-k2.6"]
+    branch = batch_branch("moonshot", today=today)
+    assert branch_absence(repo_root, branch) == {}
+    appended = [
+        (row["model_id"], row["rates"], row.get("removed"))
+        for row in branch_rows(repo_root, branch, "moonshot")
+        if row["observed_at"] == today
+    ]
+    assert appended == [("kimi-k2.6", {"input": 0.95, "output": 4.0, "cache_read": 0.16}, None)]
+
+
+def test_moonshot_absence_counts_an_id_the_chat_page_stops_pricing(repo_root, monkeypatch):
+    # near miss: kimi-k2.6's row leaves the chat page, so the priced set drops
+    # it and the seeded counter reaches 2: the removal row is planned as before
+    today = "2026-11-19"
+    rendered = moonshot_fixtures.rendered_without_row(
+        (moonshot_fixtures.FIXTURES / "chat-rendered-2026-11-18.html").read_text(encoding="utf-8"),
+        "kimi-k2.6",
+    )
+    serve_moonshot(monkeypatch, moonshot_pages(rendered))
+    calls = count_moonshot_scrapes(monkeypatch)
+    seed_moonshot_store(repo_root)
+    seed_absence(repo_root, {"moonshot": {"kimi-k2.6": {"absent_runs": 1, "since": "2026-11-05"}}})
+    runner = PipelineRunner()
+
+    report = pipeline.run(
+        config.Config(providers=(moonshot_cfg(),)), repo_root, runner, today=today, now="000000"
+    )
+
+    assert report.providers["moonshot"].errors == []
+    assert "kimi-k2.6" not in calls
+    branch = batch_branch("moonshot", today=today)
+    assert branch_absence(repo_root, branch) == {
+        "moonshot": {"kimi-k2.6": {"absent_runs": 2, "since": "2026-11-05"}}
+    }
+    removed = [
+        row["model_id"]
+        for row in branch_rows(repo_root, branch, "moonshot")
+        if row["observed_at"] == today and row.get("removed") is True
+    ]
+    assert removed == ["kimi-k2.6"]
 
 
 def test_removals_batch_without_cap(tmp_path, fake_modules, repo_root):
