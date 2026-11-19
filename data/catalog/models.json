@@ -13090,6 +13090,15 @@
       },
       "vendor": null
     },
+    "together/qwen4-max": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "qwen4-max"
+        ]
+      },
+      "vendor": null
+    },
     "together/reflection-beam": {
       "curated": false,
       "sources": {
