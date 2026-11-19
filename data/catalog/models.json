@@ -1730,11 +1730,38 @@
       },
       "vendor": "anthropic"
     },
+    "deepinfra/deepseek-v4-flash-vision-exp": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "deepseek-v4-flash-vision-exp"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "deepinfra/deepseek-v4-pro-0813": {
       "curated": false,
       "sources": {
         "deepinfra": [
           "deepseek-v4-pro-0813"
+        ]
+      },
+      "vendor": "deepseek"
+    },
+    "deepinfra/deepseek-v4.1-flash": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "deepseek-v4.1-flash"
+        ]
+      },
+      "vendor": "deepseek"
+    },
+    "deepinfra/deepseek-v4.1-flash-1017": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "deepseek-v4.1-flash-1017"
         ]
       },
       "vendor": "deepseek"
@@ -1802,6 +1829,24 @@
       },
       "vendor": "zai"
     },
+    "deepinfra/glm-5.2": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "glm-5.2"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "deepinfra/glm-5.3": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "glm-5.3"
+        ]
+      },
+      "vendor": "zai"
+    },
     "deepinfra/glm-5.3-flash": {
       "curated": false,
       "sources": {
@@ -1810,6 +1855,15 @@
         ]
       },
       "vendor": "zai"
+    },
+    "deepinfra/kimi-k3.1-pro": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
     },
     "deepinfra/llama-3.3-70b-instruct-turbo": {
       "curated": false,
@@ -1906,6 +1960,15 @@
       "sources": {
         "deepinfra": [
           "qwen3-coder-480b-a35b-instruct-turbo"
+        ]
+      },
+      "vendor": null
+    },
+    "deepinfra/qwen3.8-27b": {
+      "curated": false,
+      "sources": {
+        "deepinfra": [
+          "qwen3.8-27b"
         ]
       },
       "vendor": null
