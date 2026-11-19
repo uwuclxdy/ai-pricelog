@@ -5,7 +5,8 @@ them with the previous autopr run's log (fetched through the gh cli),
 writes a ::warning:: annotation for this run's issues, and opens one
 github issue per provider that failed hard in two consecutive runs (the
 @-mention is what reaches the owner). hard = the detector or a scrape
-raised, so the provider is blind or its rows are rejected; soft = detect,
+raised, or every id the provider tried came back with no pricing, so the
+provider is blind or its rows are rejected; soft = detect,
 parse and row-build skips and validation rejects (additive drift, the
 provider stays alive). every reader (the issue rules, the checked set, the
 hold marker) matches only at a log line's message start — after the
@@ -51,6 +52,11 @@ DETECT_SKIP = re.compile(r"detect skip for (\S+):")
 # module parses it, so the checked-set contract has one owner
 CHECKED_PROVIDERS = "providers checked:"
 
+# the message prefix of the line pipeline.run logs for a provider whose every
+# tried id came back with no pricing: a scraper whose page it cannot match can
+# return None for every id, so a provider blinded that way logs no other hard line
+PRICED_NONE = "priced none of the tried ids for"
+
 # the lines a run that ran no provider logs; the pipeline writes them through
 # these constants and this module parses them, so a held run's warning names
 # the reason (the DETECT_SKIP precedent)
@@ -65,6 +71,7 @@ _RULES: tuple[tuple[re.Pattern[str], str, str | None], ...] = (
     (re.compile(r"scraper (\S+) failed for \S+"), "hard", None),
     (re.compile(r"refresh scrape failed for \S+ \((\S+)\)"), "hard", None),
     (re.compile(r"openrouter fetch failed"), "hard", "openrouter"),
+    (re.compile(re.escape(PRICED_NONE) + r" (\S+):"), "hard", None),
     (re.compile(r"entry \S+ failed validation for (\S+):"), "soft", None),
     (re.compile(r"entry \S+ failed row build for (\S+):"), "soft", None),
     (re.compile(r"parse skip for (\S+):"), "soft", None),

@@ -310,10 +310,15 @@ def deepseek_chat_pending() -> dict:
     )
 
 
-def test_pending_pr_skip_fires_before_scrape(tmp_path, fake_modules, repo_root):
+def test_pending_pr_held_id_is_scraped_for_the_verdict_but_writes_no_row(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the open pr owns deepseek-chat's row: the scrape may plan no competing
+    # row, but its outcome still feeds the provider's health verdict
     detect, scrape = fake_modules
+    calls = counted_scrapes(monkeypatch)
     detect["deepseek"] = ["deepseek-chat"]
-    scrape["deepseek"] = {}  # any scrape call would raise AssertionError
+    scrape["deepseek"] = {"deepseek-chat": pricing(3.0e-7, 1.2e-6)}
     cfg = make_cfg("deepseek")
     legacy = deepseek_legacy()
     seed_store(repo_root, [legacy])
@@ -328,19 +333,24 @@ def test_pending_pr_skip_fires_before_scrape(tmp_path, fake_modules, repo_root):
     report = pipeline.run(cfg, repo_root, runner, today=TODAY)
 
     provider_report = report.providers["deepseek"]
+    assert calls == [("deepseek", "deepseek-chat")]
+    assert provider_report.tried == ["deepseek-chat"]
+    assert provider_report.skipped_no_pricing == []
     assert provider_report.skipped_pending == ["deepseek-chat"]
     assert provider_report.candidates == []
     assert provider_report.errors == []
     assert runner.pr_urls == []
     assert_default_branch_clean(repo_root, tip="seed store")
+    assert not (repo_root / "state" / "absence" / "deepseek.json").exists()
 
 
 def test_a_pending_skip_line_cannot_be_forged(tmp_path, fake_modules, repo_root, caplog):
     # the pending-skip line is a health-parsed soft signal and interpolates a
     # page-sourced id too: a newline in it must not forge a hard line
-    detect, _ = fake_modules
+    detect, scrape = fake_modules
     page_id = "a\nERROR:ai_pricelog.pipeline:detector for openai failed"
     detect["deepseek"] = [page_id]
+    scrape["deepseek"] = {page_id: pricing()}
     cfg = make_cfg("deepseek")
     legacy = deepseek_legacy()
     seed_store(repo_root, [legacy])
@@ -353,6 +363,7 @@ def test_a_pending_skip_line_cannot_be_forged(tmp_path, fake_modules, repo_root,
     with caplog.at_level(logging.INFO):
         report = pipeline.run(cfg, repo_root, runner, today=TODAY)
     assert report.providers["deepseek"].skipped_pending == [page_id]
+    assert report.providers["deepseek"].errors == []
     lines = _logged_lines(caplog)
     assert not any("\n" in line for line in lines)
     assert "openai" not in health.parse_log(lines)
@@ -622,8 +633,13 @@ def test_open_pricelog_pr_without_readable_rows_opens_no_pr(
     assert runner.pr_urls == []
 
 
-def _health_main_on(tmp_path, caplog, monkeypatch, issues: list[str]) -> list[list[str]]:
-    """Run the health step over this test's captured run log; return its gh calls."""
+def _health_main_on(
+    tmp_path, caplog, monkeypatch, issues: list[str], previous: list[str] | None = None
+) -> list[list[str]]:
+    """Run the health step over this test's captured run log; return its gh calls.
+
+    `previous` is the prior run's log, the two-consecutive gate's other side.
+    """
     log_path = tmp_path / "health-run.log"
     log_path.write_text("\n".join(_logged_lines(caplog)) + "\n", encoding="utf-8")
     calls: list[list[str]] = []
@@ -637,7 +653,11 @@ def _health_main_on(tmp_path, caplog, monkeypatch, issues: list[str]) -> list[li
         return ""
 
     monkeypatch.setattr(health, "_gh", gh)
-    monkeypatch.setattr(health, "previous_run", lambda repo, run_id: None)
+    monkeypatch.setattr(
+        health,
+        "previous_run",
+        lambda repo, run_id: None if previous is None else ("47", previous),
+    )
     monkeypatch.setenv("GITHUB_REPOSITORY", "uwuclxdy/ai-pricelog")
     monkeypatch.setenv("GITHUB_RUN_ID", "48")
     assert health.main([str(log_path)]) == 0
@@ -701,6 +721,274 @@ def test_seed_hold_warns_and_closes_no_provider_issue(
 
     assert not [call for call in calls if call[:2] == ["issue", "close"]]
     assert any(line.startswith("::warning::") for line in capsys.readouterr().out.splitlines())
+
+
+def test_provider_pricing_none_of_its_ids_opens_its_issue_on_the_second_run(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    # a page whose tables the scraper no longer matches returns no pricing for
+    # every id, the stored refresh and the new candidate alike: nothing raised,
+    # yet the provider recorded no price
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy", "deepseek-new"]
+    scrape["deepseek"] = {"deepseek-legacy": None, "deepseek-new": None}
+    seed_store(repo_root, [deepseek_legacy()])
+    caplog.set_level(logging.INFO)
+    pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000000")
+    first = _logged_lines(caplog)
+    caplog.clear()
+    pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000001")
+
+    calls = _health_main_on(tmp_path, caplog, monkeypatch, [], previous=first)
+
+    issues = health.parse_log(first)
+    assert set(issues) == {"deepseek"}
+    assert issues["deepseek"]["hard"] == [_priced_none_line("deepseek", 2)]
+    created = [call[3] for call in calls if call[:2] == ["issue", "create"]]
+    assert created == ["provider broken: deepseek"]
+
+
+def _priced_none_line(key: str, tried: int) -> str:
+    ids = "id" if tried == 1 else "ids"
+    return (
+        f"ERROR:ai_pricelog.pipeline:{health.PRICED_NONE} {key}:"
+        f" {tried} {ids}, each returned no pricing"
+    )
+
+
+def test_priced_none_line_counts_a_repeated_detected_id_once(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # a detector listing one id twice refreshes it twice, so two attempts are
+    # skipped while the line names the id once
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy", "deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-legacy": None}
+    seed_store(repo_root, [deepseek_legacy()])
+
+    with caplog.at_level(logging.INFO):
+        pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY)
+
+    issues = health.parse_log(_logged_lines(caplog))
+    assert set(issues) == {"deepseek"}
+    assert issues["deepseek"]["hard"] == [_priced_none_line("deepseek", 1)]
+
+
+def test_priced_only_ids_count_as_tried_ids(tmp_path, fake_modules, repo_root, monkeypatch, caplog):
+    # the pricing page keeps a dated snapshot the candidate page omits: it is
+    # the only id the run tries, and its scrape returns no pricing
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max-0501"])
+    detect, scrape = fake_modules
+    detect["dashscope"] = []
+    scrape["dashscope"] = {"qwen-max-0501": None}
+    seed_store(repo_root, [stored_row("qwen-max-0501")])
+
+    with caplog.at_level(logging.INFO):
+        pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == [("dashscope", "qwen-max-0501")]
+    issues = health.parse_log(_logged_lines(caplog))
+    assert set(issues) == {"dashscope"}
+    assert issues["dashscope"]["hard"] == [_priced_none_line("dashscope", 1)]
+
+
+def test_priced_none_rule_spares_a_provider_that_priced_or_raised(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # deepseek prices none of its ids (the rule's control); zai prices one id
+    # and skips the other; moonshot's only failure is the scrape that raised,
+    # which its own line already classes hard
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-legacy": None}
+    detect["zai"] = ["a", "b"]
+    scrape["zai"] = {"a": pricing(), "b": None}
+    detect["moonshot"] = ["a", "b"]
+    scrape["moonshot"] = {"a": web.FetchError("no pricing table on https://x"), "b": None}
+    seed_store(
+        repo_root,
+        [
+            deepseek_legacy(),
+            *(
+                stored_row(model_id, source=source)
+                for source in ("zai", "moonshot")
+                for model_id in ("a", "b")
+            ),
+        ],
+    )
+
+    with caplog.at_level(logging.INFO):
+        report = pipeline.run(
+            make_cfg("deepseek", "zai", "moonshot"), repo_root, PipelineRunner(), today=TODAY
+        )
+
+    assert report.providers["zai"].skipped_no_pricing == ["b"]
+    assert report.providers["moonshot"].skipped_no_pricing == ["b"]
+    issues = health.parse_log(_logged_lines(caplog))
+    assert set(issues) == {"deepseek", "moonshot"}
+    assert issues["deepseek"]["hard"] == [_priced_none_line("deepseek", 1)]
+    assert issues["moonshot"]["hard"] == [
+        "ERROR:ai_pricelog.pipeline:refresh scrape failed for 'a' (moonshot)"
+    ]
+
+
+def test_priced_none_rule_spares_a_provider_that_tried_no_id(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # deepseek prices none of its ids (the rule's control); zai's page lists
+    # nothing, so its stored id goes the absence path and no scrape runs; the
+    # openrouter api lists no model
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-legacy": None}
+    detect["zai"] = []
+    scrape["zai"] = {}
+    seed_store(repo_root, [deepseek_legacy(), stored_row("a", source="zai")])
+
+    with caplog.at_level(logging.INFO):
+        pipeline.run(make_cfg("deepseek", "zai"), repo_root, PipelineRunner(), today=TODAY)
+
+    issues = health.parse_log(_logged_lines(caplog))
+    assert set(issues) == {"deepseek"}
+    assert issues["deepseek"]["hard"] == [_priced_none_line("deepseek", 1)]
+
+
+def test_priced_none_issue_closes_once_the_provider_prices_again(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-legacy"]
+    scrape["deepseek"] = {"deepseek-legacy": None}
+    seed_store(repo_root, [deepseek_legacy()])
+    caplog.set_level(logging.INFO)
+    pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY)
+
+    still_broken = _health_main_on(tmp_path, caplog, monkeypatch, ["deepseek"])
+
+    assert not [call for call in still_broken if call[:2] == ["issue", "close"]]
+
+    caplog.clear()
+    scrape["deepseek"] = {"deepseek-legacy": Pricing(0.1e-6, 0.2e-6, "chat")}
+    pipeline.run(make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY)
+
+    recovered = _health_main_on(tmp_path, caplog, monkeypatch, ["deepseek"])
+
+    assert [call[2] for call in recovered if call[:2] == ["issue", "close"]] == ["0"]
+
+
+def test_priced_none_rule_reads_a_held_ids_scrape_for_the_verdict(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    # m3 comes back unpriced while m31's row rides an open pr: the held scrape
+    # is the evidence the provider is alive, so the blind sibling alone does not
+    # fire the rule, and two held runs in a row open no issue
+    detect, scrape = fake_modules
+    detect["zai"] = ["m3", "m31"]
+    scrape["zai"] = {"m3": None, "m31": pricing()}
+    seed_store(repo_root, [stored_row("m3", source="zai")])
+    caplog.set_level(logging.INFO)
+    runner = PipelineRunner()
+
+    pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
+    previous = _logged_lines(caplog)
+    assert len(runner.pr_urls) == 1
+    assert not health.parse_log(previous).get("zai", {}).get("hard")
+
+    runner.open_prs = [
+        {
+            "title": runner.created[0][0],
+            "body": runner.created[0][1],
+            "headRefName": runner.created[0][2],
+        }
+    ]
+    for now in ("000001", "000002"):
+        caplog.clear()
+        report = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now=now)
+        lines = _logged_lines(caplog)
+        assert report.providers["zai"].tried == ["m3", "m31"]
+        assert report.providers["zai"].skipped_pending == ["m31"]
+        assert not any(health.PRICED_NONE in line for line in lines)
+        assert not health.parse_log(lines).get("zai", {}).get("hard")
+        calls = _health_main_on(tmp_path, caplog, monkeypatch, [], previous=previous)
+        assert not [call for call in calls if call[:2] == ["issue", "create"]]
+        previous = lines
+
+    # near miss: the held id is blind too, so every tried id came back unpriced
+    caplog.clear()
+    scrape["zai"] = {"m3": None, "m31": None}
+    pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000003")
+
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["zai"]["hard"] == [_priced_none_line("zai", 2)]
+
+
+def test_held_only_run_keeps_a_blind_provider_open_until_a_held_id_prices(
+    tmp_path, fake_modules, repo_root, caplog, monkeypatch
+):
+    # every stored id is held and the page lists no new candidate: the held
+    # scrape decides recovery, so an unpriced held id keeps the issue open and
+    # a priced one closes it
+    detect, scrape = fake_modules
+    detect["zai"] = ["m31"]
+    scrape["zai"] = {"m31": None}
+    held = stored_row("m31", source="zai")
+    newer = store.build_row(
+        "zai", "m31", pricing(3.0e-7, 1.2e-6), "2026-08-25", "https://example.com/pricing", VERSION
+    )
+    seed_store(repo_root, [held])
+    branch = pr.branch_name("zai@2026-08-25-000000")
+    push_pending_branch(repo_root, branch, "zai", [held, newer])
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": branch}])
+    caplog.set_level(logging.INFO)
+
+    report = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
+
+    assert report.providers["zai"].candidates == []
+    assert report.providers["zai"].tried == ["m31"]
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["zai"]["hard"] == [_priced_none_line("zai", 1)]
+    still_broken = _health_main_on(tmp_path, caplog, monkeypatch, ["zai"])
+
+    assert not [call for call in still_broken if call[:2] == ["issue", "close"]]
+
+    caplog.clear()
+    scrape["zai"] = {"m31": pricing()}
+    pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000001")
+
+    recovered = _health_main_on(tmp_path, caplog, monkeypatch, ["zai"])
+
+    assert [call[2] for call in recovered if call[:2] == ["issue", "close"]] == ["0"]
+
+
+def test_openrouter_pass_follows_the_priced_none_rule(
+    tmp_path, fake_modules, repo_root, caplog, or_models
+):
+    # every entry the api lists is an alias, so the pass builds no priced row
+    or_models.append(
+        openrouter.OpenrouterModel(
+            id="openai/gpt-x-latest",
+            name="gpt-x-latest",
+            input_mtok=None,
+            output_mtok=None,
+            cache_read_mtok=None,
+            alias_target="openai/gpt-x",
+        )
+    )
+    seed_store(repo_root, [deepseek_legacy()])
+    caplog.set_level(logging.INFO)
+    report = pipeline.run(make_cfg(), repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    assert report.providers["openrouter"].skipped_no_pricing == ["openai/gpt-x-latest"]
+    issues = health.parse_log(_logged_lines(caplog))
+    assert set(issues) == {"openrouter"}
+    assert issues["openrouter"]["hard"] == [_priced_none_line("openrouter", 1)]
+
+    # near miss: one priced entry beside the alias
+    caplog.clear()
+    or_models.append(or_model("openai/gpt-x", 1.0, 2.0))
+    pipeline.run(make_cfg(), repo_root, PipelineRunner(), today=TODAY, now="000001")
+
+    assert health.parse_log(_logged_lines(caplog)) == {}
 
 
 def test_held_dedup_spelling_holds_the_page_id(tmp_path, fake_modules, repo_root, monkeypatch):
@@ -3001,10 +3289,11 @@ def test_refresh_refuses_a_removed_id_only_the_priced_set_lists(
     ]
 
 
-def test_refresh_holds_a_priced_only_id_behind_an_open_pr(
+def test_refresh_scrapes_a_held_priced_only_id_without_planning_a_row(
     tmp_path, fake_modules, repo_root, monkeypatch
 ):
-    # an open removal pr holds the snapshot's key: refresh skips it as pending
+    # an open removal pr holds the snapshot's key: refresh reads it for the
+    # verdict only, so its moved price appends no competing row and no state
     calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
     price = stored_row("qwen-max-0501")
     seed_store(repo_root, [stored_row("qwen-max"), price])
@@ -3019,9 +3308,18 @@ def test_refresh_holds_a_priced_only_id_behind_an_open_pr(
 
     report = pipeline.run(make_cfg("dashscope"), repo_root, runner, today=TODAY, now="000000")
 
-    assert report.providers["dashscope"].errors == []
-    assert report.providers["dashscope"].skipped_pending == ["qwen-max-0501"]
-    assert ("dashscope", "qwen-max-0501") not in calls
+    dashscope_report = report.providers["dashscope"]
+    assert dashscope_report.errors == []
+    assert dashscope_report.skipped_pending == ["qwen-max-0501"]
+    assert ("dashscope", "qwen-max-0501") in calls
+    assert "qwen-max-0501" in dashscope_report.tried
+    # the scrape priced the held id: no priced-none evidence, and no row
+    assert "qwen-max-0501" not in dashscope_report.skipped_no_pricing
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+    tree = git(repo_root, "ls-tree", "-r", "--name-only", batch_branch("dashscope"))
+    assert not any(path.startswith("state/absence/") for path in tree.splitlines())
 
 
 def test_refresh_refuses_a_priced_only_dedup_twin_of_a_detected_id(

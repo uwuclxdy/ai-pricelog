@@ -63,6 +63,9 @@ class ProviderReport:
     rows: list[str] = field(default_factory=list)
     prs: list[tuple[str, str]] = field(default_factory=list)
     skipped_pending: list[str] = field(default_factory=list)
+    # every id the provider attempted, one entry per attempt (openrouter: to
+    # build_row); a priced-only id the refresh refuses counts as attempted
+    tried: list[str] = field(default_factory=list)
     skipped_no_pricing: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
@@ -261,6 +264,18 @@ def run(
     _openrouter_rows(
         rows, landed_rows, plan, report, held_keys, today, fresh_absence, removal_groups, keys
     )
+
+    for key, provider_report in report.providers.items():
+        attempts = len(provider_report.tried)
+        if attempts and len(provider_report.skipped_no_pricing) == attempts:
+            distinct = len(set(provider_report.tried))
+            log.error(
+                "%s %s: %d id%s, each returned no pricing",
+                health.PRICED_NONE,
+                key,
+                distinct,
+                "" if distinct == 1 else "s",
+            )
 
     log.info(
         "%s %s",
@@ -496,6 +511,7 @@ def _add_candidates(
         candidates.append(model_id)
     provider_report.candidates = candidates
     for model_id in candidates:
+        provider_report.tried.append(model_id)
         try:
             pricing = scraper.scrape(pcfg, model_id)
         except Exception as exc:
@@ -545,7 +561,9 @@ def _refresh_drift(
     appends a row under the STORED spelling when the rates changed and its
     exact line is not already recorded. Stateless:
     a merged PR settles by itself (the next run diffs against the landed row),
-    an open one is skipped by the pending check.
+    while an open PR's spelling is scraped for the health verdict only: it
+    counts in `tried` and as priced or unpriced, so a provider cannot read
+    blind behind its held ids, but it plans no row.
 
     An absence-set id the detector omits (a `detect_priced` page lists ids
     the candidate page does not) stays live in absence, so it refreshes
@@ -564,12 +582,13 @@ def _refresh_drift(
         stored = _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
         if stored is None or (pcfg.key, stored) in plan:
             continue  # nothing stored yet, or the row is fresh from this run
-        if (pcfg.key, stored) in held_keys:
-            log.info("refresh for %r skipped: pending pr", stored)
+        held = (pcfg.key, stored) in held_keys
+        if held:
+            log.info("refresh row for %r skipped: pending pr", stored)
             provider_report.skipped_pending.append(stored)
-            continue
+        provider_report.tried.append(stored)
         try:
-            if page_id not in listed:
+            if page_id not in listed and not held:
                 _refuse_priced_only(pcfg, rows, stored, covered)
             pricing = scraper.scrape(pcfg, page_id)
         except Exception as exc:
@@ -578,6 +597,8 @@ def _refresh_drift(
             continue
         if pricing is None:
             provider_report.skipped_no_pricing.append(stored)
+            continue
+        if held:
             continue
         try:
             row = store.build_row(
@@ -654,6 +675,7 @@ def _openrouter_rows(
         return
     or_report.detected = [model.id for model in models]
     for model in models:
+        or_report.tried.append(model.id)
         try:
             row = openrouter.build_row(model, today, keys.version)
         except (TypeError, ValueError, OverflowError) as exc:
