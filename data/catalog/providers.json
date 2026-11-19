@@ -19,10 +19,6 @@
       "kind": "reseller",
       "name": "Avian"
     },
-    "baseten": {
-      "kind": "reseller",
-      "name": "Baseten"
-    },
     "cerebras": {
       "kind": "reseller",
       "name": "Cerebras"

@@ -601,6 +601,148 @@ def test_merge_skips_a_seed_whose_key_head_claims(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_does_not_restore_a_catalog_entry_head_deleted(tmp_path):
+    # a branch cut before the base dropped a catalog entry still carries it
+    # (the #1053 shape over the post-R6 catalog): the branch's own seed lands,
+    # the deleted entry must not come back
+    repo, _bare = build_repo(tmp_path)
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    catalog["baseten/x"] = {"vendor": None, "curated": False, "sources": {"baseten": ["x"]}}
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "seed baseten")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-00000000",
+        [],
+        catalog_models={
+            "digitalocean/own": {
+                "vendor": None,
+                "curated": False,
+                "sources": {"digitalocean": ["own"]},
+            }
+        },
+    )
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    del catalog["baseten/x"]
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "drop baseten")
+    git(repo, "push", "origin", "main")
+
+    automerge.merge_branches(["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False)
+
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    assert "baseten/x" not in merged
+    assert "digitalocean/own" in merged
+    assert merged["deepseek/deepseek-v4-pro"]["sources"] == {"deepseek": ["deepseek-v4-pro"]}
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_branch_added_catalog_entry(tmp_path):
+    repo, _bare = build_repo(tmp_path)
+    entry = {"vendor": "vendor", "curated": False, "sources": {"vendor": ["new"]}}
+    make_branch(repo, "pricelog/alpha-11111111", [], catalog_models={"vendor/new": entry})
+
+    automerge.merge_branches(["pricelog/alpha-11111111"], repo, pr.PrRunner(), "main", push=False)
+
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    assert merged["vendor/new"] == entry
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_branch_edited_catalog_entry(tmp_path):
+    # an entry the branch changed since its merge base lands with the branch's
+    # bytes; the claim guard only skips an entry HEAD's catalog already claims
+    repo, _bare = build_repo(tmp_path)
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    catalog["vendor/one"] = {"vendor": "vendor", "curated": False, "sources": {"a": ["one"]}}
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "seed vendor/one")
+    git(repo, "push", "origin", "main")
+    edited = {"vendor": "vendor", "curated": True, "sources": {"b": ["one-v2"]}}
+    make_branch(repo, "pricelog/alpha-22222222", [], catalog_models={"vendor/one": edited})
+
+    automerge.merge_branches(["pricelog/alpha-22222222"], repo, pr.PrRunner(), "main", push=False)
+
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    assert merged["vendor/one"] == edited
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_burst_lands_a_seed_that_is_another_branchs_base_entry(tmp_path):
+    # one branch's new entry is another branch's base entry: the older branch
+    # carries it unchanged and decides nothing, the seeding branch lands it
+    repo, _bare = build_repo(tmp_path)
+    entry = {"vendor": "vendor", "curated": False, "sources": {"vendor": ["one"]}}
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    catalog["vendor/one"] = entry
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "seed vendor/one")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/beta-22222222",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+    )
+    catalog = models.load_models(repo / models.MODELS_FILE)
+    del catalog["vendor/one"]
+    models.save_models(catalog, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "drop vendor/one")
+    git(repo, "push", "origin", "main")
+    make_branch(repo, "pricelog/alpha-33333333", [], catalog_models={"vendor/one": entry})
+
+    automerge.merge_branches(
+        ["pricelog/beta-22222222", "pricelog/alpha-33333333"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    claims = [
+        canonical
+        for canonical, model in merged.items()
+        for source, ids in model["sources"].items()
+        for model_id in ids
+        if (source, model_id) == ("vendor", "one")
+    ]
+    assert claims == ["vendor/one"]
+    assert merged["vendor/one"] == entry
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_reads_a_missing_merge_base_catalog_as_empty(tmp_path):
+    # a branch whose merge base carries no data/catalog/models.json counts
+    # every entry it carries as added against an empty base: the merge lands them
+    repo, _bare = build_repo(tmp_path)
+    git(repo, "rm", "-q", models.MODELS_FILE)
+    git(repo, "commit", "-m", "drop the catalog")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/alpha-44444444",
+        [make_row("zai", "glm-5", "2026-08-31", 0.1)],
+    )
+    head_entry = {"vendor": "vendor", "curated": True, "sources": {"a": ["one"]}}
+    models.save_models({"vendor/one": head_entry}, repo / models.MODELS_FILE)
+    git(repo, "add", models.MODELS_FILE)
+    git(repo, "commit", "-m", "seed vendor/one")
+    git(repo, "push", "origin", "main")
+
+    automerge.merge_branches(["pricelog/alpha-44444444"], repo, pr.PrRunner(), "main", push=False)
+
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    assert merged["vendor/one"] == head_entry
+    assert merged["zai/glm-5"]["sources"] == {"zai": ["glm-5"]}
+    assert git(repo, "status", "--porcelain") == ""
+
+
 def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path):
     # the pass is authorized to hand-edit a branch row, so the exact-line union
     # is the one path a contract-breaking shape can take into the store: the

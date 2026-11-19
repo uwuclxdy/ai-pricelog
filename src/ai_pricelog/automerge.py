@@ -239,6 +239,15 @@ def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
         return ""
 
 
+def _merge_base_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
+    """The branch's merge base's copy of a path; one it never carried reads as empty."""
+    sha = runner.run(["git", "merge-base", "HEAD", f"origin/{branch}"], cwd=repo_root).strip()
+    try:
+        return runner.run(["git", "show", f"{sha}:{path}"], cwd=repo_root)
+    except pr.PrError:
+        return ""
+
+
 def _branch_tree_paths(
     runner: pr.PrRunner, repo_root: Path, branch: str, tree_dir: str
 ) -> list[str]:
@@ -692,16 +701,23 @@ def _check_carried_claims(
                     )
 
 
-def _union_models(head_text: str, branch_text: str) -> str:
-    """HEAD's model catalog plus the branch's additions.
+def _union_models(head_text: str, branch_text: str, base_text: str) -> str:
+    """HEAD's model catalog plus the entries the branch added or changed.
 
-    A branch entry lands only when HEAD claims none of its `(source, model_id)`
-    pairs, whatever canonical id claims them. that preserves the coverage
-    invariant: a human twin merge on HEAD deletes a seeded id, and an older
-    branch still carrying that id must not resurrect it.
+    A branch entry lands only when the branch added or changed it against its
+    merge base (a missing base file counts as empty) AND HEAD claims none of
+    its `(source, model_id)` pairs, whatever canonical id claims them. The
+    first rule keeps a branch cut before a catalog deletion from restoring the
+    deleted entry; the second preserves the coverage invariant: a human twin
+    merge on HEAD deletes a seeded id, and a branch seeding the same id must
+    not duplicate the claim.
     """
     head = json.loads(head_text) if head_text else {"version": models.CATALOG_VERSION, "models": {}}
     branch_data = json.loads(branch_text)
+    base_data = json.loads(base_text) if base_text else {}
+    base_models = base_data.get("models") if isinstance(base_data, dict) else None
+    if not isinstance(base_models, dict):
+        base_models = {}
     merged = dict(head.get("models") or {})
     head_claims = {
         (source, model_id)
@@ -710,6 +726,8 @@ def _union_models(head_text: str, branch_text: str) -> str:
         for model_id in ids
     }
     for canonical, entry in (branch_data.get("models") or {}).items():
+        if base_models.get(canonical) == entry:
+            continue
         claims = {
             (source, model_id)
             for source, ids in (entry.get("sources") or {}).items()
@@ -1030,6 +1048,7 @@ def merge_branches(
                 _union_models(
                     _head_text(runner, repo_root, models.MODELS_FILE),
                     _branch_text(runner, repo_root, branch, models.MODELS_FILE),
+                    _merge_base_text(runner, repo_root, branch, models.MODELS_FILE),
                 ),
                 encoding="utf-8",
             )

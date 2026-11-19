@@ -36,7 +36,7 @@ def test_coverage_invariant_over_the_real_tree():
     # set makes dropping another one a deliberate edit here, never a silent
     # widening of the exception
     dropped = {source for source, _ in keys if source not in _providers()}
-    assert dropped == {"scaleway"}
+    assert dropped == {"baseten", "scaleway"}
     assert set(claims) == {key for key in keys if key[0] not in dropped}
     assert all(len(canonicals) == 1 for canonicals in claims.values())
 

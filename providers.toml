@@ -180,8 +180,8 @@ scraper = "avian_page"
 scraper_url = "https://www.avian.io/pricing"
 
 # new-provider probe additions, 2026-08-27 (todo #13). probe evidence:
-# docs/research/new-provider-probe/. five of the seven have no watchable
-# announce surface from this host (deepinfra, watsonx 403s docs, baseten,
+# docs/research/new-provider-probe/. four of the six have no watchable
+# announce surface from this host (deepinfra, watsonx 403s docs,
 # sambanova, publicai); cloudflare and digitalocean carry the feeds below.
 
 [deepinfra]
@@ -211,14 +211,6 @@ detector = "watsonx_page"
 detector_url = "https://www.ibm.com/products/watsonx-ai/pricing"
 scraper = "watsonx_page"
 scraper_url = "https://www.ibm.com/products/watsonx-ai/pricing"
-
-[baseten]
-provider = "Baseten"
-kind = "reseller"
-detector = "baseten_page"
-detector_url = "https://www.baseten.co/pricing"
-scraper = "baseten_page"
-scraper_url = "https://www.baseten.co/pricing"
 
 [digitalocean]
 provider = "DigitalOcean"
