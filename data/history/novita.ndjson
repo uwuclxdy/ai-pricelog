@@ -63,6 +63,7 @@
 {"schema":4,"source":"novita","model_id":"meta-llama/llama-3.1-8b-instruct","observed_at":"2026-08-29","rates":{"input":0.02,"output":0.05},"limits":{"context":16384},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"meta-llama/llama-3.3-70b-instruct","observed_at":"2026-08-29","rates":{"input":0.135,"output":0.4},"limits":{"context":12288},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"meta-llama/llama-4-maverick-17b-128e-instruct-fp8","observed_at":"2026-08-26","rates":{"input":0.27,"output":0.85},"limits":{"context":1048576},"provenance":{"url":"https://novita.ai/pricing"}}
+{"schema":4,"source":"novita","model_id":"meta-llama/llama-4-maverick-17b-128e-instruct-fp8","observed_at":"2026-11-19","removed":true,"rates":{"input":0.27,"output":0.85},"limits":{"context":1048576}}
 {"schema":4,"source":"novita","model_id":"meta-llama/llama-4-scout-17b-16e-instruct","observed_at":"2026-08-26","rates":{"input":0.18,"output":0.59},"limits":{"context":131072},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"microsoft/wizardlm-2-8x22b","observed_at":"2026-08-29","rates":{"input":0.62,"output":0.62},"limits":{"context":65535},"provenance":{"url":"https://novita.ai/pricing"}}
 {"schema":4,"source":"novita","model_id":"mindai/macaron-v1-tall","observed_at":"2026-07-29","rates":{"input":0.0,"output":0.0},"limits":{"context":32768},"provenance":{"url":"https://blogs.novita.ai/macaron-v1-tall-on-novita-ai/"}}
