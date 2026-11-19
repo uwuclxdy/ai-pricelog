@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "081c77c3f809dfc69a19eb80b3fdf6ea7608bcc57c19f93debcd25966efbfeb0",
-      "fetched": "2026-11-19T17:00:18Z"
+      "sha256": "023d91191c4a5828a1a8d94beb80e371081b2230c77c4c09dcf950e988a317bc",
+      "fetched": "2026-11-19T18:00:16Z"
     }
   },
   "together": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "9160aa4500b44707e92d15d4c1706a55a4f725832b1fd3d78b5c07ad701d975f",
-      "fetched": "2026-11-17T19:55:41Z"
+      "sha256": "6b5ccb342520b31c8858c3a23cda5ecbe7015f0d072881eea1c49a5dd0369996",
+      "fetched": "2026-11-19T18:00:16Z"
     }
   },
   "cloudflare": {
