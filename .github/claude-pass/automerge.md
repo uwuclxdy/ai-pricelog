@@ -8,6 +8,7 @@ the claude pass judges the draft PRs and posts a merge disposition on each; it n
 |---|---|
 | verified | post the marker `automerge: yes <head sha>` |
 | flip-flop | post `automerge: yes <head sha>`; the next run appends the correction |
+| openrouter endpoint match | name the matching endpoint in the comment, then post `automerge: yes <head sha>`; the next run appends today's price |
 | deprecation/retirement confirmed | write the billing rule + bump its test pin, then post `automerge: yes <head sha>` |
 | everything else | `needs human` comment, post `automerge: no <head sha>` |
 
@@ -26,9 +27,63 @@ openrouter reseller rates flip-flop: a row can record a transient the api revert
 1. today's api value equals the prior stored row for (source, model_id) (read the last row from `git show origin/mommy:data/history/<source>.ndjson`)
 2. the row itself records the transient state it saw
 
-a rate that moved again since the row (today's api matches neither the row nor the prior stored row) leaves condition 1 unanswerable: comment needs human. a newer branch's silence settles nothing: the pipeline diffs the api against the landed rows plus every open PR's rows and holds every (source, model_id) an open PR's branch would append a row for over the landed shard (the landed rows every branch carries hold nothing, and the PR's title and body play no part), so no later run can record a NEW row for this (source, model_id) while this PR stays open.
+a rate that moved again since the row (today's api matches neither the row nor the prior stored row) leaves condition 1 unanswerable: comment needs human, unless the endpoint-match disposition below lands the row. a newer branch's silence settles nothing: the pipeline diffs the api against the landed rows plus every open PR's rows and holds every (source, model_id) an open PR's branch would append a row for over the landed shard (the landed rows every branch carries hold nothing, and the PR's title and body play no part), so no later run can record a NEW row for this (source, model_id) while this PR stays open.
 
 the next run appends the correction row. precedents (ruled 2026-09-02): gryphe/mythomax-l2-13b (0.35/0.6 for one day), qwen/qwen3-235b-a22b-2507 (0.09/0.55), deepseek/deepseek-v4-pro-0813 (a uniform 1.69x step), deepseek/deepseek-v4-pro (1% reseller drift), and tencent/hy3's base-rate oscillation (0.132/0.0825 across runs; its window_rates carry the schedule either way). when a flip-flop row's correction does not arrive on the next run, the class flips from transient to misread: comment needs human and point at `openrouter.py`.
+
+## the endpoint-match disposition
+
+openrouter's model-level `pricing` is the price of one serving provider's endpoint, the one the record's `top_provider` fingerprints (its context length and max completion tokens), not a minimum across endpoints (measured 2026-11-18 on 6 ids: each model price equalled its fingerprinted endpoint's, and on 5 of them a cheaper enabled endpoint existed). a key whose routing moves to another provider takes that provider's price and seldom returns to its prior stored row, so condition 1 fails on rows that recorded a real provider state.
+
+an openrouter price row that differs from today's api and fails condition 1 still lands when it equals the price of at least one endpoint of its own id at review time. a `removed: true` row never takes this path: an endpoint's price says nothing about a delisting.
+
+1. fetch the full body with `curl -fsSL -o /tmp/endpoints.json 'https://openrouter.ai/api/v1/models/<model_id>/endpoints'`, `<model_id>` the row's id verbatim (a `:batch` or `:free` suffix included; a sibling id never stands in). a failed fetch matches nothing.
+2. run the script below on the PR branch's shard. the script reads the shard on stdin (the pass writes no row file), picks the row by its `model_id` and `observed_at`, and builds every endpoint's `pricing` into a row with the repo's own parser, `build_row`, never by hand:
+
+```bash
+git show origin/<branch>:data/history/openrouter.ndjson | uv run python -c '
+import json, sys
+from ai_pricelog.openrouter import OpenrouterModel, build_row
+model_id, observed_at, endpoints_file = sys.argv[1:]
+rows = [json.loads(line) for line in sys.stdin if line.strip()]
+picked = [r for r in rows if (r["model_id"], r["observed_at"]) == (model_id, observed_at)]
+assert picked, "no such row on the branch"
+row = picked[-1]
+data = json.load(open(endpoints_file))["data"]
+assert not row.get("removed"), "a removal row never matches an endpoint"
+assert data["id"] == row["model_id"], data["id"]
+for index, endpoint in enumerate(data["endpoints"]):
+    if not (
+        isinstance(endpoint, dict)
+        and isinstance(endpoint.get("provider_name"), str)
+        and endpoint["provider_name"].strip()
+        and endpoint["provider_name"].isprintable()
+        and isinstance(endpoint.get("tag"), str)
+        and endpoint["tag"].strip()
+        and endpoint["tag"].isprintable()
+        and isinstance(endpoint.get("pricing"), dict)
+    ):
+        print(f"skipped endpoint {index}: not an object with a nonblank printable string provider_name, a nonblank printable string tag and a pricing object", file=sys.stderr)
+        continue
+    pricing = {key: value for key, value in endpoint["pricing"].items() if key != "discount"}
+    model = OpenrouterModel(row["model_id"], "", None, None, None, pricing=pricing)
+    try:
+        built = build_row(model, "-", row["schema"]) or {}
+    except (TypeError, ValueError, OverflowError) as exc:
+        print(f"skipped endpoint {index}: the parser rejects its pricing: {exc}", file=sys.stderr)
+        continue
+    if all(built.get(key) == row.get(key) for key in ("rates", "fees", "overrides", "unmapped")):
+        print(endpoint["provider_name"], endpoint["tag"])
+' '<model_id>' '<observed_at>' /tmp/endpoints.json
+```
+
+3. it prints the `provider_name` and `tag` of every endpoint whose `pricing`, less its `discount` key (an endpoint-only key: the `/models` pricing a row is built from carried it on 0 of 741 models, measured 2026-11-19), builds `rates`, `fees`, `overrides` and `unmapped` that all equal the row's; an endpoint that is not an object, lacks a nonblank printable string `provider_name` or `tag`, lacks a `pricing` object or carries a `pricing` the parser rejects matches nothing: the script names it on stderr by its index, and the scan goes on. no output, or a nonzero exit, matches nothing. the script exits nonzero when the branch holds no such row, when the row is a removal, or when `/tmp/endpoints.json` is missing or holds another id's body (an earlier row's body that a failed fetch left in place, for one).
+
+a matching row is merge-eligible: name the matching endpoint's `provider_name` and `tag` in the comment. a row with no match is unverified, and one unverified row makes its whole PR needs human, however many of its other rows match: the PR takes `automerge: yes <head sha>` only when each of its own rows is verified, a flip-flop or an endpoint match. a row that meets condition 1 never takes this path: the flip-flop rule above decides it.
+
+the hold makes needs human costly here: while the PR stays open the pipeline records no correction row for its keys (the flip-flop section's hold), so a needs-human verdict on a real provider state freezes the key until a human acts. merged, the row is a dated observation and the next run appends today's price.
+
+precedent (ruled 2026-11-18): PR 869's `deepseek/deepseek-v4.1-flash` row 0.051/0.567/0.018 (observed 2026-11-07) equals the Wafer endpoint exactly (read 2026-11-18), while the api read 0.3/1.2/0.006 and the prior stored row 0.0486/0.54/0.018.
 
 ## always human: comment needs-human and stop
 
@@ -62,7 +117,7 @@ after every PR is judged and every comment posted, your part is done: you never 
 - refuses any appended price row whose `(source, model_id)` no catalog claims: neither HEAD's models.json nor any branch of the burst carries the claim (the pipeline seeds each new key on the branch that carries its row, so a missing claim means a carried row whose seed rides a sibling outside the burst, or no branch at all once that sibling closed). the refusal names the branch and the row. a removal row is exempt: its claim landed with its first price row
 - every line of the branch's copy must read as one json object per line, and each line the union appends must pass the row contract (`data/schema/row.v4.json`); a refused line stops the merge naming the branch and its line in the branch's own copy (`origin/<branch>:<path>`)
 - per branch: a two-parent merge commit, exact-line history union per shard the branch touched (HEAD's lines first, the branch's new lines appended; a key-based union drops same-day update rows, so the dedupe is exact lines only), the union re-sorted on `(model_id, observed_at)`. `billing-rules.json` and its test pin resolve by union too: the pass appends the same confirmed rule to every branch it judges after the confirmation, so rules dedupe by id (HEAD's copy wins) and the `len(rules) == N` pin recomputes from the landed count
-- `data/catalog/models.json`: a branch entry whose `(source, model_id)` HEAD already claims is skipped, so a human's twin merge is never resurrected; every other branch entry lands
+- `data/catalog/models.json`: a branch entry lands only when the branch added or changed it against its merge base (a missing base file counts as empty) and HEAD claims none of its `(source, model_id)` pairs, so a branch cut before a catalog deletion never restores the deleted entry and a human's twin merge is never resurrected; every other branch entry is skipped
 - `state/announce/`: each channel lands from the burst entry with the newest `fetched` instant (an identical-instant tie goes to the newest branch, the base wins every tie; a legacy date-only entry sorts before every same-day timestamp), so a stale copy — a failed fetch keeping the base sha, or a branch cut before a later landed refresh — never wins; a channel the newest branch's index no longer lists is dropped; a channel only the base holds survives only where the merged tree still has its file (the base gained it after every branch was cut), one a branch deleted left the config and is dropped
 - `state/absence/<source>.json`: on every merge, inside a burst or across bursts, the merge compares runs: each side's copy is stamped with the author date of the commit that wrote it (its run's commit), and a branch's change to the file, a new copy or a deletion, lands unless HEAD's copy or deletion comes from a newer run, printing `kept HEAD's <path> over <branch>: HEAD's copy is from a newer run (<head> > <branch>)`, so a held older-run PR merges later without reverting newer counters
 - drops any branch whose tip the base already holds before the pre-gates, deleting its ref under push when the rows are provably on the remote base (that deletion closes the stranded PR; a checkout whose HEAD is ahead of the remote base keeps the ref — its rows are not upstream yet)
