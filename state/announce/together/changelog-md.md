@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 17, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `Qwen/Qwen4-Max`: 1,000,000 context length, text and image input, reasoning, function calling, and structured outputs.
+# Changelog **November 19, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `tencent/Hy4`: 1,048,576 context length, NVFP4 quantization, text and image input, reasoning, function calling, and structured outputs.
+Pricing: \$0.834 input / \$2.501 output / \$0.042 cached input (per 1M tokens).
+**November 17, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `Qwen/Qwen4-Max`: 1,000,000 context length, text and image input, reasoning, function calling, and structured outputs.
 Pricing: \$1.425 input / \$4.275 output / \$0.07125 cached input (per 1M tokens).
 ## New models available for fine-tuning You can now fine-tune the following models: * `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B` * `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B` Both models support [function-calling](https://docs.together.ai/docs/fine-tuning/function-calling.md) and [reasoning](https://docs.together.ai/docs/fine-tuning/reasoning.md) fine-tuning.
 See [Supported models](https://docs.together.ai/docs/fine-tuning/supported-models.md) for the full list.
