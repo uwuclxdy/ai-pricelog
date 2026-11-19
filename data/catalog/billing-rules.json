@@ -429,6 +429,16 @@
         "https://api-docs.deepseek.com/guides/search",
         "https://api-docs.deepseek.com/quick_start/pricing/"
       ]
+    },
+    {
+      "id": "novita-model-retirement-2026-12-10",
+      "provider": "novita",
+      "effective": "2026-12-10",
+      "timezone": "UTC",
+      "statement": "the changelog's Dec 10, 2026 Model Deprecation Notice retires minimax/minimax-m2.7, minimax/minimax-m2.7-highspeed and minimax/minimax-m2.5 from the Novita platform at 00:00 UTC on 2026-12-10, migrating them to minimax/minimax-m3.1-flash: after the cutoff API requests to the retired ids return an error, so their stored rates stop applying from that instant. the notice names UTC as its frame; the stored novita rows already carry removal rows (2026-11-16) through the absence machinery",
+      "citation": [
+        "https://novita.ai/docs/changelog"
+      ]
     }
   ]
 }
