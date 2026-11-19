@@ -92,3 +92,4 @@
 {"schema":4,"source":"google","model_id":"gemini-robotics-er-2-streaming-preview","observed_at":"2026-08-10","rates":{"input":2.0,"output":10.0},"provenance":{"url":"https://web.archive.org/web/20260810215930/https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-robotics-er-2-streaming-preview","observed_at":"2026-08-26","rates":{"input":2.0,"output":10.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
 {"schema":4,"source":"google","model_id":"gemini-robotics-er-2-streaming-preview","observed_at":"2026-09-08","rates":{"input":1.0,"output":5.0},"provenance":{"url":"https://ai.google.dev/gemini-api/docs/pricing"}}
+{"schema":4,"source":"google","model_id":"models/genie-4","observed_at":"2026-11-19","rates":{"input":1.5,"output":9.0},"provenance":{"url":"https://aistudio.google.com/docs/pricing.md"}}

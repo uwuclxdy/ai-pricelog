@@ -3804,6 +3804,15 @@
       },
       "vendor": "google"
     },
+    "google/models/genie-4": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "models/genie-4"
+        ]
+      },
+      "vendor": "models"
+    },
     "gpt-3.5-turbo": {
       "curated": true,
       "name": "GPT-3.5 Turbo",
