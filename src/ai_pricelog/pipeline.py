@@ -497,20 +497,25 @@ def _add_candidates(
     Store membership (the page id or a dedup spelling, pending branches
     included) settles an id silently. a contract-failing pending row never
     enters the union, so its key reaches the held check here: an open PR's
-    branch holding any of the id's spellings skips it, and a closed-unmerged
-    PR re-candidates it next run. an id without a store row keeps
-    re-candidating until its first row lands (decision 8, skip-and-retry).
+    branch holding any of the id's spellings plans no row, and a
+    closed-unmerged PR re-candidates it next run. a held page id is scraped
+    for the health verdict only, as `_refresh_drift` reads a held spelling: it
+    counts in `tried` and as priced or unpriced by its scrape, and it appends
+    no row. an unheld id without a store row keeps re-candidating until its
+    first row lands (decision 8, skip-and-retry).
     """
     candidates: list[str] = []
+    held: list[str] = []
     for model_id in dict.fromkeys(detected):
         if _stored_spelling(rows, pcfg.key, model_id, dedup_keys) is not None:
             continue
         if _spelling_held(held_keys, pcfg.key, model_id, dedup_keys):
             provider_report.skipped_pending.append(model_id)
+            held.append(model_id)
             continue
         candidates.append(model_id)
     provider_report.candidates = candidates
-    for model_id in candidates:
+    for model_id in [*candidates, *held]:
         provider_report.tried.append(model_id)
         try:
             pricing = scraper.scrape(pcfg, model_id)
@@ -521,6 +526,8 @@ def _add_candidates(
         if pricing is None:
             # skip-and-retry: the page carries no row for the id yet
             provider_report.skipped_no_pricing.append(model_id)
+            continue
+        if model_id in held:
             continue
         try:
             row = store.build_row(

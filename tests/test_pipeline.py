@@ -963,6 +963,90 @@ def test_held_only_run_keeps_a_blind_provider_open_until_a_held_id_prices(
     assert [call[2] for call in recovered if call[:2] == ["issue", "close"]] == ["0"]
 
 
+def test_priced_none_rule_reads_a_held_candidates_scrape_for_the_verdict(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # fresh's first row rides an open pr but fails the row contract, so it drops
+    # out of the union while the pr still holds its key: the held page id is
+    # scraped for the verdict, so m3's blind scrape alone fires no rule
+    detect, scrape = fake_modules
+    detect["zai"] = ["m3", "fresh"]
+    scrape["zai"] = {"m3": None, "fresh": pricing()}
+    m3 = stored_row("m3", source="zai")
+    seed_store(repo_root, [m3])
+    refused = store.build_row(
+        "zai", "fresh", pricing(), "2026-08-25", "https://example.com/pricing", VERSION
+    )
+    refused["surprise"] = "a hand edit the row contract refuses"
+    pending_branch = pr.branch_name("zai@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "zai", [m3, refused])
+    runner = PipelineRunner(open_prs=[{"title": "t", "body": "", "headRefName": pending_branch}])
+    caplog.set_level(logging.INFO)
+
+    report = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
+
+    provider_report = report.providers["zai"]
+    assert provider_report.detected == ["m3", "fresh"]
+    assert provider_report.candidates == []
+    assert provider_report.tried == ["fresh", "m3"]
+    assert provider_report.skipped_pending == ["fresh"]
+    assert provider_report.errors == []
+    # the held scrape plans no row: no pr opens, so no branch carries a row,
+    # a catalog seed or an absence file
+    assert runner.pr_urls == []
+    assert_default_branch_clean(repo_root, tip="seed store")
+    assert len(branch_rows(repo_root, pending_branch, "zai")) == 2
+    lines = _logged_lines(caplog)
+    assert not any(health.PRICED_NONE in line for line in lines)
+    assert not health.parse_log(lines).get("zai", {}).get("hard")
+
+    # near miss: the held candidate is blind too, so every tried id came back unpriced
+    caplog.clear()
+    scrape["zai"] = {"m3": None, "fresh": None}
+    pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000001")
+
+    issues = health.parse_log(_logged_lines(caplog))
+    assert issues["zai"]["hard"] == [_priced_none_line("zai", 2)]
+
+
+def test_held_candidate_scrape_failure_logs_the_unheld_candidates_hard_line(
+    tmp_path, fake_modules, repo_root, caplog
+):
+    # a held candidate's raise is the evidence an unheld candidate's raise is,
+    # not a silent skip: it lands in errors and logs the same parseable line
+    detect, scrape = fake_modules
+    detect["zai"] = ["fresh"]
+    scrape["zai"] = {"fresh": web.FetchError("fresh boom")}
+    m3 = stored_row("m3", source="zai")
+    seed_store(repo_root, [m3])
+    runner = PipelineRunner()
+    caplog.set_level(logging.INFO)
+    line = "ERROR:ai_pricelog.pipeline:scraper zai failed for 'fresh'"
+
+    first = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
+
+    assert first.providers["zai"].errors == ["FetchError: fresh boom"]
+    assert _logged_lines(caplog).count(line) == 1
+
+    caplog.clear()
+    refused = store.build_row(
+        "zai", "fresh", pricing(), "2026-08-25", "https://example.com/pricing", VERSION
+    )
+    refused["surprise"] = "a hand edit the row contract refuses"
+    pending_branch = pr.branch_name("zai@2026-08-25-000000")
+    push_pending_branch(repo_root, pending_branch, "zai", [m3, refused])
+    runner.open_prs = [{"title": "t", "body": "", "headRefName": pending_branch}]
+
+    second = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000001")
+
+    provider_report = second.providers["zai"]
+    assert provider_report.candidates == []
+    assert provider_report.tried == ["fresh"]
+    assert provider_report.skipped_pending == ["fresh"]
+    assert provider_report.errors == ["FetchError: fresh boom"]
+    assert _logged_lines(caplog).count(line) == 1
+
+
 def test_openrouter_pass_follows_the_priced_none_rule(
     tmp_path, fake_modules, repo_root, caplog, or_models
 ):
@@ -999,8 +1083,6 @@ def test_held_dedup_spelling_holds_the_page_id(tmp_path, fake_modules, repo_root
     # the row contract refuses, so only the held set can settle the page id,
     # through the same spelling list the store lookup uses
     detect, scrape = fake_modules
-    detect["zai"] = ["foo-v2"]
-    scrape["zai"] = {}  # any scrape call would raise AssertionError
     scraper_module = sys.modules["ai_pricelog.scrapers.fake_scr"]
     monkeypatch.setattr(
         scraper_module,
@@ -1013,7 +1095,7 @@ def test_held_dedup_spelling_holds_the_page_id(tmp_path, fake_modules, repo_root
     )
     seed_store(repo_root, [legacy])
     detect["zai"] = ["foo-v2", "zai-legacy"]
-    scrape["zai"] = {"zai-legacy": pricing()}
+    scrape["zai"] = {"zai-legacy": pricing(), "foo-v2": pricing()}
     refused = store.build_row(
         "zai", "foo", pricing(), "2026-08-25", "https://example.com/pricing", VERSION
     )
@@ -1024,8 +1106,11 @@ def test_held_dedup_spelling_holds_the_page_id(tmp_path, fake_modules, repo_root
 
     report = pipeline.run(make_cfg("zai"), repo_root, runner, today=TODAY, now="000000")
 
-    assert report.providers["zai"].skipped_pending == ["foo-v2"]
-    assert report.providers["zai"].candidates == []
+    provider_report = report.providers["zai"]
+    assert provider_report.skipped_pending == ["foo-v2"]
+    assert provider_report.candidates == []
+    assert provider_report.tried == ["foo-v2", "zai-legacy"]
+    assert provider_report.errors == []
     assert runner.pr_urls == []
 
 
@@ -1124,7 +1209,7 @@ def test_pending_scan_contract_failing_row_still_holds_its_key(tmp_path, fake_mo
     # open a duplicate
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
-    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    scrape["deepseek"] = {"deepseek-new": pricing(3.0e-7, 1.2e-6), "deepseek-chat": pricing()}
     cfg = make_cfg("deepseek")
     legacy = deepseek_legacy()
     seed_store(repo_root, [legacy])
@@ -1142,6 +1227,8 @@ def test_pending_scan_contract_failing_row_still_holds_its_key(tmp_path, fake_mo
 
     provider_report = report.providers["deepseek"]
     assert provider_report.skipped_pending == ["deepseek-chat"]
+    assert provider_report.tried == ["deepseek-new", "deepseek-chat"]
+    assert provider_report.errors == []
     assert [model_id for model_id, _url in provider_report.prs] == ["deepseek-new"]
     assert_default_branch_clean(repo_root, tip="seed store")
 
