@@ -11,7 +11,7 @@ A request without it returns HTTP 400.
 `pplx-embed-v2-context-0.6b` returns 1024, or 512.
 The 0.6b model shares its embedding space with the 1024-dimension output of the 9b model.
 **Pricing.** Per 1M tokens: `pplx-embed-v2-context-9b` is \$0.12 for text and \$0.42 for images, and `pplx-embed-v2-context-0.6b` is \$0.02 for text and \$0.40 for images.
-See [Contextualized Embeddings](https://docs.perplexity.ai/docs/embeddings/contextualized-embeddings.md#v2-models).
+See [Embeddings](https://docs.perplexity.ai/docs/embeddings/contextualized-embeddings.md#models).
 **November 2026** **GPT-6.2 Sol and GPT-6.2 Astra** The [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) and pricing calculator include `openai/gpt-6.2-sol` and `openai/gpt-6.2-astra`.
 For requests with up to 272,000 input tokens, GPT-6.2 Sol costs \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens.
 GPT-6.2 Astra costs \$8.00, \$0.40, and \$40.00, respectively.
