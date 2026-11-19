@@ -47,6 +47,7 @@ from ai_pricelog import (
     pr,
     store,
     validate,
+    web,
 )
 
 log = logging.getLogger(__name__)
@@ -234,6 +235,7 @@ def run(
             scraper,
             dedup_keys,
             detected,
+            absence_ids,
             rows,
             plan,
             provider_report,
@@ -525,6 +527,7 @@ def _refresh_drift(
     scraper: Any,
     dedup_keys: Any,
     detected: list[str],
+    absence_ids: list[str] | None,
     rows: list[dict[str, object]],
     plan: dict[tuple[str, str], _PrGroup],
     provider_report: ProviderReport,
@@ -533,7 +536,8 @@ def _refresh_drift(
     resolve: Callable[[str, str], tuple[float, str] | None],
     keys: validate.SchemaKeys,
 ) -> None:
-    """Drift-check every detected page id against its stored rows.
+    """Drift-check every detected page id, then every absence-set id the
+    detector omits, against its stored rows.
 
     Maps the page id through the scraper's dedup_keys to the stored spelling
     (the first spelling that has a row, pending branches included), scrapes
@@ -542,8 +546,21 @@ def _refresh_drift(
     exact line is not already recorded. Stateless:
     a merged PR settles by itself (the next run diffs against the landed row),
     an open one is skipped by the pending check.
+
+    An absence-set id the detector omits (a `detect_priced` page lists ids
+    the candidate page does not) stays live in absence, so it refreshes
+    too, through its stored spelling only: it never seeds a candidate.
+    `_refuse_priced_only` raises for the stored states refresh has no
+    reading for.
     """
-    for page_id in detected:
+    listed = set(detected)
+    priced_only = [page_id for page_id in dict.fromkeys(absence_ids or ()) if page_id not in listed]
+    covered = (
+        {_stored_spelling(rows, pcfg.key, page_id, dedup_keys) for page_id in detected}
+        if priced_only
+        else set()
+    )
+    for page_id in [*detected, *priced_only]:
         stored = _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
         if stored is None or (pcfg.key, stored) in plan:
             continue  # nothing stored yet, or the row is fresh from this run
@@ -552,6 +569,8 @@ def _refresh_drift(
             provider_report.skipped_pending.append(stored)
             continue
         try:
+            if page_id not in listed:
+                _refuse_priced_only(pcfg, rows, stored, covered)
             pricing = scraper.scrape(pcfg, page_id)
         except Exception as exc:
             log.exception("refresh scrape failed for %r (%s)", stored, pcfg.key)
@@ -585,6 +604,30 @@ def _refresh_drift(
             _PrGroup(pcfg.key, pcfg.provider, pcfg.scraper_url),
         )
         group.rows.append(row)
+
+
+def _refuse_priced_only(
+    pcfg: config.ProviderCfg,
+    rows: list[dict[str, object]],
+    stored: str,
+    covered: set[str | None],
+) -> None:
+    """Raise when a priced-only id's stored spelling has no refresh reading.
+
+    A removed spelling only the pricing page lists is no reappearance the
+    candidate page confirms, and a spelling a detected id already refreshes
+    would read one key from two page rows.
+    """
+    if store.newest(rows, pcfg.key, stored).get("removed") is True:
+        raise web.FetchError(
+            f"{stored!r} is removed in the store and absent from {pcfg.detector_url}, "
+            f"but priced on {pcfg.scraper_url}: refresh cannot tell a reappearance"
+        )
+    if stored in covered:
+        raise web.FetchError(
+            f"{stored!r} is refreshed through a detected id and through another "
+            f"page id priced on {pcfg.scraper_url}"
+        )
 
 
 def _openrouter_rows(

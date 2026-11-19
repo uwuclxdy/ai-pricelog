@@ -2883,6 +2883,199 @@ def test_absence_skips_when_priced_detection_fails(tmp_path, fake_modules, repo_
     assert report.providers["mistral"].errors
 
 
+def counted_scrapes(monkeypatch) -> list[tuple[str, str]]:
+    """Every (source, page id) the fake scraper serves, in call order."""
+    scr = sys.modules["ai_pricelog.scrapers.fake_scr"]
+    served = scr.scrape
+    calls: list[tuple[str, str]] = []
+
+    def scrape(cfg, model_id):
+        calls.append((cfg.key, model_id))
+        return served(cfg, model_id)
+
+    monkeypatch.setattr(scr, "scrape", scrape)
+    return calls
+
+
+def stored_row(model_id: str, price: Pricing | None = None, source: str = "dashscope") -> dict:
+    return store.build_row(
+        source,
+        model_id,
+        price or pricing(),
+        "2026-08-19",
+        "https://example.com/pricing",
+        VERSION,
+    )
+
+
+def appended_rows(repo_root: Path, source: str) -> list[tuple[str, dict, object]]:
+    return [
+        (row["model_id"], row["rates"], row.get("removed"))
+        for row in branch_rows(repo_root, batch_branch(source), source)
+        if row["observed_at"] == TODAY
+    ]
+
+
+def priced_only_source(fake_modules, monkeypatch, priced: list[str]) -> list[tuple[str, str]]:
+    """The dashscope shape: candidates from one page, the priced set from another."""
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max", "qwen-new"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: list(priced)
+    scrape["dashscope"] = {
+        "qwen-max": pricing(),
+        "qwen-new": pricing(),
+        "qwen-max-0501": pricing(3.0e-7, 1.2e-6),
+    }
+    return counted_scrapes(monkeypatch)
+
+
+def test_refresh_rereads_a_stored_priced_id_the_detector_omits(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the candidate page lists the official version only, while the pricing
+    # page keeps the dated snapshot live: its moved price appends a row
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
+    seed_store(repo_root, [stored_row("qwen-max"), stored_row("qwen-max-0501")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["dashscope"].errors == []
+    assert ("dashscope", "qwen-max-0501") in calls
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max-0501", {"input": 0.3, "output": 1.2}, None),
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None),
+    ]
+
+
+def test_refresh_skips_a_stored_id_in_neither_set(tmp_path, fake_modules, repo_root, monkeypatch):
+    # neither page lists qwen-old: no scrape, and absence counts it
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max"])
+    seed_store(repo_root, [stored_row("qwen-max"), stored_row("qwen-old")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["dashscope"].errors == []
+    assert calls == [("dashscope", "qwen-new"), ("dashscope", "qwen-max")]
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+    assert branch_absence(repo_root, batch_branch("dashscope")) == {
+        "dashscope": {"qwen-old": {"absent_runs": 1, "since": TODAY}}
+    }
+
+
+def test_refresh_reads_an_id_in_both_sets_once(tmp_path, fake_modules, repo_root, monkeypatch):
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max"])
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls.count(("dashscope", "qwen-max")) == 1
+
+
+def test_refresh_refuses_a_removed_id_only_the_priced_set_lists(
+    tmp_path, fake_modules, repo_root, monkeypatch, caplog
+):
+    # no reading settles whether the pricing page re-listed a removed id the
+    # candidate page omits: a hard failure, never a reappearance row
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
+    price = stored_row("qwen-max-0501")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [stored_row("qwen-max"), price, removal])
+
+    with caplog.at_level(logging.ERROR):
+        report = pipeline.run(
+            make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+        )
+
+    assert ("dashscope", "qwen-max-0501") not in calls
+    [error] = report.providers["dashscope"].errors
+    assert error.startswith("FetchError: 'qwen-max-0501'")
+    assert health.parse_log(_logged_lines(caplog))["dashscope"]["hard"]
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+
+
+def test_refresh_holds_a_priced_only_id_behind_an_open_pr(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # an open removal pr holds the snapshot's key: refresh skips it as pending
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
+    price = stored_row("qwen-max-0501")
+    seed_store(repo_root, [stored_row("qwen-max"), price])
+    pending_branch = pr.branch_name("dashscope@2026-08-25-000000")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-25", VERSION, price)
+    push_pending_branch(
+        repo_root, pending_branch, "dashscope", [stored_row("qwen-max"), price, removal]
+    )
+    runner = PipelineRunner(
+        open_prs=[{"title": "Remove dashscope ids", "body": "", "headRefName": pending_branch}]
+    )
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, runner, today=TODAY, now="000000")
+
+    assert report.providers["dashscope"].errors == []
+    assert report.providers["dashscope"].skipped_pending == ["qwen-max-0501"]
+    assert ("dashscope", "qwen-max-0501") not in calls
+
+
+def test_refresh_refuses_a_priced_only_dedup_twin_of_a_detected_id(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a priced-only page id whose stored spelling a detected id already
+    # refreshes would read one key from two page rows
+    calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-latest"])
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id == "qwen-max-latest" else []
+    )
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert ("dashscope", "qwen-max-latest") not in calls
+    [error] = report.providers["dashscope"].errors
+    assert error.startswith("FetchError: 'qwen-max'")
+
+
+def test_refresh_without_detect_priced_reads_the_detected_ids(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # refresh walks the detected list as listed: a repeated page id and a
+    # dedup twin each scrape, and an undetected stored id goes absent
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["a", "a-alias", "a", "b"]
+    scrape["deepseek"] = {"a": pricing(), "a-alias": pricing(), "b": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["a"] if model_id == "a-alias" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(
+        repo_root,
+        [stored_row(model_id, source="deepseek") for model_id in ("a", "b", "gone")],
+    )
+
+    report = pipeline.run(
+        make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["deepseek"].errors == []
+    assert calls == [
+        ("deepseek", "a"),
+        ("deepseek", "a-alias"),
+        ("deepseek", "a"),
+        ("deepseek", "b"),
+    ]
+    assert appended_rows(repo_root, "deepseek") == [("b", {"input": 0.3, "output": 1.2}, None)]
+    assert branch_absence(repo_root, batch_branch("deepseek")) == {
+        "deepseek": {"gone": {"absent_runs": 1, "since": TODAY}}
+    }
+
+
 def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monkeypatch):
     # the real dashscope pair on the 2026-11-18 captures: the CN page lists
     # official versions only, so absence keyed on it counted every dated and
