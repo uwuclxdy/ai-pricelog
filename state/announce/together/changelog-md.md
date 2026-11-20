@@ -1,6 +1,13 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
 # Changelog **November 19, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `tencent/Hy4`: 1,048,576 context length, NVFP4 quantization, text and image input, reasoning, function calling, and structured outputs.
 Pricing: \$0.834 input / \$2.501 output / \$0.042 cached input (per 1M tokens).
+**November 18, 2026** ## Together Python SDK and CLI 3.3.0 **What's new:** * **Tinker 0.39.0 compatibility:** The [Tinker-compatible client](https://docs.together.ai/docs/post-training/migrate-from-tinker.md) now builds on `tinker` 0.39.0, which the `tinker` extra installs.
+It follows Tinker 0.39's call styles, so inside a running event loop you can `await` the same calls you make in synchronous code.
+`ServiceClient` now works as a context manager that closes every training client it created.
+`forward_backward` now returns per-datum log-probabilities by default, as Tinker does.
+* **Deployment placement in Jig:** The `[tool.jig.deploy]` section of your [Jig config](https://docs.together.ai/reference/cli/jig.md) accepts two placement settings.
+`placement_group` puts every deployment that shares its value on one cluster, and `regions` limits a deployment to clusters in the regions you list.
+`tg beta jig status` shows both when they're set.
 **November 17, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `Qwen/Qwen4-Max`: 1,000,000 context length, text and image input, reasoning, function calling, and structured outputs.
 Pricing: \$1.425 input / \$4.275 output / \$0.07125 cached input (per 1M tokens).
 ## New models available for fine-tuning You can now fine-tune the following models: * `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B` * `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B` Both models support [function-calling](https://docs.together.ai/docs/fine-tuning/function-calling.md) and [reasoning](https://docs.together.ai/docs/fine-tuning/reasoning.md) fine-tuning.
@@ -19,10 +26,22 @@ The `client.evals` methods are marked as deprecated.
 Before this release, a `--non-interactive` create could only attach an existing volume.
 * **Attached model resources keep running:** An [attached `ModelResourcesClient` handle](https://docs.together.ai/docs/post-training/model-resources#attach-to-an-existing-resource) used as a context manager now detaches on exit and leaves the resource running.
 Before this release, it stopped the resource.
-**November 13, 2026** ## Post-training: Nemotron 3.5 Super VL `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): low-rank adapter (LoRA) training on `B200-SXM`, 163,840-token training and generator contexts, rank up to 32, and up to three adapter sessions per resource.
+## Default expiry for Jig secrets New [Jig secrets](https://docs.together.ai/docs/deployments-jig.md#secrets) now expire after 14 days unless you set a shorter lifetime with `--ttl`.
+Before a secret expires, the project's admins and the secret's creator get a daily email reminder.
+An expired secret is deleted, so new replicas can't read it.
+Existing replicas keep the value until they terminate.
+To renew a secret, set a new value or set it again with `--ttl`.
+**November 13, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `Qwen/Qwen3-TTS-12Hz-1.7B` (text-to-speech).
+This model was previously listed as `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice`.
+* `thinkingmachines/Inkling-2-Small`.
+## Post-training: Nemotron 3.5 Super VL `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): low-rank adapter (LoRA) training on `B200-SXM`, 163,840-token training and generator contexts, rank up to 32, and up to three adapter sessions per resource.
 > [!NOTE] > > The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) has no codec for it yet, so this model is currently SDK-only.
 Deployment support is coming soon.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md) for more details.
+## Post-training: sampling-only model resources A [post-training](https://docs.together.ai/docs/post-training/overview.md) model resource can now run generators with no trainer.
+To sample a saved inference checkpoint without training it further, set `num_trainer_replicas=0`.
+You're billed only for the generator GPUs.
+See [Sampling-only resources](https://docs.together.ai/docs/post-training/model-resources.md#sampling-only-resources).
 **November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
 * `Qwen/Qwen3-TTS-12Hz-1.7B`: text-to-speech with nine preset voices in 10 languages.
@@ -30,15 +49,33 @@ Pricing: \$20.00 per 1M characters.
 ## Evaluations retired Evaluations have been shut down and are no longer available.
 This covers the evaluations API, the `client.evals` methods in the Python and TypeScript SDKs, the `tg evals` CLI commands, and the **Evaluations** page in the console.
 For questions, [contact support](https://portal.usepylon.com/together-ai/forms/support-request).
+**November 11, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `nvidia/nemotron-3-asr-streaming-0.6b` (speech-to-text).
+* `nvidia/nemotron-3.5-asr-streaming-0.6b` (speech-to-text).
 **November 10, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `elorian-labs/glimpse-1.0`: 262,144 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$3.00 output / \$0.06 cached input (per 1M tokens).
+## New provisioned throughput models The following models are now available on [provisioned throughput](https://docs.together.ai/docs/inference/provisioned-throughput.md): * `moonshotai/Kimi-K3.1-Pro`.
+## Rate metrics for dedicated endpoints The [metrics endpoint](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md#prometheus-compatible-metrics-endpoint) for dedicated endpoints now exports request, token, and latency metrics ending in `_rate5m`.
+They're precomputed per-second rates over the last five minutes, so you can chart them without `rate()`.
+They don't report false spikes when a replica restarts, scales down, or goes idle.
+The counters and histograms they replace are deprecated, and Together AI plans to remove them.
+See [Deprecated metrics](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md#deprecated-metrics) for replacements and query migration.
+**November 7, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `ricursive-ai/Ripple-65B-Preview`.
+**November 6, 2026** ## Source validation for remote model uploads Remote uploads of [custom models](https://docs.together.ai/docs/dedicated-endpoints/custom-models.md#upload-from-hugging-face-or-cloud-storage) and [adapters](https://docs.together.ai/docs/dedicated-endpoints/adapter.md#upload-from-hugging-face-or-cloud-storage) now reject unsupported sources, such as `s3://` paths and `http://` URLs, before the upload starts.
+The source must be a Hugging Face repo ID or URL, or a presigned `https://` URL on Amazon S3, Google Cloud Storage, or Cloudflare R2.
+To import from an `s3://` path, pass a presigned URL for the object instead.
 **November 5, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `moonshotai/Kimi-K3.1-Pro`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$2.00 input / \$10.00 output / \$0.20 cached input (per 1M tokens).
 * `ricursive-ai/Ripple-65B-Preview`: 131,072 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.20 input / \$0.60 output / \$0.02 cached input (per 1M tokens).
 ## Messages API and Responses API support more models The [Messages API](https://docs.together.ai/docs/inference/messages-api.md) and [Responses API](https://docs.together.ai/docs/inference/responses-api.md) now support more models: * **Serverless inference:** `zai-org/GLM-5.3-Flash` and `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
 * **Dedicated model inference:** `zai-org/GLM-5.3` and `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
-**November 4, 2026** ## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
+**November 4, 2026** ## Hosted Grafana dashboard for dedicated endpoints Every project with an active dedicated endpoint deployment now gets a Grafana dashboard that Together AI hosts and maintains.
+Select **Open Grafana** on the **Endpoints** page or on an endpoint's page to see request rates, error ratios, latency by layer of the request path, token throughput, and KV cache utilization.
+Anyone who can view the project can open it, as a viewer.
+To customize the dashboard or alert on it, [run your own Grafana](https://docs.together.ai/docs/dedicated-endpoints/grafana.md).
+See [Grafana dashboard](https://docs.together.ai/docs/dedicated-endpoints/monitoring.md#grafana-dashboard).
+## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `MiniMaxAI/speech-2-8-turbo` (MiniMax Speech 2.8 Turbo).
+## Post-training: Kimi K3.1 Pro `moonshotai/Kimi-K3.1-Pro` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 163,840-token training context, a 167,936-token generator context, rank up to 32, and up to three adapter sessions per resource.
 You can't deploy its adapters on dedicated model inference yet.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
 **November 3, 2026** ## Messages API and Responses API Together AI now supports the Anthropic [Messages API](https://docs.together.ai/docs/inference/messages-api.md) at `POST /v1/messages` and the OpenAI [Responses API](https://docs.together.ai/docs/inference/responses-api.md) at `POST /v1/responses`.
@@ -62,6 +99,8 @@ To keep a resource from [stopping for inactivity](https://docs.together.ai/docs/
 `timeout` still works but shows a `FutureWarning`.
 * **GB200 GPU clusters:** `client.clusters.create` and [`tg clusters create`](https://docs.together.ai/reference/cli/clusters#create-a-cluster) accept `GB200_SXM` as a GPU type.
 * **Applied credit in the SDK:** Line items from `client.organization.usage.costs.list()` now include a typed `applied_credit` object.
+## New provisioned throughput models The following models are now available on [provisioned throughput](https://docs.together.ai/docs/inference/provisioned-throughput.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
+* `MiniMaxAI/MiniMax-M3.1-Flash`.
 ## Post-training: FP4 preparation for MiniMax M3.1 Flash You can now deploy a MiniMax M3.1 Flash adapter on dedicated model inference by first [preparing it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
 The base model already ships in its serving format, so the job only merges the adapter, which takes about 1 hour.
 ## Post-training: MiniMax M3 retired `MiniMaxAI/MiniMax-M3` is no longer available for new [post-training](https://docs.together.ai/docs/post-training/overview.md) model resources.
@@ -71,6 +110,28 @@ See [Supported models](https://docs.together.ai/docs/post-training/supported-mod
 **November 2, 2026** ## Post-training: GLM-5.3 Flash `zai-org/GLM-5.3-Flash` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and up to five adapter sessions per resource.
 The [cookbook](https://docs.together.ai/docs/post-training/cookbook.md) renders its prompts with the GLM codec.
 To deploy a GLM-5.3 Flash adapter on dedicated model inference, first [prepare it for FP4 inference](https://docs.together.ai/docs/post-training/prepare-for-fp4-inference.md).
+## Post-training: full-weight sessions start fresh Each new session on a full-weight [post-training](https://docs.together.ai/docs/post-training/overview.md) model resource now starts from the base weights or the checkpoint it resumes, not from an earlier session's weights.
+See [Training mode](https://docs.together.ai/docs/post-training/model-resources.md#training-mode).
+**October 30, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `openai/whisper-large-v3` (speech-to-text).
+Pricing: \$0.0015 per audio minute.
+* `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice` (text-to-speech).
+## Rollout eligibility in the console When an endpoint has no eligible source and target pair, the console disables **New rollout** and explains why each deployment can't fill the role.
+While a rollout waits for replicas before its next traffic shift, the progress card shows whether it's waiting on the source, the target, or both.
+See [Rollouts](https://docs.together.ai/docs/dedicated-endpoints/rollouts.md).
+## Model deprecations The following models are deprecated and will be removed from serverless on November 4, 2026: * `Qwen/Qwen3.8-2.4T-A95B`.
+Recommended replacement: `Qwen/Qwen3.7-Max`.
+This model isn't available through on-demand dedicated endpoints.
+See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration options.
+**October 28, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`.
+**October 26, 2026** ## Region patterns for deployment placement Inline placement on dedicated model inference deployments now accepts region prefix patterns, such as `us-*` or `us-east-*`, alongside exact region names.
+A pattern covers every matching region, including regions added later.
+See [Choose where a deployment runs](https://docs.together.ai/docs/dedicated-endpoints/manage.md#choose-where-a-deployment-runs).
+## Model deprecations The following models are deprecated and will be removed from serverless on November 6, 2026: * `MiniMaxAI/MiniMax-M3`.
+Recommended replacement: `MiniMaxAI/MiniMax-M3.1-Flash`.
+* `thinkingmachines/Inkling`.
+Recommended replacement: `meta-models/Muse-Spark-Open-816B-A42B`.
+Both models remain available through on-demand [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints.md).
+See [Deprecations](https://docs.together.ai/docs/deprecations.md) for migration options.
 **October 23, 2026** ## New post-training models The following models are now available for [post-training](https://docs.together.ai/docs/post-training/supported-models.md): * `MiniMaxAI/MiniMax-M3.1-Flash`: 262,144 context length, low-rank adapter (LoRA) training on `B200-SXM` GPUs.
 **October 22, 2026** ## Together SDK and CLI 3.0 Together Python SDK 3.0, TypeScript SDK 1.0, and Together CLI 3.0 are now available.
 > [!WARNING] > > 3.0 is a major release with breaking changes.
@@ -87,6 +148,11 @@ Its `type` identifies the kind of credit that covers the usage: `CREDIT` (free c
 Line items for usage that no credit covers omit the object.
 Usage covered by different credits now appears as separate line items.
 See [Get billing usage](https://docs.together.ai/reference/billing-usage.md).
+## Rollouts from scaling deployments A [rollout](https://docs.together.ai/docs/dedicated-endpoints/rollouts.md#requirements) can now use a source or target deployment that's still `SCALING`.
+The source needs at least one ready replica.
+If either deployment doesn't have enough ready replicas for the first traffic shift within 30 minutes, the rollout pauses with `UNDER_SERVED`.
+After a rollout completes, the target's autoscaling policy now takes over from the cutover replica count, so a rollout started at peak load no longer keeps its peak replica count.
+Preview warns with `LANDING_MIN_ABOVE_CUTOVER`, which replaces `FINAL_BELOW_SOURCE_MIN`, when the target will scale back up to the source's min replicas.
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `meta-llama/Llama-3.3-70B-Instruct-Turbo`.
 Use `meta-models/Muse-Glimmer-30B` instead.
 * `deepseek-ai/DeepSeek-V4-Flash-0731`.
@@ -102,12 +168,10 @@ Pricing: \$0.30 input / \$1.20 output / \$0.006 cached input (per 1M tokens).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017`.
 **October 17, 2026** ## Post-training: Muse Spark Open `meta-models/Muse-Spark-Open-816B-A42B` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): LoRA training on `B200-SXM`, a 159,744-token training context, a 163,840-token generator context, rank up to 32, and one adapter session per resource.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md).
-**October 16, 2026** ## Geo-specific inference You can now keep serverless inference processing in the United States.
-Set your client's base URL to `https://us-api.together.ai/v1`, using your existing API key and model IDs.
-There are no GPUs to provision.
-US models: `moonshotai/Kimi-K3`, `zai-org/GLM-5.3`, `zai-org/GLM-5.2`, `deepseek-ai/DeepSeek-V4.1-Flash`, `deepseek-ai/DeepSeek-V4.1-Flash-1017`, `deepseek-ai/DeepSeek-V4-Pro-0813`, and `MiniMaxAI/MiniMax-M3`.
+**October 16, 2026** ## Geo-specific inference You can now keep inference processing in the United States for a subset of serverless models, without provisioning your own GPUs.
+Set your client's base URL to `https://us-api.together.ai/v1` and use the same API key and model IDs.
 US-only inference costs 1.25× standard serverless rates (a 25% premium) for input, cached input, and output tokens.
-See [Geo-specific inference](https://docs.together.ai/docs/serverless/geo-specific-inference.md) for details.
+See [Geo-specific inference](https://docs.together.ai/docs/serverless/geo-specific-inference.md) for the current model list.
 ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `reflection/Beam-1.0-501B-A23B`: 1,048,576 context length, NVFP4 quantization, function calling, and structured outputs.
 Pricing: \$0.40 input / \$1.20 output / \$0.04 cached input (per 1M tokens).
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `reflection/Beam-1.0-501B-A23B`.
@@ -159,6 +223,20 @@ The release also adds: * `tg switch`, which changes the project the CLI works in
 * `tg logout`, which removes your stored credentials.
 For CI/CD and scripts, the CLI still accepts an API key.
 See [Login](https://docs.together.ai/reference/cli/auth.md).
+**October 7, 2026** ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `thinkingmachines/Inkling`.
+**October 6, 2026** ## Pricing update The following models have updated pricing.
+All usage is now billed at the new rates (per 1M tokens): * `Qwen/Qwen3.7-Max`: \$1.50 → \$2.50 (input), \$4.50 → \$7.50 (output).
+* `Qwen/Qwen3.8-Flash`: \$0.09 → \$0.15 (input), \$0.282 → \$0.47 (output).
+See [Serverless models](https://docs.together.ai/docs/serverless/models.md) for the full pricing catalog.
+**October 5, 2026** ## Preemptible compute for Slurm clusters [Preemptible compute](https://docs.together.ai/docs/preemptible-compute.md) is now in public preview for Slurm GPU clusters as well as Kubernetes.
+Add `--requeue` to a job so Slurm resubmits it if its node is reclaimed.
+Reclaimed nodes drain for up to five minutes before removal, and jobs can check `SLURM_RESTART_COUNT` to resume from their latest checkpoint.
+## Together Link model lineup [Together Link](https://docs.together.ai/docs/togetherlink.md) now offers `Qwen/Qwen3.8-2.4T-A95B` and no longer offers `zai-org/GLM-5.3-Flash`.
+In Claude Code, the Sonnet tier now runs `deepseek-ai/DeepSeek-V4.1-Flash`.
+Run `togetherlink models` to see the live model list with per-token pricing.
+## Higher minimum for the first credit purchase An organization's first credit purchase now has a \$15 minimum, up from \$5.
+Later purchases keep the \$5 minimum.
+See [Credits](https://docs.together.ai/docs/billing-credits.md).
 **October 2, 2026** ## New provisioned throughput models The following models are now available on [provisioned throughput](https://docs.together.ai/docs/inference/provisioned-throughput.md): * `zai-org/GLM-5.3`.
 * `zai-org/GLM-5.3-Flash`.
 * `deepseek-ai/DeepSeek-V4.1-Flash`.
@@ -194,6 +272,11 @@ This replaces the legacy hibernate and resume model.
 See [Code sandbox](https://docs.together.ai/docs/together-code-sandbox.md) for the new workflow.
 ## New dedicated endpoint models The following models are now available for deployment on [dedicated endpoints](https://docs.together.ai/docs/dedicated-endpoints/models.md): * `hexgrad/Kokoro-82M` (text-to-speech).
 * `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice` (text-to-speech).
+## Pricing update The following prices have changed.
+All usage is now billed at the new rates.
+Serverless models (per 1M tokens): * `moonshotai/Kimi-K3`: \$3.00 → \$2.70 (input), \$15.00 → \$13.50 (output).
+Dedicated endpoint hardware (per hour): * H100 80GB (`1xnvidia-h100-80gb`): \$3.99 → \$5.49.
+See [Serverless models](https://docs.together.ai/docs/serverless/models.md) and [Dedicated endpoint pricing](https://docs.together.ai/docs/dedicated-endpoints/pricing.md) for the full catalogs.
 **September 29, 2026** ## Higher LoRA rank limit for fine-tuning You can now train low-rank adapters (LoRA) with a rank of up to 128 for the majority of models, up from 64.
 The default rank for these models stays at 64, so set `lora_r` to use a higher one.
 The [model limits](https://docs.together.ai/reference/get-fine-tunes-models-limits.md) response has a new `lora_training.default_rank` field next to `lora_training.max_rank`.
@@ -216,6 +299,9 @@ The SDK and API take `model_object_id`.
 See [Deploy a fine-tuned model](https://docs.together.ai/docs/fine-tuning/deployment.md).
 **September 23, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `together/Tev1-4B-experimental`: 32,768 context length.
 Pricing: \$0.042 input / free output (per 1M tokens).
+## Bulk API key revocation You can now revoke up to 100 project API keys at once from the project's API keys settings.
+A **Last used** column shows how recently each key was used, and the confirmation dialog warns you if a key was used in the past 24 hours.
+See [Revoke API keys](https://docs.together.ai/docs/api-keys-authentication.md#revoke-api-keys).
 **September 22, 2026** ## Pricing update The following models have lower pricing, effective September 22, 2026.
 All usage from that date forward is billed at the new rates (per 1M tokens): * `Qwen/Qwen3.7-Max`: \$2.50 → \$1.50 (input), \$7.50 → \$4.50 (output).
 * `Qwen/Qwen3.8-Flash`: \$0.15 → \$0.09 (input), \$0.47 → \$0.282 (output).
@@ -228,6 +314,8 @@ Pick a canary, blue-green, or rolling strategy to determine how traffic moves, a
 Start a rollout with the `tg beta endpoints rollout` CLI command or from the endpoint's **Rollouts** tab in the console, then pause, resume, promote, or cancel it at any point while it runs.
 ## Together CLI v2.34.0 Version 2.34.0 of the Together CLI and Python SDK carries the rollouts release above (the SDK surface is `client.beta.endpoints.rollouts`) and also adds: * `tg files check` now rejects Parquet files larger than the maximum supported file size instead of passing them through format validation.
 See the [CLI reference](https://docs.together.ai/reference/cli/getting-started.md).
+## Legacy API keys can no longer be regenerated To replace a legacy API key, create a project-scoped key, move your applications to it, then revoke the legacy key.
+See [Legacy API keys](https://docs.together.ai/docs/api-keys-authentication.md#legacy-api-keys).
 ## Model deprecations The following models have been deprecated and are no longer available on serverless: * `openai/gpt-oss-20b`.
 Recommended replacement: `Qwen/Qwen3.5-9B`.
 Supported by on-demand dedicated endpoints.
