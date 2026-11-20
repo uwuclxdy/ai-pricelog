@@ -25,6 +25,8 @@ Deployment support is coming soon.
 See [Supported models](https://docs.together.ai/docs/post-training/supported-models.md) for more details.
 **November 12, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `thinkingmachines/Inkling-2-Small`: 1,048,576 context length, NVFP4 quantization, text and image input, function calling, and structured outputs.
 Pricing: \$0.30 input / \$1.00 output / \$0.03 cached input (per 1M tokens).
+* `Qwen/Qwen3-TTS-12Hz-1.7B`: text-to-speech with nine preset voices in 10 languages.
+Pricing: \$20.00 per 1M characters.
 ## Evaluations retired Evaluations have been shut down and are no longer available.
 This covers the evaluations API, the `client.evals` methods in the Python and TypeScript SDKs, the `tg evals` CLI commands, and the **Evaluations** page in the console.
 For questions, [contact support](https://portal.usepylon.com/together-ai/forms/support-request).
