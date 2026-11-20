@@ -996,6 +996,7 @@
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1"}}
+{"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-11-20","removed":true,"rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1-ultra","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0,"cache_read":0.042},"limits":{"context":32768},"provenance":{"name":"d1-ultra"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1.1","observed_at":"2026-10-27","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1.1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1.2","observed_at":"2026-11-17","modality":"decisions","rates":{"input":0.02,"output":0.0},"limits":{"context":65536},"provenance":{"name":"d1.2"}}
@@ -2164,6 +2165,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-11-18","rates":{"input":0.3,"output":2.4},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-11-19","rates":{"input":0.195,"output":1.56},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-11-20","rates":{"input":0.26,"output":2.6},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-27b","observed_at":"2026-11-20","rates":{"input":0.195,"output":1.56},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-08-26","rates":{"input":0.25,"output":1.25,"cache_read":0.25},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-09-04","rates":{"input":0.08,"output":0.75},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.5-35b-a3b","observed_at":"2026-09-07","rates":{"input":0.3125,"output":1.25,"cache_read":0.15625},"limits":{"context":262144},"provenance":{"name":"Qwen3.5-35B-A3B"}}
