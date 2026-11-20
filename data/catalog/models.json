@@ -7218,6 +7218,15 @@
       },
       "vendor": "google"
     },
+    "openrouter/google/gemini-2.5-flash-tts": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-2.5-flash-tts"
+        ]
+      },
+      "vendor": "google"
+    },
     "openrouter/google/gemini-2.5-pro-preview": {
       "curated": false,
       "sources": {
@@ -7232,6 +7241,15 @@
       "sources": {
         "openrouter": [
           "google/gemini-2.5-pro-preview-05-06"
+        ]
+      },
+      "vendor": "google"
+    },
+    "openrouter/google/gemini-2.5-pro-tts": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "google/gemini-2.5-pro-tts"
         ]
       },
       "vendor": "google"
@@ -8693,6 +8711,15 @@
       "sources": {
         "openrouter": [
           "mistralai/mixtral-8x22b-instruct"
+        ]
+      },
+      "vendor": "mistralai"
+    },
+    "openrouter/mistralai/pixtral-large-2502": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "mistralai/pixtral-large-2502"
         ]
       },
       "vendor": "mistralai"
