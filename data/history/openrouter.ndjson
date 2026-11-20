@@ -859,6 +859,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-27b-it","observed_at":"2026-11-11","rates":{"input":0.08,"output":0.35,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Gemma 3 27B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-27b-it","observed_at":"2026-11-18","rates":{"input":0.08,"output":0.45,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Gemma 3 27B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-27b-it","observed_at":"2026-11-19","rates":{"input":0.08,"output":0.16},"limits":{"context":131072},"provenance":{"name":"Gemma 3 27B"}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-3-27b-it","observed_at":"2026-11-20","rates":{"input":0.08,"output":0.45,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Gemma 3 27B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2025-09-22","rates":{"input":0.04,"output":0.08},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2025-12-28","rates":{"input":0.01703,"output":0.068154},"limits":{"context":96000},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-06-07","rates":{"input":0.05,"output":0.1},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=google/gemma-3-4b-it&shape=v4&range=all"}}
@@ -917,6 +918,7 @@
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-avatar-6","observed_at":"2026-11-17","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Avatar 6"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-avatar-6-turbo","observed_at":"2026-11-17","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Avatar 6 Turbo"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-decision-1","observed_at":"2026-11-13","modality":"decisions","rates":{"input":0.14,"output":0.0},"limits":{"context":131072},"provenance":{"name":"HeyGen Decision"}}
+{"schema":4,"source":"openrouter","model_id":"heygen/heygen-decision-1","observed_at":"2026-11-20","modality":"decisions","rates":{"input":0.14,"output":0.0},"limits":{"context":262144},"provenance":{"name":"HeyGen Decision"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-decision-1-turbo","observed_at":"2026-11-13","modality":"decisions","rates":{"input":0.09,"output":0.0},"limits":{"context":262144},"provenance":{"name":"HeyGen Decision Turbo"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-video-1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"HeyGen Video"}}
 {"schema":4,"source":"openrouter","model_id":"heygen/heygen-voice-1","observed_at":"2026-10-26","modality":"speech","rates":{"input":15.0,"output":0.0},"provenance":{"name":"HeyGen Voice"}}
