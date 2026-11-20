@@ -13018,6 +13018,15 @@
       },
       "vendor": null
     },
+    "together/tencent-hy4": {
+      "curated": false,
+      "sources": {
+        "together": [
+          "tencent-hy4"
+        ]
+      },
+      "vendor": null
+    },
     "together/ternary-bonsai-27b": {
       "curated": false,
       "sources": {
