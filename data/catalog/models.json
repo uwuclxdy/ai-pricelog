@@ -6453,6 +6453,15 @@
       },
       "vendor": "baidu"
     },
+    "openrouter/baseten/bison-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/bison-1"
+        ]
+      },
+      "vendor": "baseten"
+    },
     "openrouter/baseten/elephant-1": {
       "curated": false,
       "sources": {
@@ -6467,6 +6476,15 @@
       "sources": {
         "openrouter": [
           "baseten/elephant-1:free"
+        ]
+      },
+      "vendor": "baseten"
+    },
+    "openrouter/baseten/groundhog-1": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "baseten/groundhog-1"
         ]
       },
       "vendor": "baseten"
@@ -10628,6 +10646,15 @@
       "sources": {
         "openrouter": [
           "qwen/qwen3-reranker-8b"
+        ]
+      },
+      "vendor": "qwen"
+    },
+    "openrouter/qwen/qwen3-tts-1.7b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "qwen/qwen3-tts-1.7b"
         ]
       },
       "vendor": "qwen"

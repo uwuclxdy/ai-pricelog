@@ -35,6 +35,11 @@ The following OpenAI models are now available on DigitalOcean Inference for serv
 17 November DigitalOcean MicroVMs are now in general availability in MKC1.
 With general availability, you can change a MicroVM’s settings without recreating it, create access tokens that reach only one MicroVM, add URLs for additional ports, and upload and download files .
 You can also restrict a MicroVM’s outbound traffic to the destinations you allow and attach credentials that the platform adds to outbound requests, open a console from the Control Panel, and monitor MicroVMs with metrics, platform logs, and traces in DigitalOcean Insights.
+You can change the tools , env , and secrets of an existing DigitalOcean Harness Runtime session without creating a new session.
+For sessions that use DigitalOcean Serverless Inference, you can also change the model by setting HARNESS_INFERENCE_MODEL in env .
+The session keeps its conversation history and workspace files, and the update applies to that session only.
+Updating session settings is in public preview and is enabled per team.
+For more information, see How to Update the Settings of a Session .
 Released v2.6.0 of doctl , the official DigitalOcean CLI.
 This release adds a doctl compute microvm update command for changing a running or paused MicroVM’s name, tags, and auto-pause idle timeout .
 13 November Released v2.5.0 of doctl , the official DigitalOcean CLI.
