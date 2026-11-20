@@ -10425,6 +10425,24 @@
       },
       "vendor": "perplexity"
     },
+    "openrouter/perplexity/pplx-embed-v2-context-0.6b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-embed-v2-context-0.6b"
+        ]
+      },
+      "vendor": "perplexity"
+    },
+    "openrouter/perplexity/pplx-embed-v2-context-9b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "perplexity/pplx-embed-v2-context-9b"
+        ]
+      },
+      "vendor": "perplexity"
+    },
     "openrouter/perplexity/sonar-pro-search": {
       "curated": false,
       "sources": {
