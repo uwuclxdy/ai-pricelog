@@ -31,6 +31,10 @@ Interactive stdin for DigitalOcean Harness Runtime sandbox commands is enabled p
 Start a command with keep_stdin_open on an event stream, then write base64 chunks to /v2/harness-runtime/sessions/{session_id}/sandbox/exec/{exec_id}/stdin while stdout and stderr continue to stream.
 Use this to drive a REPL, answer a prompt, or feed a long-running process.
 For more information, see How to Send Interactive Stdin to a Sandbox Command .
+Each time you add funds to your Inference and Agents balance, including through auto-reload, you now get a separate invoice .
+The invoice is already paid, with tax charged at the time of payment, and appears in your billing history as soon as the charge goes through.
+Your monthly invoice no longer includes a line item for these payments.
+Funds added before 18 November 2026 stay on the monthly invoice.
 The following OpenAI models are now available on DigitalOcean Inference for serverless inference : GPT-6.2 Astra GPT-6.2 Sol For more information, see the Available Models page .
 17 November DigitalOcean MicroVMs are now in general availability in MKC1.
 With general availability, you can change a MicroVM’s settings without recreating it, create access tokens that reach only one MicroVM, add URLs for additional ports, and upload and download files .
