@@ -26,10 +26,10 @@ These are default-processing rates; see the Models reference for service tiers a
 **November 2026** ### Decisions API: pplx-decider-v1.3, pplx-decider-flash-v1.3, and `locate` questions **New models.** `pplx-decider-v1.3` (27B) and `pplx-decider-flash-v1.3` (4B) are the new decision models, at the same prices as v1.2: \$0.02 and \$0.01 per million input tokens.
 Output tokens stay free.
 Both accept text and images (`locate` questions read text only) and answer several questions about the same `state` in one pass, with each question isolated from the others.
-See [Grouping questions in one request](https://docs.perplexity.ai/docs/decisions/quickstart.md#grouping-questions-in-one-request).
+See [Grouping questions](https://docs.perplexity.ai/docs/decisions/decisions.md#grouping-questions).
 **New question type: `locate`.** A `locate` question returns the spans of a string `state` that match a description, with character offsets and a score for each span.
 Only the v1.3 models serve it.
-See [`locate`](https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content).
+See [`locate`](https://docs.perplexity.ai/docs/decisions/decisions#locate).
 **Aliases.** `pplx-decider-latest` now selects `pplx-decider-v1.3`, and `pplx-decider-flash-latest` selects `pplx-decider-flash-v1.3`.
 Probabilities can change with the model, so revalidate any thresholds you tuned on v1.2.
 To stay on v1.2 while you do, name `pplx-decider-v1.2` or `pplx-decider-flash-v1.2`; both remain available.
@@ -59,14 +59,16 @@ The response returns the page in `fetched_results` and search evidence in `searc
 Set `max_staleness` to the maximum page age in seconds since its last crawl.
 An older stored copy triggers a fresh crawl.
 Each successful URL fetch costs \$0.0005 in addition to searches and input tokens.
-See [Fetch a page from a URL](https://docs.perplexity.ai/docs/decisions/quickstart.md#fetch-a-page-from-a-url) for Python, TypeScript, and cURL examples.
+See [Ask about a web page](https://docs.perplexity.ai/docs/decisions/decisions.md#ask-about-a-web-page).
+**Correction:** `max_staleness` is accepted but currently ignored.
+It does not check the age of a fetched page or trigger a crawl.
 **November 2026** ### Decisions API: web grounding Set `mode` to `"web_grounding"` on [`POST /v1/decisions`](https://docs.perplexity.ai/api-reference/decisions-post) to check your questions against the web.
 Before the model answers, the API runs a Fast Search for each question, up to 100 questions, and adds the results to the `state` as evidence.
 The response lists them in `search_results`.
 Requests without `mode` are unchanged.
 Each search costs \$0.001, in addition to input tokens for the added results.
 The Perplexity Python library and the TypeScript SDK don't have a `mode` parameter yet, so send it in the request body.
-See [Web grounding](https://docs.perplexity.ai/docs/decisions/quickstart.md#web-grounding) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md#web-grounding).
+See [Web grounding](https://docs.perplexity.ai/docs/decisions/decisions.md#web-grounding) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md#web-grounding).
 **November 2026** ### Analytics API: credit-usage response update For `dataset=credit_usage`, responses from [`/v1/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-get) and [`/v2/analytics/computer/usage`](https://docs.perplexity.ai/api-reference/computer-analytics-usage-v2-get) currently omit the `Credit Source` breakdown.
 Total credit usage and the `Model` breakdown remain available.
 If your integration expects a fixed set of breakdowns, update it to read the returned `categories` list.
@@ -137,7 +139,8 @@ Output tokens stay free.
 Use `pplx-decider-latest` or `pplx-decider-flash-latest` to follow the newest version of each model.
 `perplexity/pplx-decider-latest` and `perplexity/pplx-decider-flash-latest` are also accepted.
 Requests that name `pplx-decider-v1.1-27b` or `pplx-decider-v1-27b` continue to work and select `pplx-decider-v1.2`.
-See [When to use each](https://docs.perplexity.ai/docs/decisions/quickstart.md#when-to-use-each) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md).
+**Correction:** `pplx-decider-v1.1-27b` and `pplx-decider-v1-27b` are legacy aliases of `pplx-decider-v1-27b` and bill at \$0.02 per million input tokens; they do not select `pplx-decider-v1.2`.
+See [Models](https://docs.perplexity.ai/docs/decisions/decisions.md#models) and [Pricing](https://docs.perplexity.ai/docs/getting-started/pricing.md).
 **October 2026** **Decisions API: pplx-decider-v1.1-27b replaces v1** `pplx-decider-v1.1-27b` replaces `pplx-decider-v1-27b` as the Decisions API model.
 Input now costs \$0.02 per million tokens, down from \$0.04.
 Use `pplx-decider-v1.1-27b` in new requests.
