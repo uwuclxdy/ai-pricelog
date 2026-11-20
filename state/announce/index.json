@@ -58,8 +58,8 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "6eedae71ebfe66aafa45c4e1b3a9ab3c4f7cc862f83e7aaca1845fe87cee426a",
-      "fetched": "2026-11-20T09:00:17Z"
+      "sha256": "afc7b4c74b641c01a67ddbf9fa1ca96344738763e085f57fa12eb30468c891f7",
+      "fetched": "2026-11-20T14:00:16Z"
     }
   },
   "xai": {
