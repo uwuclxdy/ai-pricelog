@@ -39,6 +39,9 @@ Released v2.6.0 of doctl , the official DigitalOcean CLI.
 This release adds a doctl compute microvm update command for changing a running or paused MicroVM’s name, tags, and auto-pause idle timeout .
 13 November Released v2.5.0 of doctl , the official DigitalOcean CLI.
 This release adds a doctl harness-runtime regions list command, support for the MiniMax Code harness, and a --spec flag for doctl harness-runtime update that changes an existing session’s tools, environment variables, and secrets.
+12 November PostgreSQL 14 reached end of life on 12 November 2026.
+Beginning on that date, remaining PostgreSQL 14 database clusters are upgraded to a supported version outside each cluster’s maintenance window .
+Learn more on PostgreSQL 14 End of Life and Forced Upgrades Beginning 12 November 2026 .
 10 November The following open-source models are deprecated from DigitalOcean Serverless Inference as of 10 November 2026: DeepSeek V4 Flash Llama 4 Maverick 17B 128E Instruct Qwen 3.5 397B A17B Gemma 4 gpt-oss-20b These models remain available on dedicated inference .
 For serverless inference, migrate DeepSeek V4 Flash to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ), Llama 4 Maverick 17B 128E Instruct to DeepSeek V4.1 Flash ( deepseek-v4.1-flash ), Qwen 3.5 397B A17B to Qwen3.8-Max ( qwen3.8-max ), Gemma 4 to GLM-5.3 Flash ( glm-5.3-flash ), and gpt-oss-20b to gpt-oss-120b ( openai-gpt-oss-120b ) to avoid service disruption.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
