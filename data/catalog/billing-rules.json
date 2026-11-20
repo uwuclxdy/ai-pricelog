@@ -439,6 +439,16 @@
       "citation": [
         "https://novita.ai/docs/changelog"
       ]
+    },
+    {
+      "id": "xai-grok-build-0.1-retirement-2026-11-19",
+      "provider": "xai",
+      "effective": "2026-11-19",
+      "timezone": "UTC",
+      "statement": "the release notes' November 19, 2026 entry reads 'grok-build-0.1 reached end of life on November 19, 2026 and is no longer served on the API': grok-build-0.1's stored rates ($1.00 input / $2.00 output / $0.20 cached input per 1M, and $2 / $4 / $0.40 at 200,000 prompt tokens and above) stop applying from that date, and the entry names no replacement model. the page names no timezone, so UTC is the recorded frame; the models page still serves the entry's token prices, so the pricing-page scrape can keep emitting rows until the blob drops it",
+      "citation": [
+        "https://docs.x.ai/developers/release-notes"
+      ]
     }
   ]
 }
