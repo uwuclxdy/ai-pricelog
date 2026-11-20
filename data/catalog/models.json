@@ -3813,6 +3813,15 @@
       },
       "vendor": "google"
     },
+    "google/genie-4": {
+      "curated": false,
+      "sources": {
+        "google": [
+          "genie-4"
+        ]
+      },
+      "vendor": "google"
+    },
     "google/models/genie-4": {
       "curated": false,
       "sources": {
