@@ -84,8 +84,8 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "330fb71a353727cabfca925fabfaedf7dc4205c1cda49852c206734a06a874da",
-      "fetched": "2026-11-20T04:00:15Z"
+      "sha256": "fe118c4b1a5b3312ba5c3a97be5dff6d5fbc7540cbd15a7cb0294bbf3633f7de",
+      "fetched": "2026-11-20T17:00:14Z"
     }
   },
   "together": {
@@ -96,8 +96,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "e4f4cd2295fafb2317875f20ac3a6b7a88c3e75c1bb0b7c557fc7bc19a2a0121",
-      "fetched": "2026-11-20T02:00:13Z"
+      "sha256": "6cf83eb59a04080104bc4f0ab281fe6da08cf4ef9945f415f88f7f0561eb61a4",
+      "fetched": "2026-11-20T17:00:14Z"
     }
   },
   "novita": {
