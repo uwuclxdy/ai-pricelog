@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "f9deb59fef5ac7fc3349c78c2cf9e2cd57683496f774a3468cc4654b87c9813c",
-      "fetched": "2026-11-20T21:00:15Z"
+      "sha256": "72957a4b257599c7561a97bb95c503df085b837b3fd2cc0134df8f39a3e884b1",
+      "fetched": "2026-11-20T23:00:13Z"
     }
   },
   "cloudflare": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "ad652a63a00459d124c2d85aa1debc52110653fdb8593cb8a2c6b23a51ff2ce5",
-      "fetched": "2026-11-20T22:00:14Z"
+      "sha256": "358abe31ba778bf955f7e6f5215672adb035a8767277e780ed7124c84de29416",
+      "fetched": "2026-11-20T23:00:13Z"
     }
   },
   "databricks": {
