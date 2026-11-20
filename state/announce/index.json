@@ -65,8 +65,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "d16a91fad004dc576adbb844ae97520f038bbff3686c17d0e778aaa3fb118356",
-      "fetched": "2026-11-20T20:00:16Z"
+      "sha256": "5d98a918e4a6c49a8071fed3ea24165263e2442d62522218c83e578981152372",
+      "fetched": "2026-11-20T22:00:14Z"
     }
   },
   "mistral": {
@@ -143,8 +143,8 @@
   "digitalocean": {
     "https://docs.digitalocean.com/release-notes/": {
       "file": "state/announce/digitalocean/release-notes.md",
-      "sha256": "f9eb43c98935c5bac604ba537a124e44813c8c7d3299156b61488def2ac024bd",
-      "fetched": "2026-11-20T16:00:13Z"
+      "sha256": "ad652a63a00459d124c2d85aa1debc52110653fdb8593cb8a2c6b23a51ff2ce5",
+      "fetched": "2026-11-20T22:00:14Z"
     }
   },
   "databricks": {
