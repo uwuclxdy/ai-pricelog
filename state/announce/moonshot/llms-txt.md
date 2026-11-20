@@ -34,7 +34,7 @@ Install OpenClaw and configure your Kimi API key.
 - [Debugging Tool](https://platform.kimi.ai/docs/guide/use-moonpalace.md): Install and use MoonPalace to debug Kimi API conversations, parameters, files, tool calls, and context caching across platforms.
 - [Use Playground to Debug the Model](https://platform.kimi.ai/docs/guide/use-playground-to-debug-the-model.md): Compare models, tune parameters, test tool calls, and turn successful experiments into API requests with Kimi Playground.
 - [Manage Your Organization with the Admin API](https://platform.kimi.ai/docs/guide/org-admin-api.md): Connect the Admin API to your existing systems to automate member onboarding and offboarding, project and access management, financial reconciliation, and security auditing.
-- [Manage Your Organization in the Console](https://platform.kimi.ai/docs/guide/org-best-practice.md): Understand the hierarchy of organizations, projects, and API keys, and use the console to set project budgets and rate limits, manage members, configure an IP whitelist, and review organization and project consumption.
+- [Manage Your Organization in the Console](https://platform.kimi.ai/docs/guide/org-best-practice.md): Understand the hierarchy of organizations, projects, and API keys and the difference between v1 and v2 keys, and use the console to set project budgets and rate limits, manage members, configure IP whitelist access policies, and review organization and project consumption.
 - [API Overview](https://platform.kimi.ai/docs/api/overview.md): Review Kimi API base URLs, authentication, request conventions, compatibility, and links to the main API endpoints.
 - [Model Parameter Reference](https://platform.kimi.ai/docs/api/models-overview.md): Compare Chat Completions API parameter defaults and constraints for the K3 series, Kimi K2.7 Code, and Kimi K2.6.
 - [Common Error Codes](https://platform.kimi.ai/docs/api/errors.md): Look up Kimi API HTTP status codes, error types, common causes, and recommended troubleshooting steps.
@@ -60,7 +60,7 @@ Supports text-based formats such as pdf, doc, and txt.
 - [List Batches](https://platform.kimi.ai/docs/api/batch-list.md): List the batch jobs of the current account.
 - [Retrieve Batch](https://platform.kimi.ai/docs/api/batch-retrieve.md): Get the details and progress of a specific batch job.
 - [Cancel Batch](https://platform.kimi.ai/docs/api/batch-cancel.md): Cancel an in-progress batch job.
-- [Admin API overview](https://platform.kimi.ai/docs/admin-api/overview.md): Manage organization members, invitations, projects, and inference API keys programmatically, and query billing, usage, and audit logs.
+- [Admin API overview](https://platform.kimi.ai/docs/admin-api/overview.md): Manage organization members, invitations, and projects; look up, rename, and revoke inference API keys; and query billing, usage, and audit logs.
 - [List daily bills](https://platform.kimi.ai/docs/admin-api/billing-daily-bills.md): Daily bills (one row per calendar day; project_id/key are filter dimensions; see nested model_details for model × token-type × key breakdown) with cursor pagination (`has_more`/`next`).
 Amounts are in milli-cent; billing data for day T becomes available at 07:00 (UTC+8) on day T+1; earlier returns `… - [List product bills](https://platform.kimi.ai/docs/admin-api/billing-product-bills.md): Product-dimension bills (fees aggregated by model/business type) with cursor pagination (`has_more`/`next`).
 Amounts are in milli-cent; data for day T becomes available at 07:00 (UTC+8) on day T+1.
@@ -87,11 +87,12 @@ Repeating the same request does not create a duplicate membership.
 - [Update project member role](https://platform.kimi.ai/docs/admin-api/project-member-update-role.md): Updates a project member's role.
 - [Remove project member](https://platform.kimi.ai/docs/admin-api/project-member-remove.md): Removes a member from the project.
 Repeating the removal returns `404 member_not_found`.
-- [List project API keys](https://platform.kimi.ai/docs/admin-api/project-api-keys.md): List project API keys (metadata only; secrets are never returned) - [Get API key metadata](https://platform.kimi.ai/docs/admin-api/api-key.md): Get API key metadata - [Rename API key](https://platform.kimi.ai/docs/admin-api/api-key-rename.md): Renames a inference API key.
+- [List project API keys](https://platform.kimi.ai/docs/admin-api/project-api-keys.md): List project API keys (metadata only; secrets are never returned) - [Get API key metadata](https://platform.kimi.ai/docs/admin-api/api-key.md): Get API key metadata - [Rename API key](https://platform.kimi.ai/docs/admin-api/api-key-rename.md): Renames an inference API key.
 The key must belong to the project and to the authenticated organization.
 The name allows 1-30 UTF-8 characters.
 The secret is never returned.
-- [Revoke API key](https://platform.kimi.ai/docs/admin-api/api-key-revoke.md): Revokes (soft-deletes) a inference API key, effective immediately.
+- [Revoke API key](https://platform.kimi.ai/docs/admin-api/api-key-revoke.md): Revokes (soft-deletes) an inference API key.
+Revocation is not immediate and can be delayed by caches.
 Repeating the revoke returns `404 key_not_found`.
 - [Get organization rate limits](https://platform.kimi.ai/docs/admin-api/rate-limits.md): Get organization rate limits - [Get project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits.md): Project daily/monthly consume limits in milli-cent.
 - [Update project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits-update.md): Update project consume limits in milli-cent.
