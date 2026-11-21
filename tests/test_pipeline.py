@@ -2028,6 +2028,46 @@ def test_openrouter_malformed_stored_entry_does_not_fake_delisting(
     assert_default_branch_clean(repo_root, tip="land absence state")
 
 
+def test_openrouter_empty_listing_fails_the_fetch_and_holds_absence(
+    tmp_path, monkeypatch, repo_root, caplog
+):
+    # {"data": []} names no model id: the fetch fails loudly (the hard line)
+    # and the run writes nothing, so the seeded counter never moves
+    monkeypatch.setattr(openrouter, "fetch_models", REAL_FETCH_MODELS)
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: '{"data": []}')
+    stored = store.build_row(
+        "openrouter",
+        "deepseek/deepseek-chat",
+        Pricing(0.1e-6, 0.2e-6, "chat"),
+        "2026-08-19",
+        "https://openrouter.ai/api/v1/models",
+        VERSION,
+    )
+    seed_store(repo_root, [stored])
+    seeded = {"openrouter": {"deepseek/deepseek-chat": {"absent_runs": 1, "since": "2026-08-20"}}}
+    seed_absence(repo_root, seeded)
+    runner = PipelineRunner()
+
+    with caplog.at_level(logging.ERROR):
+        report = pipeline.run(make_cfg(), repo_root, runner, today=TODAY, now="000000")
+
+    # a pr branch would carry the moved absence counter and the removal row, so
+    # no pricelog ref is the lock on the seeded counter's bytes
+    assert git(repo_root, "for-each-ref", "--format=%(refname)", "refs/heads/pricelog/") == ""
+    or_report = report.providers["openrouter"]
+    assert or_report.errors == [
+        "ValueError: url 'https://openrouter.ai/api/v1/models?output_modalities=all':"
+        " listing names no model"
+    ]
+    assert or_report.detected == []
+    assert runner.created == []
+    assert runner.pr_urls == []
+    assert health.parse_log(_logged_lines(caplog))["openrouter"]["hard"] == [
+        "ERROR:ai_pricelog.pipeline:openrouter fetch failed"
+    ]
+    assert_default_branch_clean(repo_root, tip="land absence state")
+
+
 def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["a", "b"]

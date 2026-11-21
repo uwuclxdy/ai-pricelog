@@ -391,8 +391,12 @@ def _parse_models(
     listed_ids = {
         entry["id"]
         for entry in entries
-        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]
     }
+    if not listed_ids:
+        # absence reads this set as the present set: a listing that names no
+        # id would count every stored id absent
+        raise ValueError(f"{source}: listing names no model")
     if listed is not None:
         listed.update(listed_ids)
     models: list[OpenrouterModel] = []
@@ -444,7 +448,7 @@ def _parse_models(
 
 def _skip_entry(errors: list[str] | None, description: str) -> None:
     # plan #22 class: per-entry shape drift costs one model with a report
-    # line, never the whole fetch
+    # line, never the whole fetch; the listing guard has already passed
     log.warning("parse skip for openrouter: %s", description)
     if errors is not None:
         errors.append(description)

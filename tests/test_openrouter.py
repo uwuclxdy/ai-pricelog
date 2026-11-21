@@ -204,9 +204,63 @@ def test_fetch_models_root_shape_errors(monkeypatch: pytest.MonkeyPatch) -> None
         fetch_models()
 
 
+def test_fetch_models_empty_listing_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    # {"data": []} names no id: absence would read every stored id absent, so
+    # the fetch fails loudly instead of parsing
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: '{"data": []}')
+    with pytest.raises(ValueError, match="listing names no model") as excinfo:
+        fetch_models()
+    assert str(excinfo.value) == (
+        "url 'https://openrouter.ai/api/v1/models?output_modalities=all': listing names no model"
+    )
+    with pytest.raises(ValueError) as excinfo:
+        fetch_models("https://example.test/models")
+    assert str(excinfo.value) == "url 'https://example.test/models': listing names no model"
+
+
+def test_fetch_models_no_string_id_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    # entries present, but no entry names a usable id: the same shape break
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: '{"data": [{"name": "x"}, 5]}')
+    with pytest.raises(ValueError, match="listing names no model"):
+        fetch_models()
+
+
+def test_fetch_models_empty_id_names_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    # an empty id is no usable id, so a listing of empty ids names no model
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: '{"data": [{"id": ""}]}')
+    with pytest.raises(ValueError, match="listing names no model"):
+        fetch_models()
+
+
+def test_fetch_models_alias_only_listing_still_parses(monkeypatch: pytest.MonkeyPatch) -> None:
+    # one alias entry names its id, so the listing parses: the raise keys on
+    # the id set, never on the priced rows the listing yields
+    payload = (
+        '{"data": [{"id": "~alias/old", "name": "Old", "alias_target": "a/one", "pricing": {}}]}'
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    listed: set[str] = set()
+    errors: list[str] = []
+    models = fetch_models(errors=errors, listed=listed)
+    assert models == []
+    assert listed == {"~alias/old"}
+    assert errors == []
+
+
+def test_fetch_models_single_model_listing_still_parses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = (
+        '{"data": [{"id": "a/one", "name": "A", "pricing": {"prompt": "1e-6"},'
+        ' "architecture": {"output_modalities": ["text"]}}]}'
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    assert fetch_models() == [OpenrouterModel("a/one", "A", 1.0, None, None)]
+
+
 def test_fetch_models_skips_malformed_entries(monkeypatch: pytest.MonkeyPatch) -> None:
-    # plan #22 class: one malformed entry costs itself, never the fetch; only
-    # the root shape stays fatal
+    # plan #22 class: one malformed entry costs itself, never the fetch; a
+    # listing that names no usable id fails the fetch, like the root shape
     import json
 
     payload = json.dumps(
