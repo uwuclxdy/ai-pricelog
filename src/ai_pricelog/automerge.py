@@ -10,6 +10,16 @@ as a merged PR. the step passes only branches the pass marked
 - the branch is a `pricelog/` automation branch, never the seed branch
 - the branch changes only pipeline files (the per-source history shards,
   the state/announce and state/absence trees, billing-rules plus its test pin)
+- a branch that deletes a pipeline file the merge reads or stages from the
+  branch side (a history shard, data/catalog/models.json,
+  data/catalog/billing-rules.json, state/announce/index.json,
+  tests/test_billing_rules.py, or a channel's .md its own index still names)
+  is refused by name before the first merge commit, from the branch's diff
+  against its merge base with --no-renames, so a rename reads as the old
+  path's deletion: a deleted copy reaches the merge as absent or unstageable,
+  and no pipeline run deletes one; the two kinds it does delete on its own
+  branches (an absence file, a dropped channel's .md with its index entry)
+  keep merging
 - each shard line the union appends passes `validate_row` before it lands:
   the pass is authorized to hand-edit a branch row, so the merge is the one
   path a shape the contract forbids can take into the store, and a refused
@@ -803,6 +813,34 @@ def _is_pipeline_path(path: str) -> bool:
     return False
 
 
+def _is_merge_read_pipeline_path(path: str) -> bool:
+    """A pipeline path whose branch-side copy the merge reads or stages.
+
+    The merge parses or stages each of these from the branch side: a shard
+    reaches store.parse (_aligned_branch_rows), the catalog files reach
+    json.loads (_union_models, _union_billing_rules, _catalog_claims), the
+    announce index reaches json.loads (_announce_index), and the billing pin
+    is staged by path. A branch deletion of one is refused: a deleted catalog
+    or billing-rules copy reaches json.loads("") and dies mid-merge, a deleted
+    shard reads as an empty partition, a deleted index reads as absent (the
+    announce step skips, and the staged deletion erases the store's url set),
+    and a deleted pin fails the by-path stage. A channel's .md is read by path
+    only when that branch's own index names it (_merge_announce), so the
+    caller adds the branch's indexed paths to the class; a pipeline channel
+    drop removes the index entry with the file and keeps merging. An absence
+    file keeps merging too: save_absence deletes a cleared source's file, and
+    an absent file reads as that source's empty counters.
+    """
+    if not _is_pipeline_path(path):
+        return False
+    if path.startswith(ABSENCE_DIR + "/"):
+        return False
+    announce_prefix = ANNOUNCE_DIR + "/"
+    if path.startswith(announce_prefix):
+        return path == ANNOUNCE_INDEX
+    return True
+
+
 def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
     """Uncommitted state that could ride into a merge commit.
 
@@ -838,9 +876,13 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
         paths = set(
             # three-dot for the same reason as _branch_shard_paths: two-dot
             # counts what HEAD gained since the branch forked, so every PR
-            # older than one burst would read as changing that burst's files
+            # older than one burst would read as changing that burst's files.
+            # --no-renames, the deletion read's posture below: rename detection
+            # lists a rename's destination alone, so a rename out of an outside
+            # path into a pipeline one would hide the outside half and the
+            # outside file would leave main with the merge
             runner.run(
-                ["git", "diff", "--name-only", f"HEAD...origin/{branch}"],
+                ["git", "diff", "--name-only", "--no-renames", f"HEAD...origin/{branch}"],
                 cwd=repo_root,
             ).splitlines()
         )
@@ -849,6 +891,47 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
             raise AutoMergeError(
                 f"branch {branch}: changes {outside}; only pipeline files may ride"
                 " an automerged branch"
+            )
+        # a channel's .md is read by path from the branch side when the branch's
+        # own index names it, so the indexed paths join the deletion class; a
+        # branch index that does not read stops the run here, before any merge.
+        # a branch HEAD already holds never merges (the skip loop below drops it
+        # and deletes its ref), so its index is not read here: reading it would
+        # red the run on a stranded branch whose tip index does not parse
+        branch_index = (
+            None
+            if _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD")
+            else _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
+        )
+        indexed = {
+            entry["file"] for urls in (branch_index or {}).values() for entry in urls.values()
+        }
+        # the deletions read from git's diff record against the merge base, never
+        # from the branch-side text: a deleted file, an empty file and a file
+        # both sides lack all read as empty text there, and --no-renames reads a
+        # rename as the old path's deletion. three-dot, like every other read of
+        # the branch's diff, so a file HEAD gained since the branch forked must
+        # not read as a branch deletion
+        deleted = sorted(
+            path
+            for path in runner.run(
+                [
+                    "git",
+                    "diff",
+                    "--name-only",
+                    "--no-renames",
+                    "--diff-filter=D",
+                    f"HEAD...origin/{branch}",
+                ],
+                cwd=repo_root,
+            ).splitlines()
+            if _is_merge_read_pipeline_path(path) or path in indexed
+        )
+        if deleted:
+            raise AutoMergeError(
+                f"branch {branch}: deletes {deleted}; the merge reads or stages these"
+                " from the branch side and a deleted copy reaches it as absent or"
+                " unstageable; fix: restore the file(s) on the branch, or close the PR"
             )
     uncommitted = _uncommitted(runner, repo_root)
     if uncommitted:
