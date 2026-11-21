@@ -15,7 +15,9 @@
 {"schema":4,"source":"openrouter","model_id":"alibaba/happyhorse-1.0","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"HappyHorse 1.0"}}
 {"schema":4,"source":"openrouter","model_id":"alibaba/happyhorse-1.1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"HappyHorse 1.1"}}
 {"schema":4,"source":"openrouter","model_id":"alibaba/wan-2.6","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Wan 2.6"}}
+{"schema":4,"source":"openrouter","model_id":"alibaba/wan-2.6","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"alibaba/wan-2.7","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Wan 2.7"}}
+{"schema":4,"source":"openrouter","model_id":"alibaba/wan-2.7","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"alibaba/wan-3.0","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Wan 3.0"}}
 {"schema":4,"source":"openrouter","model_id":"alibaba/wan-3.0-prime","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Wan 3.0 Prime"}}
 {"schema":4,"source":"openrouter","model_id":"allenai/olmo-3-32b-think","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.5},"limits":{"context":65536},"provenance":{"name":"Olmo 3 32B Think"}}
@@ -713,6 +715,7 @@
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4.1-flash:batch","observed_at":"2026-11-09","rates":{"input":0.112,"output":0.336,"cache_read":0.00336},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4.1 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4.1-flash:batch","observed_at":"2026-11-20","rates":{"input":0.05,"output":0.15,"cache_read":0.004},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4.1 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":512000},"provenance":{"name":"Dots3-Note Preview (free)"}}
+{"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":512000}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2.5","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2.5"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-multilingual-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":80.0,"output":0.0},"provenance":{"name":"Eleven Multilingual v2"}}
@@ -1004,8 +1007,11 @@
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-08-29","rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":262144},"provenance":{"name":"KAT-Coder-Pro V2.5"}}
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-10-15","removed":true,"rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-11-20","removed":true,"rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1-ultra","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0,"cache_read":0.042},"limits":{"context":32768},"provenance":{"name":"d1-ultra"}}
@@ -1030,6 +1036,7 @@
 {"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-11-07","rates":{"input":0.4,"output":0.75,"cache_read":0.4},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
 {"schema":4,"source":"openrouter","model_id":"mancer/weaver","observed_at":"2026-11-10","rates":{"input":0.3,"output":0.5,"cache_read":0.3},"limits":{"context":8000},"provenance":{"name":"Weaver (alpha)"}}
 {"schema":4,"source":"openrouter","model_id":"meituan/longcat-2.0","observed_at":"2026-08-26","rates":{"input":0.3,"output":1.2,"cache_read":0.006},"limits":{"context":1048756},"provenance":{"name":"LongCat 2.0"}}
+{"schema":4,"source":"openrouter","model_id":"meituan/longcat-2.0","observed_at":"2026-11-21","removed":true,"rates":{"input":0.3,"output":1.2,"cache_read":0.006},"limits":{"context":1048756}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.1-70b-instruct","observed_at":"2024-08-27","rates":{"input":0.35,"output":0.4},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.1-70b-instruct","observed_at":"2025-09-22","rates":{"input":0.1,"output":0.28},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"meta-llama/llama-3.1-70b-instruct","observed_at":"2025-12-28","rates":{"input":0.4,"output":0.4},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
