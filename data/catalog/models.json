@@ -10839,6 +10839,15 @@
       },
       "vendor": "qwen"
     },
+    "openrouter/radixark/daisyrose-27b": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "radixark/daisyrose-27b"
+        ]
+      },
+      "vendor": "radixark"
+    },
     "openrouter/recraft/recraft-v3": {
       "curated": false,
       "sources": {
