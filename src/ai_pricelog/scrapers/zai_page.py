@@ -27,7 +27,10 @@ None = the model id is not on the page or a price cell carries no dollar
 amount and no free marker. FetchError = the fetch failed, the page has no
 per-token tables, the model's table lacks the Cached Input column, a price
 cell carries an amount the grammar cannot read, or the quota notice
-carries an unparseable clause shape.
+carries an unparseable clause shape (among them a peak clock outside
+00:00-23:59, a clause end of exactly 24:00 aside, a quoted offset past
+UTC+14, a zero-length peak clause, or a peak clause wrapping the notice's
+midnight whose UTC window still crosses UTC midnight).
 """
 
 from __future__ import annotations
@@ -150,11 +153,35 @@ def _day_range(start: str, end: str, url: str) -> list[str]:
     return list(_WEEKDAYS[first : last + 1])
 
 
-def _peak_schedule(text: str, url: str) -> tuple[list[str], list[int]] | None:
-    """(weekday day-set, [start, end] utc hhmm) of the notice's peak hours.
+def _days_one_weekday_back(days: list[str]) -> list[str]:
+    """the day set one weekday earlier, in calendar order, each day once.
+
+    a range whose shifted form wraps the week (monday..sunday -> all seven)
+    holds every weekday exactly once.
+    """
+    return sorted(
+        {_WEEKDAYS[(_WEEKDAYS.index(day) - 1) % 7] for day in days},
+        key=_WEEKDAYS.index,
+    )
+
+
+def _peak_schedule(text: str, url: str) -> tuple[tuple[list[str], list[int]], ...] | None:
+    """the notice's peak hours as (day-set, [start, end] utc hhmm) parts.
 
     None when the notice carries no peak-hours line; a present line outside
-    the known shape is a page-shape break.
+    the known shape is a page-shape break. the clause quotes the notice's
+    own clock, so a start before the offset hour lands on the previous utc
+    day: a window wholly on it shifts the day set back one weekday, and a
+    window straddling utc midnight splits into a [start, 2400] part on the
+    shifted set and a [0, end] part on the notice's own set. an end landing
+    exactly on utc midnight stores 2400. a quoted offset past UTC+14 raises:
+    no zone lies there. an hour past 23 (an end of exactly 24:00 is the
+    notice day's end, not a clock) raises because the mod-24 conversion
+    would fold it into a plausible window; a minute past 59, or a part whose
+    start is not before its end, raises instead of leaving validate.py to
+    refuse the row far from the clause that broke it; a zero-length clause
+    raises because at the offset hour it would store a whole-day [0, 2400]
+    window validate.py accepts.
     """
     match = _PEAK_HOURS_RE.search(text)
     if match is None:
@@ -163,9 +190,57 @@ def _peak_schedule(text: str, url: str) -> tuple[list[str], list[int]] | None:
         return None
     days = _day_range(match.group(1), match.group(2), url)
     offset = int(match.group(7))
-    start_clock = ((int(match.group(3)) - offset) % 24) * 100 + int(match.group(4))
-    end_clock = ((int(match.group(5)) - offset) % 24) * 100 + int(match.group(6))
-    return days, [start_clock, end_clock]
+    if offset > 14:
+        raise FetchError(
+            f"peak-hours clause in the zai quota notice on {url} quotes UTC+{offset}, past"
+            " UTC+14; fix: re-verify the notice's zone"
+        )
+    clock_pair = text[match.start(3) : match.end(6)]
+    start_hour = int(match.group(3))
+    start_minute = int(match.group(4))
+    end_hour = int(match.group(5))
+    end_minute = int(match.group(6))
+    end_is_day_end = end_hour == 24 and end_minute == 0
+    if (
+        start_hour > 23
+        or start_minute > 59
+        or end_minute > 59
+        or (end_hour > 23 and not end_is_day_end)
+    ):
+        raise FetchError(
+            f"peak-hours clause {clock_pair} in the zai quota notice on {url} names a"
+            " clock outside 00:00-23:59; fix: re-verify the notice's peak hours"
+        )
+    if (start_hour, start_minute) == (end_hour, end_minute):
+        raise FetchError(
+            f"peak-hours clause {clock_pair} in the zai quota notice on {url} names a"
+            " zero-length window; fix: re-verify the notice's peak hours"
+        )
+    start_clock = ((start_hour - offset) % 24) * 100 + start_minute
+    end_clock = ((end_hour - offset) % 24) * 100 + end_minute
+    if start_hour >= offset:
+        parts = ((days, [start_clock, 2400 if end_clock == 0 else end_clock]),)
+    else:
+        shifted = _days_one_weekday_back(days)
+        if end_hour < offset or end_clock == 0:
+            # the end lands on the previous utc day, or exactly on a utc
+            # midnight, stored as 2400 (the end-of-day form validate.py
+            # accepts); a notice-wrap clause whose start falls before the
+            # offset hour lands here too, and the part check refuses it
+            parts = ((shifted, [start_clock, 2400 if end_clock == 0 else end_clock]),)
+        else:
+            parts = (
+                (shifted, [start_clock, 2400]),
+                (days, [0, end_clock]),
+            )
+    for _, (part_start, part_end) in parts:
+        if part_start >= part_end:
+            raise FetchError(
+                f"peak-hours clause {clock_pair} in the zai quota notice on {url} converts"
+                f" to a UTC window [{part_start}, {part_end}] whose start is not before"
+                " its end; fix: re-verify the notice's peak hours"
+            )
+    return parts
 
 
 def _quota_entries(text: str, url: str) -> dict[str, tuple[dict[str, object], ...]]:
@@ -191,10 +266,11 @@ def _quota_entries(text: str, url: str) -> dict[str, tuple[dict[str, object], ..
             # the base 1x multiplier is implicit; anything else rides a
             # whole-day entry
             model_entries.append({"quota_multiplier": off_peak})
-        entry: dict[str, object] = {"quota_multiplier": on_peak}
-        entry["days"] = peak[0]
-        entry["window"] = peak[1]
-        model_entries.append(entry)
+        for days, window in peak:
+            entry: dict[str, object] = {"quota_multiplier": on_peak}
+            entry["days"] = days
+            entry["window"] = window
+            model_entries.append(entry)
         entries[model_id] = tuple(model_entries)
     return entries
 
