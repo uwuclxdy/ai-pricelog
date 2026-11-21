@@ -870,6 +870,7 @@
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-08-26","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-10-20","rates":{"input":0.04,"output":0.05,"cache_read":0.02},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-10-27","rates":{"input":0.05,"output":0.1},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
+{"schema":4,"source":"openrouter","model_id":"google/gemma-3-4b-it","observed_at":"2026-11-21","rates":{"input":0.04,"output":0.05,"cache_read":0.02},"limits":{"context":131072},"provenance":{"name":"Gemma 3 4B"}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-08-26","rates":{"input":0.07,"output":0.34},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-09-10","rates":{"input":0.042,"output":0.22},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
 {"schema":4,"source":"openrouter","model_id":"google/gemma-4-26b-a4b-it","observed_at":"2026-09-13","rates":{"input":0.09,"output":0.3,"cache_read":0.05},"limits":{"context":262144},"provenance":{"name":"Gemma 4 26B A4B "}}
