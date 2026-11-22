@@ -1010,10 +1010,13 @@
 {"schema":4,"source":"openrouter","model_id":"kwaipilot/kat-coder-pro-v2.5","observed_at":"2026-10-15","removed":true,"rates":{"input":0.74,"output":2.96,"cache_read":0.15},"limits":{"context":262144}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-11-20","removed":true,"rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1-ultra","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0,"cache_read":0.042},"limits":{"context":32768},"provenance":{"name":"d1-ultra"}}
@@ -2959,6 +2962,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-11-06","rates":{"input":0.0285,"output":0.0923,"cache_read":0.0285},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-11-07","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-11-20","rates":{"input":0.0399,"output":0.0784,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash","observed_at":"2026-11-22","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-08-29","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"limits":{"context":1048575},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-08","rates":{"input":0.075,"output":0.25,"cache_read":0.015},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5.3-flash:batch","observed_at":"2026-09-22","rates":{"input":0.06,"output":0.2,"cache_read":0.012},"limits":{"context":1048576},"provenance":{"name":"GLM 5.3 Flash (batch)"}}
