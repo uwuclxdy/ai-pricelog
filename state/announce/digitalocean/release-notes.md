@@ -314,10 +314,6 @@ Choose Shared for shared vCPUs or General Purpose for dedicated vCPUs.
 v5 Droplets are billed per second at an hourly rate without a monthly usage cap.
 DigitalOcean Kubernetes (DOKS) supports a subset of v5 configurations in these datacenters, with 50 GiB or 80 GiB boot disks.
 For details, see How to Create a Droplet , Choosing the Right CPU Droplet Plan , and Choosing the Right Kubernetes Plan .
-24 August Updated NVIDIA AI/ML Ready ( gpu-h100x1-base , gpu-h100x8-base ) Droplet base images are now available in the Control Panel and through the API.
-The images are based on Ubuntu 24.04 (upgraded from Ubuntu 22.04) and include NVIDIA driver 580.173.02 and CUDA 13.1, providing the latest NVIDIA GPU support for AI/ML workloads.
-Despite their slug names, these images are compatible with all NVIDIA GPU Droplet types we offer.
-For more information, see Recommended Drivers and Software for GPU Droplets .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
