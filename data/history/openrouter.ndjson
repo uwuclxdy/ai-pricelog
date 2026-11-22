@@ -1976,6 +1976,7 @@
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-10-30","rates":{"input":0.05,"output":0.5,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-11-14","rates":{"input":0.06,"output":0.5,"cache_read":0.003},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-11-20","rates":{"input":0.07,"output":0.5,"cache_read":0.006},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
+{"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1","observed_at":"2026-11-22","rates":{"input":0.07,"output":0.5,"cache_read":0.03},"limits":{"context":1048576},"provenance":{"name":"Particle-1"}}
 {"schema":4,"source":"openrouter","model_id":"particle-ai/particle-1:free","observed_at":"2026-11-12","rates":{"input":0.0,"output":0.0},"limits":{"context":1048576},"provenance":{"name":"Particle-1 (free)"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1","observed_at":"2026-08-26","rates":{"input":0.15,"output":1.5},"limits":{"context":32768},"provenance":{"name":"Perceptron Mk1"}}
 {"schema":4,"source":"openrouter","model_id":"perceptron/perceptron-mk1.5","observed_at":"2026-09-25","rates":{"input":0.15,"output":1.5},"limits":{"context":36864},"provenance":{"name":"Perceptron Mk1.5"}}
