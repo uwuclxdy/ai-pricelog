@@ -24,8 +24,8 @@
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "2276de203d2dc2f7ce466b68c20d852d52e132a486abc3817a34beea1f889aa8",
-      "fetched": "2026-10-23T19:00:14Z"
+      "sha256": "2bb778fc3fecda0f378550e73816b54c1adca244063629d9cee5d19c0223d422",
+      "fetched": "2026-11-23T13:00:15Z"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",
@@ -34,8 +34,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "20c7ba251948bc9a283becb51747867b2aa44439979451656b9eeee17538c932",
-      "fetched": "2026-10-16"
+      "sha256": "a53596e83d6265c25cbf033232249e9e15970cfbc2701c6f36c98ec1ea8584a0",
+      "fetched": "2026-11-23T13:00:15Z"
     }
   },
   "moonshot": {
