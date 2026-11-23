@@ -2,6 +2,9 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **Gemini 4 Neon** The Agent API now supports `google/gemini-4-neon`.
+Pricing is \$3.00 per million input tokens, \$0.15 per million cached input tokens, and \$15.00 per million output tokens, including reasoning tokens.
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
 **November 2026** **xhigh now uses GPT-6.2 Sol** The `xhigh` effort level now selects `xhigh@2026-11-18.0`, which uses `openai/gpt-6.2-sol` without a fallback model, replacing Claude Opus 5.5 and its GPT-6.1 Sol fallback.
 Tools, high reasoning effort, the 300-step limit, and context compaction settings are unchanged.
 Earlier pinned versions remain unchanged.

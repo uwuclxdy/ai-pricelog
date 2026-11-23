@@ -84,15 +84,15 @@
   "perplexity": {
     "https://docs.perplexity.ai/docs/resources/changelog.md": {
       "file": "state/announce/perplexity/changelog-md.md",
-      "sha256": "fe118c4b1a5b3312ba5c3a97be5dff6d5fbc7540cbd15a7cb0294bbf3633f7de",
-      "fetched": "2026-11-20T17:00:14Z"
+      "sha256": "577300fd4c2bec608dc1386a013b91837307e7770edcbffbaa5297109e89cf2d",
+      "fetched": "2026-11-23T21:00:22Z"
     }
   },
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "a5cc5fdc84a1d9a9e2ff2b00a5d2365e8b103a642ad6d7c261f519c0305c14ee",
-      "fetched": "2026-11-20T15:00:23Z"
+      "sha256": "e5b2c9b99972a0c8f0bf039ac8a7f4f79e0805eb9495077a8aca5ce7915e3282",
+      "fetched": "2026-11-23T21:00:22Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
