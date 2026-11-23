@@ -308,12 +308,6 @@ The plugin is disabled by default and is available on clusters running Kubernete
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Fable 5.1 For more information, see the Available Models page .
 August 2026 28 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 For more information, see the Available Models page .
 27 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 Flash For more information, see the Available Models page .
-25 August v5 Droplet configurations are now available in the atl1 , ric1 , mkc1 , and mem1 datacenters.
-They run on 5th Generation AMD EPYC processors for higher per-core performance and let you size compute, memory, storage, and networking independently.
-Choose Shared for shared vCPUs or General Purpose for dedicated vCPUs.
-v5 Droplets are billed per second at an hourly rate without a monthly usage cap.
-DigitalOcean Kubernetes (DOKS) supports a subset of v5 configurations in these datacenters, with 50 GiB or 80 GiB boot disks.
-For details, see How to Create a Droplet , Choosing the Right CPU Droplet Plan , and Choosing the Right Kubernetes Plan .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
