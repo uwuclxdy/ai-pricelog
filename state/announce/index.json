@@ -34,8 +34,8 @@
     },
     "https://docs.z.ai/llms.txt": {
       "file": "state/announce/zai/llms-txt.md",
-      "sha256": "a53596e83d6265c25cbf033232249e9e15970cfbc2701c6f36c98ec1ea8584a0",
-      "fetched": "2026-11-23T13:00:15Z"
+      "sha256": "34b6444c02696e4257c962996bc574dabd9367e4981d096f4cfbe8e5782b9774",
+      "fetched": "2026-11-23T16:00:17Z"
     }
   },
   "moonshot": {
@@ -58,8 +58,8 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "f305d96937988b9cef77b96e69123f802a14e6f7ea3b761c7778f859d67857be",
-      "fetched": "2026-11-23T04:00:16Z"
+      "sha256": "17c57f21c561c6468b6adac7205490b04c50134ef09d6e092160cf6c013ec4c1",
+      "fetched": "2026-11-23T16:00:17Z"
     }
   },
   "xai": {
