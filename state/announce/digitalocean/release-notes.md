@@ -13,7 +13,9 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 19 November Released v2.7.0 of doctl , the official DigitalOcean CLI.
+November 2026 20 November Action Gateway now provides access to more than 36,000 tools.
+Use the Tool Reference to search for a tool.
+19 November Released v2.7.0 of doctl , the official DigitalOcean CLI.
 This release adds an --enable-insights-logs flag to doctl registries create and doctl kubernetes cluster create for sending a new registry’s or cluster’s logs to Insights , and a --turn-type flag to doctl evaluation metric list and doctl evaluation custom-metric create for single-turn and multi-turn metrics.
 We have updated the following buildpack for App Platform: PHP buildpack : We updated the buildpack from version 298 to 303 and added PHP versions 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 .
 If you have an existing PHP app that uses v1, we recommend upgrading to v2 .
