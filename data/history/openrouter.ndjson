@@ -2647,6 +2647,7 @@
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling","observed_at":"2026-08-26","rates":{"input":0.95,"output":4.05,"cache_read":0.16},"limits":{"context":1048576},"provenance":{"name":"Inkling"}}
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling","observed_at":"2026-08-30","rates":{"input":1.0,"output":4.05,"cache_read":0.17},"limits":{"context":1048576},"provenance":{"name":"Inkling"}}
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling","observed_at":"2026-09-26","rates":{"input":1.0,"output":4.05,"cache_read":0.17},"limits":{"context":524288},"provenance":{"name":"Inkling"}}
+{"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling","observed_at":"2026-11-23","rates":{"input":1.0,"output":4.05,"cache_read":0.17},"limits":{"context":1048576},"provenance":{"name":"Inkling"}}
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling-2-mini","observed_at":"2026-11-21","rates":{"input":0.091,"output":0.362,"cache_read":0.018},"limits":{"context":1048576},"provenance":{"name":"Inkling 2 Mini"}}
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling-2-mini","observed_at":"2026-11-21","rates":{"input":0.1,"output":0.4,"cache_read":0.02},"limits":{"context":1048576},"provenance":{"name":"Inkling 2 Mini"}}
 {"schema":4,"source":"openrouter","model_id":"thinkingmachines/inkling-2-mini","observed_at":"2026-11-21","rates":{"input":0.075,"output":0.3,"cache_read":0.015},"limits":{"context":1048576},"provenance":{"name":"Inkling 2 Mini"}}
