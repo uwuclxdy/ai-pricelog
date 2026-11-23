@@ -1,4 +1,4 @@
-# Overview - Z.AI DEVELOPER DOCUMENT > Use GLM models like GLM-5.3 & GLM-5.3-FLASH for AI coding in Claude Code, Kilo Code, Cline, OpenCode, Clawdbot/OpenClaw and more.
+# Overview - Z.AI DEVELOPER DOCUMENT > Use GLM models like GLM-5.4, GLM-5.3, GLM-5.3-Flash, GLM-5.3-FlashX, GLM-5.3-FlashX-Legal, GLM-5.2 & GLM-5-Turbo for AI coding in Claude Code, Kilo Code, Cline, OpenCode, Clawdbot/OpenClaw and more.
 Plans from $18/month—fast, reliable code generation and tool use for daily dev work.
 - [Quick Start](https://docs.z.ai/guides/overview/quick-start.md) - [Overview](https://docs.z.ai/guides/overview/overview.md) - [Pricing](https://docs.z.ai/guides/overview/pricing.md): This page provides pricing information for Z.AI’s models and tools.
 All prices are in USD.
