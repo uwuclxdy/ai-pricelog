@@ -716,6 +716,7 @@
 {"schema":4,"source":"openrouter","model_id":"deepseek/deepseek-v4.1-flash:batch","observed_at":"2026-11-20","rates":{"input":0.05,"output":0.15,"cache_read":0.004},"limits":{"context":1048576},"provenance":{"name":"DeepSeek V4.1 Flash (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":512000},"provenance":{"name":"Dots3-Note Preview (free)"}}
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":512000}}
+{"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-23","rates":{"input":0.0,"output":0.0},"limits":{"context":512000},"provenance":{"name":"Dots3-Note Preview (free)"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2.5","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2.5"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-multilingual-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":80.0,"output":0.0},"provenance":{"name":"Eleven Multilingual v2"}}
@@ -1013,14 +1014,17 @@
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-11-20","removed":true,"rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1-ultra","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0,"cache_read":0.042},"limits":{"context":32768},"provenance":{"name":"d1-ultra"}}
