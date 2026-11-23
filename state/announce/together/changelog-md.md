@@ -1,5 +1,8 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 19, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `tencent/Hy4`: 1,048,576 context length, NVFP4 quantization, text and image input, reasoning, function calling, and structured outputs.
+# Changelog **November 23, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017-fast`: a faster serving tier of `deepseek-ai/DeepSeek-V4.1-Flash-1017` with the same weights.
+1,000,000 context length, FP8 quantization, function calling, and structured outputs.
+Pricing: \$0.60 input / \$2.40 output / \$0.012 cached input (per 1M tokens).
+**November 19, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `tencent/Hy4`: 1,048,576 context length, NVFP4 quantization, text and image input, reasoning, function calling, and structured outputs.
 Pricing: \$0.834 input / \$2.501 output / \$0.042 cached input (per 1M tokens).
 **November 18, 2026** ## Together Python SDK and CLI 3.3.0 **What's new:** * **Tinker 0.39.0 compatibility:** The [Tinker-compatible client](https://docs.together.ai/docs/post-training/migrate-from-tinker.md) now builds on `tinker` 0.39.0, which the `tinker` extra installs.
 It follows Tinker 0.39's call styles, so inside a running event loop you can `await` the same calls you make in synchronous code.
