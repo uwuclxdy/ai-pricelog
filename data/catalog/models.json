@@ -11973,6 +11973,15 @@
       },
       "vendor": "x-ai"
     },
+    "openrouter/xiaomi/mimo-v2.6-flash-mopd": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "xiaomi/mimo-v2.6-flash-mopd"
+        ]
+      },
+      "vendor": "xiaomi"
+    },
     "openrouter/xingchen-agi/xing4.0-29b-a4b:free": {
       "curated": false,
       "sources": {
