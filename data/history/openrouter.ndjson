@@ -728,6 +728,7 @@
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-08-26","rates":{"input":0.0,"output":0.0},"limits":{"context":512000},"provenance":{"name":"Dots3-Note Preview (free)"}}
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":512000}}
 {"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-23","rates":{"input":0.0,"output":0.0},"limits":{"context":512000},"provenance":{"name":"Dots3-Note Preview (free)"}}
+{"schema":4,"source":"openrouter","model_id":"dots-studio/dots-3-note-preview:free","observed_at":"2026-11-24","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":512000}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-flash-v2.5","observed_at":"2026-10-26","modality":"speech","rates":{"input":40.0,"output":0.0},"provenance":{"name":"Eleven Flash v2.5"}}
 {"schema":4,"source":"openrouter","model_id":"elevenlabs/eleven-multilingual-v2","observed_at":"2026-10-26","modality":"speech","rates":{"input":80.0,"output":0.0},"provenance":{"name":"Eleven Multilingual v2"}}
@@ -1031,16 +1032,19 @@
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Pro"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-pro","observed_at":"2026-11-24","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video v3.0 Standard"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-v3.0-std","observed_at":"2026-11-24","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-10-26","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-21","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-22","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-22","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-23","modality":"video","rates":{"input":0.0,"output":0.0},"provenance":{"name":"Video O1"}}
+{"schema":4,"source":"openrouter","model_id":"kwaivgi/kling-video-o1","observed_at":"2026-11-24","removed":true,"rates":{"input":0.0,"output":0.0}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536},"provenance":{"name":"d1"}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1","observed_at":"2026-11-20","removed":true,"rates":{"input":0.02,"output":0.0,"cache_read":0.02},"limits":{"context":65536}}
 {"schema":4,"source":"openrouter","model_id":"liquid/d1-ultra","observed_at":"2026-10-26","modality":"decisions","rates":{"input":0.042,"output":0.0,"cache_read":0.042},"limits":{"context":32768},"provenance":{"name":"d1-ultra"}}
@@ -1308,6 +1312,7 @@
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3","observed_at":"2026-03-17","rates":{"input":0.4,"output":2.0,"cache_read":0.04},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=mistralai/mistral-medium-3&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3","observed_at":"2026-08-26","rates":{"input":0.4,"output":2.0,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Mistral Medium 3"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3","observed_at":"2026-11-17","rates":{"input":0.44,"output":2.2,"cache_read":0.044},"limits":{"context":131072},"provenance":{"name":"Mistral Medium 3"}}
+{"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3","observed_at":"2026-11-24","removed":true,"rates":{"input":0.44,"output":2.2,"cache_read":0.044},"limits":{"context":131072}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3-5","observed_at":"2026-08-26","rates":{"input":1.5,"output":7.5},"limits":{"context":262144},"provenance":{"name":"Mistral Medium 3.5"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3-5:batch","observed_at":"2026-08-29","rates":{"input":0.75,"output":3.75},"limits":{"context":262144},"provenance":{"name":"Mistral Medium 3.5 (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3-5:batch","observed_at":"2026-09-03","rates":{"input":0.75,"output":3.75},"limits":{"context":32768},"provenance":{"name":"Mistral Medium 3.5 (batch)"}}
@@ -1316,6 +1321,7 @@
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3.1","observed_at":"2026-03-17","rates":{"input":0.4,"output":2.0,"cache_read":0.04},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=mistralai/mistral-medium-3.1&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3.1","observed_at":"2026-08-26","rates":{"input":0.4,"output":2.0,"cache_read":0.04},"limits":{"context":131072},"provenance":{"name":"Mistral Medium 3.1"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3.1","observed_at":"2026-11-17","rates":{"input":0.44,"output":2.2,"cache_read":0.044},"limits":{"context":131072},"provenance":{"name":"Mistral Medium 3.1"}}
+{"schema":4,"source":"openrouter","model_id":"mistralai/mistral-medium-3.1","observed_at":"2026-11-24","removed":true,"rates":{"input":0.44,"output":2.2,"cache_read":0.044},"limits":{"context":131072}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-nemo","observed_at":"2024-08-27","rates":{"input":0.17,"output":0.17},"limits":{"context":128000},"provenance":{"url":"https://arquivo.pt/wayback/20240827221924id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-nemo","observed_at":"2025-09-22","rates":{"input":0.02,"output":0.04},"limits":{"context":131072},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"mistralai/mistral-nemo","observed_at":"2026-07-16","rates":{"input":0.019,"output":0.03},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=mistralai/mistral-nemo&shape=v4&range=all"}}
@@ -2363,6 +2369,7 @@
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-18","rates":{"input":0.06,"output":2.2,"cache_read":0.059},"limits":{"context":1024000},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-20","rates":{"input":0.06,"output":1.96,"cache_read":0.059},"limits":{"context":1024000},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-22","rates":{"input":0.035,"output":1.5,"cache_read":0.0175},"limits":{"context":1024000},"provenance":{"name":"Qwen3.8 27B"}}
+{"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b","observed_at":"2026-11-24","rates":{"input":0.06,"output":1.96,"cache_read":0.059},"limits":{"context":1024000},"provenance":{"name":"Qwen3.8 27B"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:batch","observed_at":"2026-11-06","rates":{"input":0.16,"output":2.0,"cache_read":0.04},"limits":{"context":262144},"provenance":{"name":"Qwen3.8 27B (batch)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:free","observed_at":"2026-09-17","rates":{"input":0.0,"output":0.0},"limits":{"context":262144},"provenance":{"name":"Qwen3.8 27B (free)"}}
 {"schema":4,"source":"openrouter","model_id":"qwen/qwen3.8-27b:free","observed_at":"2026-10-15","removed":true,"rates":{"input":0.0,"output":0.0},"limits":{"context":262144}}
