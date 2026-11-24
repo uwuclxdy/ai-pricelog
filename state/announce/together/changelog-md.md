@@ -1,5 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 23, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017-fast`: a faster serving tier of `deepseek-ai/DeepSeek-V4.1-Flash-1017` with the same weights.
+# Changelog **November 24, 2026** ## Preemptible compute is generally available [Preemptible compute](https://docs.together.ai/docs/preemptible-compute.md) is generally available for Kubernetes and Slurm GPU clusters.
+You can add preemptible nodes to a cluster with standard nodes, or create a preemptible-only cluster, which keeps its shared volumes when Together reclaims every node.
+**November 23, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017-fast`: a faster serving tier of `deepseek-ai/DeepSeek-V4.1-Flash-1017` with the same weights.
 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$2.40 output / \$0.012 cached input (per 1M tokens).
 ## Post-training: Nemotron 3.5 Lightning `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B` is available for [post-training](https://docs.together.ai/docs/post-training/overview.md): low-rank adapter (LoRA) training on `B200-SXM`, 262,144-token training and generator contexts, rank up to 64, and up to three adapter sessions per resource.
