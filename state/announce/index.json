@@ -24,8 +24,8 @@
     },
     "https://docs.z.ai/devpack/notice/usage-revision.md": {
       "file": "state/announce/zai/usage-revision-md.md",
-      "sha256": "2bb778fc3fecda0f378550e73816b54c1adca244063629d9cee5d19c0223d422",
-      "fetched": "2026-11-23T13:00:15Z"
+      "sha256": "d22d7a1c3ef473a68db371c80fc2a8430d2cd2d4f281b8318a74875e69a48ee4",
+      "fetched": "2026-11-24T13:00:18Z"
     },
     "https://docs.z.ai/devpack/transition.md": {
       "file": "state/announce/zai/transition-md.md",

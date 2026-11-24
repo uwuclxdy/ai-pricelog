@@ -42,7 +42,8 @@ Plans are not switched automatically.
 You must subscribe or switch manually.
 **Q: Can I still use the migration discount I received on April 30?** **A:** Yes.
 If you met the eligibility requirements in the [Legacy Plan Migration Notice](https://docs.z.ai/devpack/transition.md), your **50% Migration Support discount** remains valid through its original validity period and can be used for the new credits-based plan.
-## Usage Reference for Legacy Plans ### Legacy Plan V2 To manage resources and ensure fair access for all users, we apply usage limits on a 5-hour and weekly basis.
+## Usage Reference for Legacy Plans > [!NOTE] > > **Limited-Time Offer:** From November 24 to December 24, all usage of GLM-5.3-Flash will be charged at 50% of the original quota consumption rate, effectively doubling your available quota.
+### Legacy Plan V2 To manage resources and ensure fair access for all users, we apply usage limits on a 5-hour and weekly basis.
 You can check your quota consumption progress in [Usage Statistics](https://z.ai/manage-apikey/subscription).
 One prompt refers to one query.
 Each prompt is estimated to invoke the model 15–30 times.
@@ -56,14 +57,14 @@ Each prompt is estimated to invoke the model 15–30 times.
 Actual available usage may vary depending on project complexity, repository size, and whether auto-accept is enabled.
 > > <li> > **GLM-5.4**: As the flagship model, API calls consume quota at a rate of "0.67× during off-peak hours and 2× during peak hours".
 > </li> > > <li> > **GLM-5.3**: API calls consume quota at a rate of "1× during off-peak hours and 3× during peak hours".
-> </li> > > <li> > **GLM-5.3-Flash**: API calls consume quota at a rate of 0.4× during off-peak hours and 1.2× during peak hours.
+> </li> > > <li> > **GLM-5.3-Flash**: API calls consume quota at a rate of ~~0.4×~~ 0.2× during off-peak hours and ~~1.2×~~ 0.6× during peak hours.
 > </li> > [!NOTE] > > Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).
 ### Team Plan Since July 30, 2026, quotas for each seat of the legacy Team Plan have been uniformly increased by 30%.
 The figures below reflect the adjusted quotas.
-<table> <thead> <tr> <th> Plan Type </th> <th> Quota per 5 hours / seat (Dynamically refreshed; quota is restored 5 hours after request consumption) </th> <th> Weekly quota / seat (Starts at purchase; quota refreshes every 7-day cycle) </th> </tr> </thead> <tbody> <tr> <td> Standard Seat </td> <td> GLM-5.4: Up to 117 M tokens GLM-5.3: Up to 78 M tokens GLM-5.3-Flash: Up to 195 M tokens </td> <td> GLM-5.4: Up to 585 M tokens GLM-5.3: Up to 390 M tokens GLM-5.3-Flash: Up to 975 M tokens </td> </tr> <tr> <td> Premium Seat </td> <td> GLM-5.4: Up to 312 M tokens GLM-5.3: Up to 208 M tokens
-GLM-5.3-Flash: Up to 520 M tokens </td> <td> GLM-5.4: Up to 1,560 M tokens GLM-5.3: Up to 1,040 M tokens GLM-5.3-Flash: Up to 2,600 M tokens </td> </tr> <tr> <td> Notes </td> <td colSpan="2"> “Maximum” refers to the total number of Tokens that can actually be consumed when the **off-peak consumption multiplier** applies.
+<table> <thead> <tr> <th> Plan Type </th> <th> Quota per 5 hours / seat (Dynamically refreshed; quota is restored 5 hours after request consumption) </th> <th> Weekly quota / seat (Starts at purchase; quota refreshes every 7-day cycle) </th> </tr> </thead> <tbody> <tr> <td> Standard Seat </td> <td> GLM-5.4: Up to 117 M tokens GLM-5.3: Up to 78 M tokens GLM-5.3-Flash: Up to ~~195~~ 390 M tokens </td> <td> GLM-5.4: Up to 585 M tokens GLM-5.3: Up to 390 M tokens GLM-5.3-Flash: Up to ~~975~~ 1,950 M tokens </td> </tr> <tr> <td> Premium Seat </td> <td> GLM-5.4: Up to 312 M tokens GLM-5.3: Up to 208
+M tokens GLM-5.3-Flash: Up to ~~520~~ 1,040 M tokens </td> <td> GLM-5.4: Up to 1,560 M tokens GLM-5.3: Up to 1,040 M tokens GLM-5.3-Flash: Up to ~~2,600~~ 5,200 M tokens </td> </tr> <tr> <td> Notes </td> <td colSpan="2"> “Maximum” refers to the total number of Tokens that can actually be consumed when the **off-peak consumption multiplier** applies.
 The current quota consumption rules for each model are as follows: <ul> <li> **GLM-5.4**: API calls consume quota at a rate of "0.67× during off-peak hours and 2× during peak hours".
 </li> <li> **GLM-5.3**: API calls consume quota at a rate of "1× during off-peak hours and 3× during peak hours".
-</li> <li> **GLM-5.3-Flash**: API calls consume quota at a rate of 0.4× during off-peak hours and 1.2× during peak hours.
+</li> <li> **GLM-5.3-Flash**: API calls consume quota at a rate of ~~0.4×~~ 0.2× during off-peak hours and ~~1.2×~~ 0.6× during peak hours.
 </li> </ul> \*Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8).
 </td> </tr> </tbody> </table> This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
