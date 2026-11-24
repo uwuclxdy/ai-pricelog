@@ -379,6 +379,11 @@ def _clock(model_id: str, key: str, value: object) -> int:
     return clock
 
 
+def _usable_id(value: object) -> bool:
+    """Whether an id names a model: a string with a non-whitespace character."""
+    return isinstance(value, str) and bool(value.strip())
+
+
 def _parse_models(
     data: object,
     source: str,
@@ -389,9 +394,7 @@ def _parse_models(
         raise ValueError(f"{source}: root must be an object with a 'data' list")
     entries = data["data"]
     listed_ids = {
-        entry["id"]
-        for entry in entries
-        if isinstance(entry, dict) and isinstance(entry.get("id"), str) and entry["id"]
+        entry["id"] for entry in entries if isinstance(entry, dict) and _usable_id(entry.get("id"))
     }
     if not listed_ids:
         # absence reads this set as the present set: a listing that names no
@@ -405,7 +408,7 @@ def _parse_models(
             _skip_entry(errors, f"data[{index}] is not an object")
             continue
         model_id = entry.get("id")
-        if not isinstance(model_id, str) or not model_id:
+        if not _usable_id(model_id):
             _skip_entry(errors, f"data[{index}] has no string 'id'")
             continue
         if entry.get("alias_target"):

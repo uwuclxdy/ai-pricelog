@@ -232,6 +232,149 @@ def test_fetch_models_empty_id_names_nothing(monkeypatch: pytest.MonkeyPatch) ->
         fetch_models()
 
 
+def test_fetch_models_blank_id_names_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    # a whitespace-only id is no usable id: a listing of only blank ids is the
+    # empty listing, not a listing that names every stored id absent
+    for blank in (" ", "\t", "  "):
+        payload = json.dumps({"data": [{"id": blank}]})
+        monkeypatch.setattr(openrouter, "fetch_text", lambda url, text=payload: text)
+        with pytest.raises(ValueError, match="listing names no model") as excinfo:
+            fetch_models()
+        assert str(excinfo.value) == (
+            "url 'https://openrouter.ai/api/v1/models?output_modalities=all'"
+            ": listing names no model"
+        )
+
+
+def test_fetch_models_every_whitespace_only_id_names_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json
+
+    # the rule is a blank id, never a spelling list: the sweep takes Python's
+    # own whitespace set (29 code points measured on CPython 3.12), so an edit
+    # that blanks a hand-picked subset reds on the first character outside it
+    blanks = [character for character in map(chr, range(0x110000)) if character.isspace()]
+    assert len(blanks) == 29
+    for blank in blanks:
+        payload = json.dumps({"data": [{"id": blank}]})
+        monkeypatch.setattr(openrouter, "fetch_text", lambda url, text=payload: text)
+        with pytest.raises(ValueError, match="listing names no model"):
+            fetch_models()
+
+
+def test_fetch_models_blank_id_is_neither_listed_nor_priced(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": " "},
+                {
+                    "id": "a/b",
+                    "name": "A",
+                    "pricing": {"prompt": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    listed: set[str] = set()
+    errors: list[str] = []
+    models = fetch_models(errors=errors, listed=listed)
+    assert [model.id for model in models] == ["a/b"]
+    assert listed == {"a/b"}
+    assert errors == ["data[0] has no string 'id'"]
+
+
+def test_fetch_models_empty_id_does_not_key_a_variant(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    # an empty-id entry is no listed target: canonical_slug "" must not read
+    # as a redirect to it, or the priced row would drop as a variant
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": ""},
+                {
+                    "id": "a/b",
+                    "name": "A",
+                    "pricing": {"prompt": "1e-6"},
+                    "canonical_slug": "",
+                    "architecture": {"output_modalities": ["text"]},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    errors: list[str] = []
+    models = fetch_models(errors=errors)
+    assert [(model.id, model.variant_snapshot) for model in models] == [("a/b", False)]
+    assert errors == ["data[0] has no string 'id'"]
+
+
+def test_fetch_models_id_keeps_its_exact_spelling(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    # the guard reads an id and never rewrites it: whitespace around real
+    # characters stays part of the id
+    payload = json.dumps(
+        {
+            "data": [
+                {
+                    "id": " a/b",
+                    "name": "A",
+                    "pricing": {"prompt": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    listed: set[str] = set()
+    models = fetch_models(listed=listed)
+    assert [(model.id, model.input_mtok, model.variant_snapshot) for model in models] == [
+        (" a/b", 1.0, False)
+    ]
+    assert listed == {" a/b"}
+
+
+def test_fetch_models_non_string_id_is_skipped(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    payload = json.dumps(
+        {
+            "data": [
+                {"id": 5},
+                {"id": [1]},
+                {"id": None},
+                {
+                    "id": "a/b",
+                    "name": "A",
+                    "pricing": {"prompt": "1e-6"},
+                    "architecture": {"output_modalities": ["text"]},
+                },
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    listed: set[str] = set()
+    errors: list[str] = []
+    models = fetch_models(errors=errors, listed=listed)
+    assert [model.id for model in models] == ["a/b"]
+    assert listed == {"a/b"}
+    assert errors == [
+        "data[0] has no string 'id'",
+        "data[1] has no string 'id'",
+        "data[2] has no string 'id'",
+    ]
+
+
 def test_fetch_models_alias_only_listing_still_parses(monkeypatch: pytest.MonkeyPatch) -> None:
     # one alias entry names its id, so the listing parses: the raise keys on
     # the id set, never on the priced rows the listing yields
