@@ -6,6 +6,7 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -194,6 +195,57 @@ def delete_on_branch(repo: Path, branch: str, path: str) -> None:
     git(repo, "push", "origin", branch)
     git(repo, "switch", "main")
     git(repo, "fetch", "origin")
+
+
+def commit_on_branch(repo: Path, branch: str, edit: Callable[[Path], None]) -> None:
+    """Open a pricelog branch off main whose only change is the one ``edit`` stages."""
+    git(repo, "switch", "-c", branch)
+    edit(repo)
+    git(repo, "commit", "-m", f"hand edit on {branch}")
+    git(repo, "push", "origin", branch)
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+
+def write_file(path: str, text: str) -> Callable[[Path], None]:
+    """An edit that rewrites ``path`` with ``text`` and stages it."""
+
+    def edit(repo: Path) -> None:
+        (repo / path).write_text(text, encoding="utf-8")
+        git(repo, "add", "--", path)
+
+    return edit
+
+
+def as_symlink(path: str) -> Callable[[Path], None]:
+    """An edit that replaces the regular file at ``path`` with a symlink and stages it."""
+
+    def edit(repo: Path) -> None:
+        (repo / path).unlink()
+        (repo / path).symlink_to("elsewhere")
+        git(repo, "add", "--", path)
+
+    return edit
+
+
+def as_submodule(path: str) -> Callable[[Path], None]:
+    """An edit that replaces the regular file at ``path`` with a gitlink to HEAD."""
+
+    def edit(repo: Path) -> None:
+        head = git(repo, "rev-parse", "HEAD").strip()
+        git(repo, "rm", "-q", "--cached", "--", path)
+        (repo / path).unlink()
+        git(repo, "update-index", "--add", "--cacheinfo", f"160000,{head},{path}")
+
+    return edit
+
+
+def assert_refused_before_any_merge(repo: Path, before: str, calls: list[list[str]]) -> None:
+    """A pre-flight refusal: no git merge ran, HEAD stayed put, the checkout is clean."""
+    assert calls == []
+    assert git(repo, "rev-parse", "HEAD").strip() == before
+    assert git(repo, "status", "--porcelain") == ""
+    assert not (repo / ".git" / "MERGE_HEAD").exists()
 
 
 def test_retry_read_retries_a_transient_failure(monkeypatch, tmp_path):
@@ -991,15 +1043,687 @@ def test_merge_refuses_a_branch_renaming_an_outside_file_into_the_pipeline(tmp_p
     assert not (repo / ".git" / "MERGE_HEAD").exists()
 
 
-def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path):
+ENTRY_SHAPE = (
+    "entry 'x/y' must be an object whose 'sources' map each source to one id or a list of ids"
+)
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("", "is not valid json: Expecting value"),
+        ("not json{", "is not valid json: Expecting value"),
+        ("[]", "must carry a 'models' object"),
+        ('{"version": 4}', "must carry a 'models' object"),
+        ('{"models": null}', "must carry a 'models' object"),
+        ('{"version": 4, "models": {"x/y": "an entry"}}', ENTRY_SHAPE),
+        ('{"version": 4, "models": {"x/y": {"sources": 5}}}', ENTRY_SHAPE),
+        (
+            '{"version": 4, "models": {"x/y": {"vendor": "x", "curated": false,'
+            ' "sources": {"x": 5}}}}',
+            ENTRY_SHAPE,
+        ),
+        (
+            '{"version": 4, "models": {"x/y": {"vendor": "x", "curated": false,'
+            ' "sources": {"x": [5]}}}}',
+            ENTRY_SHAPE,
+        ),
+    ],
+    ids=[
+        "emptied",
+        "not-json",
+        "not-an-object",
+        "models-missing",
+        "models-null",
+        "entry-not-an-object",
+        "sources-not-a-dict",
+        "ids-not-a-list",
+        "ids-not-strings",
+    ],
+)
+def test_merge_refuses_a_branch_whose_catalog_does_not_read(tmp_path, monkeypatch, text, reason):
+    # _union_models walks the branch's catalog after git merge staged: an
+    # emptied copy (a change, not a deletion) or an entry the union cannot walk
+    # would die there, so the pre-flight parses the copy and refuses by name
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(repo, "pricelog/cat-00000001", write_file(models.MODELS_FILE, text))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/cat-00000001"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/cat-00000001: data/catalog/models.json {reason};"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_branch_entry_naming_its_id_as_a_string(tmp_path):
+    # the catalog parse's boundary: a source mapping to one id as a bare
+    # string is the catalog contract's other id shape, so the branch merges
+    repo, _bare = build_repo(tmp_path)
+    catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
+    entry = {"vendor": "zai", "curated": True, "sources": {"zai": "glm-5"}}
+    catalog["models"]["zai/glm-5"] = entry
+    commit_on_branch(
+        repo, "pricelog/strid-00000001", write_file(models.MODELS_FILE, json.dumps(catalog))
+    )
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/strid-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/strid-00000001"]
+    merged = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))["models"]
+    assert merged["zai/glm-5"] == entry
+    assert git(repo, "status", "--porcelain") == ""
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("not json{\n", "is not valid json: Expecting value"),
+        ("[]", "must carry a 'models' object"),
+        ('{"version": 4, "models": {"x/y": "an entry"}}', ENTRY_SHAPE),
+    ],
+    ids=["not-json", "not-an-object", "entry-not-an-object"],
+)
+def test_merge_refuses_a_branch_whose_merge_base_catalog_does_not_read(
+    tmp_path, monkeypatch, text, reason
+):
+    # _union_models also json-parses the merge base's catalog when the branch
+    # changes its own; a branch cut from a commit whose copy does not read
+    # would die after git merge staged, even with HEAD's copy repaired since
+    repo, _bare = build_repo(tmp_path)
+    good = (repo / models.MODELS_FILE).read_text(encoding="utf-8")
+    (repo / models.MODELS_FILE).write_text(text, encoding="utf-8")
+    git(repo, "commit", "-am", "break the catalog")
+    git(repo, "push", "origin", "main")
+    commit_on_branch(repo, "pricelog/mb-00000001", write_file(models.MODELS_FILE, good))
+    (repo / models.MODELS_FILE).write_text(good, encoding="utf-8")
+    git(repo, "commit", "-am", "repair the catalog")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/mb-00000001"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/mb-00000001's merge base: data/catalog/models.json {reason};"
+        " fix: rebase the branch onto a base whose copy parses, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_whose_merge_base_catalog_is_not_utf8(tmp_path, monkeypatch):
+    # the pre-flight decodes the merge base's catalog copy, so bytes there that
+    # are not UTF-8 text stop the run by name; both tips carry a repaired copy
+    # and only the commit they descend from holds the undecodable bytes
+    repo, _bare = build_repo(tmp_path)
+    good = (repo / models.MODELS_FILE).read_text(encoding="utf-8")
+    (repo / models.MODELS_FILE).write_bytes(b"\xff\n")
+    git(repo, "commit", "-am", "break the catalog")
+    git(repo, "push", "origin", "main")
+    commit_on_branch(repo, "pricelog/mb-00000001", write_file(models.MODELS_FILE, good))
+    (repo / models.MODELS_FILE).write_text(good, encoding="utf-8")
+    git(repo, "commit", "-am", "repair the catalog")
+    git(repo, "push", "origin", "main")
+    sha = git(repo, "merge-base", "HEAD", "origin/pricelog/mb-00000001").strip()[:7]
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/mb-00000001"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/mb-00000001's merge base: {sha}:data/catalog/models.json"
+        " is not UTF-8 text (invalid start byte at byte 0); fix: rebase the branch onto"
+        " a base whose copy parses, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_catalog_entry_unchanged_from_a_junk_merge_base(
+    tmp_path, monkeypatch
+):
+    # _check_carried_claims parses every branch's catalog, changed or not, so a
+    # branch cut from a base whose entry is junk reads through the same parse
+    # even though its own diff never names the catalog
+    repo, _bare = build_repo(tmp_path)
+    good = (repo / models.MODELS_FILE).read_text(encoding="utf-8")
+    (repo / models.MODELS_FILE).write_text(
+        '{"version": 4, "models": {"x/y": "an entry"}}\n', encoding="utf-8"
+    )
+    git(repo, "commit", "-am", "junk catalog on the base")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/junkbase-00000001")
+    store.save_shard(
+        store.load_shard(repo / "data" / "history", "deepseek")
+        + [make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)],
+        repo / "data" / "history",
+        "deepseek",
+    )
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "append a row")
+    git(repo, "push", "origin", "pricelog/junkbase-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    (repo / models.MODELS_FILE).write_text(good, encoding="utf-8")
+    git(repo, "commit", "-am", "repair the catalog")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/junkbase-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/junkbase-00000001: data/catalog/models.json entry 'x/y' must"
+        " be an object whose 'sources' map each source to one id or a list of ids;"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("", "is not valid json: Expecting value"),
+        ("not json{", "is not valid json: Expecting value"),
+        ("{}", "must carry a 'rules' list"),
+        ('{"rules": null}', "must carry a 'rules' list"),
+        ('["a list"]', "must carry a 'rules' list"),
+        ('{"rules": [1]}', "rule 0 must be an object carrying a string 'id'"),
+        ('{"rules": [{"id": 3}]}', "rule 0 must be an object carrying a string 'id'"),
+    ],
+    ids=[
+        "emptied",
+        "not-json",
+        "no-rules-key",
+        "rules-null",
+        "not-an-object",
+        "rule-not-an-object",
+        "id-not-a-string",
+    ],
+)
+def test_merge_refuses_a_branch_whose_billing_rules_do_not_read(
+    tmp_path, monkeypatch, text, reason
+):
+    # _union_billing_rules json-parses the branch's copy after git merge
+    # staged, so a copy that does not read as a rules list refuses by name first
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(repo, "pricelog/rules-00000001", write_file(BILLING_RULES_FILE, text))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/rules-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/rules-00000001: data/catalog/billing-rules.json {reason};"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("not json{\n", "is not valid json: Expecting value"),
+        ("{}", "must carry a 'rules' list"),
+        ('{"rules": null}', "must carry a 'rules' list"),
+    ],
+    ids=["not-json", "no-rules-key", "rules-null"],
+)
+def test_merge_refuses_head_billing_rules_that_do_not_read(tmp_path, monkeypatch, text, reason):
+    # the union parses HEAD's rules beside the branch's whenever the branch
+    # changes them, so HEAD's copy parses in the pre-flight too
+    repo, _bare = build_repo(tmp_path)
+    rule = {"id": "zai-plan-quotas", "provider": "zai", "effective": "2026-09-01"}
+    commit_on_branch(
+        repo,
+        "pricelog/rules-00000002",
+        write_file(BILLING_RULES_FILE, json.dumps({"rules": [rule]}) + "\n"),
+    )
+    (repo / BILLING_RULES_FILE).write_text(text, encoding="utf-8")
+    git(repo, "commit", "-am", "break the rules on the base")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/rules-00000002"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"HEAD: data/catalog/billing-rules.json {reason};"
+        " fix: correct the named copy on the base branch, then re-run"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def _base_carries_a_channel(repo: Path) -> None:
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+
+
+def _base_carries_an_absence_file(repo: Path) -> None:
+    absence.save_absence({"deepseek": {"deepseek/deepseek-v4-pro": {}}}, repo)
+    git(repo, "add", "state/absence")
+    git(repo, "commit", "-m", "absence snapshot")
+    git(repo, "push", "origin", "main")
+
+
+@pytest.mark.parametrize(
+    ("path", "make_edit", "kind", "setup"),
+    [
+        (models.MODELS_FILE, as_symlink, "symlink", None),
+        (models.MODELS_FILE, as_submodule, "submodule", None),
+        (BILLING_RULES_FILE, as_symlink, "symlink", None),
+        ("state/announce/index.json", as_symlink, "symlink", None),
+        ("data/history/deepseek.ndjson", as_symlink, "symlink", None),
+        ("tests/test_billing_rules.py", as_symlink, "symlink", None),
+        ("state/announce/deepseek/notes.md", as_symlink, "symlink", _base_carries_a_channel),
+        ("state/absence/deepseek.json", as_symlink, "symlink", _base_carries_an_absence_file),
+    ],
+    ids=[
+        "catalog-symlink",
+        "catalog-submodule",
+        "billing-rules",
+        "announce-index",
+        "shard",
+        "billing-pin",
+        "channel-file",
+        "absence-file",
+    ],
+)
+def test_merge_refuses_a_branch_type_changing_a_file_the_merge_reads(
+    tmp_path, monkeypatch, path, make_edit, kind, setup
+):
+    # git show prints a symlink's target and a gitlink's commit as if they were
+    # file bytes, so a type change (status T) reaches a parser as garbage or
+    # lands a non-file in the store; the branch's tree mode refuses it by name
+    repo, _bare = build_repo(tmp_path)
+    if setup is not None:
+        setup(repo)
+    commit_on_branch(repo, "pricelog/type-00000001", make_edit(path))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/type-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/type-00000001: carries ['{path} ({kind})'] as non-regular files;"
+        " the merge reads or stages each from the branch side as a file's bytes;"
+        " fix: commit each as a regular file on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_whose_index_names_an_inherited_symlink(tmp_path, monkeypatch):
+    # the branch's own index names a channel file the branch never changed but
+    # whose copy is a symlink: the announce resolution still reads it by path,
+    # so the indexed files are type-checked as well as the changed ones
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    as_symlink("state/announce/deepseek/notes.md")(repo)
+    git(repo, "commit", "-m", "the channel file turns into a symlink on the base")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/inherit-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+    )
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/inherit-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/inherit-00000001: carries ['state/announce/deepseek/notes.md"
+        " (symlink)'] as non-regular files; the merge reads or stages each from the"
+        " branch side as a file's bytes; fix: commit each as a regular file on the"
+        " branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize(
+    ("path", "payload", "reason", "setup"),
+    [
+        (
+            "state/announce/deepseek/notes.md",
+            b"caf\xe9\n",
+            "invalid continuation byte at byte 3",
+            _base_carries_a_channel,
+        ),
+        (
+            "state/absence/deepseek.json",
+            b"\xff\n",
+            "invalid start byte at byte 0",
+            _base_carries_an_absence_file,
+        ),
+    ],
+    ids=["channel-file", "absence-file"],
+)
+def test_merge_refuses_a_branch_file_that_is_not_utf8_text(
+    tmp_path, monkeypatch, path, payload, reason, setup
+):
+    # the merge reads a channel file or an absence file from the branch side
+    # as text and writes it back verbatim; bytes that do not decode would stop
+    # it after git merge staged, so the pre-flight reads them first
+    repo, _bare = build_repo(tmp_path)
+    setup(repo)
+
+    def write_undecodable(repo: Path) -> None:
+        (repo / path).write_bytes(payload)
+        git(repo, "add", "--", path)
+
+    commit_on_branch(repo, "pricelog/bytes-00000001", write_undecodable)
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/bytes-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/bytes-00000001: origin/pricelog/bytes-00000001:{path} is not"
+        f" UTF-8 text ({reason}); fix: re-encode it as UTF-8 on the branch, or close"
+        " the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_branch_marking_the_catalog_executable(tmp_path):
+    # the type refusal's boundary: an executable bit keeps the path a regular
+    # file (mode 100755), so the branch still merges
+    repo, _bare = build_repo(tmp_path)
+
+    def make_executable(repo: Path) -> None:
+        (repo / models.MODELS_FILE).chmod(0o755)
+        git(repo, "add", "--", models.MODELS_FILE)
+
+    commit_on_branch(repo, "pricelog/exec-00000001", make_executable)
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/exec-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/exec-00000001"]
+    assert git(repo, "ls-tree", "HEAD", "--", models.MODELS_FILE).split(" ", 1)[0] == "100755"
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_a_branch_without_an_index_deleting_a_channel_head_names(
+    tmp_path, monkeypatch
+):
+    # a branch carrying no announce index skips the announce step, so its
+    # deletion of a channel file HEAD's index still names would land and leave
+    # that index entry pointing at nothing; the merge base carries the file but
+    # no index, so the branch's missing index is no deletion of its own
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    delete_on_branch(repo, "pricelog/noidx-00000001", "state/announce/deepseek/notes.md")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/noidx-00000001: deletes ['state/announce/deepseek/notes.md'];"
+        " the merge reads or stages these from the branch side and a deleted copy"
+        " reaches it as absent or unstageable; fix: restore the file(s) on the branch,"
+        " or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_without_an_index_deleting_a_channel_a_sibling_indexes(
+    tmp_path, monkeypatch
+):
+    # HEAD carries no index at the burst base, but a sibling branch's own index
+    # lands in the same burst: its merge writes the entry, and the no-index
+    # branch's later merge would leave that entry pointing at nothing
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000001")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    delete_on_branch(repo, "pricelog/noidx-00000002", "state/announce/deepseek/notes.md")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/idx-00000001", "pricelog/noidx-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/noidx-00000002: deletes ['state/announce/deepseek/notes.md'];"
+        " the merge reads or stages these from the branch side and a deleted copy"
+        " reaches it as absent or unstageable; fix: restore the file(s) on the branch,"
+        " or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_burst_whose_later_index_drops_the_deleted_channel(tmp_path):
+    # a later branch's index drops the channel before the no-index branch's
+    # merge, so the index in effect names no file the deletion removes
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000001")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    git(repo, "switch", "-c", "pricelog/drop-00000002")
+    announce.save_snapshot({}, repo)
+    git(repo, "add", "-A", "--", "state/announce")
+    git(repo, "commit", "-m", "drop every channel")
+    git(repo, "push", "origin", "pricelog/drop-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    delete_on_branch(repo, "pricelog/noidx-00000003", "state/announce/deepseek/notes.md")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/idx-00000001", "pricelog/drop-00000002", "pricelog/noidx-00000003"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == [
+        "pricelog/idx-00000001",
+        "pricelog/drop-00000002",
+        "pricelog/noidx-00000003",
+    ]
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert index == {}
+    assert not (repo / "state" / "announce" / "deepseek" / "notes.md").exists()
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_burst_whose_later_index_restores_the_deleted_channel(tmp_path):
+    # a later sibling's index names the channel the no-index branch deletes:
+    # that sibling's own merge rewrites the file, so the deletion strands no
+    # index entry and the burst lands with the index naming every channel file
+    # on disk. the later sibling merges after, so no index of it is in effect
+    # at the deletion's merge. the source dir keeps a second channel, so the
+    # deletion leaves its directory in place
+    repo, _bare = build_repo(tmp_path)
+    channels = {
+        "deepseek": {
+            "https://example.com/notes": "old prose",
+            "https://example.com/updates": "update prose",
+        }
+    }
+    commit_announce(repo, channels, "2026-09-09")
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    delete_on_branch(repo, "pricelog/noidx-00000001", "state/announce/deepseek/notes.md")
+    git(repo, "switch", "-c", "pricelog/idx-00000002")
+    commit_announce(repo, channels, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/noidx-00000001", "pricelog/idx-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == [
+        "pricelog/noidx-00000001",
+        "pricelog/idx-00000002",
+    ]
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    named: set[str] = set()
+    for source, urls in index.items():
+        derived = announce.channel_files(source, urls.keys())
+        for url, entry in urls.items():
+            assert entry["file"] == derived[url]
+            named.add(entry["file"])
+            text = (repo / entry["file"]).read_text(encoding="utf-8")
+            assert announce._sha256(announce.unwrap(text)) == entry["sha256"]
+    assert named == {
+        "state/announce/deepseek/notes.md",
+        "state/announce/deepseek/updates.md",
+    }
+    on_disk = {
+        path.relative_to(repo).as_posix() for path in (repo / "state" / "announce").rglob("*.md")
+    }
+    assert on_disk == named
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_burst_whose_merged_sibling_index_does_not_read(tmp_path):
+    # the skip loop drops a stranded sibling without reading its index, so a
+    # no-index branch's merge finds no index to check its deletion against
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "switch", "-c", "pricelog/stranded-00000001")
+    (repo / "state" / "announce" / "index.json").write_text("not json{\n", encoding="utf-8")
+    git(repo, "add", "--", "state/announce/index.json")
+    git(repo, "commit", "-m", "unreadable index")
+    git(repo, "push", "origin", "pricelog/stranded-00000001")
+    git(repo, "switch", "main")
+    git(
+        repo,
+        "merge",
+        "--no-ff",
+        "-m",
+        "land the stranded branch",
+        "origin/pricelog/stranded-00000001",
+    )
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    delete_on_branch(repo, "pricelog/noidx-00000002", "state/announce/deepseek/notes.md")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/stranded-00000001", "pricelog/noidx-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == ["pricelog/noidx-00000002"]
+    assert not (repo / "state" / "announce" / "deepseek" / "notes.md").exists()
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_a_sibling_type_changing_its_index_before_a_no_index_branch(
+    tmp_path, monkeypatch
+):
+    # a sibling's non-regular index lands no entry, so the no-index branch
+    # before it is not checked against it; the sibling's own type check names
+    # the symlink rather than reading it as bad json
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    delete_on_branch(repo, "pricelog/noidx-00000001", "state/announce/deepseek/notes.md")
+
+    def add_index_symlink(repo: Path) -> None:
+        (repo / "state" / "announce" / "index.json").symlink_to("elsewhere")
+        git(repo, "add", "--", "state/announce/index.json")
+
+    commit_on_branch(repo, "pricelog/type-00000002", add_index_symlink)
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001", "pricelog/type-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/type-00000002: carries ['state/announce/index.json (symlink)']"
+        " as non-regular files; the merge reads or stages each from the branch side"
+        " as a file's bytes; fix: commit each as a regular file on the branch, or"
+        " close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path, monkeypatch):
     # the pass is authorized to hand-edit a branch row, so the exact-line union
     # is the one path a contract-breaking shape can take into the store: the
-    # merge stops naming the branch and nothing lands
+    # pre-flight stops the merge naming the branch, before any git merge
     repo, _bare = build_repo(tmp_path)
     bad = make_row("zai", "glm-5", "2026-08-31", 0.1)
     bad["surprise"] = "hand edit"
     make_branch(repo, "pricelog/iota-88888888", [bad])
     before = git(repo, "rev-parse", "main").strip()
+    calls = merge_spy(monkeypatch)
 
     with pytest.raises(
         automerge.AutoMergeError,
@@ -1012,6 +1736,7 @@ def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path):
         )
 
     assert git(repo, "rev-parse", "main").strip() == before
+    assert_refused_before_any_merge(repo, before, calls)
 
 
 def test_merge_leaves_rows_head_already_holds_unvalidated(tmp_path):
@@ -1080,24 +1805,25 @@ def test_validation_follows_the_partition_not_its_own(tmp_path, monkeypatch):
     assert shard_lines(repo) == [line]
 
 
-def test_merge_refused_row_names_the_branch_line(tmp_path):
-    # two branches merge in one call: the first lands a good row, so HEAD gains a
-    # line the second branch's copy does not carry. the bad row is then branch
-    # line 2, union line 3, appended-subset line 1; the error must name line 2
+def test_merge_refused_row_names_the_branch_line(tmp_path, monkeypatch):
+    # HEAD gains a good row after the branch was cut, a line the branch's copy
+    # does not carry. the bad row is then branch line 2, union line 3,
+    # appended-subset line 1; the error must name line 2, before any git merge
     repo, _bare = build_repo(tmp_path)
-    good = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
-    make_branch(repo, "pricelog/alpha-11111111", [good])
     bad = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
     bad["surprise"] = "hand edit"
     make_branch(repo, "pricelog/beta-22222222", [bad])
+    good = make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.44)
+    shard_dir = repo / "data" / "history"
+    store.save_shard(store.load_shard(shard_dir, "deepseek") + [good], shard_dir, "deepseek")
+    git(repo, "commit", "-am", "land a good row on the base")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
 
     with pytest.raises(automerge.AutoMergeError) as excinfo:
         automerge.merge_branches(
-            ["pricelog/alpha-11111111", "pricelog/beta-22222222"],
-            repo,
-            pr.PrRunner(),
-            "main",
-            push=False,
+            ["pricelog/beta-22222222"], repo, pr.PrRunner(), "main", push=False
         )
 
     assert str(excinfo.value) == (
@@ -1107,6 +1833,7 @@ def test_merge_refused_row_names_the_branch_line(tmp_path):
         " bump the version. do not retry: report the error and leave every PR open"
     )
     assert len(git(repo, "show", "HEAD:data/history/deepseek.ndjson").splitlines()) == 2
+    assert_refused_before_any_merge(repo, before, calls)
 
 
 def test_merge_invalid_json_names_the_branch_line(tmp_path):
@@ -2632,16 +3359,17 @@ def test_merge_lands_a_pipeline_channel_drop(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
-def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
-    # the rename-detection-masked shape: a newest branch whose index names a
-    # url its tree carries no .md for (a hand edit; _announce_index checks the
-    # file field's derived path, never the blob's existence). git's merge
-    # cannot fill the newest path then, so the resolution's own write is the
-    # only thing that can land the winner's bytes at it
+def test_merge_refuses_a_newest_branch_indexing_a_channel_file_its_tree_lacks(
+    tmp_path, monkeypatch
+):
+    # a newest branch whose index names a url its tree carries no .md for (a
+    # hand edit; _announce_index checks the file field's derived path, never
+    # the blob's existence), and neither its merge base nor the older branch
+    # carries that path: no deletion record exists, so the index itself is
+    # checked against the branch's tree, and the burst stops before any merge
     repo, _bare = build_repo(tmp_path)
     url_a = "https://example.com/notes"
     url_b = "https://example.com/notes?feed=rss"
-    solo = announce.channel_files("deepseek", [url_a])
     commit_announce(repo, {"deepseek": {url_a: "old a prose", url_b: "old b prose"}}, "2026-09-09")
     git(repo, "push", "origin", "main")
     make_branch(
@@ -2666,23 +3394,25 @@ def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
     git(repo, "push", "origin", "pricelog/newest-00000002")
     git(repo, "switch", "main")
     git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
 
-    automerge.merge_branches(
-        ["pricelog/older-00000001", "pricelog/newest-00000002"],
-        repo,
-        pr.PrRunner(),
-        "main",
-        push=False,
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/older-00000001", "pricelog/newest-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/newest-00000002: its state/announce/index.json names"
+        " ['state/announce/deepseek/notes.md'] that its tree lacks; the merge reads each"
+        " indexed channel file from the branch side; fix: restore the file(s) on the"
+        " branch or drop their index entries, or close the PR"
     )
-
-    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
-    entry = index["deepseek"][url_a]
-    assert entry["file"] == solo[url_a]
-    # the winner's bytes land at the newest index's path even though no
-    # rename pair can form for it
-    assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh a prose"
-    assert entry["sha256"] == announce._sha256("fresh a prose")
-    assert git(repo, "status", "--porcelain") == ""
+    assert_refused_before_any_merge(repo, before, calls)
 
 
 @pytest.mark.parametrize(

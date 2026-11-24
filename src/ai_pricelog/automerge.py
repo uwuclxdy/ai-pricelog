@@ -19,12 +19,23 @@ as a merged PR. the step passes only branches the pass marked
   path's deletion: a deleted copy reaches the merge as absent or unstageable,
   and no pipeline run deletes one; the two kinds it does delete on its own
   branches (an absence file, a dropped channel's .md with its index entry)
-  keep merging
-- each shard line the union appends passes `validate_row` before it lands:
+  keep merging. a branch carrying no announce index has no url set to drop
+  channels by, so its deletion of a .md the index in effect at its merge
+  names is refused too
+- every other branch-side file the merge reads is read in the pre-flight the
+  same way, so no branch-side read stops the merge after `git merge
+  --no-commit` staged: a pipeline path the branch carries as a symlink or
+  submodule is refused by name (`git show` would hand the merge a link target
+  or a commit as file bytes), so is an indexed channel .md the branch's tree
+  lacks, and each catalog copy the union will parse (the branch's models.json
+  and its merge base's, the branch's billing-rules.json and HEAD's) parses
+  first, and each channel or absence file it copies from the branch decodes as
+  UTF-8 text
+- each shard line the union appends passes `validate_row` in the pre-flight:
   the pass is authorized to hand-edit a branch row, so the merge is the one
   path a shape the contract forbids can take into the store, and a refused
-  line stops the merge by name. HEAD's own lines are exempt, they already
-  sit in the append-only store
+  line stops the run by name before any branch merges. HEAD's own lines are
+  exempt, they already sit in the append-only store
 - each branch pre-flights two bounds before anything lands: the churn gate
   (at most 50 models created, 50 removed, 500 rows appended vs the burst
   base) returns an `unsafe` refusal naming the counts, and every appended
@@ -78,6 +89,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from ai_pricelog import models, pr, publish, store, validate
 from ai_pricelog.absence import ABSENCE_DIR
@@ -92,6 +104,23 @@ PIPELINE_EXACT_FILES = frozenset(
     }
 )
 PIPELINE_STATE_DIRS = (ANNOUNCE_DIR, ABSENCE_DIR)
+_PIPELINE_PATHSPECS = (
+    SHARD_DIR,
+    models.MODELS_FILE,
+    *sorted(PIPELINE_EXACT_FILES),
+    *PIPELINE_STATE_DIRS,
+)
+
+# git tree modes: a regular blob, plain or executable; anything else at a path
+# the merge reads (a symlink's target, a gitlink's commit) reaches it through
+# `git show` as if it were the file's bytes
+_REGULAR_FILE_MODES = frozenset({"100644", "100755"})
+_NON_REGULAR_KINDS = {"120000": "symlink", "160000": "submodule"}
+
+# the fix clause of a catalog-file refusal, by the revision whose copy does not read
+_FIX_BRANCH_COPY = "correct the named copy on the branch, or close the PR"
+_FIX_HEAD_COPY = "correct the named copy on the base branch, then re-run"
+_FIX_MERGE_BASE_COPY = "rebase the branch onto a base whose copy parses, or close the PR"
 
 SEED_BRANCH = "pricelog/seed"
 
@@ -156,11 +185,20 @@ def _delete_remote_branch(runner: pr.PrRunner, repo_root: Path, branch: str) -> 
 
 
 def _branch_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
-    """The branch's copy of a path; a path the branch never had reads as empty."""
+    """The branch's copy of a path; a path the branch never had reads as empty.
+
+    the pass is authorized to hand-edit a branch's files, so bytes that do not
+    decode as text stop the merge by name rather than by traceback.
+    """
     try:
         return runner.run(["git", "show", f"origin/{branch}:{path}"], cwd=repo_root)
     except pr.PrError:
         return ""
+    except UnicodeDecodeError as exc:
+        raise AutoMergeError(
+            f"branch {branch}: origin/{branch}:{path} is not UTF-8 text ({exc.reason} at"
+            f" byte {exc.start}); fix: re-encode it as UTF-8 on the branch, or close the PR"
+        ) from exc
 
 
 def _sorted_lines(lines: list[str], branch: str, path: str) -> list[str]:
@@ -241,6 +279,25 @@ def _validate_appended(
             ) from exc
 
 
+def _check_appended_rows(
+    runner: pr.PrRunner, repo_root: Path, branches: list[str], keys: validate.SchemaKeys
+) -> None:
+    """Validate every line each branch would append, before any git merge.
+
+    the partition is taken against the burst base; every merge keeps all of
+    HEAD's lines, so the lines a later merge of the burst appends are a subset
+    of these, and a line the merge would append is validated here first.
+    """
+    for branch in branches:
+        for path in _branch_shard_paths(runner, repo_root, branch):
+            branch_text = _branch_text(runner, repo_root, branch, path)
+            appended = _appended_lines(
+                store.shard_lines(_head_text(runner, repo_root, path)),
+                store.shard_lines(branch_text),
+            )
+            _validate_appended(appended, branch_text, branch=branch, path=path, keys=keys)
+
+
 def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
     """HEAD's copy of a shard; a shard HEAD never had reads as empty."""
     try:
@@ -250,12 +307,21 @@ def _head_text(runner: pr.PrRunner, repo_root: Path, path: str) -> str:
 
 
 def _merge_base_text(runner: pr.PrRunner, repo_root: Path, branch: str, path: str) -> str:
-    """The branch's merge base's copy of a path; one it never carried reads as empty."""
+    """The branch's merge base's copy of a path; one it never carried reads as empty.
+
+    the pre-flight parses this copy before any merge, so bytes that do not
+    decode as text stop the run by name rather than by traceback.
+    """
     sha = runner.run(["git", "merge-base", "HEAD", f"origin/{branch}"], cwd=repo_root).strip()
     try:
         return runner.run(["git", "show", f"{sha}:{path}"], cwd=repo_root)
     except pr.PrError:
         return ""
+    except UnicodeDecodeError as exc:
+        raise AutoMergeError(
+            f"branch {branch}'s merge base: {sha[:7]}:{path} is not UTF-8 text"
+            f" ({exc.reason} at byte {exc.start}); fix: {_FIX_MERGE_BASE_COPY}"
+        ) from exc
 
 
 def _branch_tree_paths(
@@ -580,35 +646,76 @@ def _head_store_keys(runner: pr.PrRunner, repo_root: Path) -> set[tuple[str, str
     return keys
 
 
-def _catalog_claims(text: str, label: str) -> set[tuple[str, str]]:
-    """Every (source, model_id) pair one models.json revision claims.
+def _parse_models(text: str, label: str, fix: str) -> dict[str, dict[str, Any]]:
+    """One models.json revision's entries, in the shape the claims and the union walk.
 
-    the claims are what the coverage invariant pins, extracted leniently: the
-    file's own loader validates the full shape at production reads, and a
-    revision that is not json refuses by label rather than tracebacking.
+    each entry is an object whose `sources` map each source to one id or a
+    list of ids. the file's own loader checks the full schema at production
+    reads; this holds what the merge dereferences, so a revision that does not
+    read refuses by label rather than tracebacking, and the pre-flight runs it
+    on every copy the union will read before any git merge.
     """
-    if not text:
-        return set()
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise AutoMergeError(f"{label}: {models.MODELS_FILE} is not valid json: {exc.msg}") from exc
+        raise AutoMergeError(
+            f"{label}: {models.MODELS_FILE} is not valid json: {exc.msg}; fix: {fix}"
+        ) from exc
     if not isinstance(data, dict) or not isinstance(data.get("models"), dict):
-        raise AutoMergeError(f"{label}: {models.MODELS_FILE} must carry a 'models' object")
-    claims: set[tuple[str, str]] = set()
-    for entry in data["models"].values():
+        raise AutoMergeError(
+            f"{label}: {models.MODELS_FILE} must carry a 'models' object; fix: {fix}"
+        )
+    for canonical, entry in data["models"].items():
         sources = entry.get("sources") if isinstance(entry, dict) else None
-        if not isinstance(sources, dict):
-            continue
-        for source, ids in sources.items():
-            if isinstance(ids, str):
-                ids = [ids]
-            if not isinstance(ids, list):
-                continue
-            for model_id in ids:
-                if isinstance(source, str) and isinstance(model_id, str):
-                    claims.add((source, model_id))
-    return claims
+        if not isinstance(sources, dict) or not all(
+            isinstance(ids, str)
+            or (isinstance(ids, list) and all(isinstance(model_id, str) for model_id in ids))
+            for ids in sources.values()
+        ):
+            raise AutoMergeError(
+                f"{label}: {models.MODELS_FILE} entry {canonical!r} must be an object whose"
+                f" 'sources' map each source to one id or a list of ids; fix: {fix}"
+            )
+    return data["models"]
+
+
+def _parse_billing_rules(text: str, label: str, fix: str) -> list[dict[str, Any]]:
+    """One billing-rules.json revision's rules, each an object keyed by its string id.
+
+    the union dedupes on the id, so that is the shape it reads; the file's own
+    loader checks the full rule schema at production reads.
+    """
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AutoMergeError(
+            f"{label}: {BILLING_RULES_FILE} is not valid json: {exc.msg}; fix: {fix}"
+        ) from exc
+    if not isinstance(data, dict) or not isinstance(data.get("rules"), list):
+        raise AutoMergeError(f"{label}: {BILLING_RULES_FILE} must carry a 'rules' list; fix: {fix}")
+    for index, rule in enumerate(data["rules"]):
+        if not isinstance(rule, dict) or not isinstance(rule.get("id"), str):
+            raise AutoMergeError(
+                f"{label}: {BILLING_RULES_FILE} rule {index} must be an object carrying"
+                f" a string 'id'; fix: {fix}"
+            )
+    return data["rules"]
+
+
+def _catalog_claims(text: str, label: str, fix: str) -> set[tuple[str, str]]:
+    """Every (source, model_id) pair one models.json revision claims.
+
+    the claims are what the coverage invariant pins; a revision carrying no
+    models.json claims nothing.
+    """
+    if not text:
+        return set()
+    return {
+        (source, model_id)
+        for entry in _parse_models(text, label, fix).values()
+        for source, ids in entry["sources"].items()
+        for model_id in ([ids] if isinstance(ids, str) else ids)
+    }
 
 
 def _branch_churn(
@@ -685,7 +792,9 @@ def _check_carried_claims(
     claims = set(head_claims)
     for branch in branches:
         claims |= _catalog_claims(
-            _branch_text(runner, repo_root, branch, models.MODELS_FILE), f"branch {branch}"
+            _branch_text(runner, repo_root, branch, models.MODELS_FILE),
+            f"branch {branch}",
+            _FIX_BRANCH_COPY,
         )
     for branch in branches:
         for path in _branch_shard_paths(runner, repo_root, branch):
@@ -711,7 +820,7 @@ def _check_carried_claims(
                     )
 
 
-def _union_models(head_text: str, branch_text: str, base_text: str) -> str:
+def _union_models(head_text: str, branch_text: str, base_text: str, branch: str) -> str:
     """HEAD's model catalog plus the entries the branch added or changed.
 
     A branch entry lands only when the branch added or changed it against its
@@ -720,28 +829,28 @@ def _union_models(head_text: str, branch_text: str, base_text: str) -> str:
     first rule keeps a branch cut before a catalog deletion from restoring the
     deleted entry; the second preserves the coverage invariant: a human twin
     merge on HEAD deletes a seeded id, and a branch seeding the same id must
-    not duplicate the claim.
+    not duplicate the claim. Each copy reads through _parse_models: the
+    pre-flight runs it on the branch's copy, its merge base's and the burst
+    base's before any merge, and a later HEAD copy is this union's own output.
     """
-    head = json.loads(head_text) if head_text else {"version": models.CATALOG_VERSION, "models": {}}
-    branch_data = json.loads(branch_text)
-    base_data = json.loads(base_text) if base_text else {}
-    base_models = base_data.get("models") if isinstance(base_data, dict) else None
-    if not isinstance(base_models, dict):
-        base_models = {}
-    merged = dict(head.get("models") or {})
+    merged = dict(_parse_models(head_text, "HEAD", _FIX_HEAD_COPY)) if head_text else {}
+    branch_models = _parse_models(branch_text, f"branch {branch}", _FIX_BRANCH_COPY)
+    base_models = (
+        _parse_models(base_text, f"branch {branch}'s merge base", _FIX_MERGE_BASE_COPY)
+        if base_text
+        else {}
+    )
     head_claims = {
         (source, model_id)
         for entry in merged.values()
-        for source, ids in (entry.get("sources") or {}).items()
+        for source, ids in entry["sources"].items()
         for model_id in ids
     }
-    for canonical, entry in (branch_data.get("models") or {}).items():
+    for canonical, entry in branch_models.items():
         if base_models.get(canonical) == entry:
             continue
         claims = {
-            (source, model_id)
-            for source, ids in (entry.get("sources") or {}).items()
-            for model_id in ids
+            (source, model_id) for source, ids in entry["sources"].items() for model_id in ids
         }
         if claims & head_claims:
             continue
@@ -758,23 +867,24 @@ def _union_models(head_text: str, branch_text: str, base_text: str) -> str:
     )
 
 
-def _union_billing_rules(head_text: str, branch_text: str) -> str:
+def _union_billing_rules(head_text: str, branch_text: str, branch: str) -> str:
     """HEAD's rules plus the branch's additions, deduped by rule id.
 
     The pass writes a confirmed rule onto every branch it judges after the
     confirmation, so a burst carries identical copies of one append; the
     union lands one. HEAD's copy wins an id clash, the `_union_models`
-    posture: a human edit of a rule on the base is never resurrected.
+    posture: a human edit of a rule on the base is never resurrected. Both
+    copies read through _parse_billing_rules: the pre-flight runs it on the
+    branch's copy and the burst base's before any merge, and a later HEAD copy
+    is this union's own output.
     """
-    head = json.loads(head_text) if head_text else {"rules": []}
-    branch_data = json.loads(branch_text)
-    merged = list(head.get("rules") or [])
-    seen = {rule.get("id") for rule in merged}
-    for rule in branch_data.get("rules") or []:
-        if rule.get("id") in seen:
+    merged = list(_parse_billing_rules(head_text, "HEAD", _FIX_HEAD_COPY)) if head_text else []
+    seen = {rule["id"] for rule in merged}
+    for rule in _parse_billing_rules(branch_text, f"branch {branch}", _FIX_BRANCH_COPY):
+        if rule["id"] in seen:
             continue
         merged.append(rule)
-        seen.add(rule.get("id"))
+        seen.add(rule["id"])
     return json.dumps({"rules": merged}, ensure_ascii=False, indent=2) + "\n"
 
 
@@ -826,10 +936,13 @@ def _is_merge_read_pipeline_path(path: str) -> bool:
     announce step skips, and the staged deletion erases the store's url set),
     and a deleted pin fails the by-path stage. A channel's .md is read by path
     only when that branch's own index names it (_merge_announce), so the
-    caller adds the branch's indexed paths to the class; a pipeline channel
-    drop removes the index entry with the file and keeps merging. An absence
-    file keeps merging too: save_absence deletes a cleared source's file, and
-    an absent file reads as that source's empty counters.
+    caller adds the branch's indexed paths to the class, or HEAD's and the
+    last index-carrying burst sibling's for a branch carrying no index (the
+    announce step skips it, so its deletion would land under an index entry
+    that still names the file); a pipeline channel drop removes the index
+    entry with the file and keeps merging. An absence file keeps merging too:
+    save_absence deletes a cleared source's file, and an absent file reads as
+    that source's empty counters.
     """
     if not _is_pipeline_path(path):
         return False
@@ -852,22 +965,13 @@ def _uncommitted(runner: pr.PrRunner, repo_root: Path) -> list[str]:
     """
     staged = runner.run(["git", "diff", "--cached", "--name-only"], cwd=repo_root).splitlines()
     dirty = runner.run(
-        [
-            "git",
-            "status",
-            "--porcelain",
-            "--",
-            SHARD_DIR,
-            models.MODELS_FILE,
-            *sorted(PIPELINE_EXACT_FILES),
-            *PIPELINE_STATE_DIRS,
-        ],
-        cwd=repo_root,
+        ["git", "status", "--porcelain", "--", *_PIPELINE_PATHSPECS], cwd=repo_root
     ).splitlines()
     return [f"staged {path}" for path in staged] + [line.strip() for line in dirty]
 
 
 def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -> None:
+    head_indexed: set[str] | None = None
     for branch in branches:
         if branch == SEED_BRANCH:
             raise AutoMergeError(f"branch {branch}: the seed PR is human-only, never automerge it")
@@ -892,21 +996,37 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
                 f"branch {branch}: changes {outside}; only pipeline files may ride"
                 " an automerged branch"
             )
-        # a channel's .md is read by path from the branch side when the branch's
-        # own index names it, so the indexed paths join the deletion class; a
-        # branch index that does not read stops the run here, before any merge.
         # a branch HEAD already holds never merges (the skip loop below drops
         # it, and deletes its ref only under push once its rows are on
-        # origin/<base>), so its index is not read here: reading it would red
-        # the run on a stranded branch whose tip index does not parse
-        branch_index = (
-            None
-            if _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD")
-            else _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
-        )
-        indexed = {
-            entry["file"] for urls in (branch_index or {}).values() for entry in urls.values()
-        }
+        # origin/<base>), so no branch-side file of it is read here: reading
+        # one would red the run on a stranded branch whose tip index does not
+        # parse
+        merged = _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD")
+        modes: dict[str, str] = {}
+        branch_index = None
+        if not merged:
+            modes = _branch_file_modes(runner, repo_root, branch)
+            # before the index read: a type-changed index reads as bad json
+            _refuse_non_regular(branch, paths, modes)
+            branch_index = _announce_index(
+                runner, repo_root, f"origin/{branch}", f"branch {branch}"
+            )
+        # a channel's .md is read by path from the branch side when the branch's
+        # own index names it, so the indexed paths join the deletion class. a
+        # branch carrying no index skips the announce step and stages its
+        # deletions as they are, so HEAD's indexed paths join the class instead,
+        # and the index the last sibling merging before it lands: a later
+        # sibling's index rewrites its own named files, so it restores a file
+        # the deletion removes, and the check takes no files from it
+        own_indexed = _indexed_files(branch_index)
+        indexed = own_indexed
+        if branch_index is None and not merged:
+            if head_indexed is None:
+                head_indexed = _indexed_files(_announce_index(runner, repo_root, "HEAD", "HEAD"))
+            indexed = set(head_indexed)
+            prior_indexed = _prior_burst_index(runner, repo_root, branches, branch)
+            if prior_indexed:
+                indexed |= prior_indexed
         # the deletions read from git's diff record against the merge base, never
         # from the branch-side text: a deleted file, an empty file and a file
         # both sides lack all read as empty text there, and --no-renames reads a
@@ -934,6 +1054,139 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
                 " from the branch side and a deleted copy reaches it as absent or"
                 " unstageable; fix: restore the file(s) on the branch, or close the PR"
             )
+        if merged:
+            continue
+        # an indexed path neither the branch's tree nor its merge base carries
+        # leaves no deletion record, so the index is checked against the tree
+        missing = sorted(own_indexed - modes.keys())
+        if missing:
+            raise AutoMergeError(
+                f"branch {branch}: its {ANNOUNCE_INDEX} names {missing} that its tree"
+                " lacks; the merge reads each indexed channel file from the branch side;"
+                " fix: restore the file(s) on the branch or drop their index entries,"
+                " or close the PR"
+            )
+        _refuse_non_regular(branch, own_indexed, modes)
+        _check_branch_catalogs(runner, repo_root, branch, paths)
+        # the announce resolution and the absence write-back copy these from
+        # the branch side as text: reading each here stops undecodable bytes
+        # before any merge (_branch_text names them)
+        carried_absence = {
+            path for path in paths if path.startswith(ABSENCE_DIR + "/") and path in modes
+        }
+        for path in sorted(own_indexed | carried_absence):
+            _branch_text(runner, repo_root, branch, path)
+
+
+def _indexed_files(index: dict[str, dict[str, dict[str, str]]] | None) -> set[str]:
+    """The channel .md paths one parsed announce index names."""
+    return {entry["file"] for urls in (index or {}).values() for entry in urls.values()}
+
+
+def _branch_index_files(runner: pr.PrRunner, repo_root: Path, branch: str) -> set[str] | None:
+    """The channel .md paths one branch's own regular announce index names.
+
+    None when the branch's tree carries no index, or carries one as a symlink
+    or other non-file: its own pre-flight refuses that, and no entry lands.
+    """
+    listing = runner.run(
+        ["git", "ls-tree", f"origin/{branch}", "--", ANNOUNCE_INDEX], cwd=repo_root
+    ).strip()
+    if not listing or listing.split(" ", 1)[0] not in _REGULAR_FILE_MODES:
+        return None
+    return _indexed_files(
+        _announce_index(runner, repo_root, f"origin/{branch}", f"branch {branch}")
+    )
+
+
+def _prior_burst_index(
+    runner: pr.PrRunner, repo_root: Path, branches: list[str], skip: str
+) -> set[str] | None:
+    """The files the announce index in effect at ``skip``'s merge names.
+
+    a branch carrying no index skips the announce step, so a channel file its
+    merge deletes can strand an index only if the last index-carrying sibling
+    merging before it names the file: every merge commits before the single
+    push, and a later sibling's index rewrites its own named files, so one
+    merging after ``skip`` voids the check. None when no index-carrying
+    sibling merges before ``skip``, or one does after it.
+    """
+    position = branches.index(skip)
+    files: set[str] | None = None
+    for index, branch in enumerate(branches):
+        if branch == skip or _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD"):
+            continue
+        carried = _branch_index_files(runner, repo_root, branch)
+        if carried is None:
+            continue
+        if index > position:
+            return None
+        files = carried
+    return files
+
+
+def _branch_file_modes(runner: pr.PrRunner, repo_root: Path, branch: str) -> dict[str, str]:
+    """The git tree mode of every pipeline path the branch's tree carries."""
+    listing = runner.run(
+        ["git", "ls-tree", "-r", "-z", f"origin/{branch}", "--", *_PIPELINE_PATHSPECS],
+        cwd=repo_root,
+    )
+    modes: dict[str, str] = {}
+    for record in listing.split("\0"):
+        if record:
+            meta, _, path = record.partition("\t")
+            modes[path] = meta.split(" ", 1)[0]
+    return modes
+
+
+def _refuse_non_regular(branch: str, paths: set[str], modes: dict[str, str]) -> None:
+    """Refuse a branch carrying any of ``paths`` as a symlink, submodule or other non-file.
+
+    every pipeline path is read or staged by the merge from the branch side,
+    and `git show` hands a symlink's target or a gitlink's commit to it as if
+    they were the file's bytes. a path the branch deleted carries no mode.
+    """
+    offending = sorted(
+        f"{path} ({_NON_REGULAR_KINDS.get(modes[path], f'mode {modes[path]}')})"
+        for path in paths
+        if path in modes and modes[path] not in _REGULAR_FILE_MODES
+    )
+    if offending:
+        raise AutoMergeError(
+            f"branch {branch}: carries {offending} as non-regular files; the merge reads"
+            " or stages each from the branch side as a file's bytes; fix: commit each as"
+            " a regular file on the branch, or close the PR"
+        )
+
+
+def _check_branch_catalogs(
+    runner: pr.PrRunner, repo_root: Path, branch: str, paths: set[str]
+) -> None:
+    """Parse every catalog copy the merge will parse for this branch, before any merge.
+
+    the merge unions a catalog file only when the branch's diff names it, and
+    then reads the branch's copy beside HEAD's (models.json also beside the
+    merge base's); an emptied or malformed copy is a change, not a deletion,
+    so the deletion check passes it and only this parse stops it.
+    """
+    if models.MODELS_FILE in paths:
+        _parse_models(
+            _branch_text(runner, repo_root, branch, models.MODELS_FILE),
+            f"branch {branch}",
+            _FIX_BRANCH_COPY,
+        )
+        base_text = _merge_base_text(runner, repo_root, branch, models.MODELS_FILE)
+        if base_text:
+            _parse_models(base_text, f"branch {branch}'s merge base", _FIX_MERGE_BASE_COPY)
+    if BILLING_RULES_FILE in paths:
+        _parse_billing_rules(
+            _branch_text(runner, repo_root, branch, BILLING_RULES_FILE),
+            f"branch {branch}",
+            _FIX_BRANCH_COPY,
+        )
+        head_text = _head_text(runner, repo_root, BILLING_RULES_FILE)
+        if head_text:
+            _parse_billing_rules(head_text, "HEAD", _FIX_HEAD_COPY)
 
 
 def _is_ancestor(runner: pr.PrRunner, repo_root: Path, a: str, b: str) -> bool:
@@ -1002,11 +1255,12 @@ def merge_branches(
     channel lands from the burst entry with the newest fetched date, and each
     absence file a branch changed lands unless HEAD's copy comes from a newer
     run, so a held older-run branch never reverts newer counters). every
-    branch pre-flights the churn bounds (waived with a logged count under
-    `human`) and the catalog-claim check (never waived) before the first merge
-    commit. a branch whose tip HEAD already holds (the state a failed branch-ref
-    cleanup strands: the merge landed, the PR stayed open) is dropped with a
-    skip line, its remote ref deleted under push once its rows are provably on
+    branch pre-flights the branch-side files the merge reads, its appended
+    rows, the churn bounds (waived with a logged count under `human`) and the
+    catalog-claim check (never waived) before the first git merge. a branch
+    whose tip HEAD already holds (the state a failed branch-ref cleanup
+    strands: the merge landed, the PR stayed open) is dropped with a skip line,
+    its remote ref deleted under push once its rows are provably on
     origin/<base> — that deletion closes the PR — and an all-dropped burst
     returns (HEAD, []) with nothing merged or pushed.
     any other failure leaves the surviving branches' refs in place and raises;
@@ -1065,7 +1319,7 @@ def merge_branches(
     branches = kept
     # the runner checkout carries no git identity; the merge commits need one
     pr.ensure_author(repo_root, runner)
-    keys = validate.load_schema_keys(repo_root)
+    _check_appended_rows(runner, repo_root, branches, validate.load_schema_keys(repo_root))
     head_keys = _head_store_keys(runner, repo_root)
     churn = {branch: _branch_churn(runner, repo_root, branch, head_keys) for branch in branches}
     if human:
@@ -1086,7 +1340,7 @@ def merge_branches(
         runner,
         repo_root,
         branches,
-        _catalog_claims(_head_text(runner, repo_root, models.MODELS_FILE), "HEAD"),
+        _catalog_claims(_head_text(runner, repo_root, models.MODELS_FILE), "HEAD", _FIX_HEAD_COPY),
     )
 
     # the burst base, captured once before the first merge commit advances
@@ -1123,7 +1377,6 @@ def merge_branches(
             branch_text = _branch_text(runner, repo_root, branch, shard_path)
             new_lines = _appended_lines(head_lines, store.shard_lines(branch_text))
             appended += len(new_lines)
-            _validate_appended(new_lines, branch_text, branch=branch, path=shard_path, keys=keys)
             union = _sorted_lines([*head_lines, *new_lines], branch, shard_path)
             union_text = "\n".join(union) + ("\n" if union else "")
             (repo_root / shard_path).write_text(union_text, encoding="utf-8")
@@ -1141,6 +1394,7 @@ def merge_branches(
                     _head_text(runner, repo_root, models.MODELS_FILE),
                     _branch_text(runner, repo_root, branch, models.MODELS_FILE),
                     _merge_base_text(runner, repo_root, branch, models.MODELS_FILE),
+                    branch,
                 ),
                 encoding="utf-8",
             )
@@ -1152,6 +1406,7 @@ def merge_branches(
             rules_text = _union_billing_rules(
                 _head_text(runner, repo_root, BILLING_RULES_FILE),
                 _branch_text(runner, repo_root, branch, BILLING_RULES_FILE),
+                branch,
             )
             (repo_root / BILLING_RULES_FILE).write_text(rules_text, encoding="utf-8")
             head_pin = _head_text(runner, repo_root, "tests/test_billing_rules.py")
