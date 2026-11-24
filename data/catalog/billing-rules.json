@@ -449,6 +449,16 @@
       "citation": [
         "https://docs.x.ai/developers/release-notes"
       ]
+    },
+    {
+      "id": "digitalocean-model-deprecation-2026-11-23",
+      "provider": "digitalocean",
+      "effective": "2026-11-23",
+      "timezone": "UTC",
+      "statement": "the release notes' 23 November 2026 entry deprecates DeepSeek V4 Pro (deepseek-v4-pro), MiMo V2.5 Pro (mimo-v2.5-pro) and DeepSeek V3.2 (deepseek-v3.2) from DigitalOcean Inference as of 23 November 2026, migrating DeepSeek V4 Pro to DeepSeek V4 Pro 0813 (deepseek-v4-pro-0813), MiMo V2.5 Pro to GLM-5.3 (glm-5.3) and DeepSeek V3.2 to DeepSeek V4.1 Flash 1017 (deepseek-v4.1-flash-1017) to avoid service disruption; the replacements for MiMo V2.5 Pro and DeepSeek V3.2 are not available on Dedicated Inference, so the stored rates of the three models stop applying from that instant. the entry names no timezone; UTC is the recorded frame. the stored rows get removal rows through the absence machinery",
+      "citation": [
+        "https://docs.digitalocean.com/release-notes/"
+      ]
     }
   ]
 }
