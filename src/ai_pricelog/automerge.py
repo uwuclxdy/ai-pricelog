@@ -895,9 +895,10 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
         # a channel's .md is read by path from the branch side when the branch's
         # own index names it, so the indexed paths join the deletion class; a
         # branch index that does not read stops the run here, before any merge.
-        # a branch HEAD already holds never merges (the skip loop below drops it
-        # and deletes its ref), so its index is not read here: reading it would
-        # red the run on a stranded branch whose tip index does not parse
+        # a branch HEAD already holds never merges (the skip loop below drops
+        # it, and deletes its ref only under push once its rows are on
+        # origin/<base>), so its index is not read here: reading it would red
+        # the run on a stranded branch whose tip index does not parse
         branch_index = (
             None
             if _is_ancestor(runner, repo_root, f"origin/{branch}", "HEAD")
@@ -933,12 +934,6 @@ def _check_branches(branches: list[str], repo_root: Path, runner: pr.PrRunner) -
                 " from the branch side and a deleted copy reaches it as absent or"
                 " unstageable; fix: restore the file(s) on the branch, or close the PR"
             )
-    uncommitted = _uncommitted(runner, repo_root)
-    if uncommitted:
-        raise AutoMergeError(
-            "the merge needs the pipeline files committed and nothing staged: "
-            + "; ".join(uncommitted)
-        )
 
 
 def _is_ancestor(runner: pr.PrRunner, repo_root: Path, a: str, b: str) -> bool:
@@ -1026,8 +1021,22 @@ def merge_branches(
     # `unknown revision` on a concurrent run's ref). the base rides along so
     # _check_checkout reads the true tip
     _retry_read(runner, repo_root, ["git", "fetch", "origin", base, *branches])
-    _check_branches(branches, repo_root, runner)
+    # checkout-state refusals report the real cause of a stopped rerun, so they
+    # come before every branch-side read, the staged leftover first of all: a
+    # run that raised after `git merge --no-commit` leaves MERGE_HEAD and
+    # staged files behind, and the `git pull` a behind checkout's refusal asks
+    # for fails while that merge is unconcluded
+    uncommitted = _uncommitted(runner, repo_root)
+    if uncommitted:
+        raise AutoMergeError(
+            "the merge needs the pipeline files committed and nothing staged: "
+            + "; ".join(uncommitted)
+        )
+    # then the checkout: a branch of a checkout behind origin/<base> may have
+    # landed upstream, and every branch-side read below answers for that
+    # landed state, so the checkout is the real cause to report
     _check_checkout(repo_root, runner, base)
+    _check_branches(branches, repo_root, runner)
     # a branch whose tip HEAD already holds (the state a failed branch-ref
     # cleanup strands: the merge landed, the PR stayed open) drops out here:
     # git merge would answer "Already up to date." and red the run. under

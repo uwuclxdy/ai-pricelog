@@ -1434,6 +1434,39 @@ def test_merged_branch_with_an_unreadable_index_is_skipped_and_ref_deleted(tmp_p
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merged_branch_with_an_unreadable_index_is_skipped_without_a_push(tmp_path, capsys):
+    # the skip keys on HEAD, never origin/main: a --no-push run that landed the
+    # branch locally leaves origin/main behind it, and reading that branch's
+    # index there would red a run that has nothing left to merge
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/badidx-00000011", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "switch", "pricelog/badidx-00000011")
+    (repo / "state" / "announce" / "index.json").write_text("not json{\n")
+    git(repo, "add", "state/announce/index.json")
+    git(repo, "commit", "-m", "hand edit: unreadable index")
+    git(repo, "push", "origin", "pricelog/badidx-00000011")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    git(repo, "merge", "--no-ff", "--no-commit", "origin/pricelog/badidx-00000011")
+    git(repo, "checkout", "HEAD", "--", "state/announce/index.json")
+    git(repo, "commit", "-m", "land pricelog/badidx-00000011 locally, resolved to the base index")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/badidx-00000011"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert results == []
+    assert sha == head_before
+    assert git(repo, "rev-parse", "HEAD").strip() == head_before
+    assert "skipping pricelog/badidx-00000011: already merged into HEAD" in (
+        capsys.readouterr().out
+    )
+    refs = git(repo, "ls-remote", "origin").splitlines()
+    assert any("pricelog/badidx-00000011" in ref for ref in refs)
+    assert git(repo, "status", "--porcelain") == ""
+
+
 def test_merge_refuses_a_branch_whose_index_does_not_read(tmp_path, monkeypatch):
     # the branch-index read is skipped only for a branch HEAD already holds, so
     # a branch that will merge still stops by name before the first git merge
@@ -2599,6 +2632,59 @@ def test_merge_lands_a_pipeline_channel_drop(tmp_path):
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_lands_a_channel_file_the_newest_branch_lacks(tmp_path):
+    # the rename-detection-masked shape: a newest branch whose index names a
+    # url its tree carries no .md for (a hand edit; _announce_index checks the
+    # file field's derived path, never the blob's existence). git's merge
+    # cannot fill the newest path then, so the resolution's own write is the
+    # only thing that can land the winner's bytes at it
+    repo, _bare = build_repo(tmp_path)
+    url_a = "https://example.com/notes"
+    url_b = "https://example.com/notes?feed=rss"
+    solo = announce.channel_files("deepseek", [url_a])
+    commit_announce(repo, {"deepseek": {url_a: "old a prose", url_b: "old b prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/older-00000001",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-10", 0.44)],
+        announce_texts={"deepseek": {url_a: "fresh a prose", url_b: "old b prose"}},
+        announce_fetched="2026-09-10",
+    )
+    # the newest branch names url_a alone (deriving the un-suffixed path) but
+    # a hand edit dropped its .md: its index names a file its own tree lacks
+    make_branch(
+        repo,
+        "pricelog/newest-00000002",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-09-11", 0.45)],
+        announce_texts={"deepseek": {url_a: "old a prose"}},
+        announce_fetched="2026-09-09",
+    )
+    git(repo, "switch", "pricelog/newest-00000002")
+    git(repo, "rm", "-q", "--", "state/announce/deepseek/notes.md")
+    git(repo, "commit", "-m", "hand edit: drop the channel file, keep the index")
+    git(repo, "push", "origin", "pricelog/newest-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    automerge.merge_branches(
+        ["pricelog/older-00000001", "pricelog/newest-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    entry = index["deepseek"][url_a]
+    assert entry["file"] == solo[url_a]
+    # the winner's bytes land at the newest index's path even though no
+    # rename pair can form for it
+    assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh a prose"
+    assert entry["sha256"] == announce._sha256("fresh a prose")
+    assert git(repo, "status", "--porcelain") == ""
+
+
 @pytest.mark.parametrize(
     ("text", "message"),
     [
@@ -2723,3 +2809,72 @@ def test_merge_refuses_a_checkout_behind_the_remote_base(tmp_path):
         automerge.merge_branches(
             ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
         )
+
+
+def test_merge_refuses_a_behind_checkout_before_the_branch_checks(tmp_path, monkeypatch):
+    # a branch landed upstream whose tip index does not parse: the branch
+    # checks would answer for the landed state, while the checkout behind
+    # origin/<base> is the real cause, so the checkout is refused first
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/badidx-00000012", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    git(repo, "switch", "pricelog/badidx-00000012")
+    (repo / "state" / "announce" / "index.json").write_text("not json{\n")
+    git(repo, "add", "state/announce/index.json")
+    git(repo, "commit", "-m", "hand edit: unreadable index")
+    git(repo, "push", "origin", "pricelog/badidx-00000012")
+    git(repo, "switch", "main")
+    # the branch lands upstream; the local checkout stays behind it
+    git(repo, "push", "origin", "origin/pricelog/badidx-00000012:refs/heads/main")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError, match="the checkout is behind main's remote tip"):
+        automerge.merge_branches(
+            ["pricelog/badidx-00000012"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert calls == []
+    assert git(repo, "rev-parse", "HEAD").strip() == head_before
+    assert git(repo, "status", "--porcelain") == ""
+    assert not (repo / ".git" / "MERGE_HEAD").exists()
+
+
+def test_staged_leftover_merge_refused_before_a_behind_checkout(tmp_path, monkeypatch):
+    # a rerun over a checkout behind origin/<base> can hold the state of a run
+    # that raised after `git merge --no-commit`: MERGE_HEAD and staged pipeline
+    # files. git refuses the `git pull` a behind refusal asks for while that
+    # merge is unconcluded, so the staged files are the real cause to name first
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/alpha-00000000", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    # the branch lands upstream; the local checkout stays behind it
+    git(repo, "push", "origin", "origin/pricelog/alpha-00000000:refs/heads/main")
+    # the state a run that raised mid-merge leaves: the merge staged, unconcluded
+    git(repo, "merge", "--no-ff", "--no-commit", "origin/pricelog/alpha-00000000")
+    head_before = git(repo, "rev-parse", "HEAD").strip()
+    assert (repo / ".git" / "MERGE_HEAD").exists()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError, match="nothing staged: .*data/history/zai.ndjson"):
+        automerge.merge_branches(
+            ["pricelog/alpha-00000000"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert calls == []
+    assert git(repo, "rev-parse", "HEAD").strip() == head_before
+    assert (repo / ".git" / "MERGE_HEAD").exists()
+
+
+def test_staged_change_refused_before_the_branch_checks(tmp_path, monkeypatch):
+    # the checkout-state refusals report the real cause before any branch-side
+    # read: a staged file stops the run even when a branch refusal would
+    # otherwise answer for the burst first
+    repo, _bare = build_repo(tmp_path)
+    make_branch(repo, "pricelog/seed", [make_row("zai", "glm-5", "2026-08-31", 0.1)])
+    (repo / "notes.txt").write_text("staged\n")
+    git(repo, "add", "notes.txt")
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError, match="nothing staged: staged notes.txt"):
+        automerge.merge_branches(["pricelog/seed"], repo, pr.PrRunner(), "main", push=False)
+
+    assert calls == []
