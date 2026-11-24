@@ -17,11 +17,12 @@ silently returning None there reads as a cache-read rate drop in the diff.
 
 the quota notice (a watched announce channel, `usage-revision.md`) prices
 glm plan consumption with peak/off-peak quota multipliers the pricing page
-never carries; scraped models attach them as `window_rates` entries
-(`quota_multiplier` only, no rate keys). a failed notice fetch leaves the
-entries off for the run (the announce pass records the outage); a notice
-whose clause shape broke raises, so a drifted multiplier never drops
-silently.
+never carries; a struck-through multiplier (`~~0.4×~~ 0.2×`) records the
+charged value, the rate in force, as a promo table cell does; scraped models
+attach the multipliers as `window_rates` entries (`quota_multiplier` only,
+no rate keys). a failed notice fetch leaves the entries off for the run (the
+announce pass records the outage); a notice whose clause shape broke raises,
+so a drifted multiplier never drops silently.
 
 None = the model id is not on the page or a price cell carries no dollar
 amount and no free marker. FetchError = the fetch failed, the page has no
@@ -86,7 +87,9 @@ _WEEKDAYS = (
 _QUOTA_CLAUSE_RE = re.compile(
     r"(?:\A|(?<=\n)|(?<=[-*] )|(?<=[.!?] )|>\s*)"
     r"\*\*([^*]+)\*\*:(?:(?![.!?] |\*\*[^*]+\*\*:).)*?API calls consume quota at a rate of "
-    r'"?(\d+(?:\.\d+)?)× during off-peak hours and (\d+(?:\.\d+)?)× during peak hours'
+    r'"?'
+    r"(?:~~\d+(?:\.\d+)?×~~ )?(\d+(?:\.\d+)?)× during off-peak hours and "
+    r"(?:~~\d+(?:\.\d+)?×~~ )?(\d+(?:\.\d+)?)× during peak hours"
 )
 _PEAK_HOURS_RE = re.compile(
     r"Peak hours: ([A-Za-z]+) to ([A-Za-z]+), (\d{1,2}):(\d{2})[–—-](\d{1,2}):(\d{2})"

@@ -994,6 +994,160 @@ def test_single_peak_line_in_underscore_italics_reads():
     assert scraper._quota_entries(text, NOTICE_URL) == GLM53_QUOTA_ENTRIES
 
 
+TODAY_NOTICE_FIXTURE = FIXTURE.parent / "usage-revision-2026-11-24.md"
+# the 2026-11-24 notice adds GLM-5.4 and renders GLM-5.3-Flash's promo as a
+# struck-through list value before the charged one; the charged values are
+# the rate in force
+TODAY_QUOTA_ENTRIES = {
+    "glm-5.4": (
+        {"quota_multiplier": 0.67},
+        {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 2.0},
+    ),
+    "glm-5.3": ({**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 3.0},),
+    "glm-5.3-flash": (
+        {"quota_multiplier": 0.2},
+        {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 0.6},
+    ),
+}
+
+
+def today_notice() -> str:
+    return TODAY_NOTICE_FIXTURE.read_text(encoding="utf-8")
+
+
+def test_quota_parse_of_the_2026_11_24_notice_records_the_charged_multipliers():
+    assert scraper._quota_entries(today_notice(), NOTICE_URL) == TODAY_QUOTA_ENTRIES
+
+
+@pytest.mark.parametrize("model_id", ["glm-5.3", "glm-5.3-flash"])
+def test_scrape_from_the_2026_11_24_notice_attaches_its_quota_entries(monkeypatch, model_id):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch, today_notice())
+    pricing = scraper.scrape(notice_cfg(), model_id)
+    assert pricing is not None
+    assert pricing.window_rates == TODAY_QUOTA_ENTRIES[model_id]
+
+
+@pytest.mark.parametrize(
+    ("multipliers", "expected"),
+    [
+        pytest.param(
+            "~~1×~~ 0.5× during off-peak hours and ~~3×~~ 1.5× during peak hours",
+            (
+                {"quota_multiplier": 0.5},
+                {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 1.5},
+            ),
+            id="both positions struck",
+        ),
+        pytest.param(
+            '"~~1×~~ 0.5× during off-peak hours and ~~3×~~ 1.5× during peak hours"',
+            (
+                {"quota_multiplier": 0.5},
+                {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 1.5},
+            ),
+            id="both positions struck inside quotes",
+        ),
+        pytest.param(
+            "1× during off-peak hours and ~~3×~~ 1.5× during peak hours",
+            ({**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 1.5},),
+            id="peak position struck only",
+        ),
+        pytest.param(
+            "~~1×~~ 0.5× during off-peak hours and 3× during peak hours",
+            (
+                {"quota_multiplier": 0.5},
+                {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 3.0},
+            ),
+            id="off-peak position struck only",
+        ),
+    ],
+)
+def test_quota_clause_records_the_charged_value_after_a_struck_list_value(multipliers, expected):
+    text = (
+        f"<li> **GLM-5.3**: API calls consume quota at a rate of {multipliers}."
+        f" {COMMITTED_PEAK_LINE}."
+    )
+    assert scraper._quota_entries(text, NOTICE_URL) == {"glm-5.3": expected}
+
+
+@pytest.mark.parametrize(
+    "multipliers",
+    [
+        pytest.param(
+            "~~0.4×~~ during off-peak hours and 3× during peak hours",
+            id="strike with no charged value",
+        ),
+        pytest.param(
+            "~~0.4×~~ ~~0.2×~~ during off-peak hours and 3× during peak hours",
+            id="two struck values",
+        ),
+        pytest.param(
+            "0.4× ~~0.2×~~ during off-peak hours and 3× during peak hours",
+            id="strike after the charged value",
+        ),
+        pytest.param(
+            "1× during off-peak hours and ~~1.2×~~ during peak hours",
+            id="peak strike with no charged value",
+        ),
+        pytest.param(
+            "~~0.4×~~0.2× during off-peak hours and 3× during peak hours",
+            id="no space after the strike",
+        ),
+        pytest.param(
+            "1× during off-peak hours and ~~1.2×~~0.6× during peak hours",
+            id="peak no space after the strike",
+        ),
+        pytest.param(
+            "~~0.4×~~ ~~0.2×~~ 0.2× during off-peak hours and 3× during peak hours",
+            id="two strikes then the charged value",
+        ),
+        pytest.param(
+            "1× during off-peak hours and ~~1.2×~~ ~~0.6×~~ 0.6× during peak hours",
+            id="peak two strikes then the charged value",
+        ),
+        pytest.param(
+            "~~x~~ 0.2× during off-peak hours and 3× during peak hours",
+            id="non-numeric struck value",
+        ),
+        pytest.param(
+            "1× during off-peak hours and ~~~~ 0.6× during peak hours",
+            id="peak empty struck value",
+        ),
+    ],
+)
+def test_quota_clause_with_any_other_strikethrough_shape_raises(multipliers):
+    text = (
+        f"<li> **GLM-5.3**: API calls consume quota at a rate of {multipliers}."
+        f" {COMMITTED_PEAK_LINE}."
+    )
+    with pytest.raises(FetchError, match="unrecognized quota clause"):
+        scraper._quota_entries(text, NOTICE_URL)
+
+
+@pytest.mark.parametrize(
+    "struck",
+    [
+        pytest.param(
+            "~~0.4×~~ 0.2× during off-peak hours and ~~1.2×~~ 0.6× during peak hours",
+            id="both recorded values differ",
+        ),
+        pytest.param(
+            "~~0.4×~~ 0.4× during off-peak hours and ~~1.2×~~ 0.6× during peak hours",
+            id="peak recorded value differs",
+        ),
+    ],
+)
+def test_quota_parse_of_sections_disagreeing_on_a_struck_recorded_value_raises(struck):
+    # the team-plan section prints the struck promo pair, the plan section the
+    # same model's plain list value: the recorded (charged) values must agree
+    plain = "0.4× during off-peak hours and 1.2× during peak hours"
+    with pytest.raises(
+        FetchError,
+        match=f"gives {re.escape(repr('glm-5.3-flash'))} disagreeing quota multipliers",
+    ):
+        scraper._quota_entries(team_plan_variant(plain, struck), NOTICE_URL)
+
+
 def test_scrape_cached_input_without_rate_is_omitted(monkeypatch):
     # the 32b row carries "-" in the Cached Input column: no cache-read rate
     monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
