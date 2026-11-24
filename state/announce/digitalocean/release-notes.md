@@ -13,8 +13,24 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 20 November Action Gateway now provides access to more than 36,000 tools.
+November 2026 23 November The following open-source models are deprecated from DigitalOcean Inference as of 23 November 2026: DeepSeek V4 Pro MiMo V2.5 Pro DeepSeek V3.2 Migrate DeepSeek V4 Pro to DeepSeek V4 Pro 0813 ( deepseek-v4-pro-0813 ), MiMo V2.5 Pro to GLM-5.3 ( glm-5.3 ), and DeepSeek V3.2 to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ) to avoid service disruption.
+The replacements for MiMo V2.5 Pro and DeepSeek V3.2 are not available on Dedicated Inference.
+For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
+20 November Action Gateway now provides access to more than 36,000 tools.
 Use the Tool Reference to search for a tool.
+Custom telemetry for DigitalOcean Insights is now in private preview .
+You can send application metrics, logs, and traces to Insights, with telemetry ingestion charges applying during the preview.
+To request access, sign up for the private preview .
+For more information, see Insights features and How to Send Custom Telemetry to DigitalOcean Insights .
+DigitalOcean Insights is now in general availability , providing dashboards, metrics, logs, traces, and alerts for monitoring and troubleshooting supported DigitalOcean resources.
+Note Resources with log or trace collection enabled during public preview, including Managed Agents resources that were automatically opted in, remain opted in after general availability.
+Usage-based charges for billable telemetry begin on 20 November 2026.
+To stop collecting logs or traces, disable telemetry collection for the resource in Insights settings .
+For more information, see Insights Pricing .
+DigitalOcean Monitoring is now part of DigitalOcean Insights .
+Your existing Droplet metrics, resource alerts, and metrics agent continue to work the same way under Insights.
+No action is required.
+The Monitoring API remains available for retrieving legacy metrics.
 19 November Released v2.7.0 of doctl , the official DigitalOcean CLI.
 This release adds an --enable-insights-logs flag to doctl registries create and doctl kubernetes cluster create for sending a new registry’s or cluster’s logs to Insights , and a --turn-type flag to doctl evaluation metric list and doctl evaluation custom-metric create for single-turn and multi-turn metrics.
 We have updated the following buildpack for App Platform: PHP buildpack : We updated the buildpack from version 298 to 303 and added PHP versions 8.5.13 , 8.4.28 , 8.3.37 , and 8.2.36 .
