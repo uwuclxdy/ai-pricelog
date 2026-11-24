@@ -91,8 +91,8 @@
   "together": {
     "https://docs.together.ai/docs/changelog.md": {
       "file": "state/announce/together/changelog-md.md",
-      "sha256": "4fe1d98d9fd4de29fc2b78c90fc3c7c2116e249ffda7b240898e652c2de8144d",
-      "fetched": "2026-11-24T00:00:16Z"
+      "sha256": "a09b7a00db12f7de02c1ad27df33ae05aaf3bdc34cc0b5ffcbcab6cb261c1adb",
+      "fetched": "2026-11-24T23:00:15Z"
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
@@ -110,8 +110,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "9940636dda7448e5eedfbc0f19db7800a9f46981d95907e6aab8784ea715a34e",
-      "fetched": "2026-11-19T00:00:17Z"
+      "sha256": "7312365587b75bbd9e69547bc05a0062fa3c9db7be0f4712b81428101f560fdf",
+      "fetched": "2026-11-24T23:00:15Z"
     }
   },
   "cohere": {
@@ -129,8 +129,8 @@
     },
     "https://developers.googleblog.com/feeds/posts/default": {
       "file": "state/announce/google/default.md",
-      "sha256": "d259d7d6e18bf3e33f9f6ae2bd19689fb8c0cc439839adc66a2b3e2a62e5b4bd",
-      "fetched": "2026-11-23T19:00:20Z"
+      "sha256": "0152ff81124e770d4567817c07e1d59cee3023acbab3d3d438929bad0072d9a0",
+      "fetched": "2026-11-24T23:00:15Z"
     }
   },
   "cloudflare": {

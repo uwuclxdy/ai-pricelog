@@ -2811,6 +2811,15 @@
       },
       "vendor": "zai"
     },
+    "fireworks/glm-5.3-spot": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "glm-5.3-spot"
+        ]
+      },
+      "vendor": "zai"
+    },
     "fireworks/glm-5.3-us": {
       "curated": true,
       "name": "GLM 5.3 (US)",
