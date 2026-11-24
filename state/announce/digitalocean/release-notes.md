@@ -13,7 +13,10 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 23 November The following open-source models are deprecated from DigitalOcean Inference as of 23 November 2026: DeepSeek V4 Pro MiMo V2.5 Pro DeepSeek V3.2 Migrate DeepSeek V4 Pro to DeepSeek V4 Pro 0813 ( deepseek-v4-pro-0813 ), MiMo V2.5 Pro to GLM-5.3 ( glm-5.3 ), and DeepSeek V3.2 to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ) to avoid service disruption.
+November 2026 24 November In public preview, agents in DigitalOcean Harness Runtime sessions can deploy the apps they build to App Platform.
+When you add the App Builder pack to an environment, the agent proposes a deployment plan, then pushes the code to GitHub and creates or updates the app after you approve it.
+See How to Deploy Apps from Harness Runtime Sessions .
+23 November The following open-source models are deprecated from DigitalOcean Inference as of 23 November 2026: DeepSeek V4 Pro MiMo V2.5 Pro DeepSeek V3.2 Migrate DeepSeek V4 Pro to DeepSeek V4 Pro 0813 ( deepseek-v4-pro-0813 ), MiMo V2.5 Pro to GLM-5.3 ( glm-5.3 ), and DeepSeek V3.2 to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ) to avoid service disruption.
 The replacements for MiMo V2.5 Pro and DeepSeek V3.2 are not available on Dedicated Inference.
 For information on our model deprecation policy and recommended replacement models, see Model Support Policy .
 20 November Action Gateway now provides access to more than 36,000 tools.
