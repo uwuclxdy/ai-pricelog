@@ -30,6 +30,7 @@
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-flash","observed_at":"2026-08-31","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-flash-us","observed_at":"2026-09-18","rates":{"input":0.225,"output":0.75,"cache_read":0.045},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"glm-5.3-us","observed_at":"2026-09-18","rates":{"input":2.1,"output":6.6,"cache_read":0.39},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
+{"schema":4,"source":"fireworks","model_id":"inkling-2-small","observed_at":"2026-11-24","rates":{"input":0.3,"output":1.0,"cache_read":0.03},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k2.6","observed_at":"2026-08-29","rates":{"input":0.95,"output":4.0,"cache_read":0.16},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k2.6","observed_at":"2026-10-15","removed":true,"rates":{"input":0.95,"output":4.0,"cache_read":0.16}}
 {"schema":4,"source":"fireworks","model_id":"kimi-k2.6-fast","observed_at":"2026-08-29","rates":{"input":2.0,"output":8.0,"cache_read":0.3},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
@@ -59,5 +60,6 @@
 {"schema":4,"source":"fireworks","model_id":"qwen-3.7-plus","observed_at":"2026-08-29","rates":{"input":0.4,"output":1.6,"cache_read":0.08},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"qwen-3.7-plus","observed_at":"2026-09-13","removed":true,"rates":{"input":0.4,"output":1.6,"cache_read":0.08}}
 {"schema":4,"source":"fireworks","model_id":"qwen-3.8-max","observed_at":"2026-08-29","rates":{"input":2.0,"output":6.0,"cache_read":0.25},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
+{"schema":4,"source":"fireworks","model_id":"qwen-4-max","observed_at":"2026-11-24","rates":{"input":1.5,"output":4.5,"cache_read":0.075},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"ultramarine-1-flash-us","observed_at":"2026-10-28","rates":{"input":0.225,"output":0.75,"cache_read":0.045},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}
 {"schema":4,"source":"fireworks","model_id":"ultramarine-1-flash-us","observed_at":"2026-11-03","rates":{"input":0.15,"output":0.5,"cache_read":0.03},"provenance":{"url":"https://docs.fireworks.ai/serverless/pricing"}}

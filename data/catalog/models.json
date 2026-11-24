@@ -2821,6 +2821,15 @@
       },
       "vendor": "zai"
     },
+    "fireworks/inkling-2-small": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "inkling-2-small"
+        ]
+      },
+      "vendor": "thinkingmachines"
+    },
     "fireworks/kimi-k2.6-fast": {
       "curated": false,
       "sources": {
@@ -2934,6 +2943,15 @@
       "sources": {
         "fireworks": [
           "qwen-3.8-max"
+        ]
+      },
+      "vendor": "alibaba"
+    },
+    "fireworks/qwen-4-max": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "qwen-4-max"
         ]
       },
       "vendor": "alibaba"
