@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -772,6 +773,225 @@ def test_scrape_broken_peak_hours_clause_raises(monkeypatch):
     serve_notice(monkeypatch, broken)
     with pytest.raises(FetchError, match="unrecognized peak-hours clause"):
         scraper.scrape(notice_cfg(), "glm-5.3")
+
+
+NOTICE_URL = "https://docs.z.ai/devpack/notice/usage-revision.md"
+COMMITTED_PEAK_LINE = "Peak hours: Monday to Friday, 14:00–18:00 Singapore Standard Time (UTC+8)"
+# the team-plan section's copy of the line, with its escaped footnote star
+TEAM_PLAN_PEAK_LINE = f"\\*{COMMITTED_PEAK_LINE}."
+WEEKDAYS_0600_1000_UTC = {
+    "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    "window": [600, 1000],
+}
+# hand-computed from the committed notice: 14:00-18:00 at UTC+8 is 06:00-10:00
+# UTC; glm-5.3's 1x off-peak is the implicit base and drops, glm-5.3-flash's
+# 0.4x off-peak rides a whole-day entry
+COMMITTED_QUOTA_ENTRIES = {
+    "glm-5.3": ({**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 3.0},),
+    "glm-5.3-flash": (
+        {"quota_multiplier": 0.4},
+        {**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 1.2},
+    ),
+}
+GLM53_CLAUSE = (
+    "**GLM-5.3**: API calls consume quota at a rate of 1× during off-peak hours"
+    " and 3× during peak hours."
+)
+GLM53_QUOTA_ENTRIES = {"glm-5.3": ({**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 3.0},)}
+
+
+def committed_notice() -> str:
+    return (FIXTURE.parent / "usage-revision.md").read_text(encoding="utf-8")
+
+
+def team_plan_variant(old: str, new: str) -> str:
+    """the committed notice with `old` swapped for `new` in its team-plan section only."""
+    plan, marker, team = committed_notice().partition("### Team Plan")
+    assert marker, "committed notice lost its team-plan section"
+    assert team.count(old) == 1, f"team-plan section does not hold {old!r} exactly once"
+    return plan + marker + team.replace(old, new)
+
+
+def test_quota_parse_of_the_committed_notice_keeps_only_model_clauses():
+    # the notice's plan-rule list (`* **Legacy Plan V1**: You ...`) sits
+    # before the first clause and is no clause heading
+    assert scraper._quota_entries(committed_notice(), NOTICE_URL) == COMMITTED_QUOTA_ENTRIES
+
+
+@pytest.mark.parametrize(
+    "preceder",
+    [
+        pytest.param("", id="text start"),
+        pytest.param("Rates by model:\n", id="line break"),
+        pytest.param("Rates by model: - ", id="dash list marker"),
+        pytest.param("Rates by model: * ", id="star list marker"),
+        pytest.param("<li>", id="tag close"),
+        pytest.param("<li> ", id="tag close then whitespace"),
+        pytest.param("Rates changed. ", id="period sentence end"),
+        pytest.param("Rates changed! ", id="exclamation sentence end"),
+        pytest.param("Rates changed? ", id="question sentence end"),
+        pytest.param("Rates by model: 1. ", id="numbered list marker"),
+    ],
+)
+def test_quota_clause_heading_opening_its_block_or_sentence_parses(preceder):
+    text = f"{preceder}{GLM53_CLAUSE} {COMMITTED_PEAK_LINE}."
+    assert scraper._quota_entries(text, NOTICE_URL) == GLM53_QUOTA_ENTRIES
+
+
+def test_quota_clause_after_the_notices_mid_line_list_marker_parses():
+    text = (
+        "It depends on your current plan: * **Legacy Plan V1**: API calls consume quota at a"
+        f" rate of 1× during off-peak hours and 3× during peak hours. {COMMITTED_PEAK_LINE}."
+    )
+    assert scraper._quota_entries(text, NOTICE_URL) == {
+        "legacy plan v1": ({**WEEKDAYS_0600_1000_UTC, "quota_multiplier": 3.0},)
+    }
+
+
+@pytest.mark.parametrize(
+    "between",
+    [
+        pytest.param(" You keep the plan until it expires <li> ", id="tag between"),
+        pytest.param(" You keep the plan until it expires. ", id="sentence end between"),
+    ],
+)
+def test_quota_clause_belongs_to_the_heading_before_its_own_colon(between):
+    text = f"* **Legacy Plan V1**:{between}{GLM53_CLAUSE} {COMMITTED_PEAK_LINE}."
+    assert scraper._quota_entries(text, NOTICE_URL) == GLM53_QUOTA_ENTRIES
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        pytest.param(f"Rates by model: {GLM53_CLAUSE}", id="bold colon span after a colon"),
+        pytest.param(
+            "<li> As the **flagship**: model, API calls consume quota at a rate of"
+            ' "1× during off-peak hours and 2× during peak hours".',
+            id="bold colon span inside the sentence",
+        ),
+        pytest.param(
+            "<li> **GLM-5.3**: As the **flagship**: model, API calls consume quota at a rate of"
+            ' "1× during off-peak hours and 2× during peak hours".',
+            id="bold colon span between heading and marker",
+        ),
+        pytest.param(
+            "<li> **GLM-5.3**: **GLM-4.5**: API calls consume quota at a rate of"
+            " 1× during off-peak hours and 2× during peak hours.",
+            id="doubled heading",
+        ),
+        pytest.param(
+            "<li> **GLM-5.3**: Flagship rates apply. API calls consume quota at a rate of"
+            " 1× during off-peak hours and 2× during peak hours.",
+            id="span crossing a sentence end",
+        ),
+    ],
+)
+def test_quota_clause_without_a_heading_opening_it_raises(clause):
+    with pytest.raises(FetchError, match="unrecognized quota clause"):
+        scraper._quota_entries(f"{clause} {COMMITTED_PEAK_LINE}.", NOTICE_URL)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "model_id"),
+    [
+        pytest.param(
+            '"1× during off-peak hours and 3× during peak hours"',
+            '"1× during off-peak hours and 2× during peak hours"',
+            "glm-5.3",
+            id="peak multiplier",
+        ),
+        pytest.param(
+            "0.4× during off-peak hours and 1.2× during peak hours",
+            "0.5× during off-peak hours and 1.2× during peak hours",
+            "glm-5.3-flash",
+            id="off-peak multiplier",
+        ),
+    ],
+)
+def test_scrape_notice_sections_disagreeing_on_a_models_multipliers_raises(
+    monkeypatch, old, new, model_id
+):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch, team_plan_variant(old, new))
+    with pytest.raises(
+        FetchError, match=f"gives {re.escape(repr(model_id))} disagreeing quota multipliers"
+    ):
+        scraper.scrape(notice_cfg(), model_id)
+
+
+@pytest.mark.parametrize(
+    "second_line",
+    [
+        pytest.param(
+            "Peak hours: Monday to Friday, 15:00–19:00 Singapore Standard Time (UTC+8).",
+            id="other hours",
+        ),
+        pytest.param(
+            "Peak hours: Monday to Saturday, 14:00–18:00 Singapore Standard Time (UTC+8).",
+            id="other days",
+        ),
+        pytest.param(
+            "_Peak hours: Monday to Friday, 15:00–19:00 Singapore Standard Time (UTC+8)._",
+            id="other hours in underscore italics",
+        ),
+    ],
+)
+def test_scrape_second_peak_line_naming_another_schedule_raises(monkeypatch, second_line):
+    monkeypatch.setattr(scraper, "fetch_soup", lambda url: load_soup())
+    serve_notice(monkeypatch, team_plan_variant(TEAM_PLAN_PEAK_LINE, second_line))
+    with pytest.raises(FetchError, match="peak-hours lines in the zai quota notice on .* disagree"):
+        scraper.scrape(notice_cfg(), "glm-5.3")
+
+
+@pytest.mark.parametrize(
+    "second_line",
+    [
+        pytest.param(TEAM_PLAN_PEAK_LINE, id="identical line"),
+        pytest.param(
+            "Peak hours: Monday to Friday, 06:00–10:00 Singapore Standard Time (UTC+0).",
+            id="other wording, same utc schedule",
+        ),
+    ],
+)
+def test_quota_parse_of_peak_lines_converting_to_one_utc_schedule(second_line):
+    text = team_plan_variant(TEAM_PLAN_PEAK_LINE, second_line)
+    assert scraper._quota_entries(text, NOTICE_URL) == COMMITTED_QUOTA_ENTRIES
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Off-Peak hours: all other times.",
+        "Off Peak hours: all other times.",
+        "Off–Peak hours: all other times.",
+        "Off/Peak hours: all other times.",
+        "NonPeak hours: all other times.",
+        "**Peak hours:** see below",
+    ],
+)
+def test_quota_parse_ignores_a_label_the_peak_grammar_does_not_match(label):
+    anchor = "(UTC+8). </Info>"
+    notice = committed_notice()
+    assert notice.count(anchor) == 1, "committed notice lost its plan-section peak line"
+    text = notice.replace(anchor, f"(UTC+8). {label} </Info>")
+    assert scraper._quota_entries(text, NOTICE_URL) == COMMITTED_QUOTA_ENTRIES
+
+
+def test_quota_clauses_without_any_peak_hours_text_raise():
+    text = committed_notice().replace(f"{COMMITTED_PEAK_LINE}.", "")
+    assert "Peak hours" not in text
+    with pytest.raises(FetchError, match="quota clauses without a peak-hours line"):
+        scraper._quota_entries(text, NOTICE_URL)
+
+
+def test_notice_without_clauses_or_peak_line_attaches_no_multipliers():
+    text = "# Usage notice\n\nNo quota changes this billing cycle."
+    assert scraper._quota_entries(text, NOTICE_URL) == {}
+
+
+def test_single_peak_line_in_underscore_italics_reads():
+    text = f"<li> {GLM53_CLAUSE} _{COMMITTED_PEAK_LINE}._"
+    assert scraper._quota_entries(text, NOTICE_URL) == GLM53_QUOTA_ENTRIES
 
 
 def test_scrape_cached_input_without_rate_is_omitted(monkeypatch):

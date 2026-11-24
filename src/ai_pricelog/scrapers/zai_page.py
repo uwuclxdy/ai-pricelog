@@ -30,7 +30,8 @@ cell carries an amount the grammar cannot read, or the quota notice
 carries an unparseable clause shape (among them a peak clock outside
 00:00-23:59, a clause end of exactly 24:00 aside, a quoted offset past
 UTC+14, a zero-length peak clause, or a peak clause wrapping the notice's
-midnight whose UTC window still crosses UTC midnight).
+midnight whose UTC window still crosses UTC midnight) or repeated sections
+that disagree (a model's multipliers, or the peak lines' UTC schedule).
 """
 
 from __future__ import annotations
@@ -62,7 +63,8 @@ _FOLDED_CACHED_INPUT = fold_heading("Cached Input")
 # columns, so the scraper reads the multipliers from the notice and attaches
 # them as window_rates entries. the base 1x off-peak multiplier is implicit
 # and drops; any other off-peak multiplier lands as a whole-day entry, the
-# peak multiplier as the peak-hours entry.
+# peak multiplier on the peak-hours entries (two when the utc window straddles
+# utc midnight).
 _USAGE_REVISION_SUFFIX = "usage-revision.md"
 _WEEKDAYS = (
     "monday",
@@ -73,10 +75,17 @@ _WEEKDAYS = (
     "saturday",
     "sunday",
 )
-# the notice quotes the flagship's clause and leaves the flash clause
-# unquoted, so the quote marks are optional on both ends
+# a clause's heading is a `**X**:` span opening its block or sentence: after
+# the text start, a line break, a `- ` or `* ` list marker, a tag's closing
+# `>` (optional whitespace) or a sentence end. its span to the rate marker
+# crosses no sentence end and no other `**...**:` span, so a bold span earlier
+# in the notice (the plan-rule list) never claims a later clause, and a clause
+# with no such heading fails the marker count. the notice quotes the
+# flagship's clause and leaves the flash clause unquoted, so the quote marks
+# are optional on both ends
 _QUOTA_CLAUSE_RE = re.compile(
-    r"\*\*([^*]+)\*\*:.*?API calls consume quota at a rate of "
+    r"(?:\A|(?<=\n)|(?<=[-*] )|(?<=[.!?] )|>\s*)"
+    r"\*\*([^*]+)\*\*:(?:(?![.!?] |\*\*[^*]+\*\*:).)*?API calls consume quota at a rate of "
     r'"?(\d+(?:\.\d+)?)× during off-peak hours and (\d+(?:\.\d+)?)× during peak hours'
 )
 _PEAK_HOURS_RE = re.compile(
@@ -168,26 +177,45 @@ def _days_one_weekday_back(days: list[str]) -> list[str]:
 def _peak_schedule(text: str, url: str) -> tuple[tuple[list[str], list[int]], ...] | None:
     """the notice's peak hours as (day-set, [start, end] utc hhmm) parts.
 
-    None when the notice carries no peak-hours line; a present line outside
-    the known shape is a page-shape break. the clause quotes the notice's
-    own clock, so a start before the offset hour lands on the previous utc
-    day: a window wholly on it shifts the day set back one weekday, and a
-    window straddling utc midnight splits into a [start, 2400] part on the
-    shifted set and a [0, end] part on the notice's own set. an end landing
-    exactly on utc midnight stores 2400. a quoted offset past UTC+14 raises:
-    no zone lies there. an hour past 23 (an end of exactly 24:00 is the
-    notice day's end, not a clock) raises because the mod-24 conversion
-    would fold it into a plausible window; a minute past 59, or a part whose
-    start is not before its end, raises instead of leaving validate.py to
-    refuse the row far from the clause that broke it; a zero-length clause
-    raises because at the offset hour it would store a whole-day [0, 2400]
-    window validate.py accepts.
+    None when the notice carries no peak-hours line; a `Peak hours:` label
+    with no line the grammar reads is a page-shape break. the notice repeats
+    the line per plan section, so every line the grammar reads must convert
+    to one utc schedule, and lines that disagree raise; a label the grammar
+    does not read beside a readable line is not read.
     """
-    match = _PEAK_HOURS_RE.search(text)
-    if match is None:
+    matches = list(_PEAK_HOURS_RE.finditer(text))
+    if not matches:
         if "Peak hours:" in text:
             raise FetchError(f"unrecognized peak-hours clause in the zai quota notice on {url}")
         return None
+    first, *rest = matches
+    schedule = _peak_parts(first, url)
+    for match in rest:
+        if _peak_parts(match, url) != schedule:
+            raise FetchError(
+                f"peak-hours lines in the zai quota notice on {url} disagree:"
+                f" {first.group(0)!r} vs {match.group(0)!r}; fix: re-verify the notice's"
+                " peak hours"
+            )
+    return schedule
+
+
+def _peak_parts(match: re.Match[str], url: str) -> tuple[tuple[list[str], list[int]], ...]:
+    """one peak-hours line as (day-set, [start, end] utc hhmm) parts.
+
+    the clause quotes the notice's own clock, so a start before the offset
+    hour lands on the previous utc day: a window wholly on it shifts the day
+    set back one weekday, and a window straddling utc midnight splits into a
+    [start, 2400] part on the shifted set and a [0, end] part on the
+    notice's own set. an end landing exactly on utc midnight stores 2400. a
+    quoted offset past UTC+14 raises: no zone lies there. an hour past 23
+    (an end of exactly 24:00 is the notice day's end, not a clock) raises
+    because the mod-24 conversion would fold it into a plausible window; a
+    minute past 59, or a part whose start is not before its end, raises
+    instead of leaving validate.py to refuse the row far from the clause
+    that broke it; a zero-length clause raises because at the offset hour it
+    would store a whole-day [0, 2400] window validate.py accepts.
+    """
     days = _day_range(match.group(1), match.group(2), url)
     offset = int(match.group(7))
     if offset > 14:
@@ -195,7 +223,7 @@ def _peak_schedule(text: str, url: str) -> tuple[tuple[list[str], list[int]], ..
             f"peak-hours clause in the zai quota notice on {url} quotes UTC+{offset}, past"
             " UTC+14; fix: re-verify the notice's zone"
         )
-    clock_pair = text[match.start(3) : match.end(6)]
+    clock_pair = match.string[match.start(3) : match.end(6)]
     start_hour = int(match.group(3))
     start_minute = int(match.group(4))
     end_hour = int(match.group(5))
@@ -248,7 +276,9 @@ def _quota_entries(text: str, url: str) -> dict[str, tuple[dict[str, object], ..
 
     every clause marker must parse: a new multiplier shape raises instead of
     silently dropping, and clauses without a peak-hours line raise too (the
-    peak multiplier would land nowhere).
+    peak multiplier would land nowhere). the notice repeats a model's clause
+    per plan section, so a model whose clauses state different multipliers
+    raises instead of taking either.
     """
     peak = _peak_schedule(text, url)
     clauses = list(_QUOTA_CLAUSE_RE.finditer(text))
@@ -256,11 +286,19 @@ def _quota_entries(text: str, url: str) -> dict[str, tuple[dict[str, object], ..
         raise FetchError(f"unrecognized quota clause in the zai quota notice on {url}")
     if clauses and peak is None:
         raise FetchError(f"zai quota notice on {url}: quota clauses without a peak-hours line")
-    entries: dict[str, tuple[dict[str, object], ...]] = {}
+    multipliers: dict[str, tuple[float, float]] = {}
     for match in clauses:
         model_id = match.group(1).strip().casefold()
-        off_peak = float(match.group(2))
-        on_peak = float(match.group(3))
+        stated = (float(match.group(2)), float(match.group(3)))
+        first = multipliers.setdefault(model_id, stated)
+        if stated != first:
+            raise FetchError(
+                f"the zai quota notice on {url} gives {model_id!r} disagreeing quota"
+                f" multipliers: {first[0]}× off-peak and {first[1]}× peak in one clause,"
+                f" {stated[0]}× and {stated[1]}× in another; fix: re-verify the notice"
+            )
+    entries: dict[str, tuple[dict[str, object], ...]] = {}
+    for model_id, (off_peak, on_peak) in multipliers.items():
         model_entries: list[dict[str, object]] = []
         if off_peak != 1.0:
             # the base 1x multiplier is implicit; anything else rides a
