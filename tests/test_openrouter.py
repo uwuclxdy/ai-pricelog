@@ -977,6 +977,52 @@ def test_build_row_splits_wrap_window_into_two_entries():
     ]
 
 
+def test_build_row_keeps_wrap_window_days_on_both_halves(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import json
+
+    # utc_days is evaluated at the request instant, so both halves of a
+    # midnight-wrapping window carry the source's days, never a day-shifted
+    # pair
+    payload = json.dumps(
+        {
+            "data": [
+                {
+                    "id": "a/b",
+                    "name": "A",
+                    "pricing": {
+                        "overrides": [
+                            {
+                                "utc_days": ["monday"],
+                                "utc_start": 1600,
+                                "utc_end": 800,
+                                "prompt": "0.000002",
+                                "completion": "0.000004",
+                            }
+                        ]
+                    },
+                    "architecture": {"output_modalities": ["text"]},
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(openrouter, "fetch_text", lambda url: payload)
+    (model,) = fetch_models()
+    row = build_row(model, "2026-11-24", VERSION)
+    assert row is not None
+    assert row["overrides"] == [
+        {
+            "when": {"days": ["monday"], "window": [1600, 2400], "timezone": "UTC"},
+            "rates": {"input": 2.0, "output": 4.0},
+        },
+        {
+            "when": {"days": ["monday"], "window": [0, 800], "timezone": "UTC"},
+            "rates": {"input": 2.0, "output": 4.0},
+        },
+    ]
+
+
 def test_build_row_drops_zero_window_rate_keys():
     model = OpenrouterModel(
         "a/b",
@@ -1135,6 +1181,23 @@ def test_build_row_rejects_unknown_weekday_name():
         },
     )
     with pytest.raises(ValueError, match="funday"):
+        build_row(model, "2026-08-26", VERSION)
+
+
+@pytest.mark.parametrize("bad", [[], ["monday", 5]])
+def test_build_row_rejects_malformed_window_days(bad):
+    model = OpenrouterModel(
+        "a/b",
+        "A",
+        None,
+        None,
+        None,
+        pricing={
+            "prompt": "0.000001",
+            "overrides": [{"utc_days": bad, "prompt": "0.000002"}],
+        },
+    )
+    with pytest.raises(ValueError, match="non-empty list of weekday names"):
         build_row(model, "2026-08-26", VERSION)
 
 

@@ -266,7 +266,10 @@ def _window_entry(model_id: str, override: dict[str, object]) -> list[dict[str, 
         if start_clock > end_clock:
             # the source window is half-open and may wrap past midnight; a
             # wrap splits into two plain same-day windows so validation
-            # never sees a start-after-end pair
+            # never sees a start-after-end pair. both halves keep the
+            # source's days: utc_days is evaluated at the request instant
+            # (PricingOverride.utc_days in the API spec), so it scopes the
+            # same days on either side of midnight
             windows = [[start_clock, 2400], [0, end_clock]]
         else:
             windows = [[start_clock, end_clock]]
