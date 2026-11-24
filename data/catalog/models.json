@@ -2821,6 +2821,15 @@
       },
       "vendor": "zai"
     },
+    "fireworks/hy4-flash": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "hy4-flash"
+        ]
+      },
+      "vendor": null
+    },
     "fireworks/inkling-2-small": {
       "curated": false,
       "sources": {
