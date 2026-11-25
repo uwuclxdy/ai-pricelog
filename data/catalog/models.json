@@ -11757,6 +11757,15 @@
       },
       "vendor": "upstage"
     },
+    "openrouter/upstage/solar-mini-4-5": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "upstage/solar-mini-4-5"
+        ]
+      },
+      "vendor": "upstage"
+    },
     "openrouter/upstage/solar-mini4": {
       "curated": false,
       "sources": {
@@ -11771,6 +11780,15 @@
       "sources": {
         "openrouter": [
           "upstage/solar-pro-3"
+        ]
+      },
+      "vendor": "upstage"
+    },
+    "openrouter/upstage/solar-pro-4-contributor": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "upstage/solar-pro-4-contributor"
         ]
       },
       "vendor": "upstage"
