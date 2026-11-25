@@ -2,10 +2,15 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **Perplexity API MCP Server: `perplexity_context` tool** The Perplexity API MCP server now includes `perplexity_context`, backed by `POST /v1/context` in the [Context API](https://docs.perplexity.ai/docs/context/quickstart.md).
+Pass known URLs to retrieve Markdown by default, along with optional HTML, links, query-relevant `highlights`, yes/no `criteria` scores, freshness controls (`if_modified_since`, `max_age_seconds`, `cache_only`, `snapshot_as_of`), `timeout_ms`, and page metadata.
+`perplexity_context` is live on the hosted MCP server (`https://api.perplexity.ai/mcp`) for both OAuth and API key connections, and in `@perplexity-ai/mcp-server` version `1.5.0` for local stdio setups.
+See [Perplexity API MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server.md).
 **November 2026** **Time Machine: `snapshot_as_of` on the Search API and the Context API** The Search API and the Context API now accept `snapshot_as_of`, a cutoff up to 365 days in the past.
 On `POST /search`, each result comes from the copy of the page that Perplexity saved at or before that time.
 On `POST /v1/context`, each page comes from the copy that was stored at or before that time, and the request never fetches the page live.
 If a page has no copy from that time, its result has `status.type` `no_content`.
+The Agent API [`web_search`](https://docs.perplexity.ai/docs/agent-api/tools/web-search#time-machine) and [`fetch_url`](https://docs.perplexity.ai/docs/agent-api/tools/fetch-url-content#time-machine) tools accept `snapshot_as_of` in `filters`.
 The value is an RFC 3339 time with a time zone, such as `2026-11-01T00:00:00Z`.
 The Perplexity Python library 0.50.0 and the TypeScript SDK 0.45.0 accept a `datetime` and a `Date` for `snapshot_as_of`.
 See [Time Machine](https://docs.perplexity.ai/docs/search/time-machine.md) and [Time Machine in the Context API](https://docs.perplexity.ai/docs/context/formats-and-freshness.md#pages-at-a-past-time).
