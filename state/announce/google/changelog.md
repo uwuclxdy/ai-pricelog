@@ -177,7 +177,7 @@ Read the [Text-to-Speech](/docs/speech-generation) docs to learn more.
 It now has new capabilities like instrument reading, improved spatial and physical reasoning capabilities.
 To learn more, see [Gemini Robotics-ER](/docs/robotics-overview) page and the [blog](https://deepmind.google/blog/gemini-robotics-er-1-6).
 * Deprecation announcement: The `gemini-robotics-er-1.5-preview` model will be [shut down](/docs/deprecations) on April 30, 2026 at 9AM PST.
-## April 2, 2026 {% id="04-02-2026" %} * Released `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 4](https://ai.google.dev/gemma/docs/core) launch.
+## April 2, 2026 {% id="04-02-2026" %} * Released `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 4](https://gemma.ai/models/gemma-4/) launch.
 ## April 1, 2026 {% id="04-01-2026" %} * Introduced the new [Flex](/docs/flex-inference) and [Priority](/docs/priority-inference) inference tiers, offering more options for optimizing cost or latency.
 ## March 31, 2026 {% id="03-31-2026" %} * Launched Veo 3.1 Lite Preview, [`veo-3.1-lite-generate-preview`](/docs/models/veo-3.1-lite-generate-preview), our most cost-efficient [video generation](/docs/video) model, designed for rapid iteration and building high-volume applications.
 * The `gemini-2.5-flash-lite-preview-09-2025` model has been shut down.
@@ -311,7 +311,7 @@ To learn more, see [Gemini 2.5 Flash Preview](/docs/models) and [Thinking](/docs
 * Released the `lyria-realtime-exp` model, which [generates music](/docs/music-generation) in real time.
 * Released `gemini-2.5-flash-preview-native-audio-dialog` and `gemini-2.5-flash-exp-native-audio-thinking-dialog`, new Gemini models for the Live API with native audio output capabilities.
 To learn more, see the [Live API guide](/docs/live-api/capabilities#native-audio-output) and [Gemini 2.5 Flash Native Audio](/docs/models).
-* Released `gemma-3n-e4b-it` preview, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 3n](https://ai.google.dev/gemma/docs/3n) launch.
+* Released `gemma-3n-e4b-it` preview, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 3n](https://gemma.ai/models/gemma-3n/) launch.
 ## May 7, 2025 {% id="05-07-2025" %} * Released `gemini-2.0-flash-preview-image-generation`, a preview model for generating and editing images.
 To learn more, see [Image generation](/docs/image-generation) and [Gemini 2.0 Flash Preview Image Generation](/docs/models).
 ## May 6, 2025 {% id="05-06-2025" %} * Released `gemini-2.5-pro-preview-05-06`, a new version of our most powerful model, with improvements on code and function calling.
@@ -340,7 +340,7 @@ You can continue to use `gemini-2.5-pro-exp-03-25` on sthe free tier.
 ## March 25, 2025 {% id="03-25-2025" %} * Released `gemini-2.5-pro-exp-03-25`, a public experimental Gemini model with thinking mode always on by default.
 To learn more, see [Gemini 2.5 Pro Experimental](/docs/models).
 ## March 12, 2025 {% id="03-12-2025" %} **Model updates:** * Launched an experimental [Gemini 2.0 Flash](/docs/image-generation) model capable of image generation and editing.
-* Released `gemma-3-27b-it`, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 3](https://ai.google.dev/gemma/docs/core) launch.
+* Released `gemma-3-27b-it`, available on [AI Studio](https://aistudio.google.com) and through the Gemini API, as part of the [Gemma 3](https://gemma.ai/models/gemma-3/) launch.
 **API updates:** * Added support for [YouTube URLs](/docs/image-understanding) as a media source.
 * Added support for including an [inline video](/docs/image-understanding) of less than 20MB.
 ## March 11, 2025 {% id="03-11-2025" %} **SDK updates:** * Released the [Google Gen AI SDK for TypeScript and JavaScript](https://googleapis.github.io/js-genai) to public preview.

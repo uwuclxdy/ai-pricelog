@@ -2,6 +2,13 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **Time Machine: `snapshot_as_of` on the Search API and the Context API** The Search API and the Context API now accept `snapshot_as_of`, a cutoff up to 365 days in the past.
+On `POST /search`, each result comes from the copy of the page that Perplexity saved at or before that time.
+On `POST /v1/context`, each page comes from the copy that was stored at or before that time, and the request never fetches the page live.
+If a page has no copy from that time, its result has `status.type` `no_content`.
+The value is an RFC 3339 time with a time zone, such as `2026-11-01T00:00:00Z`.
+The Perplexity Python library 0.50.0 and the TypeScript SDK 0.45.0 accept a `datetime` and a `Date` for `snapshot_as_of`.
+See [Time Machine](https://docs.perplexity.ai/docs/search/time-machine.md) and [Time Machine in the Context API](https://docs.perplexity.ai/docs/context/formats-and-freshness.md#pages-at-a-past-time).
 **November 2026** **Gemini 4 Neon and Gemini 4 Hydrogen on the Orchestrator API** The Orchestrator API now supports `google/gemini-4-neon` and `google/gemini-4-hydrogen`.
 Both have a 1,048,576-token context window and return up to 65,536 output tokens.
 Gemini 4 Neon costs \$3.00 per million input tokens, \$0.15 per million cached input tokens, and \$15.00 per million output tokens.
@@ -447,8 +454,8 @@ To reduce engineering overhead and make room for more capable models, we're reti
 If you liked R1's strengths, we recommend switching to `Sonar Pro Reasoning`.
 It offers similar behavior with stronger overall performance.
 **July 2025** **New: Detailed Cost Information in API Responses** The API response JSON now includes detailed cost information for each request.
-You'll now see a new structure like this in your response: ```json theme={null} "usage": { "prompt_tokens": 8, "completion_tokens": 439, "total_tokens": 447, "search_context_size": "low", "cost": { "input_tokens_cost": 2.4e-05, "output_tokens_cost": 0.006585, "request_cost": 0.006, "total_cost": 0.012609 } } ``` **What's included:** * **input\_tokens\_cost**: Cost attributed to input tokens * **output\_tokens\_cost**: Cost attributed to output tokens * **request\_cost**: Fixed cost per request * **total\_cost**: The total cost for this API call This update enables easier tracking of usage and
-billing directly from each API response, giving you complete transparency into the costs associated with each request.
+You'll now see a new structure like this in your response: ```json theme={null} "usage": { "prompt_tokens": 8, "completion_tokens": 439, "total_tokens": 447, "search_context_size": "low", "cost": { "input_tokens_cost": 2.4e-05, "output_tokens_cost": 0.006585, "request_cost": 0.006, "total_cost": 0.012609 } } ``` **What's included:** * `input_tokens_cost`: Cost attributed to input tokens * `output_tokens_cost`: Cost attributed to output tokens * `request_cost`: Fixed cost per request * `total_cost`: The total cost for this API call This update enables easier tracking of usage and billing
+directly from each API response, giving you complete transparency into the costs associated with each request.
 **July 2025** **New: SEC Filings Filter for Financial Research** We're excited to announce the release of our new SEC filings filter feature, allowing you to search specifically within SEC regulatory documents and filings.
 By setting `search_domain: "sec"` in your API requests, you can now focus your searches on official SEC documents, including 10-K reports, 10-Q quarterly reports, 8-K current reports, and other regulatory filings.
 This feature is particularly valuable for: * Financial analysts researching company fundamentals * Investment professionals conducting due diligence * Compliance officers tracking regulatory changes * Anyone requiring authoritative financial information directly from official sources The SEC filter works seamlessly with other search parameters like date filters and search context size, giving you precise control over your financial research queries.
@@ -513,7 +520,7 @@ You can learn more about our new APIs here - [https://docs.perplexity.ai](https:
 In addition, we have also increased our default rate limit for the sonar online models to 50 requests/min for all users.
 Effective immediately, all API users will see citations returned as part of their requests by default.
 This is not a breaking change.
-The **return\_citations** parameter will no longer have any effect.
+The `return_citations` parameter will no longer have any effect.
 For bug reports or enterprise inquiries, please reach out to our team at [api@perplexity.ai](mailto:api@perplexity.ai) **July 2024** **Introducing New and Improved Sonar Models** We are excited to announce the launch of our latest Perplexity Sonar models: **Online Models** - `llama-3.1-sonar-small-128k-online` `llama-3.1-sonar-large-128k-online` **Chat Models** - `llama-3.1-sonar-small-128k-chat` `llama-3.1-sonar-large-128k-chat` These new additions surpass the performance of the previous iteration.
 For detailed information on our supported models, please visit our model card documentation.
 **\[Action Required]** Model Deprecation Notice Please note that several models will no longer be accessible effective 8/12/2024.
