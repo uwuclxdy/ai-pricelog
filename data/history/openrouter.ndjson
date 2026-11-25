@@ -2816,6 +2816,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5-air","observed_at":"2026-08-26","rates":{"input":0.13,"output":0.85,"cache_read":0.025},"limits":{"context":131072},"provenance":{"name":"GLM 4.5 Air"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5-air","observed_at":"2026-11-09","rates":{"input":0.2,"output":1.1,"cache_read":0.03},"limits":{"context":131072},"provenance":{"name":"GLM 4.5 Air"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5-air","observed_at":"2026-11-16","rates":{"input":0.13,"output":0.85,"cache_read":0.025},"limits":{"context":131072},"provenance":{"name":"GLM 4.5 Air"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5-air","observed_at":"2026-11-25","rates":{"input":0.14,"output":0.86},"limits":{"context":131072},"provenance":{"name":"GLM 4.5 Air"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5v","observed_at":"2025-08-11","rates":{"input":0.6,"output":1.8,"cache_read":0.11},"provenance":{"url":"https://openrouter.ai/api/frontend/v1/stats/listed-pricing?permaslug=z-ai/glm-4.5v&shape=v4&range=all"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5v","observed_at":"2025-09-22","rates":{"input":0.5,"output":1.8},"limits":{"context":65536},"provenance":{"url":"https://arquivo.pt/wayback/20250922191342id_/https://openrouter.ai/api/v1/models"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.5v","observed_at":"2025-12-28","rates":{"input":0.48,"output":1.44,"cache_read":0.088},"limits":{"context":65536},"provenance":{"url":"https://arquivo.pt/wayback/20251228042826id_/https://openrouter.ai/api/v1/models"}}
@@ -2846,6 +2847,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-11-20","rates":{"input":0.3,"output":0.9,"cache_read":0.055},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-11-20","rates":{"input":0.3,"output":0.9,"cache_read":0.05},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-11-21","rates":{"input":0.3,"output":0.9,"cache_read":0.055},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.6v","observed_at":"2026-11-25","rates":{"input":0.3,"output":0.9,"cache_read":0.05},"limits":{"context":131072},"provenance":{"name":"GLM 4.6V"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-08-26","rates":{"input":0.4,"output":1.75,"cache_read":0.08},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-09-25","rates":{"input":0.6,"output":2.2,"cache_read":0.11},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7","observed_at":"2026-10-17","rates":{"input":0.54,"output":1.98,"cache_read":0.099},"limits":{"context":204800},"provenance":{"name":"GLM 4.7"}}
@@ -2857,6 +2859,7 @@
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7-flash","observed_at":"2026-08-26","rates":{"input":0.06,"output":0.4,"cache_read":0.01},"limits":{"context":202752},"provenance":{"name":"GLM 4.7 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7-flash","observed_at":"2026-09-08","rates":{"input":0.0605,"output":0.4},"limits":{"context":202752},"provenance":{"name":"GLM 4.7 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7-flash","observed_at":"2026-09-10","rates":{"input":0.0605,"output":0.4},"limits":{"context":200000},"provenance":{"name":"GLM 4.7 Flash"}}
+{"schema":4,"source":"openrouter","model_id":"z-ai/glm-4.7-flash","observed_at":"2026-11-25","rates":{"input":0.0605,"output":0.4},"limits":{"context":131072},"provenance":{"name":"GLM 4.7 Flash"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5","observed_at":"2026-08-26","rates":{"input":0.6,"output":1.92,"cache_read":0.12},"limits":{"context":204800},"provenance":{"name":"GLM 5"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5","observed_at":"2026-10-15","rates":{"input":1.0,"output":3.2,"cache_read":0.2},"limits":{"context":204800},"provenance":{"name":"GLM 5"}}
 {"schema":4,"source":"openrouter","model_id":"z-ai/glm-5","observed_at":"2026-10-20","rates":{"input":0.6,"output":1.92,"cache_read":0.12},"limits":{"context":204800},"provenance":{"name":"GLM 5"}}
