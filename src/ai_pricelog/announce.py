@@ -24,6 +24,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bs4 import XMLParsedAsHTMLWarning
@@ -332,40 +333,37 @@ def load_billing_rules(path: Path) -> list[dict[str, object]]:
         raise ValueError(f"billing-rules file '{path}': invalid json: {exc.msg}") from exc
     if not isinstance(data, dict) or not isinstance(data.get("rules"), list):
         raise ValueError(f"billing-rules file '{path}': must carry a 'rules' list")
+    return check_billing_rules(data["rules"], f"billing-rules file '{path}'")
+
+
+def check_billing_rules(rules: list[Any], label: str) -> list[dict[str, object]]:
+    """Schema-check parsed billing rules; each error starts with ``label`` and names the rule."""
     seen_ids: set[str] = set()
-    for rule in data["rules"]:
-        label = rule.get("id", "?") if isinstance(rule, dict) else "?"
+    for rule in rules:
+        rule_id = rule.get("id", "?") if isinstance(rule, dict) else "?"
         if not isinstance(rule, dict):
-            raise ValueError(f"billing-rules file '{path}': rule '{label}' must be an object")
+            raise ValueError(f"{label}: rule '{rule_id}' must be an object")
         unknown = [key for key in rule if key not in _BILLING_RULE_KEYS]
         if unknown:
-            raise ValueError(
-                f"billing-rules file '{path}': rule '{label}' has unknown key '{unknown[0]}'"
-            )
+            raise ValueError(f"{label}: rule '{rule_id}' has unknown key '{unknown[0]}'")
         for key in _BILLING_RULE_KEYS:
             if key not in rule:
-                raise ValueError(f"billing-rules file '{path}': rule '{label}' is missing '{key}'")
+                raise ValueError(f"{label}: rule '{rule_id}' is missing '{key}'")
         for key in ("id", "provider", "statement"):
             if not isinstance(rule[key], str) or not rule[key]:
-                raise ValueError(
-                    f"billing-rules file '{path}': rule '{label}' '{key}'"
-                    " must be a non-empty string"
-                )
+                raise ValueError(f"{label}: rule '{rule_id}' '{key}' must be a non-empty string")
         if rule["id"] in seen_ids:
-            raise ValueError(f"billing-rules file '{path}': duplicate rule id '{rule['id']}'")
+            raise ValueError(f"{label}: duplicate rule id '{rule['id']}'")
         seen_ids.add(rule["id"])
         try:
             date.fromisoformat(rule["effective"])
         except ValueError as exc:
-            raise ValueError(
-                f"billing-rules file '{path}': rule '{label}' effective must be YYYY-MM-DD"
-            ) from exc
+            raise ValueError(f"{label}: rule '{rule_id}' effective must be YYYY-MM-DD") from exc
         try:
             ZoneInfo(rule["timezone"])
         except ZoneInfoNotFoundError as exc:
             raise ValueError(
-                f"billing-rules file '{path}': rule '{label}'"
-                f" timezone '{rule['timezone']}' is unknown"
+                f"{label}: rule '{rule_id}' timezone '{rule['timezone']}' is unknown"
             ) from exc
         if (
             not isinstance(rule["citation"], list)
@@ -373,7 +371,6 @@ def load_billing_rules(path: Path) -> list[dict[str, object]]:
             or not all(isinstance(entry, str) and entry for entry in rule["citation"])
         ):
             raise ValueError(
-                f"billing-rules file '{path}': rule '{label}' citation"
-                " must be a non-empty list of non-empty strings"
+                f"{label}: rule '{rule_id}' citation must be a non-empty list of non-empty strings"
             )
-    return data["rules"]
+    return rules

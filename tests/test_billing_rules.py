@@ -195,3 +195,29 @@ def test_billing_rules_missing_rules_key(rules_file):
 def test_billing_rules_missing_file(tmp_path):
     with pytest.raises(ValueError, match="missing"):
         announce.load_billing_rules(tmp_path / "nope.json")
+
+
+def test_billing_rule_errors_name_the_file(rules_file):
+    path = rules_file(make_rules(timezone="Mars/Olympus"))
+    with pytest.raises(ValueError) as excinfo:
+        announce.load_billing_rules(path)
+    assert str(excinfo.value) == (
+        f"billing-rules file '{path}': rule 'deepseek-weekend-off-peak'"
+        " timezone 'Mars/Olympus' is unknown"
+    )
+
+
+def test_billing_rule_check_names_the_caller_label():
+    # the check the loader runs, callable on rules parsed elsewhere: each
+    # error starts with the label the caller names the rules by
+    rule = {key: value for key, value in make_rules()["rules"][0].items() if key != "citation"}
+    with pytest.raises(ValueError) as excinfo:
+        announce.check_billing_rules([rule], "branch b: rules")
+    assert str(excinfo.value) == (
+        "branch b: rules: rule 'deepseek-weekend-off-peak' is missing 'citation'"
+    )
+
+
+def test_billing_rule_check_returns_the_rules_it_passes():
+    rules = make_rules()["rules"]
+    assert announce.check_billing_rules(rules, "label") == make_rules()["rules"]

@@ -36,6 +36,18 @@ def make_removal_row(source: str, model_id: str, observed_at: str) -> dict:
     return row
 
 
+def make_rule(rule_id: str, provider: str, effective: str) -> dict:
+    """A billing rule carrying every field the committed loader requires."""
+    return {
+        "id": rule_id,
+        "provider": provider,
+        "effective": effective,
+        "timezone": "UTC",
+        "statement": f"{provider} bills differently from {effective}",
+        "citation": [f"https://example.com/{rule_id}"],
+    }
+
+
 def build_repo(tmp_path: Path) -> tuple[Path, Path]:
     """A clone with a bare origin: main carries one row and the pipeline files."""
     repo = tmp_path / "repo"
@@ -246,6 +258,31 @@ def assert_refused_before_any_merge(repo: Path, before: str, calls: list[list[st
     assert git(repo, "rev-parse", "HEAD").strip() == before
     assert git(repo, "status", "--porcelain") == ""
     assert not (repo / ".git" / "MERGE_HEAD").exists()
+
+
+def assert_announce_round_trips(repo: Path) -> None:
+    """The round trip tests/test_announce.py pins over the committed tree, on a merged tip.
+
+    every entry's file is the path its url derives and holds the prose its sha
+    names, wrapped as the writer wraps it, and the index names exactly the
+    channel files on disk; a tip carrying no index names none.
+    """
+    index_path = repo / announce.ANNOUNCE_INDEX
+    index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.exists() else {}
+    named: set[str] = set()
+    for source, urls in index.items():
+        derived = announce.channel_files(source, urls.keys())
+        for url, entry in urls.items():
+            assert entry["file"] == derived[url]
+            named.add(entry["file"])
+            text = (repo / entry["file"]).read_text(encoding="utf-8")
+            assert announce._sha256(announce.unwrap(text)) == entry["sha256"]
+            assert announce.wrap(announce.unwrap(text)) == text
+            assert all(len(line) <= announce._LINE_CEILING for line in text.splitlines())
+    on_disk = {
+        path.relative_to(repo).as_posix() for path in (repo / announce.ANNOUNCE_DIR).rglob("*.md")
+    }
+    assert on_disk == named
 
 
 def test_retry_read_retries_a_transient_failure(monkeypatch, tmp_path):
@@ -1310,6 +1347,210 @@ def test_merge_refuses_head_billing_rules_that_do_not_read(tmp_path, monkeypatch
     assert_refused_before_any_merge(repo, before, calls)
 
 
+def append_spaced_row(repo: Path) -> None:
+    """An edit appending a row whose line ends in a space: it parses and passes the contract."""
+    shard = "data/history/deepseek.ndjson"
+    row = make_row("deepseek", "deepseek-v4-pro", "2026-09-01", 0.44)
+    with (repo / shard).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + " \n")
+    git(repo, "add", "--", shard)
+
+
+def spaced_channel_file(repo: Path) -> None:
+    """An edit landing a fresh channel snapshot whose .md line ends in a space."""
+    url = "https://example.com/notes"
+    announce.save_snapshot(
+        announce_snapshot({"deepseek": {url: "fresh prose"}}, "2026-09-10"), repo
+    )
+    (repo / announce.channel_files("deepseek", [url])[url]).write_text(
+        "fresh prose \n", encoding="utf-8"
+    )
+    git(repo, "add", "-A", "--", "state/announce")
+
+
+def absence_file(text: str) -> Callable[[Path], None]:
+    """An edit writing the deepseek absence file with ``text`` verbatim."""
+
+    def edit(repo: Path) -> None:
+        (repo / "state" / "absence").mkdir(parents=True, exist_ok=True)
+        (repo / "state" / "absence" / "deepseek.json").write_text(text, encoding="utf-8")
+        git(repo, "add", "--", "state/absence")
+
+    return edit
+
+
+@pytest.mark.parametrize(
+    ("make_edit", "location"),
+    [
+        (append_spaced_row, "data/history/deepseek.ndjson:2: trailing whitespace."),
+        (spaced_channel_file, "state/announce/deepseek/notes.md:1: trailing whitespace."),
+        (
+            absence_file('{"deepseek/deepseek-v4-pro": {}}\t\n'),
+            "state/absence/deepseek.json:1: trailing whitespace.",
+        ),
+        (
+            absence_file('{"deepseek/deepseek-v4-pro": {}}\n\n'),
+            "state/absence/deepseek.json:2: new blank line at EOF.",
+        ),
+        (
+            write_file("tests/test_billing_rules.py", "# pin placeholder \n"),
+            "tests/test_billing_rules.py:1: trailing whitespace.",
+        ),
+    ],
+    ids=["shard-row", "channel-file", "absence-file", "absence-eof", "billing-pin"],
+)
+def test_merge_refuses_a_whitespace_error_it_would_stage_from_the_branch(
+    tmp_path, monkeypatch, make_edit, location
+):
+    # the merge's staged `git diff --cached --check` stops on a whitespace
+    # error in any line it adds over HEAD, after `git merge --no-commit`
+    # staged; each of these lands with the branch's own bytes, so the
+    # pre-flight runs the same check on them and names the line
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(repo, "pricelog/space-00000001", make_edit)
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/space-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/space-00000001: lines it adds carry whitespace errors ['{location}'];"
+        " the merge stages them with the branch's own bytes and its staged"
+        " `git diff --cached --check` would stop it mid-merge; fix: correct the named"
+        " line(s) on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_whitespace_errors_in_the_files_it_reserializes(tmp_path):
+    # the catalog files and the announce index land re-serialized, and the
+    # billing pin is HEAD's copy re-pinned whenever the rules change, so a
+    # whitespace error in the branch's copy of any of them never lands
+    repo, _bare = build_repo(tmp_path)
+    reserialized = [
+        models.MODELS_FILE,
+        BILLING_RULES_FILE,
+        announce.ANNOUNCE_INDEX,
+        "tests/test_billing_rules.py",
+    ]
+
+    def space_each(repo: Path) -> None:
+        rule = make_rule("google-gemini-deprecation", "google", "2026-12-01")
+        (repo / BILLING_RULES_FILE).write_text(
+            json.dumps({"rules": [rule]}, indent=2) + "\n", encoding="utf-8"
+        )
+        for path in reserialized:
+            text = (repo / path).read_text(encoding="utf-8")
+            (repo / path).write_text(text.replace("\n", " \n", 1), encoding="utf-8")
+        git(repo, "add", "--", *reserialized)
+
+    commit_on_branch(repo, "pricelog/space-00000002", space_each)
+    branch_check = subprocess.run(
+        ["git", "diff", "--check", "main", "origin/pricelog/space-00000002"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert branch_check.returncode == 2
+    assert sorted(re.findall(r"^(\S+):1: trailing whitespace\.$", branch_check.stdout, re.M)) == (
+        sorted(reserialized)
+    )
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/space-00000002"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/space-00000002"]
+    assert git(repo, "diff", "--check", f"{sha}^1", sha) == ""
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_a_whitespace_error_in_a_channel_file_no_index_resolves(
+    tmp_path, monkeypatch
+):
+    # with no index in effect a branch carrying none still merges its channel
+    # files, as git merged them, so they take the same whitespace check
+    repo, _bare = build_repo(tmp_path)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    path = "state/announce/deepseek/notes.md"
+    commit_on_branch(repo, "pricelog/noidx-00000001", channel_file(path, "added prose \n"))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value).startswith(
+        "branch pricelog/noidx-00000001: lines it adds carry whitespace errors"
+        f" ['{path}:1: trailing whitespace.'];"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_whitespace_error_in_a_channel_file_its_index_drops(tmp_path):
+    # a channel file the branch's own index does not name is pruned by the
+    # announce step and never lands, so its bytes take no whitespace check
+    repo, _bare = build_repo(tmp_path)
+
+    def snapshot_and_stray_file(repo: Path) -> None:
+        announce.save_snapshot(
+            announce_snapshot({"deepseek": {"https://example.com/notes": "fresh prose"}}), repo
+        )
+        (repo / "state" / "announce" / "deepseek" / "stray.md").write_text(
+            "stray prose \n", encoding="utf-8"
+        )
+        git(repo, "add", "-A", "--", "state/announce")
+
+    commit_on_branch(repo, "pricelog/stray-00000001", snapshot_and_stray_file)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/stray-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/stray-00000001"]
+    assert not (repo / "state" / "announce" / "deepseek" / "stray.md").exists()
+    assert_announce_round_trips(repo)
+    assert git(repo, "diff", "--check", f"{sha}^1", sha) == ""
+
+
+@pytest.mark.parametrize(
+    ("stdout", "expected"),
+    [
+        (
+            'state/absence/x.json:3: trailing whitespace.\n+{"a":"b:12: c"} \n',
+            [("state/absence/x.json:3: trailing whitespace.", 3)],
+        ),
+        (
+            "a.md:2: new blank line at EOF.\nb.md:1: space before tab in indent.\n+ \tx\n",
+            [("a.md:2: new blank line at EOF.", 2), ("b.md:1: space before tab in indent.", 1)],
+        ),
+    ],
+    ids=["content-looks-like-a-report", "report-without-content"],
+)
+def test_whitespace_errors_reads_each_git_report(tmp_path, stdout, expected):
+    # git prints the offending line under each report behind a "+", so a line
+    # whose text itself reads like a report is never taken for one
+    runner = FakeRunner()
+    runner.on("git diff --check", failure=pr.PrError("check failed", stdout=stdout))
+    assert automerge._whitespace_errors(runner, tmp_path, "pricelog/x-1", ["p"]) == expected
+
+
+def test_whitespace_errors_reraises_a_git_failure_carrying_no_report(tmp_path):
+    runner = FakeRunner()
+    failure = pr.PrError("command failed: fatal: bad revision", stderr="fatal: bad revision")
+    runner.on("git diff --check", failure=failure)
+    with pytest.raises(pr.PrError) as excinfo:
+        automerge._whitespace_errors(runner, tmp_path, "pricelog/x-1", ["p"])
+    assert excinfo.value is failure
+
+
 def _base_carries_a_channel(repo: Path) -> None:
     commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
     git(repo, "push", "origin", "main")
@@ -1578,6 +1819,52 @@ def test_merge_lands_a_burst_whose_later_index_drops_the_deleted_channel(tmp_pat
     index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
     assert index == {}
     assert not (repo / "state" / "announce" / "deepseek" / "notes.md").exists()
+    assert_announce_round_trips(repo)
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_lands_a_burst_whose_later_index_drops_a_channel_a_prior_sibling_names(tmp_path):
+    # an index-carrying sibling merging before the no-index branch names the
+    # channel it deletes, but the later sibling's index drops it: that merge
+    # resolves the file, so the deletion is not refused and the tip round-trips
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000001")
+    commit_announce(
+        repo, {"deepseek": {"https://example.com/notes": "sibling prose"}}, "2026-09-10"
+    )
+    git(repo, "push", "origin", "pricelog/idx-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    delete_on_branch(repo, "pricelog/noidx-00000002", "state/announce/deepseek/notes.md")
+    git(repo, "switch", "-c", "pricelog/drop-00000003")
+    announce.save_snapshot({}, repo)
+    git(repo, "add", "-A", "--", "state/announce")
+    git(repo, "commit", "-m", "drop every channel")
+    git(repo, "push", "origin", "pricelog/drop-00000003")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/idx-00000001", "pricelog/noidx-00000002", "pricelog/drop-00000003"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == [
+        "pricelog/idx-00000001",
+        "pricelog/noidx-00000002",
+        "pricelog/drop-00000003",
+    ]
+    index = json.loads((repo / "state" / "announce" / "index.json").read_text(encoding="utf-8"))
+    assert index == {}
+    assert not (repo / "state" / "announce" / "deepseek" / "notes.md").exists()
+    assert_announce_round_trips(repo)
     assert git(repo, "status", "--porcelain") == ""
 
 
@@ -1638,6 +1925,48 @@ def test_merge_lands_a_burst_whose_later_index_restores_the_deleted_channel(tmp_
     assert git(repo, "status", "--porcelain") == ""
 
 
+def test_merge_refuses_a_branch_without_an_index_deleting_a_channel_head_names_a_sibling_drops(
+    tmp_path, monkeypatch
+):
+    # HEAD's index names the channel the no-index branch deletes; the later
+    # sibling's index drops it, but the deletion check keeps HEAD's names
+    # whatever merges after: refused before any merge, checkout untouched
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    delete_on_branch(repo, "pricelog/noidx-00000001", "state/announce/deepseek/notes.md")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/drop-00000002")
+    announce.save_snapshot({}, repo)
+    git(repo, "add", "-A", "--", "state/announce")
+    git(repo, "commit", "-m", "drop every channel")
+    git(repo, "push", "origin", "pricelog/drop-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001", "pricelog/drop-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/noidx-00000001: deletes ['state/announce/deepseek/notes.md'];"
+        " the merge reads or stages these from the branch side and a deleted copy"
+        " reaches it as absent or unstageable; fix: restore the file(s) on the branch,"
+        " or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
 def test_merge_lands_a_burst_whose_merged_sibling_index_does_not_read(tmp_path):
     # the skip loop drops a stranded sibling without reading its index, so a
     # no-index branch's merge finds no index to check its deletion against
@@ -1672,6 +2001,7 @@ def test_merge_lands_a_burst_whose_merged_sibling_index_does_not_read(tmp_path):
 
     assert [r.branch for r in results] == ["pricelog/noidx-00000002"]
     assert not (repo / "state" / "announce" / "deepseek" / "notes.md").exists()
+    assert_announce_round_trips(repo)
     assert git(repo, "status", "--porcelain") == ""
 
 
@@ -1712,6 +2042,266 @@ def test_merge_refuses_a_sibling_type_changing_its_index_before_a_no_index_branc
         " close the PR"
     )
     assert_refused_before_any_merge(repo, before, calls)
+
+
+def channel_file(path: str, text: str) -> Callable[[Path], None]:
+    """An edit writing a channel .md verbatim, its source directory created first."""
+
+    def edit(repo: Path) -> None:
+        (repo / path).parent.mkdir(parents=True, exist_ok=True)
+        (repo / path).write_text(text, encoding="utf-8")
+        git(repo, "add", "--", path)
+
+    return edit
+
+
+def no_index_refusal(branch: str, paths: list[str]) -> str:
+    return (
+        f"branch {branch}: carries no state/announce/index.json but adds or changes {paths}"
+        " while the index in effect at its merge names channel files; the merge resolves"
+        " channel files only through a branch's own index, so these would land out of"
+        " step with that index; fix: revert the named file(s) on the branch, or close"
+        " the PR"
+    )
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["state/announce/deepseek/notes.md", "state/announce/deepseek/extra.md"],
+    ids=["modifies", "adds"],
+)
+def test_merge_refuses_a_branch_without_an_index_changing_a_channel_file_head_names(
+    tmp_path, monkeypatch, path
+):
+    # a branch carrying no announce index skips the announce step, so its edit
+    # or addition of a channel file lands as is: the index HEAD carries then
+    # names prose whose sha no longer matches, or misses a file on disk
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    commit_on_branch(repo, "pricelog/noidx-00000001", channel_file(path, "edited prose\n"))
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == no_index_refusal("pricelog/noidx-00000001", [path])
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_without_an_index_adding_a_channel_file_a_sibling_misses(
+    tmp_path, monkeypatch
+):
+    # HEAD carries no index at the burst base, but a sibling merging before the
+    # no-index branch lands one: the added file would land outside it
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000001")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    added = "state/announce/deepseek/extra.md"
+    commit_on_branch(repo, "pricelog/noidx-00000002", channel_file(added, "added prose\n"))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/idx-00000001", "pricelog/noidx-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == no_index_refusal("pricelog/noidx-00000002", [added])
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_branch_without_an_index_adding_a_channel_file_no_index_names_yet(
+    tmp_path,
+):
+    # no index is in effect at the no-index branch's merge (the base carries
+    # none and no sibling merges before it), so its addition keeps merging; the
+    # later sibling's index names the file and its own merge rewrites it, so
+    # the pushed tip round-trips
+    repo, _bare = build_repo(tmp_path)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    path = "state/announce/deepseek/notes.md"
+    commit_on_branch(repo, "pricelog/noidx-00000001", channel_file(path, "added prose\n"))
+    git(repo, "switch", "-c", "pricelog/idx-00000002")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "fresh prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/noidx-00000001", "pricelog/idx-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == ["pricelog/noidx-00000001", "pricelog/idx-00000002"]
+    assert announce.unwrap((repo / path).read_text(encoding="utf-8")) == "fresh prose"
+    assert_announce_round_trips(repo)
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_refuses_a_branch_without_an_index_editing_a_channel_file_a_sibling_rewrote(
+    tmp_path, monkeypatch
+):
+    # an index-carrying sibling merging first rewrites the channel file, so the
+    # no-index branch's own edit conflicts at its merge: the index in effect at
+    # that merge names the file, and a later sibling's rewrite undoes no stop
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    path = "state/announce/deepseek/notes.md"
+    commit_on_branch(repo, "pricelog/noidx-00000001", channel_file(path, "hand prose\n"))
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000002")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "fresh prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000002")
+    git(repo, "switch", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000003")
+    commit_announce(
+        repo, {"deepseek": {"https://example.com/notes": "freshest prose"}}, "2026-09-11"
+    )
+    git(repo, "push", "origin", "pricelog/idx-00000003")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/idx-00000002", "pricelog/noidx-00000001", "pricelog/idx-00000003"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == no_index_refusal("pricelog/noidx-00000001", [path])
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_without_an_index_editing_a_channel_file_a_sibling_indexes(
+    tmp_path, monkeypatch
+):
+    # HEAD carries no index, but an index-carrying sibling merging before the
+    # no-index branch names the file it edits; a later index-carrying sibling
+    # changes nothing, since the branch's own merge already conflicts on it
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    path = "state/announce/deepseek/notes.md"
+    git(repo, "switch", "-c", "pricelog/idx-00000001")
+    commit_announce(
+        repo, {"deepseek": {"https://example.com/notes": "sibling prose"}}, "2026-09-10"
+    )
+    git(repo, "push", "origin", "pricelog/idx-00000001")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    commit_on_branch(repo, "pricelog/noidx-00000002", channel_file(path, "hand prose\n"))
+    git(repo, "switch", "-c", "pricelog/idx-00000003")
+    commit_announce(
+        repo, {"deepseek": {"https://example.com/notes": "freshest prose"}}, "2026-09-11"
+    )
+    git(repo, "push", "origin", "pricelog/idx-00000003")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/idx-00000001", "pricelog/noidx-00000002", "pricelog/idx-00000003"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == no_index_refusal("pricelog/noidx-00000002", [path])
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_branch_without_an_index_editing_a_channel_file_head_names_a_later_sibling(
+    tmp_path, monkeypatch
+):
+    # HEAD's index names the channel the no-index branch edits, and a later
+    # index-carrying sibling changes nothing: only the deletion check takes
+    # no file from it, so this edit would land out of step at its merge
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    path = "state/announce/deepseek/notes.md"
+    commit_on_branch(repo, "pricelog/noidx-00000001", channel_file(path, "hand prose\n"))
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "-c", "pricelog/idx-00000002")
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "fresh prose"}}, "2026-09-10")
+    git(repo, "push", "origin", "pricelog/idx-00000002")
+    git(repo, "switch", "main")
+    git(repo, "fetch", "origin")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/noidx-00000001", "pricelog/idx-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == no_index_refusal("pricelog/noidx-00000001", [path])
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_branch_without_an_index_changing_no_channel_file(tmp_path):
+    # the refusal's boundary: a no-index branch that leaves the announce tree
+    # alone merges under a non-empty index, and the tip still round-trips
+    repo, _bare = build_repo(tmp_path)
+    _base_carries_a_channel(repo)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    git(repo, "push", "origin", "main")
+    make_branch(repo, "pricelog/noidx-00000001", [make_row("zai", "glm-5", "2026-09-11", 0.1)])
+    commit_announce(repo, {"deepseek": {"https://example.com/notes": "old prose"}}, "2026-09-09")
+    git(repo, "push", "origin", "main")
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/noidx-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/noidx-00000001"]
+    assert_announce_round_trips(repo)
+    assert git(repo, "status", "--porcelain") == ""
 
 
 def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path, monkeypatch):
@@ -1983,8 +2573,8 @@ def _rules_repo(tmp_path: Path) -> tuple[Path, list[dict]]:
     """A build_repo clone whose main carries two rules and a matching pin."""
     repo, _bare = build_repo(tmp_path)
     rules = [
-        {"id": "deepseek-weekend-off-peak", "provider": "deepseek", "effective": "2026-08-23"},
-        {"id": "zai-plan-quotas", "provider": "zai", "effective": "2026-09-01"},
+        make_rule("deepseek-weekend-off-peak", "deepseek", "2026-08-23"),
+        make_rule("zai-plan-quotas", "zai", "2026-09-01"),
     ]
     (repo / BILLING_RULES_FILE).write_text(
         json.dumps({"rules": rules}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -2004,7 +2594,7 @@ def test_merge_unions_duplicate_billing_rules_across_branches(tmp_path):
     # append; the union lands one, the pin matches the landed count, and the
     # staged tree carries no conflict markers
     repo, base_rules = _rules_repo(tmp_path)
-    duplicate = {"id": "google-gemini-deprecation", "provider": "google", "effective": "2026-12-01"}
+    duplicate = make_rule("google-gemini-deprecation", "google", "2026-12-01")
     _rule_branch(repo, "pricelog/alpha-00000000", "deepseek-v4-pro", [*base_rules, duplicate], 3)
     _rule_branch(repo, "pricelog/beta-11111111", "deepseek-v4-flash", [*base_rules, duplicate], 3)
 
@@ -2028,8 +2618,8 @@ def test_merge_unions_duplicate_billing_rules_across_branches(tmp_path):
 
 def test_merge_lands_two_distinct_billing_rules_and_recomputes_the_pin(tmp_path):
     repo, base_rules = _rules_repo(tmp_path)
-    first = {"id": "google-gemini-deprecation", "provider": "google", "effective": "2026-12-01"}
-    second = {"id": "minimax-m3-flash-tier", "provider": "minimax", "effective": "2026-11-01"}
+    first = make_rule("google-gemini-deprecation", "google", "2026-12-01")
+    second = make_rule("minimax-m3-flash-tier", "minimax", "2026-11-01")
     _rule_branch(repo, "pricelog/alpha-00000000", "deepseek-v4-pro", [*base_rules, first], 3)
     _rule_branch(repo, "pricelog/beta-11111111", "deepseek-v4-flash", [*base_rules, second], 3)
 
@@ -2049,6 +2639,127 @@ def test_merge_lands_two_distinct_billing_rules_and_recomputes_the_pin(tmp_path)
         "minimax-m3-flash-tier",
     ]
     assert "assert len(rules) == 4" in git(repo, "show", f"{sha}:tests/test_billing_rules.py")
+
+
+def _without(rule: dict, key: str) -> dict:
+    return {name: value for name, value in rule.items() if name != key}
+
+
+_LANDED_RULE = make_rule("google-gemini-deprecation", "google", "2026-12-01")
+
+
+@pytest.mark.parametrize(
+    ("rule", "reason"),
+    [
+        (
+            _without(_LANDED_RULE, "citation"),
+            "rule 'google-gemini-deprecation' is missing 'citation'",
+        ),
+        (
+            {**_LANDED_RULE, "note": "hand edit"},
+            "rule 'google-gemini-deprecation' has unknown key 'note'",
+        ),
+        (
+            {**_LANDED_RULE, "statement": ""},
+            "rule 'google-gemini-deprecation' 'statement' must be a non-empty string",
+        ),
+        (
+            {**_LANDED_RULE, "effective": "2026/12/01"},
+            "rule 'google-gemini-deprecation' effective must be YYYY-MM-DD",
+        ),
+        (
+            {**_LANDED_RULE, "timezone": "Mars/Olympus"},
+            "rule 'google-gemini-deprecation' timezone 'Mars/Olympus' is unknown",
+        ),
+        (
+            {**_LANDED_RULE, "citation": []},
+            "rule 'google-gemini-deprecation' citation must be a non-empty list of"
+            " non-empty strings",
+        ),
+        ({**_LANDED_RULE, "effective": 20261201}, "fromisoformat: argument must be str"),
+        (
+            {**_LANDED_RULE, "timezone": ""},
+            "ZoneInfo keys must be normalized relative paths, got: ",
+        ),
+    ],
+    ids=[
+        "missing-field",
+        "unknown-key",
+        "empty-statement",
+        "bad-date",
+        "unknown-zone",
+        "empty-citation",
+        "date-not-a-string",
+        "zone-not-a-key",
+    ],
+)
+def test_merge_refuses_a_branch_rule_the_committed_loader_refuses(
+    tmp_path, monkeypatch, rule, reason
+):
+    # announce.load_billing_rules refuses the landed file on the default
+    # branch for any rule it cannot load, so the pre-flight runs the loader's
+    # own rule check over the rules the union would land
+    repo, base_rules = _rules_repo(tmp_path)
+    _rule_branch(repo, "pricelog/rule-00000001", "deepseek-v4-pro", [*base_rules, rule], 3)
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/rule-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/rule-00000001: data/catalog/billing-rules.json: {reason};"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_head_rules_the_committed_loader_refuses(tmp_path, monkeypatch):
+    # HEAD's rules land beside the branch's, so a HEAD rule the loader refuses
+    # is named against the base branch rather than the branch
+    repo, _bare = build_repo(tmp_path)
+    head_rules = [_without(make_rule("zai-plan-quotas", "zai", "2026-09-01"), "citation")]
+    (repo / BILLING_RULES_FILE).write_text(
+        json.dumps({"rules": head_rules}, indent=2) + "\n", encoding="utf-8"
+    )
+    git(repo, "commit", "-am", "a rule without its citation")
+    git(repo, "push", "origin", "main")
+    _rule_branch(repo, "pricelog/rule-00000002", "deepseek-v4-pro", [*head_rules, _LANDED_RULE], 2)
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/rule-00000002"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "HEAD: data/catalog/billing-rules.json: rule 'zai-plan-quotas' is missing 'citation';"
+        " fix: correct the named copy on the base branch, then re-run"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_checks_the_rules_the_union_lands_not_the_branch_list(tmp_path):
+    # the union dedupes by id with HEAD's copy winning, so a branch list
+    # carrying one rule twice, or a stale copy of a rule HEAD holds, lands a
+    # file the loader reads; the check runs on the landed rules, never on the
+    # branch's raw list
+    repo, base_rules = _rules_repo(tmp_path)
+    stale = {"id": base_rules[0]["id"], "provider": "deepseek"}
+    branch_rules = [stale, base_rules[1], _LANDED_RULE, _LANDED_RULE]
+    _rule_branch(repo, "pricelog/rule-00000003", "deepseek-v4-pro", branch_rules, 4)
+
+    sha, results = automerge.merge_branches(
+        ["pricelog/rule-00000003"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/rule-00000003"]
+    landed = json.loads(git(repo, "show", f"{sha}:{BILLING_RULES_FILE}"))
+    assert landed == {"rules": [*base_rules, _LANDED_RULE]}
+    assert "assert len(rules) == 3" in git(repo, "show", f"{sha}:tests/test_billing_rules.py")
 
 
 def test_staged_unrelated_change_refused(tmp_path):
@@ -3259,6 +3970,7 @@ def test_merge_skips_the_announce_step_for_a_branch_with_no_index(tmp_path):
     entry = index["deepseek"]["https://example.com/u"]
     assert entry["sha256"] == announce._sha256("fresh prose")
     assert announce.unwrap((repo / entry["file"]).read_text(encoding="utf-8")) == "fresh prose"
+    assert_announce_round_trips(repo)
     assert git(repo, "status", "--porcelain") == ""
 
 
