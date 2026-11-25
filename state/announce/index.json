@@ -110,8 +110,8 @@
   "fireworks": {
     "https://docs.fireworks.ai/updates/changelog": {
       "file": "state/announce/fireworks/changelog.md",
-      "sha256": "cf404097e424af58b256e99efc07eab9c76d1028d6ce83814289b85817c5c889",
-      "fetched": "2026-11-25T19:00:16Z"
+      "sha256": "7f4d6f43961a2c3bdcc1dd0138e1ffa9e80f43330e5e4b25f5f6c96769dc3440",
+      "fetched": "2026-11-25T20:00:16Z"
     }
   },
   "cohere": {
