@@ -2,14 +2,47 @@
 # Changelog > Updates to the Perplexity API platform.
 > [!TIP] > > Have a feature request?
 Post it in the [Feature Requests](https://community.perplexity.ai/c/ideas/11) category on our community forum.
+**November 2026** **Gemini 4 Neon and Gemini 4 Hydrogen on the Orchestrator API** The Orchestrator API now supports `google/gemini-4-neon` and `google/gemini-4-hydrogen`.
+Both have a 1,048,576-token context window and return up to 65,536 output tokens.
+Gemini 4 Neon costs \$3.00 per million input tokens, \$0.15 per million cached input tokens, and \$15.00 per million output tokens.
+Gemini 4 Hydrogen costs \$1.50, \$0.075, and \$7.50, respectively.
+Both models require usage Tier 1.
+Gemini Flash models still work at every usage tier.
+See [Orchestrator Models & Pricing](https://docs.perplexity.ai/docs/orchestrator/models.md#access-by-usage-tier).
+**November 2026** **Perplexity Computer MCP Server: incognito conversations, answer tool changes, and `usage_get`** * **Incognito conversations.** Set `incognito` to `true` on the `call_perplexity_computer` call that starts a conversation.
+The conversation isn't saved to your thread history, Computer doesn't read or update your memory, and the conversation expires 24 hours after it starts.
+`incognito` can't be combined with `thread_id` or `project_uuid`.
+* **Answer tools need `followup_uuid`.** `answer_question`, `confirm_action_approve`, and `confirm_action_deny` now require `followup_uuid` and fail without it.
+Read it from the event's `interactive` object or from `read_thread`.
+These tools now return as soon as the answer is sent, with `task_status: "working"`.
+Call `read_thread` to check the outcome.
+`attachment_urls` is no longer supported on `confirm_action_approve` and `confirm_action_deny`.
+* **New tool: `usage_get`.** Reads how much Computer usage the signed-in user has left.
+It takes no parameters, starts no task, and spends no credits.
+See [Perplexity Computer MCP Server](https://docs.perplexity.ai/docs/getting-started/integrations/computer-mcp-server.md).
 **November 2026** **Gemini 4 Neon** The Agent API now supports `google/gemini-4-neon`.
 Pricing is \$3.00 per million input tokens, \$0.15 per million cached input tokens, and \$15.00 per million output tokens, including reasoning tokens.
 See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md).
+**November 2026** **Monitor API: Agent monitors** A monitor can now have an Agent target.
+An Agent monitor runs an Agent API task on a schedule and saves relevant updates with their sources.
+Set the target `type` to `agent` and put the task in `input`.
+Perplexity bills an Agent run as Agent API usage.
+There is no separate Monitor API fee for an Agent run.
+See [Agent monitoring](https://docs.perplexity.ai/docs/monitors/agent-monitoring.md).
 **November 2026** **xhigh now uses GPT-6.2 Sol** The `xhigh` effort level now selects `xhigh@2026-11-18.0`, which uses `openai/gpt-6.2-sol` without a fallback model, replacing Claude Opus 5.5 and its GPT-6.1 Sol fallback.
 Tools, high reasoning effort, the 300-step limit, and context compaction settings are unchanged.
 Earlier pinned versions remain unchanged.
 Pin `xhigh@2026-11-11.0` to keep the previous model configuration.
 See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md#pinning-an-effort-level-version) and [model pricing](https://docs.perplexity.ai/docs/agent-api/models.md).
+**November 2026** **GPT-6.2 Sol and GPT-6.2 Astra on the Orchestrator API** The Orchestrator API now supports `openai/gpt-6.2-sol` and `openai/gpt-6.2-astra`.
+Both have a 1,000,000-token context window and return up to 128,000 output tokens.
+For requests with up to 272,000 input tokens, GPT-6.2 Sol costs \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens.
+GPT-6.2 Astra costs \$8.00, \$0.40, and \$40.00, respectively.
+Above that input threshold, GPT-6.2 Sol costs \$4.00, \$0.20, and \$15.00, and GPT-6.2 Astra costs \$16.00, \$0.80, and \$60.00.
+These are the rates for default processing.
+Both models require usage Tier 1.
+`openai/gpt-6.2-astra` is not available to organizations with zero data retention enabled.
+See [Orchestrator Models & Pricing](https://docs.perplexity.ai/docs/orchestrator/models.md).
 **November 2026** ### Embeddings API: pplx-embed-v2-context-9b and pplx-embed-v2-context-0.6b **New models.** `pplx-embed-v2-context-9b` and `pplx-embed-v2-context-0.6b` embed search queries, chunked documents, and images with one model on `POST /v1/embeddings`.
 Send a document as an ordered array of chunks and each chunk's embedding takes the rest of the document into account.
 Send page scans or screenshots as base64 data URIs, and set `num_chunks` to get one embedding per horizontal region.
@@ -20,12 +53,63 @@ A request without it returns HTTP 400.
 The 0.6b model shares its embedding space with the 1024-dimension output of the 9b model.
 **Pricing.** Per 1M tokens: `pplx-embed-v2-context-9b` is \$0.12 for text and \$0.42 for images, and `pplx-embed-v2-context-0.6b` is \$0.02 for text and \$0.40 for images.
 See [Embeddings](https://docs.perplexity.ai/docs/embeddings/contextualized-embeddings.md#models).
+**November 2026** **Orchestrator API: more models, the Responses format, and model routing** The Orchestrator API is out of private preview.
+It now serves Anthropic, OpenAI, Google, xAI, and open-weight models through one Perplexity API key and one credit balance.
+* **Three request formats.** Send requests in the OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages format.
+Every model supports all three.
+The API is stateless, so send the full conversation on every request.
+* **Model routing.** Set `model` to `perplexity/auto` and a decision model picks the model for each request, from the default policy or from routes you define in a `routing` object.
+See [Routing and Reliability](https://docs.perplexity.ai/docs/orchestrator/routing-and-reliability.md).
+* **Access by usage tier.** xAI, open-weight, and Google Gemini Flash models work at every usage tier.
+OpenAI models, `google/gemini-4-neon`, `google/gemini-4-hydrogen`, and most Anthropic models require Tier 1.
+`anthropic/claude-opus-5`, `anthropic/claude-opus-5-5`, `anthropic/claude-fable-5`, `anthropic/claude-fable-5-1`, and `anthropic/claude-fable-5-2` require Tier 2.
+A request for a model above your tier returns HTTP 402.
+See [Access by Usage Tier](https://docs.perplexity.ai/docs/orchestrator/models.md#access-by-usage-tier).
+Usage is billed per token at each model's rate, with no per-request fee.
+See the [Orchestrator API quickstart](https://docs.perplexity.ai/docs/orchestrator/quickstart.md) and [Orchestrator Models & Pricing](https://docs.perplexity.ai/docs/orchestrator/models.md).
+**November 2026** **Gemini 3.7 Flash and Gemini 3.8 Flash rates apply through December 31, 2026** The current rates for `google/gemini-3.7-flash` and `google/gemini-3.8-flash` apply through December 31, 2026 on the Agent API and the Orchestrator API: \$0.75 per million input tokens, \$0.075 per million cached input tokens, and \$3.75 per million output tokens.
+See the [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) and [Orchestrator Models & Pricing](https://docs.perplexity.ai/docs/orchestrator/models.md).
+**November 2026** **Sign-up credits don't unlock the Agent API, the Orchestrator API, or batch creation** Some new accounts receive a one-time sign-up credit.
+It expires 60 days after it is added, and API usage draws from it before any credits you purchase.
+Sign-up credits alone do not unlock the [Agent API](https://docs.perplexity.ai/docs/agent-api/quickstart.md), the [Orchestrator API](https://docs.perplexity.ai/docs/orchestrator/quickstart.md), or [batch creation](https://docs.perplexity.ai/docs/agent-api/batch.md).
+Add API credits to your balance to access them.
+See [Sign-up Credit](https://docs.perplexity.ai/docs/getting-started/projects.md#sign-up-credit).
 **November 2026** **GPT-6.2 Sol and GPT-6.2 Astra** The [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) and pricing calculator include `openai/gpt-6.2-sol` and `openai/gpt-6.2-astra`.
 For requests with up to 272,000 input tokens, GPT-6.2 Sol costs \$2.00 per million input tokens, \$0.10 per million cached input tokens, and \$10.00 per million output tokens.
 GPT-6.2 Astra costs \$8.00, \$0.40, and \$40.00, respectively.
 Above that input threshold, input and cache-read prices double, and output prices increase by 50%.
 Cache creation costs \$2.50 per million cache-write tokens for GPT-6.2 Sol and \$10.00 for GPT-6.2 Astra up to 272,000 input tokens; these rates double above that threshold.
 These are default-processing rates; see the Models reference for service tiers and calculator limitations.
+**November 2026** **New: Context API** The Context API returns the content of web pages that you already have URLs for.
+Send the URLs to `POST /v1/context`.
+The response has one result for each URL, in request order.
+Each result can include the page as Markdown, its HTML, its links, the passages most relevant to a query, and page metadata.
+You can accept a stored copy of a page or force a live fetch.
+Add `criteria` with up to five yes or no questions.
+For each page that it scores, a decision model returns a probability from 0 to 1 for each question.
+The Context API costs \$1.00 per 1,000 fetched URLs.
+A URL that fails is free.
+Scoring with `criteria` is billed as Decisions API input tokens in addition to the per-URL price.
+The Perplexity Python library 0.48.0 and the TypeScript SDK 0.43.0 add `client.context.create()`.
+See the [Context API quickstart](https://docs.perplexity.ai/docs/context/quickstart.md).
+**November 2026** **Agent API: prompt caching controls** Use `prompt_cache_options.mode` and `prompt_cache_breakpoint` to choose which prompt prefixes the Agent API writes to the cache.
+In `explicit` mode, a request writes only the prefixes that end at an `input_text` part that you mark with `prompt_cache_breakpoint`, up to 4 marks per request.
+In `explicit` mode with no marks, a request makes no cache writes.
+Send the same `prompt_cache_key` on each request that shares a prefix, so that a later request can read the prefix that an earlier request wrote.
+The [Agent API Models reference](https://docs.perplexity.ai/docs/agent-api/models.md) now lists cache write rates.
+Where no cache write rate is shown, cache writes are billed at the input rate.
+For some models, such as `openai/gpt-6.1-sol`, the cache write rate is above the input rate.
+See [Prompt Caching](https://docs.perplexity.ai/docs/agent-api/prompt-caching.md).
+**November 2026** **New: Monitor API** The Monitor API checks the web on a schedule and saves the results for you to read through the API.
+A Search monitor finds web results for a query.
+A Page monitor tracks text changes at 1 to 10 URLs that you already know.
+Create a monitor with `POST /v1/monitors`.
+The first run is due immediately, and the next runs follow the schedule.
+Webhooks are optional.
+A succeeded Search run costs \$0.001.
+A succeeded Page run costs \$0.001 for each counted fetched URL.
+The Perplexity Python library 0.47.0 and the TypeScript SDK 0.42.0 add `client.monitors`.
+See the [Monitor API overview](https://docs.perplexity.ai/docs/monitors/overview.md).
 **November 2026** ### Decisions API: pplx-decider-v1.3, pplx-decider-flash-v1.3, and `locate` questions **New models.** `pplx-decider-v1.3` (27B) and `pplx-decider-flash-v1.3` (4B) are the new decision models, at the same prices as v1.2: \$0.02 and \$0.01 per million input tokens.
 Output tokens stay free.
 Both accept text and images (`locate` questions read text only) and answer several questions about the same `state` in one pass, with each question isolated from the others.
@@ -110,6 +194,32 @@ Version pinning and frozen configurations continue to work as before.
 `preset` is still accepted as a deprecated alias, and responses return both fields.
 See [Effort](https://docs.perplexity.ai/docs/agent-api/effort.md).
 The Python SDK 0.46.0 and TypeScript SDK 0.41.0 add the `effort` parameter.
+**October 2026** **New: Batch API** Run large sets of Agent API requests without waiting on each one.
+Upload a JSONL file of up to 50,000 requests, create a batch, and download the results when it finishes.
+Batches target completion within 24 hours.
+Each request runs the full Agent API loop, so `web_search` and `fetch_url` work inside a batch, and batch requests don't count toward your Agent API request rate limit.
+Token rate limits still apply.
+There is no separate batch price.
+Each request bills at the service tier that served it.
+The Batch API is available to every API organization except those with zero data retention, and inputs and outputs are kept for 30 days.
+The Perplexity Python library and the TypeScript SDK support it with `client.files` and `client.batches`.
+See [Batch API](https://docs.perplexity.ai/docs/agent-api/batch.md).
+**October 2026** **New: Decider for Mac** Decider for Mac runs `pplx-decider-flash-v1.2` on your Mac and serves the Decisions API at `http://127.0.0.1:8080/v1/decisions`.
+You send the same JSON as you send to `https://api.perplexity.ai/v1/decisions`, with no API key and no usage bill, and your content stays on your machine.
+It needs a Mac with Apple silicon, macOS 13 or later, and 16 GB of memory.
+The app downloads the 5.8 GB model on first launch.
+See [Decider for Mac](https://docs.perplexity.ai/docs/decisions/decider-for-mac.md).
+**October 2026** **Perplexity Computer MCP Server: MCP Tasks** Clients that support the MCP Tasks extension (`io.modelcontextprotocol/tasks`, protocol `2026-07-28`) can follow a Computer request as one task.
+Use `tasks/get` to check progress and `tasks/update` to answer input requests such as questions and approvals.
+Task creation, `tasks/get`, and `tasks/cancel` return the thread ID in `_meta["ai.perplexity/threadId"]`.
+`tasks/cancel` acknowledges the request but does not stop Computer.
+To stop the work, call `cancel_task` with that thread ID, or open the Stop URL and select **Stop**.
+See [MCP Tasks](https://docs.perplexity.ai/docs/getting-started/integrations/computer-mcp-server.md#mcp-tasks).
+**October 2026** **New: Audit API** Read your organization's audit events with `GET https://api.perplexity.ai/v1/admin/audit-events`.
+The Audit API is for Enterprise organizations with audit logging enabled, and it needs a dedicated audit log API key.
+Events come back newest first, with cursors to page through them.
+A request without a time range covers the last 30 days, which is also the longest range one request can cover.
+See [Audit API](https://docs.perplexity.ai/docs/admin/audit-api.md).
 **October 2026** **Tool approvals for MCP and connector calls** Set `require_approval` on an `mcp` or `connector` tool to review calls before they run.
 A call that needs approval returns an `mcp_approval_request` item and does not run.
 To approve or deny it, send an `mcp_approval_response` with `previous_response_id`.
