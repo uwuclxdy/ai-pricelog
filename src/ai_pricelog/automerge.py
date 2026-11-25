@@ -68,11 +68,12 @@ as a merged PR. the step passes only branches the pass marked
 - each branch pre-flights two bounds before anything lands: the churn gate
   (at most 50 models created, 50 removed, 500 rows appended vs the burst
   base) returns an `unsafe` refusal naming the counts, and every appended
-  price row must carry a catalog claim (its `(source, model_id)` claimed by
-  HEAD's models.json or by any branch of the burst), so a row whose seed
-  rides a needs-human sibling cannot land unclaimed. `--human` (never passed
-  by CI) waives the churn bounds and logs the waived counts; the claim check
-  has no waiver, and a removal row is exempt because its claim predates it
+  price row must carry a catalog claim in the catalog the burst lands (the
+  merge's own models.json union run over the branches in merge order), so a
+  row whose seed rides a needs-human sibling, or whose entry the union drops,
+  cannot land unclaimed. `--human` (never passed by CI) waives the churn
+  bounds and logs the waived counts; the claim check has no waiver, and a
+  removal row is exempt because its claim predates it
 - the pipeline files are committed and nothing else is staged: every stage
   names its paths, so unrelated dirt in the checkout cannot ride the merge
 - each shard the branch touched lands as an exact-line union: every HEAD
@@ -764,9 +765,18 @@ def _catalog_claims(text: str, label: str, fix: str) -> set[tuple[str, str]]:
     """
     if not text:
         return set()
+    entries = _parse_models(text, label, fix).values()
+    return {claim for entry in entries for claim in _entry_claims(entry)}
+
+
+def _entry_claims(entry: dict[str, Any]) -> set[tuple[str, str]]:
+    """The (source, model_id) pairs one parsed catalog entry claims.
+
+    a source maps to one id as a bare string or to a list of ids, the two
+    shapes `models.load_models` reads, so a bare string is one claim.
+    """
     return {
         (source, model_id)
-        for entry in _parse_models(text, label, fix).values()
         for source, ids in entry["sources"].items()
         for model_id in ([ids] if isinstance(ids, str) else ids)
     }
@@ -831,25 +841,20 @@ def _check_churn(churn: dict[str, tuple[int, int, int]]) -> None:
 
 
 def _check_carried_claims(
-    runner: pr.PrRunner, repo_root: Path, branches: list[str], head_claims: set[tuple[str, str]]
+    runner: pr.PrRunner, repo_root: Path, branches: list[str], claims: set[tuple[str, str]]
 ) -> None:
-    """Every appended price row needs a catalog claim, HEAD or a burst branch.
+    """Every appended price row needs a claim in the catalog the burst lands.
 
-    the pipeline seeds each new key on the branch whose PR carries the row, so
-    a claim on any branch of the burst lands with the row (all merge commits
-    land before the push, the default branch never sees the transient); a
-    claim only a needs-human sibling carries refuses the merge by name. a
-    removal row is exempt: its claim landed with its first price row, and
-    refusing it would block a delisting on a coverage gap this merge did not
-    create.
+    ``claims`` are the claims of that catalog (_burst_catalog): the pipeline
+    seeds each new key on the branch whose PR carries the row, so a seed the
+    union lands from any branch of the burst lands with the row (all merge
+    commits land before the push, the default branch never sees the
+    transient). a claim only a needs-human sibling carries, or one a branch
+    carries in an entry the union drops (unchanged against its merge base, or
+    overlapping a claim already landed), refuses the merge by name. a removal
+    row is exempt: its claim landed with its first price row, and refusing it
+    would block a delisting on a coverage gap this merge did not create.
     """
-    claims = set(head_claims)
-    for branch in branches:
-        claims |= _catalog_claims(
-            _branch_text(runner, repo_root, branch, models.MODELS_FILE),
-            f"branch {branch}",
-            _FIX_BRANCH_COPY,
-        )
     for branch in branches:
         for path in _branch_shard_paths(runner, repo_root, branch):
             branch_text = _branch_text(runner, repo_root, branch, path)
@@ -869,9 +874,44 @@ def _check_carried_claims(
                 if (source, model_id) not in claims:
                     raise AutoMergeError(
                         f"branch {branch}: appended row {(source, model_id)!r} has no catalog"
-                        " claim on HEAD or any branch of the burst; fix: merge the branch"
+                        " claim in the catalog the burst lands (HEAD's entries plus each entry"
+                        " the union lands from a branch of the burst); fix: merge the branch"
                         " carrying its seed together with it, or close the PR"
                     )
+
+
+def _burst_catalog(runner: pr.PrRunner, repo_root: Path, branches: list[str]) -> str:
+    """models.json as the burst lands it: the merge's own union over ``branches`` in order.
+
+    starting from HEAD's copy, each branch whose diff names the catalog (the
+    merge loop's `models_changed` test) goes through _branch_union, the call
+    the merge loop writes the file with, so the result is the text the last
+    catalog-changing merge writes. a copy the diff does not name equals its
+    merge base's and lands nothing; it still parses here, so a junk copy
+    refuses by name whether or not the union reads it. HEAD's copy parses
+    first, so a junk base copy is the cause reported before any branch's.
+    """
+    landed = _head_text(runner, repo_root, models.MODELS_FILE)
+    if landed:
+        _parse_models(landed, "HEAD", _FIX_HEAD_COPY)
+    for branch in branches:
+        if models.MODELS_FILE in _branch_diff_paths(runner, repo_root, branch):
+            landed = _branch_union(runner, repo_root, branch, landed)
+            continue
+        branch_text = _branch_text(runner, repo_root, branch, models.MODELS_FILE)
+        if branch_text:
+            _parse_models(branch_text, f"branch {branch}", _FIX_BRANCH_COPY)
+    return landed
+
+
+def _branch_union(runner: pr.PrRunner, repo_root: Path, branch: str, landed: str) -> str:
+    """``landed`` with the branch's catalog unioned in, from the copies the union reads."""
+    return _union_models(
+        landed,
+        _branch_text(runner, repo_root, branch, models.MODELS_FILE),
+        _merge_base_text(runner, repo_root, branch, models.MODELS_FILE),
+        branch,
+    )
 
 
 def _union_models(head_text: str, branch_text: str, base_text: str, branch: str) -> str:
@@ -886,6 +926,8 @@ def _union_models(head_text: str, branch_text: str, base_text: str, branch: str)
     not duplicate the claim. Each copy reads through _parse_models: the
     pre-flight runs it on the branch's copy, its merge base's and the burst
     base's before any merge, and a later HEAD copy is this union's own output.
+    The claim pre-gate runs this same union over the burst (_burst_catalog),
+    so the claims it counts are the ones the merge lands.
     """
     merged = dict(_parse_models(head_text, "HEAD", _FIX_HEAD_COPY)) if head_text else {}
     branch_models = _parse_models(branch_text, f"branch {branch}", _FIX_BRANCH_COPY)
@@ -894,18 +936,11 @@ def _union_models(head_text: str, branch_text: str, base_text: str, branch: str)
         if base_text
         else {}
     )
-    head_claims = {
-        (source, model_id)
-        for entry in merged.values()
-        for source, ids in entry["sources"].items()
-        for model_id in ids
-    }
+    head_claims = {claim for entry in merged.values() for claim in _entry_claims(entry)}
     for canonical, entry in branch_models.items():
         if base_models.get(canonical) == entry:
             continue
-        claims = {
-            (source, model_id) for source, ids in entry["sources"].items() for model_id in ids
-        }
+        claims = _entry_claims(entry)
         if claims & head_claims:
             continue
         merged[canonical] = entry
@@ -1508,7 +1543,7 @@ def merge_branches(
         runner,
         repo_root,
         branches,
-        _catalog_claims(_head_text(runner, repo_root, models.MODELS_FILE), "HEAD", _FIX_HEAD_COPY),
+        _catalog_claims(_burst_catalog(runner, repo_root, branches), "HEAD", _FIX_HEAD_COPY),
     )
 
     # the burst base, captured once before the first merge commit advances
@@ -1558,11 +1593,8 @@ def merge_branches(
         models_changed = models.MODELS_FILE in changed
         if models_changed:
             (repo_root / models.MODELS_FILE).write_text(
-                _union_models(
-                    _head_text(runner, repo_root, models.MODELS_FILE),
-                    _branch_text(runner, repo_root, branch, models.MODELS_FILE),
-                    _merge_base_text(runner, repo_root, branch, models.MODELS_FILE),
-                    branch,
+                _branch_union(
+                    runner, repo_root, branch, _head_text(runner, repo_root, models.MODELS_FILE)
                 ),
                 encoding="utf-8",
             )
