@@ -3,7 +3,11 @@ Skip to main content Assistant Responses are generated using AI and may contain 
 Fireworks AI Docs home page Get started References Community Status Sign up Sign up Search...
 Navigation Changelog Search...
 ⌘ K Changelog Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
-Copy page Copy page 2026-11-24 Inference New Serverless mode: Spot Spot runs the same models through the same API at 50% of the Standard price .
+Copy page Copy page 2026-11-25 Inference Tripled serverless rate limits for medium and large models We tripled the adaptive rate-limit ceilings and starting limits for Medium and Large serverless models.
+The Medium tier now has these ceilings: Total Prompt TPM: 129.6M Uncached Prompt TPM: 32.4M Generated TPM: 1.296M The Large tier now has these ceilings: Total Prompt TPM: 64.8M Uncached Prompt TPM: 16.2M Generated TPM: 648k This applies to Large-tier models such as Kimi K3 and Qwen 4 Max , and to Medium-tier models such as Muse Spark Open .
+Small model ceilings are unchanged.
+See Serverless rate limits for the full tier table.
+2026-11-24 Inference New Serverless mode: Spot Spot runs the same models through the same API at 50% of the Standard price .
 It’s for work that doesn’t need an immediate answer, such as evals, data generation, background and batch-style jobs, and routers.
 Spot is available for GLM 5.3 , with more serverless models to follow.
 To use it, set service_tier: "spot" with accounts/fireworks/models/glm-5p3 , or set model to accounts/fireworks/models/glm-5p3-spot .
@@ -324,5 +328,5 @@ For more information, see our deployment documentation .
 This change is for dedicated deployments with a single LoRA.
 You can still deploy multiple LoRAs on a deployment as described in the documentation.
 Was this page helpful?
-Yes No ⌘ I On this page Back to top 2026-11-24 2026-11-15 2026-11-04 2026-11-03 2026-11-02 2026-10-27 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22 2025-08-10
-2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Fireworks AI Docs home page x discord github youtube linkedin Legal Terms of Service Privacy Policy Licenses Trust Contact Us Inquiry Form Resources Blog Cookbook Pricing x discord github youtube linkedin
+Yes No ⌘ I On this page Back to top 2026-11-25 2026-11-24 2026-11-15 2026-11-04 2026-11-03 2026-11-02 2026-10-27 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12 2025-08-22
+2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Fireworks AI Docs home page x discord github youtube linkedin Legal Terms of Service Privacy Policy Licenses Trust Contact Us Inquiry Form Resources Blog Cookbook Pricing x discord github youtube linkedin
