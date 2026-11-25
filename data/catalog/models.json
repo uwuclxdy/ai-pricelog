@@ -11658,6 +11658,15 @@
       },
       "vendor": "thinkingmachines"
     },
+    "openrouter/tngtech/deepseek-r1t2-chimera": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "tngtech/deepseek-r1t2-chimera"
+        ]
+      },
+      "vendor": "tngtech"
+    },
     "openrouter/togethercomputer/tev1-4b-experimental": {
       "curated": false,
       "sources": {
