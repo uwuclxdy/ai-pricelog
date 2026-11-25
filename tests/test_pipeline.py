@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -105,14 +106,57 @@ class PipelineRunner:
 fake_det_log = logging.getLogger("ai_pricelog.detectors.fake_det")
 
 
+class UnscriptedCalls:
+    """A fake's unscripted-call assertion, recorded for a teardown check.
+
+    A pipeline run catches the fake's assertion and carries on with an `errors`
+    line, so a test that never reads `errors` would stay green; the autouse
+    fixture fails each recorded call at teardown unless the test expected it.
+    """
+
+    def __init__(self) -> None:
+        self.recorded: list[tuple[str, str]] = []
+        self.expected: list[tuple[str, str]] = []
+
+    def fail(self, kind: str, where: str) -> None:
+        self.recorded.append((kind, where))
+        raise AssertionError(f"unscripted {kind} for {where}")
+
+    def expect(self, kind: str, where: str) -> None:
+        """Opt out for the one call a test drives on purpose."""
+        self.expected.append((kind, where))
+
+    def unexpected(self) -> list[str]:
+        remaining = list(self.expected)
+        missed: list[str] = []
+        for call in self.recorded:
+            if call in remaining:
+                remaining.remove(call)
+            else:
+                missed.append(f"{call[0]} for {call[1]}")
+        return missed
+
+
+@pytest.fixture(autouse=True)
+def unscripted_calls():
+    calls = UnscriptedCalls()
+    yield calls
+    missed = calls.unexpected()
+    assert missed == [], (
+        "unscripted fake call(s): "
+        + "; ".join(missed)
+        + ". Script the value, or declare the call with unscripted_calls.expect(kind, where)"
+    )
+
+
 @pytest.fixture
-def fake_modules(monkeypatch):
+def fake_modules(monkeypatch, unscripted_calls):
     detect_controls: dict[str, object] = {}
     scrape_controls: dict[str, dict[str, object]] = {}
 
     def detect(cfg):
         if cfg.key not in detect_controls:
-            raise AssertionError(f"unscripted detect for {cfg.key}")
+            unscripted_calls.fail("detect", cfg.key)
         result = detect_controls[cfg.key]
         if isinstance(result, Exception):
             raise result
@@ -131,7 +175,7 @@ def fake_modules(monkeypatch):
     def scrape(cfg, model_id):
         entries = scrape_controls.get(cfg.key, {})
         if model_id not in entries:
-            raise AssertionError(f"unscripted scrape for {cfg.key}/{model_id}")
+            unscripted_calls.fail("scrape", f"{cfg.key}/{model_id}")
         result = entries[model_id]
         if isinstance(result, Exception):
             raise result
@@ -142,6 +186,47 @@ def fake_modules(monkeypatch):
     scr = register_fake_module(monkeypatch, "scrapers", "fake_scr")
     scr.scrape = scrape
     return detect_controls, scrape_controls
+
+
+def test_unscripted_calls_reports_a_call_no_expectation_covers():
+    calls = UnscriptedCalls()
+    with pytest.raises(AssertionError, match="unscripted scrape for deepseek/a"):
+        calls.fail("scrape", "deepseek/a")
+
+    assert calls.unexpected() == ["scrape for deepseek/a"]
+
+
+def test_unscripted_calls_expectation_covers_one_call():
+    # one expectation covers one call: a second unscripted call of the same
+    # shape is still reported, so an opt-out mutes nothing beyond itself
+    calls = UnscriptedCalls()
+    calls.expect("scrape", "deepseek/a")
+    with pytest.raises(AssertionError):
+        calls.fail("scrape", "deepseek/a")
+    assert calls.unexpected() == []
+
+    with pytest.raises(AssertionError):
+        calls.fail("scrape", "deepseek/a")
+    assert calls.unexpected() == ["scrape for deepseek/a"]
+
+
+def test_the_unscripted_calls_fixture_fails_at_teardown():
+    # calling the fixture's own body is what pins the fixture to the check: a
+    # recorded call the test did not declare must fail it, so disabling that
+    # assert reds here, and both names and their order ride the message
+    teardown = unscripted_calls.__wrapped__()
+    calls = next(teardown)
+    with pytest.raises(AssertionError, match="unscripted scrape for deepseek/b"):
+        calls.fail("scrape", "deepseek/b")
+    with pytest.raises(AssertionError, match="unscripted detect for zai"):
+        calls.fail("detect", "zai")
+
+    with pytest.raises(AssertionError) as teardown_failure:
+        next(teardown)
+
+    assert str(teardown_failure.value).startswith(
+        "unscripted fake call(s): scrape for deepseek/b; detect for zai."
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -2085,6 +2170,56 @@ def test_scrape_error_records_and_continues(tmp_path, fake_modules, repo_root):
     assert "a" in second.providers["deepseek"].candidates
 
 
+def test_an_expected_unscripted_scrape_records_its_error_line(
+    tmp_path, fake_modules, repo_root, unscripted_calls
+):
+    # the fake's own assertion is the failure this test drives: the run reports
+    # each unscripted id as its own error line, the scripted id still opens its
+    # row, and both names derive from the fake's input, not a hardcoded where
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["a", "b", "c"]
+    scrape["deepseek"] = {"a": pricing()}
+    unscripted_calls.expect("scrape", "deepseek/b")
+    unscripted_calls.expect("scrape", "deepseek/c")
+
+    report = pipeline.run(
+        make_cfg("deepseek"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["deepseek"].errors == [
+        "AssertionError: unscripted scrape for deepseek/b",
+        "AssertionError: unscripted scrape for deepseek/c",
+    ]
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["a"]
+    assert unscripted_calls.recorded == [("scrape", "deepseek/b"), ("scrape", "deepseek/c")]
+
+
+def test_an_expected_unscripted_detect_records_its_error_line(
+    tmp_path, fake_modules, repo_root, unscripted_calls
+):
+    # two providers have no scripted detection, so each fake assertion is its
+    # provider's only error line and the recorded providers derive from the
+    # config, not a hardcoded where
+    detect, scrape = fake_modules
+    detect["deepseek"] = ["deepseek-x"]
+    scrape["deepseek"] = {"deepseek-x": pricing()}
+    unscripted_calls.expect("detect", "zai")
+    unscripted_calls.expect("detect", "moonshot")
+
+    report = pipeline.run(
+        make_cfg("deepseek", "zai", "moonshot"),
+        repo_root,
+        PipelineRunner(),
+        today=TODAY,
+        now="000000",
+    )
+
+    assert report.providers["zai"].errors == ["AssertionError: unscripted detect for zai"]
+    assert report.providers["moonshot"].errors == ["AssertionError: unscripted detect for moonshot"]
+    assert [model_id for model_id, _url in report.providers["deepseek"].prs] == ["deepseek-x"]
+    assert unscripted_calls.recorded == [("detect", "zai"), ("detect", "moonshot")]
+
+
 def test_validation_failure_skips_candidate_and_continues(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["a", "b"]
@@ -3504,7 +3639,9 @@ def test_refresh_without_detect_priced_reads_the_detected_ids(
     }
 
 
-def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monkeypatch):
+def test_dashscope_absence_keys_on_the_international_priced_rows(
+    repo_root, monkeypatch, unscripted_calls
+):
     # the real dashscope pair on the 2026-11-18 captures: the CN page lists
     # official versions only, so absence keyed on it counted every dated and
     # preview spelling absent (PR #839's 14 removals). keyed on the pricing
@@ -3527,8 +3664,14 @@ def test_dashscope_absence_keys_on_the_international_priced_rows(repo_root, monk
         url: web.parse_html((dashscope_fixtures.FIXTURES / name).read_text(encoding="utf-8"))
         for url, name in pages.items()
     }
-    monkeypatch.setattr(dashscope_detector, "fetch_soup", lambda url: soups[url])
-    monkeypatch.setattr(dashscope_scraper, "fetch_soup", lambda url: soups[url])
+
+    serve_urls(
+        monkeypatch,
+        (dashscope_detector, dashscope_scraper),
+        "fetch_soup",
+        soups,
+        unscripted_calls,
+    )
     seed_store(
         repo_root,
         [
@@ -3629,16 +3772,56 @@ def clear_moonshot_caches():
     moonshot_scraper._page_text.cache_clear()
 
 
-def serve_moonshot(monkeypatch, pages: dict[str, str]) -> None:
-    def fetch(url: str) -> str:
+def serve_urls(
+    monkeypatch, modules, attr: str, pages: Mapping[str, object], unscripted_calls
+) -> None:
+    """Answer `attr` on each module from `pages`; an unscripted url is recorded."""
+
+    def fetch(url: str):
         if url not in pages:
-            raise AssertionError(f"unexpected fetch of {url}")
+            unscripted_calls.fail("fetch", url)
         return pages[url]
 
-    monkeypatch.setattr(moonshot_detector, "fetch_text", fetch)
-    monkeypatch.setattr(moonshot_scraper, "fetch_text", fetch)
-    moonshot_scraper._load_index.cache_clear()
-    moonshot_scraper._page_text.cache_clear()
+    for module in modules:
+        monkeypatch.setattr(module, attr, fetch)
+
+
+def serve_moonshot(monkeypatch, pages: dict[str, str], unscripted_calls) -> None:
+    serve_urls(
+        monkeypatch,
+        (moonshot_detector, moonshot_scraper),
+        "fetch_text",
+        pages,
+        unscripted_calls,
+    )
+
+
+def test_serve_urls_records_an_unscripted_fetch(monkeypatch, unscripted_calls):
+    # serve_urls is the one guard both page-serving fakes share, and the url
+    # derives from the caller's input, so a hardcoded where reds here
+    serve_urls(monkeypatch, (moonshot_scraper,), "fetch_text", {}, unscripted_calls)
+    with pytest.raises(AssertionError, match="unscripted fetch for https://example.com/x"):
+        moonshot_scraper.fetch_text("https://example.com/x")
+    with pytest.raises(AssertionError, match="unscripted fetch for https://example.com/y"):
+        moonshot_scraper.fetch_text("https://example.com/y")
+
+    assert unscripted_calls.recorded == [
+        ("fetch", "https://example.com/x"),
+        ("fetch", "https://example.com/y"),
+    ]
+    unscripted_calls.expect("fetch", "https://example.com/x")
+    unscripted_calls.expect("fetch", "https://example.com/y")
+
+
+def test_serve_moonshot_records_an_unscripted_fetch(monkeypatch, unscripted_calls):
+    # serve_moonshot is what the moonshot tests call: it must delegate to
+    # serve_urls, so an unscripted page is recorded and not raised bare
+    serve_moonshot(monkeypatch, {}, unscripted_calls)
+    with pytest.raises(AssertionError, match="unscripted fetch for https://example.com/x"):
+        moonshot_detector.fetch_text("https://example.com/x")
+
+    assert unscripted_calls.recorded == [("fetch", "https://example.com/x")]
+    unscripted_calls.expect("fetch", "https://example.com/x")
 
 
 def count_moonshot_scrapes(monkeypatch) -> list[str]:
@@ -3691,13 +3874,15 @@ def seed_moonshot_store(repo_root: Path) -> None:
     seed_store(repo_root, rows)
 
 
-def test_moonshot_absence_keys_on_the_chat_page_priced_rows(repo_root, monkeypatch):
+def test_moonshot_absence_keys_on_the_chat_page_priced_rows(
+    repo_root, monkeypatch, unscripted_calls
+):
     # the models page hides the three K2 ids in its deprecated table while the
     # chat page still prices them: keyed on the chat page's priced set, the
     # landed counter clears, every id refreshes, the moved K2 price lands, and
     # no removal is planned for a still-priced id
     today = "2026-11-19"
-    serve_moonshot(monkeypatch, moonshot_pages())
+    serve_moonshot(monkeypatch, moonshot_pages(), unscripted_calls)
     calls = count_moonshot_scrapes(monkeypatch)
     seed_moonshot_store(repo_root)
     seed_absence(repo_root, {"moonshot": {"kimi-k2.6": {"absent_runs": 1, "since": "2026-11-05"}}})
@@ -3721,7 +3906,9 @@ def test_moonshot_absence_keys_on_the_chat_page_priced_rows(repo_root, monkeypat
     assert appended == [("kimi-k2.6", {"input": 0.95, "output": 4.0, "cache_read": 0.16}, None)]
 
 
-def test_moonshot_absence_counts_an_id_the_chat_page_stops_pricing(repo_root, monkeypatch):
+def test_moonshot_absence_counts_an_id_the_chat_page_stops_pricing(
+    repo_root, monkeypatch, unscripted_calls
+):
     # near miss: kimi-k2.6's row leaves the chat page, so the priced set drops
     # it and the seeded counter reaches 2: the removal row is planned as before
     today = "2026-11-19"
@@ -3729,7 +3916,7 @@ def test_moonshot_absence_counts_an_id_the_chat_page_stops_pricing(repo_root, mo
         (moonshot_fixtures.FIXTURES / "chat-rendered-2026-11-18.html").read_text(encoding="utf-8"),
         "kimi-k2.6",
     )
-    serve_moonshot(monkeypatch, moonshot_pages(rendered))
+    serve_moonshot(monkeypatch, moonshot_pages(rendered), unscripted_calls)
     calls = count_moonshot_scrapes(monkeypatch)
     seed_moonshot_store(repo_root)
     seed_absence(repo_root, {"moonshot": {"kimi-k2.6": {"absent_runs": 1, "since": "2026-11-05"}}})
