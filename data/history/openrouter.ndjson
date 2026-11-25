@@ -2730,6 +2730,7 @@
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro-3","observed_at":"2026-08-26","rates":{"input":0.15,"output":0.6,"cache_read":0.015},"limits":{"context":131072},"provenance":{"name":"Solar Pro 3"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro-3","observed_at":"2026-10-29","removed":true,"rates":{"input":0.15,"output":0.6,"cache_read":0.015},"limits":{"context":131072}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro-4-contributor","observed_at":"2026-11-25","rates":{"input":0.09,"output":0.36,"cache_read":0.009},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4 Contributor"}}
+{"schema":4,"source":"openrouter","model_id":"upstage/solar-pro-4-contributor","observed_at":"2026-11-25","rates":{"input":0.09,"output":0.36,"cache_read":0.018},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4 Contributor"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro4","observed_at":"2026-08-26","rates":{"input":0.03,"output":0.12,"cache_read":0.006},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro4","observed_at":"2026-09-11","rates":{"input":0.09,"output":0.36,"cache_read":0.018},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4"}}
 {"schema":4,"source":"openrouter","model_id":"upstage/solar-pro4","observed_at":"2026-10-20","rates":{"input":0.15,"output":0.6,"cache_read":0.03},"limits":{"context":524288},"provenance":{"name":"Solar Pro 4"}}
