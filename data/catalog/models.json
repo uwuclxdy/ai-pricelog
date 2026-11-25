@@ -2728,6 +2728,15 @@
       },
       "vendor": "deepseek"
     },
+    "fireworks/deepseek-v4.1-flash-1017-ultra-fast": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "deepseek-v4.1-flash-1017-ultra-fast"
+        ]
+      },
+      "vendor": "deepseek"
+    },
     "fireworks/deepseek-v4.1-flash-1017-ultra-fast-preview": {
       "curated": false,
       "sources": {
