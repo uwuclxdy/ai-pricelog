@@ -328,7 +328,6 @@ This reduces the number of pulls that leave the cluster, lowers your exposure to
 The plugin is disabled by default and is available on clusters running Kubernetes 1.36 or later.
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Fable 5.1 For more information, see the Available Models page .
 August 2026 28 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 For more information, see the Available Models page .
-27 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 Flash For more information, see the Available Models page .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
