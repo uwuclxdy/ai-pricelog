@@ -1,6 +1,20 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://docs.together.ai/llms.txt > Use this file to discover all available pages before exploring further.
-# Changelog **November 24, 2026** ## Preemptible compute is generally available [Preemptible compute](https://docs.together.ai/docs/preemptible-compute.md) is generally available for Kubernetes and Slurm GPU clusters.
+# Changelog **November 25, 2026** ## Together Python SDK and CLI 3.5.0 **What's new:** * **Placement flags for A/B tests and shadows:** [`tg endpoints ab` and `tg endpoints shadow`](https://docs.together.ai/reference/cli/endpoints) accept the same placement flags as `tg endpoints deploy`.
+Pass `--placement` with a placement profile ID, or set inline placement with `--placement.regions` and `--placement.constraint`.
+You can't combine `--placement` with the inline `--placement.*` flags.
+**November 24, 2026** ## Preemptible compute is generally available [Preemptible compute](https://docs.together.ai/docs/preemptible-compute.md) is generally available for Kubernetes and Slurm GPU clusters.
 You can add preemptible nodes to a cluster with standard nodes, or create a preemptible-only cluster, which keeps its shared volumes when Together reclaims every node.
+## Together Python SDK and CLI 3.4.0 **What's new:** * **Deployment model names and traffic weights:** `client.beta.jig.deploy()` and `client.beta.jig.update()` take `model_name` and `traffic_weight`, so any number of deployments in a project can share one model and split its traffic.
+`model_name` sets the model a deployment handles traffic for, and defaults to the deployment's name.
+`traffic_weight` sets the deployment's share of that model's traffic, relative to the model's other deployments.
+The returned `Deployment` reports them as `api_model_name` and `traffic_weight`.
+* **Video completion estimates:** When you create a video, the returned job can include `estimated_done_at`, a Unix timestamp in seconds for when the job is expected to finish.
+It's only an estimate, so keep [polling the job](https://docs.together.ai/docs/inference/videos/overview.md) for its status.
+**Bug fixes:** * **Stable Jig image digests:** A new Git commit no longer changes the digest of the image that [Jig](https://docs.together.ai/docs/deployments-jig.md) builds from its managed Dockerfile, so a deploy that changes only configuration no longer rolls your replicas.
+Your first deploy after you upgrade still rolls them once.
+Jig now runs `git describe --tags --exact-match` on your machine instead of inside the image build.
+Projects without `git` in `system_packages` always got `0.0.0-dev` as the image's version, and now get the tag at `HEAD` when it has one.
+[Sprocket](https://docs.together.ai/docs/deployments-sprocket.md) sends this version in the `X-Worker-Version` header, which rollout monitoring reads.
 **November 23, 2026** ## New serverless models The following models are now available on [serverless](https://docs.together.ai/docs/serverless/models.md): * `deepseek-ai/DeepSeek-V4.1-Flash-1017-fast`: a faster serving tier of `deepseek-ai/DeepSeek-V4.1-Flash-1017` with the same weights.
 1,000,000 context length, FP8 quantization, function calling, and structured outputs.
 Pricing: \$0.60 input / \$2.40 output / \$0.012 cached input (per 1M tokens).
