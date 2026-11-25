@@ -301,6 +301,42 @@ def branch_all_rows(repo_root: Path, branch: str) -> list[dict]:
     return rows
 
 
+def branch_state_paths(repo_root: Path, branch: str, state_dir: str) -> list[str]:
+    """Every path a branch commits under one state directory."""
+    return git(repo_root, "ls-tree", "-r", "--name-only", branch, state_dir).splitlines()
+
+
+def test_branch_state_paths_reads_the_committed_tree(tmp_path):
+    # only what the branch commits counts: a state file left in the working
+    # tree must not read as branch state (the caller's clean-tree check owns it)
+    root = tmp_path / "repo"
+    git_init_repo(root)
+    (root / "state" / "absence").mkdir(parents=True)
+    (root / "state" / "absence" / "zai.json").write_text("{}\n")
+    git(root, "add", ".")
+    git(root, "commit", "-m", "land absence state")
+
+    assert branch_state_paths(root, "main", "state/absence") == ["state/absence/zai.json"]
+    assert branch_state_paths(root, "main", "state/announce") == []
+
+    git(root, "checkout", "-b", "side")
+    (root / "state" / "absence" / "zai-2.json").write_text("{}\n")
+    git(root, "add", ".")
+    git(root, "commit", "-m", "land side absence state")
+
+    assert branch_state_paths(root, "side", "state/absence") == [
+        "state/absence/zai-2.json",
+        "state/absence/zai.json",
+    ]
+    assert branch_state_paths(root, "main", "state/absence") == ["state/absence/zai.json"]
+
+    (root / "state" / "announce").mkdir()
+    (root / "state" / "announce" / "index.json").write_text("{}\n")
+
+    assert branch_state_paths(root, "main", "state/announce") == []
+    assert branch_state_paths(root, "side", "state/announce") == []
+
+
 def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
@@ -339,7 +375,7 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
     assert row["rates"]["output"] == 1.1
     assert row["provenance"]["url"] == "https://example.com/pricing"
 
-    # the open pr names the id in its body, so the next run skips it as
+    # the open pr's branch carries the id's row, so the next run holds it as
     # pending: the store on the default branch is still empty (no row)
     assert_default_branch_clean(repo_root, tip="seed store")
     runner.open_prs = [
@@ -349,6 +385,9 @@ def test_first_seen_row_opens_pr_and_leaves_default_branch_clean(tmp_path, fake_
             "headRefName": runner.created[0][2],
         }
     ]
+    # the page moved since the branch's row: only the hold keeps the refresh
+    # from planning a competing row
+    scrape["deepseek"]["deepseek-chat"] = pricing(3.3e-7, 1.3e-6)
     second = pipeline.run(cfg, repo_root, runner, today="2026-08-27")
     assert second.providers["deepseek"].skipped_pending == ["deepseek-chat"]
     assert second.providers["deepseek"].candidates == []
@@ -428,8 +467,8 @@ def test_pending_pr_held_id_is_scraped_for_the_verdict_but_writes_no_row(
     assert provider_report.candidates == []
     assert provider_report.errors == []
     assert runner.pr_urls == []
+    assert branch_state_paths(repo_root, "main", absence.ABSENCE_DIR) == []
     assert_default_branch_clean(repo_root, tip="seed store")
-    assert not (repo_root / "state" / "absence" / "deepseek.json").exists()
 
 
 def test_a_pending_skip_line_cannot_be_forged(tmp_path, fake_modules, repo_root, caplog):
@@ -1374,6 +1413,10 @@ def test_candidates_batch_into_one_pr_per_source(tmp_path, fake_modules, repo_ro
     # (no force-push over the still-open pr's branch)
     detect["deepseek"] = ["model-a", "model-b", "model-c"]
     scrape["deepseek"]["model-c"] = pricing()
+    # their pages moved since the branch's rows: only the hold keeps the
+    # refresh from planning competing rows
+    scrape["deepseek"]["model-a"] = pricing(3.3e-7, 1.3e-6)
+    scrape["deepseek"]["model-b"] = pricing(3.6e-7, 1.4e-6)
     runner.open_prs = [
         {
             "title": runner.created[0][0],
@@ -1750,7 +1793,8 @@ def test_openrouter_pending_branch_row_settles_drift_the_pr_text_never_names(
     tmp_path, fake_modules, repo_root, or_models
 ):
     # the sibling pr's title and body never name the model, so only its
-    # branch's row, read into the run's rows, stops a second drift row
+    # branch's row, read into the run's rows, already records the listed price:
+    # the drift check plans nothing
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": None}
@@ -2365,7 +2409,12 @@ def test_seed_rerun_skipped_while_seed_pr_open(tmp_path, fake_modules, repo_root
 def test_pending_branch_rows_stay_off_the_new_branch(tmp_path, fake_modules, repo_root):
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat", "deepseek-new"]
-    scrape["deepseek"] = {"deepseek-chat": pricing(), "deepseek-new": pricing(3.0e-7, 1.2e-6)}
+    # the page moved since the branch's row: only the hold keeps the refresh
+    # from planning a competing row
+    scrape["deepseek"] = {
+        "deepseek-chat": pricing(3.3e-7, 1.3e-6),
+        "deepseek-new": pricing(3.0e-7, 1.2e-6),
+    }
     cfg = make_cfg("deepseek")
     legacy = store.build_row(
         "deepseek",
@@ -2489,7 +2538,8 @@ def test_pending_branch_row_settles_drift_the_pr_text_never_names(
     tmp_path, fake_modules, repo_root
 ):
     # the sibling pr's title and body never name deepseek-chat, so only its
-    # branch's row, read into the run's rows, stops a second drift row
+    # branch's row, read into the run's rows, already records this run's price:
+    # the drift check plans nothing
     detect, scrape = fake_modules
     detect["deepseek"] = ["deepseek-chat"]
     scrape["deepseek"] = {"deepseek-chat": pricing()}
@@ -2527,7 +2577,7 @@ def test_pending_branch_row_settles_drift_the_pr_text_never_names(
     report = pipeline.run(cfg, repo_root, runner, today=TODAY, now="000000")
 
     assert report.providers["deepseek"].prs == []
-    # the branch row itself holds the model, whatever the pr text says
+    # the branch row's price matches the run's scrape, whatever the pr text says
     assert report.providers["deepseek"].skipped_pending == ["deepseek-chat"]
     assert runner.pr_urls == []
     assert_default_branch_clean(repo_root, tip="seed store")
@@ -2698,7 +2748,7 @@ def test_announce_change_rides_the_pr_branch_and_body(
     prose = git(repo_root, "show", f"{batch_branch('deepseek')}:{channel['file']}")
     assert announce.unwrap(prose) == "new prose"
     # the snapshot settled on the branch only; the default branch keeps none
-    assert not (repo_root / "state" / "announce" / "index.json").exists()
+    assert branch_state_paths(repo_root, "main", announce.ANNOUNCE_DIR) == []
     assert_default_branch_clean(repo_root, tip="seed store")
 
 
@@ -2720,7 +2770,7 @@ def test_announce_change_without_pr_stays_stale(tmp_path, fake_modules, repo_roo
 
     assert report.announce == [change]
     assert runner.pr_urls == []
-    assert not (repo_root / "state" / "announce" / "index.json").exists()
+    assert branch_state_paths(repo_root, "main", announce.ANNOUNCE_DIR) == []
     assert_default_branch_clean(repo_root)
 
     # nothing settled the change, so it re-surfaces next run (skip-and-retry)
