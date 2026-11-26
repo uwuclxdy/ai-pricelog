@@ -7984,6 +7984,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/lingsante-3.1-air-vl": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/lingsante-3.1-air-vl"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/inference-net/schematron-v2-small": {
       "curated": true,
       "name": "Schematron V2 Small",
