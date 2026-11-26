@@ -6741,6 +6741,15 @@
       },
       "vendor": "bytedance-seed"
     },
+    "openrouter/bytedance-seed/seed-tts-3-0": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "bytedance-seed/seed-tts-3-0"
+        ]
+      },
+      "vendor": "bytedance-seed"
+    },
     "openrouter/bytedance-seed/seedream-4.5": {
       "curated": false,
       "sources": {
