@@ -23,20 +23,22 @@ html table's first own row gives the column titles through web.header_grid,
 so a spanned header keeps every later title aligned with its cell, and its
 remaining rows give the data, a <tfoot> summary row excepted (a row whose
 nearest row group is a tfoot); a table with no data row carrying printable
-text is no pricing table, so the empty <thead><tr /></thead><tbody /> shell
-raises instead of reading every model absent. since 2026-10-23 the
-markdown export renders both series tables as that empty shell, while the
-rendered page (the resolved url without its .md suffix) carries them as
-_jsx(DocTable,{...}) calls: when the export carries no priced table, the
-scraper reads them out of the page's Next.js flight payload (each
-self.__next_f.push([1,"..."]) chunk's literal decoded and the chunks
-concatenated) or, when the page ships no flight chunk (failing since
-2026-11-05, measured 2026-11-18), out of its Mintlify manifest's compiled
-MDX source (the JSON under a
+text is no pricing table, on the export's DocTable blocks as on the rendered
+page, so the empty <thead><tr /></thead><tbody /> shell and a DocTable
+carrying no rows fall through instead of reading every model absent. since
+2026-10-23 the markdown export renders both series tables as that empty
+shell, while the rendered page (the resolved url without its .md suffix)
+carries them as _jsx(DocTable,{...}) calls: when the export carries no
+priced table, the scraper reads them out of the page's Next.js flight
+payload (each self.__next_f.push([1,"..."]) chunk's literal decoded and the
+chunks concatenated), and when that yields no priced table, out of its
+Mintlify manifest's compiled MDX source (the JSON under a
 <template data-mint="manifest"> tag, key page.mdx.mdxSource.compiledSource);
-a manifest template that does not decode, more than one such template, or
-one without a string compiled source raises rather than guess. both streams
-feed one reader, which scans every
+the live page has shipped no flight chunk since 2026-11-05 (measured
+2026-11-18). a manifest template that does not decode, more than one such
+template, or one without a string compiled source raises rather than guess,
+and so does a page whose flight payload and manifest both carry a priced
+table. both streams feed one reader, which scans every
 _jsx(DocTable,{ call, balanced-brace to its closing }. the call head, never
 the bare name, is matched, because the DocTable module source in the same
 stream spells the name with empty columns/rows defaults and would otherwise
@@ -69,10 +71,11 @@ manifest; never the index); build_row stamps it as the row's url.
 
 None = no row for the model. FetchError = the fetch failed, the index
 resolves no (or an ambiguous) chat page, the page's DocTable props, html
-tables, flight payload or manifest do not parse, no pricing table (or no
-Model pricing table) is on the page, a price cell carries an unreadable
-amount, or a context cell carries an oversized digit run. a page whose
-export and rendered page both carry no table raises naming both urls.
+tables, flight payload or manifest do not parse, the flight payload and the
+manifest both carry a pricing table, no pricing table (or no Model pricing
+table) is on the page, a price cell carries an unreadable amount, or a
+context cell carries an oversized digit run. a page whose export and
+rendered page both carry no table raises naming both urls.
 """
 
 from __future__ import annotations
@@ -183,22 +186,26 @@ def pricing_tables(cfg: ProviderCfg) -> tuple[list[tuple[list[str], list[list[st
     """the model-inference page's pricing tables and the url they came from.
 
     the markdown export's tables when it carries one with pricing columns,
-    else the rendered page's flight payload or, when that yields no priced
-    table, its manifest's compiled MDX source. when nothing prices, an
-    export that carried an incidental table keeps the no-Model-pricing-table
-    break, and a page carrying no pricing table anywhere raises the
-    no-pricing-table break naming both urls."""
+    else the rendered page's flight payload, else its manifest's compiled MDX
+    source; a page whose flight payload and manifest both carry a pricing
+    table raises instead of reading either one silently. when nothing prices,
+    an export that carried an incidental table keeps the
+    no-Model-pricing-table break, and a page carrying no pricing table
+    anywhere raises the no-pricing-table break naming both urls."""
     page_url = _load_index(cfg.scraper_url)
     docs = _doc_tables(_strip_code_fences(_page_text(page_url)))
     if any(_pricing_columns(titles) is not None for titles, _ in docs):
         return docs, page_url
     rendered_url = page_url.removesuffix(".md")
     rendered_page = _page_text(rendered_url)
-    rendered_docs = _jsx_docs(_flight_stream(rendered_page, rendered_url), rendered_url)
-    if not rendered_docs:
-        source = _manifest_source(rendered_page, rendered_url)
-        if source is not None:
-            rendered_docs = _jsx_docs(source, rendered_url)
+    flight_docs = _jsx_docs(_flight_stream(rendered_page, rendered_url), rendered_url)
+    source = _manifest_source(rendered_page, rendered_url)
+    manifest_docs = _jsx_docs(source, rendered_url) if source is not None else []
+    if flight_docs and manifest_docs:
+        raise FetchError(
+            f"pricing tables on both the flight payload and the manifest of {rendered_url}"
+        )
+    rendered_docs = flight_docs or manifest_docs
     if rendered_docs:
         return rendered_docs, rendered_url
     if docs:
@@ -280,7 +287,12 @@ def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
     <DocTable> block's columns/rows props plus each plain html <table>; []
     when the page carries neither. each block's prop scan is bounded at the
     next <DocTable>, so a block missing a prop raises instead of borrowing a
-    later block's."""
+    later block's.
+
+    a block whose rows carry no printable text contributes nothing, the way
+    `_html_docs` and `_jsx_docs` drop theirs: the export's priced-columns
+    shell falls back to the rendered page instead of pricing every model
+    absent."""
     docs: list[tuple[list[str], list[list[str]]]] = []
     start = 0
     while True:
@@ -304,6 +316,8 @@ def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
         ]
         if not all(isinstance(row, list) for row in rows):
             raise FetchError("DocTable rows are not arrays")
+        if not any(_carries_data([str(cell) for cell in row]) for row in rows):
+            continue
         docs.append((titles, rows))
     docs.extend(_html_docs(text))
     return docs

@@ -493,6 +493,58 @@ def test_an_incidental_export_table_still_falls_back_to_the_payload(monkeypatch)
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
 
 
+def test_a_data_less_export_doctable_reads_as_no_table():
+    # the export's priced-columns shell is the shell _html_docs and
+    # _jsx_docs drop; read as a table it would price every model absent
+    shell = (
+        '<DocTable columns={[{ title: "Model" }, { title: "Input Price" },'
+        ' { title: "Output Price" }]}\n  rows={[]}\n/>\n'
+    )
+    blank = (
+        '<DocTable columns={[{ title: "Model" }, { title: "Input Price" },'
+        ' { title: "Output Price" }]}\n  rows={[["", ""]]}\n/>\n'
+    )
+    assert scraper._doc_tables(shell) == []
+    assert scraper._doc_tables(blank) == []
+    # a block carrying a printable row still reads as a table
+    tables = scraper._doc_tables((FIXTURES / "chat.md").read_text())
+    assert len(tables) > 1, f"priced export tables kept: {len(tables)}"
+
+
+def test_a_data_less_export_doctable_falls_back_to_the_rendered_page(monkeypatch):
+    shell = (
+        '<DocTable columns={[{ title: "Model" }, { title: "Input Price" },'
+        ' { title: "Output Price" }]}\n  rows={[]}\n/>\n'
+    )
+    _chat_page(monkeypatch, shell, _K3_FLIGHT_CALL)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.url == FLIGHT_URL
+
+
+def test_a_data_less_export_doctable_beside_a_priced_one_prices_from_the_export(monkeypatch):
+    # dropping the shell must not cost the export its priced block: the
+    # priced block wins and no rendered page is fetched
+    shell = (
+        '<DocTable columns={[{ title: "Model" }, { title: "Input Price" },'
+        ' { title: "Output Price" }]}\n  rows={[]}\n/>\n'
+    )
+
+    def fake(url: str) -> str:
+        if url == INDEX_URL:
+            return (FIXTURES / "llms.txt").read_text()
+        if url == CHAT_URL:
+            return shell + (FIXTURES / "chat.md").read_text()
+        raise AssertionError(f"unexpected fetch of {url}")
+
+    monkeypatch.setattr(scraper, "fetch_text", fake)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.url == CHAT_URL
+
+
 def test_a_payload_pricing_table_with_no_row_still_raises(monkeypatch):
     # pricing columns with no data row is the same shell the html side
     # refuses; reading it as "model absent" would read a dark page as a
@@ -906,15 +958,52 @@ def test_two_manifest_templates_raise(monkeypatch):
     assert FLIGHT_URL in str(exc.value)
 
 
-def test_the_flight_payload_is_read_before_the_manifest(monkeypatch):
-    # no capture carries both surfaces; the flight payload is the one the
-    # reader has always read, so it wins over a manifest on the same page
+def test_both_the_flight_payload_and_the_manifest_pricing_raises(monkeypatch):
+    # which surface holds the page's rates is unknowable when both carry a
+    # pricing table, so the shared read raises the way it does on two
+    # manifests; the priced set reads through it, so it raises too
     template = _manifest_template(_manifest(_priced_source(9.00)))
+    rendered = _flight_page(_K3_FLIGHT_CALL).replace("</body>", template + "</body>")
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, rendered)
+    with pytest.raises(FetchError, match="flight payload and the manifest") as exc:
+        scraper.scrape(cfg(), "kimi-k3")
+    assert FLIGHT_URL in str(exc.value)
+    with pytest.raises(FetchError, match="flight payload and the manifest"):
+        detector.detect_priced(cfg())
+
+
+def test_a_flight_payload_with_no_table_still_prices_from_the_manifest(monkeypatch):
+    # a flight chunk that yields no priced table keeps the manifest fallback
+    template = _manifest_template(_manifest(_priced_source(3.00)))
+    rendered = _flight_page(_SHELL_FLIGHT_CALL).replace("</body>", template + "</body>")
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, rendered)
+    pricing = scraper.scrape(cfg(), "kimi-k3")
+    assert pricing is not None
+    assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+    assert pricing.url == FLIGHT_URL
+
+
+def test_a_manifest_with_no_priced_table_leaves_the_flight_payload_pricing(monkeypatch):
+    # only a manifest that prices too makes the surfaces ambiguous; one that
+    # yields no priced table leaves the flight rates in place
+    source = "const DocTable=({columns=[],rows=[],groups=[],corner=null,className=``})=>null;"
+    template = _manifest_template(_manifest(source))
     rendered = _flight_page(_K3_FLIGHT_CALL).replace("</body>", template + "</body>")
     _serve_rendered(monkeypatch, _EMPTY_SHELL, rendered)
     pricing = scraper.scrape(cfg(), "kimi-k3")
     assert pricing is not None
     assert pricing.input_cost_per_token == pytest.approx(3.00 / 1e6)
+
+
+def test_a_broken_manifest_beside_a_priced_flight_payload_raises(monkeypatch):
+    # the manifest is read even when the flight payload prices the page, so
+    # one that does not decode stays a shape break instead of losing silently
+    rendered = _flight_page(_K3_FLIGHT_CALL).replace(
+        "</body>", '<template data-mint="manifest">{not json</template></body>'
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, rendered)
+    with pytest.raises(FetchError, match="does not decode"):
+        scraper.scrape(cfg(), "kimi-k3")
 
 
 def test_the_2026_11_18_captures_carry_the_shapes_this_fix_reads():
