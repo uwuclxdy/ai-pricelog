@@ -1,6 +1,7 @@
 > ## Documentation Index > Fetch the complete documentation index at: https://platform.kimi.ai/docs/llms.txt > Use this file to discover all available pages before exploring further.
 # Platform Changelog > Review historical Kimi Open Platform feature releases, model launches, product improvements, and issue fixes.
 This page is updated periodically with Kimi Open Platform product updates and related documentation changes.
+**November 2026** ### 🔒 Privacy Policy update Updated the [Privacy Policy](https://platform.kimi.ai/docs/agreement/userprivacy.md) with revised disclosures on how we collect, use, and share personal information, and the rights and choices available to users.
 **October 2026** ### 📦 Batch API now supports Kimi K3.1 Pro and Kimi K3 The Batch API now supports the `kimi-k3.1-pro` and `kimi-k3` models (previously limited to `kimi-k2.7-code` and `kimi-k2.6`), available on both the CN and Global platforms.
 Batch inference is still priced at 60% of standard rates; batch jobs on `kimi-k3.1-pro` and `kimi-k3` are also charged Cache Write fees, and because batch requests are processed asynchronously and concurrently, cache hits are provided on a best-effort basis.
 See the [Batch API Guide](https://platform.kimi.ai/docs/guide/use-batch-api.md) and [BatchJob Pricing](https://platform.kimi.ai/docs/pricing/batch.md).
