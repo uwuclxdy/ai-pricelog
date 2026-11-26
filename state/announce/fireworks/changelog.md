@@ -3,7 +3,15 @@ Skip to main content Assistant Responses are generated using AI and may contain 
 Fireworks AI Docs home page Get started References Community Status Sign up Sign up Search...
 Navigation Changelog Search...
 ⌘ K Changelog Changelog Copy page Copy page Fireworks documentation changelog: recent additions, updates, and clarifications across serverless, fine-tuning, deployments, integrations, and API reference.
-Copy page Copy page 2026-11-25 Inference Ultra-fast is now generally available Ultra-fast is out of Preview and generally available for DeepSeek V4.1 Flash 1017 .
+Copy page Copy page 2026-11-25 Inference Kimi K3.1 Pro Ultra-fast (preview) Ultra-fast is now available in Preview for Kimi K3.1 Pro .
+Ultra-fast variants aim for 3-6x generation speed, and up to 8x for agentic coding tasks, with the same model and quality.
+To use it, set model to accounts/fireworks/routers/kimi-k3p1-pro-ultrafast .
+It is priced at $5.00 input / $0.50 cached input / $25.00 output per 1M tokens.
+While in Preview, it uses ceilings of 21.6M Total Prompt TPM, 5.4M Uncached Prompt TPM, and 216k Generated TPM.
+Preview modes are under active development and may change quickly.
+See Serverless Modes , Serverless pricing , and Serverless rate limits .
+2026-11-25 Inference Flex tier now available for GLM 5.3 and GLM 5.3 Flash at 50% off Standard See Serverless modes for the Flex model IDs and Serverless pricing for rates.
+2026-11-25 Inference Ultra-fast is now generally available Ultra-fast is out of Preview and generally available for DeepSeek V4.1 Flash 1017 .
 Ultra-fast variants aim for 3-6x generation speed, and up to 8x for agentic coding tasks.
 Like Fast, it is not a different model, so output quality is the same.
 To use it, set model to accounts/fireworks/routers/deepseek-v4p1-flash-1017-ultrafast .
@@ -335,5 +343,5 @@ For more information, see our deployment documentation .
 This change is for dedicated deployments with a single LoRA.
 You can still deploy multiple LoRAs on a deployment as described in the documentation.
 Was this page helpful?
-Yes No ⌘ I On this page Back to top 2026-11-25 2026-11-25 2026-11-24 2026-11-15 2026-11-04 2026-11-03 2026-11-02 2026-10-27 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01 2025-11-24 2025-11-12
-2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Fireworks AI Docs home page x discord github youtube linkedin Legal Terms of Service Privacy Policy Licenses Trust Contact Us Inquiry Form Resources Blog Cookbook Pricing x discord github youtube linkedin
+Yes No ⌘ I On this page Back to top 2026-11-25 2026-11-25 2026-11-25 2026-11-25 2026-11-24 2026-11-15 2026-11-04 2026-11-03 2026-11-02 2026-10-27 2026-10-21 2026-10-19 2026-10-18 2026-10-18 2026-10-18 2026-10-18 2026-10-15 2026-10-07 2026-10-02 2026-10-01 2026-10-01 2026-09-28 2026-09-26 2026-09-22 2026-09-16 2026-09-16 2026-09-13 2026-09-12 2026-09-09 2026-09-09 2026-09-08 2026-09-07 2026-09-01 2026-08-30 2026-08-27 2026-08-26 2026-08-25 2026-08-14 2026-07-16 2026-06-26 2026-06-17 2026-06-15 2026-06-12 2026-06-10 2026-05-14 2026-02-05 2026-01-20 2025-12-22 2025-12-15 2025-12-08 2025-12-01
+2025-11-24 2025-11-12 2025-08-22 2025-08-10 2025-07-29 2025-07-23 2025-07-16 2025-07-10 2025-07-02 2025-07-01 2025-06-30 2025-06-24 2025-06-13 2025-05-20 2025-05-19 Fireworks AI Docs home page x discord github youtube linkedin Legal Terms of Service Privacy Policy Licenses Trust Contact Us Inquiry Form Resources Blog Cookbook Pricing x discord github youtube linkedin
