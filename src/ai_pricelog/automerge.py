@@ -69,8 +69,8 @@ as a merged PR. the step passes only branches the pass marked
   refresh can still refuse the push on an input the pre-flight does not
   check (among them the README's stats blocks, and a HEAD-side catalog or
   shard input the pre-flight leaves alone, which the refresh's own read
-  refuses: a models.json HEAD carries emptied, missing or at another version
-  that no branch's diff names, a HEAD row missing a field the stats read or
+  refuses: a models.json HEAD lacks, or carries emptied or at another
+  version, that no branch's diff names, a HEAD row missing a field the stats read or
   whose observed_at names no calendar day), and so can the clean-tree and
   ancestry checks, leaving the merge commits local
 - the catalog the burst lands (the models.json union run over the branches
@@ -915,9 +915,10 @@ def _burst_catalog(
     check needs a claim for every key its shards store under a source
     `providers.json` names: every landed entry passes the loader's own entry
     check here and every claim HEAD holds for a stored key stays claimed
-    (_check_landed_catalog). a HEAD copy no branch's diff names keeps the
-    loader's file-level checks (among them a missing, emptied or other-version
-    file) post-merge, and the module docstring names that class. each entry is
+    (_check_landed_catalog). a HEAD copy no branch's diff names keeps post-merge
+    the loader's file-level checks this parse does not run (among them a
+    missing, emptied or other-version file), and the module docstring names
+    that class. each entry is
     named by the revision that landed it: HEAD, or the last branch whose union
     changed it.
     """
