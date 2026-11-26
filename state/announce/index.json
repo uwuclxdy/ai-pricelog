@@ -41,8 +41,8 @@
   "moonshot": {
     "https://platform.kimi.ai/docs/platform-changelog.md": {
       "file": "state/announce/moonshot/platform-changelog-md.md",
-      "sha256": "0671af3a6f1ac0382743389cd785fd9d4ee759e199beda86c8ea25237f828ef7",
-      "fetched": "2026-11-12T06:00:15Z"
+      "sha256": "e49b75da38270227c0c1c5633a06404a9e85d995a43df017139c8a07cd437be2",
+      "fetched": "2026-11-26T13:00:15Z"
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
