@@ -985,6 +985,20 @@ def test_detect_priced_skips_a_row_too_short_to_carry_a_model(monkeypatch):
     assert detector.detect_priced(cfg()) == ["kimi-k3"]
 
 
+def test_a_row_missing_its_last_column_prices_nothing(monkeypatch):
+    # the row must carry every column the table is read through, so a row
+    # whose length equals the highest column index lacks its last column and
+    # prices nothing
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`},"
+        "{title:`Context Window`}],"
+        "rows:[[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    with pytest.raises(FetchError, match="no priced model rows"):
+        detector.detect_priced(cfg())
+
+
 def test_detect_priced_keeps_only_model_ids_once(monkeypatch):
     # a first cell that is no model id (a display heading) and an id priced in
     # two tables never enter the priced set twice
@@ -1011,8 +1025,9 @@ def test_detect_priced_reads_a_repeated_model_row_like_scrape(monkeypatch):
 
 
 def test_priced_model_ids_lists_a_repeated_cell_once(monkeypatch):
-    # the public priced list holds one entry per model, page order; a second
-    # row for the same cell appends nothing, in its own table or a later one
+    # the public priced list holds one entry per distinct model cell text,
+    # page order; a second row for the same cell appends nothing, in its own
+    # table or a later one
     call = (
         "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
         "rows:[[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`],"
@@ -1041,6 +1056,23 @@ def test_priced_model_ids_reads_a_later_malformed_copy_like_scrape(monkeypatch):
     assert detector.detect_priced(cfg()) == ["kimi-k3"]
 
 
+def test_priced_model_ids_lists_a_later_priced_table_like_scrape(monkeypatch):
+    # a cell is listed when any table prices it, the way `scrape` searches
+    # every table: an empty row in an earlier table lists nothing by itself,
+    # and a later table's priced row puts the id in the set
+    first = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k15`,``,``]]})"
+    )
+    later = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k15`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(first + later)))
+    assert detector.detect_priced(cfg()) == ["kimi-k15"]
+    assert scraper.scrape(cfg(), "kimi-k15") is not None
+
+
 def test_detect_priced_reads_a_case_variant_copy_like_scrape(monkeypatch):
     # `scrape` matches a model cell case-insensitively, so the first copy
     # settles the id: a priced later copy under another case prices nothing
@@ -1051,6 +1083,18 @@ def test_detect_priced_reads_a_case_variant_copy_like_scrape(monkeypatch):
     _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
     with pytest.raises(FetchError, match="no priced model rows"):
         detector.detect_priced(cfg())
+
+
+def test_detect_priced_lists_a_case_variant_row(monkeypatch):
+    # one row spelling its model cell in another case still lists the id and
+    # prices it: the cell and the requested id both fold case
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`KIMI-K3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+    assert scraper.scrape(cfg(), "kimi-k3") is not None
 
 
 def test_detect_still_omits_the_deprecated_table(monkeypatch):
@@ -1112,13 +1156,96 @@ def test_detect_priced_raises_when_no_row_carries_a_rate(monkeypatch):
         detector.detect_priced(cfg())
 
 
-def test_detect_priced_raises_on_an_unreadable_amount(monkeypatch):
-    # an unreadable amount is never silently left out of the priced set: the
-    # read fails loud with the error a scrape of the row raises
+def test_detect_priced_lists_a_readable_row_beside_an_unreadable_heading(monkeypatch):
+    # a heading row's unreadable amount is no id and never reaches the priced
+    # set; the readable row beside it still keys absence
     call = (
         "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
-        "rows:[[`kimi-k3`,`$3, 00 / MTok`,`$15.00 / MTok`]]})"
+        "rows:[[`All models (batch)`,`$3, 00 / MTok`,`$15.00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
     )
     _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
-    with pytest.raises(FetchError, match="kimi-k3"):
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_detect_priced_lists_an_unreadable_row_while_its_scrape_raises(monkeypatch):
+    # an unreadable amount still lists the id, so the absence pass never
+    # counts it absent; the id's own scrape raises the unreadable-rate error
+    # naming it
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k9`,`$3, 00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k9"]
+    with pytest.raises(FetchError, match="kimi-k9"):
+        scraper.scrape(cfg(), "kimi-k9")
+
+
+def test_detect_priced_lists_an_unreadable_output_amount_too(monkeypatch):
+    # the output cell's unreadable amount lists the id the same way, and its
+    # scrape still raises
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k9`,`$3.00 / MTok`,`$15, 00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k9"]
+    with pytest.raises(FetchError, match="kimi-k9"):
+        scraper.scrape(cfg(), "kimi-k9")
+
+
+def test_detect_priced_lists_a_mixed_unreadable_and_empty_price_row(monkeypatch):
+    # an unreadable amount lists the id whatever the other price cell
+    # carries: an unreadable input beside an empty output, and its mirror,
+    # both reach the priced set, and each id's own scrape raises naming it
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k9`,`$3, 00 / MTok`,``],[`kimi-k10`,``,`$15, 00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k9", "kimi-k10", "kimi-k3"]
+    with pytest.raises(FetchError, match="kimi-k9"):
+        scraper.scrape(cfg(), "kimi-k9")
+    with pytest.raises(FetchError, match="kimi-k10"):
+        scraper.scrape(cfg(), "kimi-k10")
+
+
+def test_a_row_with_one_empty_price_cell_is_not_listed(monkeypatch):
+    # a readable amount beside an empty price cell is neither an unreadable
+    # amount nor a second amount, so the row names no rate the scraper reads
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`kimi-k9`,`$3.00 / MTok`,``],[`kimi-k10`,``,`$15.00 / MTok`],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_a_row_with_no_amount_is_not_listed(monkeypatch):
+    # a heading row with empty price cells, and an id-shaped row with none,
+    # list no price: only the priced row reaches the priced set
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`}],"
+        "rows:[[`All models (batch)`,``,``],[`kimi-k9`,``,``],"
+        "[`kimi-k3`,`$3.00 / MTok`,`$15.00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    assert detector.detect_priced(cfg()) == ["kimi-k3"]
+
+
+def test_a_malformed_cache_cell_beside_empty_price_cells_is_not_listed(monkeypatch):
+    # only the input and output cells decide the listing: an unreadable
+    # cached-input cell beside two empty price cells names no rate, and the
+    # scrape returns none before reading the cache cell
+    call = (
+        "_jsx(DocTable,{columns:[{title:`Model`},{title:`Input`},{title:`Output`},"
+        "{title:`Cached Input`}],"
+        "rows:[[`kimi-k14`,``,``,`$9, 00 / MTok`]]})"
+    )
+    _serve_rendered(monkeypatch, _EMPTY_SHELL, _manifest_page(_manifest(call)))
+    with pytest.raises(FetchError, match="no priced model rows"):
         detector.detect_priced(cfg())
+    assert scraper.scrape(cfg(), "kimi-k14") is None

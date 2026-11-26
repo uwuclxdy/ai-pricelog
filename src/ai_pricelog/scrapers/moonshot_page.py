@@ -225,28 +225,54 @@ def _first_pricing(
 
 
 def priced_model_ids(cfg: ProviderCfg) -> tuple[list[str], str]:
-    """the model cell of every id the reader prices, page order, and the url
-    the rates came from.
+    """the distinct model cell texts of the page's price rows, page order,
+    and the url the rows came from.
 
-    an id is priced exactly when `scrape` builds a rate for it: both read
-    the tables in page order over every distinct model cell, a table naming
-    no rate contributes nothing, a repeated cell is read once, and an
-    unreadable amount raises where a scrape of the id would. the chat page
-    keeps pricing models the docs index lists as deprecated (the K2 series,
-    measured 2026-11-19), so this set, not the candidate list, says which
-    stored ids stay live.
+    one entry per distinct model cell text: a repeated cell appears once. a
+    cell counts as listed when a table's row for it carries an unreadable
+    amount in either price cell, whatever the other cell carries, and
+    otherwise when both price cells carry an amount; within a table the
+    first row long enough to carry every column settles the cell, as in
+    `scrape`, and a row too short to carry them is skipped. an unreadable
+    amount counts as listed and raises only where that id's own `scrape`
+    reads it, while a row carrying no amount at all is unlisted. the chat
+    page keeps pricing models the docs index lists as deprecated (the K2
+    series, measured 2026-11-19), so this set, not the candidate list, says
+    which stored ids stay live.
     """
     docs, page_url = pricing_tables(cfg)
-    cells: dict[str, None] = {}
+    tables: list[tuple[list[list[str]], _PricingColumns]] = []
     for titles, rows in docs:
         columns = _pricing_columns(titles)
-        if columns is None:
-            continue
+        if columns is not None:
+            tables.append((rows, columns))
+    cells: dict[str, None] = {}
+    for rows, columns in tables:
         for row in rows:
-            if len(row) > columns[0]:
-                cells[str(row[columns[0]]).strip()] = None
-    ids = [model_id for model_id in cells if _first_pricing(docs, model_id, page_url)]
+            if len(row) > columns.model:
+                cells[str(row[columns.model]).strip()] = None
+    ids = [
+        cell for cell in cells if any(_priced_row(rows, columns, cell) for rows, columns in tables)
+    ]
     return ids, page_url
+
+
+def _priced_row(rows: list[list[str]], columns: _PricingColumns, model_id: str) -> bool:
+    """whether the table lists `model_id` at a price: its row for the id is
+    listed when either price cell carries an unreadable amount, whatever the
+    other cell carries, and otherwise when both price cells carry an amount.
+
+    a row carrying no amount at all names no price, so it is unlisted; an
+    amount the grammar cannot read still counts as listed, and raising on it
+    is left to that id's own `scrape`."""
+    row = _model_row(rows, columns, model_id)
+    if row is None:
+        return False
+    input_amounts, input_malformed = amount_scan(str(row[columns.input]), before="$")
+    output_amounts, output_malformed = amount_scan(str(row[columns.output]), before="$")
+    if input_malformed or output_malformed:
+        return True
+    return bool(input_amounts) and bool(output_amounts)
 
 
 def _doc_tables(text: str) -> list[tuple[list[str], list[list[str]]]]:
@@ -665,9 +691,22 @@ def _plain_rows(text: str) -> str:
     return _FRAGMENT_PATTERN.sub(r'"\1\2"', text)
 
 
-def _pricing_columns(titles: list[str]) -> tuple[int, int, int] | None:
-    """the (model, input, output) column positions of a pricing table, or
-    None when the table names no per-token rate pair."""
+class _PricingColumns(NamedTuple):
+    """a model-pricing table's column positions: the columns a rate's cells
+    are read from."""
+
+    model: int
+    input: int
+    output: int
+    cache_read: int | None
+    cache_write: int | None
+    cache_write_1h: int | None
+    context: int | None
+
+
+def _pricing_columns(titles: list[str]) -> _PricingColumns | None:
+    """the column positions a model-pricing table is read through, or None
+    when the table names no per-token rate pair."""
     model_col = _column_index(titles, "Model")
     input_col = _column_index(titles, "Input Price (Cache Miss)")
     if input_col is None:
@@ -675,7 +714,35 @@ def _pricing_columns(titles: list[str]) -> tuple[int, int, int] | None:
     output_col = _column_index(titles, "Output Price")
     if model_col is None or input_col is None or output_col is None:
         return None
-    return model_col, input_col, output_col
+    cache_read_col = _column_index(titles, "Input Price (Cache Hit)")
+    if cache_read_col is None:
+        cache_read_col = _column_index(titles, "Cached Input Price")
+    return _PricingColumns(
+        model_col,
+        input_col,
+        output_col,
+        cache_read_col,
+        _column_index(titles, "Cache Write Price (TTL 5min)"),
+        _column_index(titles, "Cache Write Price (TTL 1h)"),
+        _column_index(titles, "Context Window"),
+    )
+
+
+def _model_row(rows: list[list[str]], columns: _PricingColumns, model_id: str) -> list[str] | None:
+    """the first row of a model-pricing table whose Model cell names
+    `model_id` (case-insensitive), or None: the row `scrape` settles the id
+    on.
+
+    a row too short to carry every column the table is read through is
+    skipped, so a truncated row prices nothing."""
+    needed = max(index for index in columns if index is not None)
+    for row in rows:
+        if len(row) <= needed:
+            continue
+        if str(row[columns.model]).strip().lower() != model_id.lower():
+            continue
+        return row
+    return None
 
 
 def _pricing(
@@ -685,60 +752,43 @@ def _pricing(
     columns = _pricing_columns(titles)
     if columns is None:
         return None  # not a model-pricing table
-    model_col, input_col, output_col = columns
-    cache_col = _column_index(titles, "Input Price (Cache Hit)")
-    if cache_col is None:
-        cache_col = _column_index(titles, "Cached Input Price")
-    write_col = _column_index(titles, "Cache Write Price (TTL 5min)")
-    write_1h_col = _column_index(titles, "Cache Write Price (TTL 1h)")
-    context_col = _column_index(titles, "Context Window")
-    needed = max(
-        model_col,
-        input_col,
-        output_col,
-        cache_col if cache_col is not None else 0,
-        write_col if write_col is not None else 0,
-        write_1h_col if write_1h_col is not None else 0,
-        context_col if context_col is not None else 0,
+    row = _model_row(rows, columns, model_id)
+    if row is None:
+        return None
+    input_cost = _dollars(str(row[columns.input]), model_id, page_url)
+    output_cost = _dollars(str(row[columns.output]), model_id, page_url)
+    if input_cost is None or output_cost is None:
+        return None
+    cache_cost = (
+        _dollars(str(row[columns.cache_read]), model_id, page_url)
+        if columns.cache_read is not None
+        else None
     )
-    for row in rows:
-        if len(row) <= needed:
-            continue
-        if str(row[model_col]).strip().lower() != model_id.lower():
-            continue
-        input_cost = _dollars(str(row[input_col]), model_id, page_url)
-        output_cost = _dollars(str(row[output_col]), model_id, page_url)
-        if input_cost is None or output_cost is None:
-            return None
-        cache_cost = (
-            _dollars(str(row[cache_col]), model_id, page_url) if cache_col is not None else None
-        )
-        write_cost = (
-            _dollars(str(row[write_col]), model_id, page_url) if write_col is not None else None
-        )
-        write_1h_cost = (
-            _dollars(str(row[write_1h_col]), model_id, page_url)
-            if write_1h_col is not None
-            else None
-        )
-        max_tokens_in = (
-            _token_count(str(row[context_col]), model_id, page_url)
-            if context_col is not None
-            else 0
-        )
-        return Pricing(
-            input_cost_per_token=input_cost / 1e6,
-            output_cost_per_token=output_cost / 1e6,
-            mode="chat",
-            max_tokens_in=max_tokens_in,
-            cache_read_cost_per_token=cache_cost / 1e6 if cache_cost is not None else None,
-            cache_write_cost_per_token=write_cost / 1e6 if write_cost is not None else None,
-            cache_write_1h_cost_per_token=(
-                write_1h_cost / 1e6 if write_1h_cost is not None else None
-            ),
-            url=page_url,
-        )
-    return None
+    write_cost = (
+        _dollars(str(row[columns.cache_write]), model_id, page_url)
+        if columns.cache_write is not None
+        else None
+    )
+    write_1h_cost = (
+        _dollars(str(row[columns.cache_write_1h]), model_id, page_url)
+        if columns.cache_write_1h is not None
+        else None
+    )
+    max_tokens_in = (
+        _token_count(str(row[columns.context]), model_id, page_url)
+        if columns.context is not None
+        else 0
+    )
+    return Pricing(
+        input_cost_per_token=input_cost / 1e6,
+        output_cost_per_token=output_cost / 1e6,
+        mode="chat",
+        max_tokens_in=max_tokens_in,
+        cache_read_cost_per_token=cache_cost / 1e6 if cache_cost is not None else None,
+        cache_write_cost_per_token=write_cost / 1e6 if write_cost is not None else None,
+        cache_write_1h_cost_per_token=(write_1h_cost / 1e6 if write_1h_cost is not None else None),
+        url=page_url,
+    )
 
 
 def _column_index(titles: list[str], name: str) -> int | None:
