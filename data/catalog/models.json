@@ -6192,6 +6192,15 @@
       },
       "vendor": "amazon"
     },
+    "openrouter/antdigital/lingdt-decision-fast-1.0:free": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "antdigital/lingdt-decision-fast-1.0:free"
+        ]
+      },
+      "vendor": "antdigital"
+    },
     "openrouter/anthracite-org/magnum-v2-72b": {
       "curated": false,
       "sources": {
