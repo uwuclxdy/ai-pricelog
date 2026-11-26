@@ -3584,7 +3584,8 @@ def test_refresh_refuses_a_removed_id_only_the_priced_set_lists(
     tmp_path, fake_modules, repo_root, monkeypatch, caplog
 ):
     # no reading settles whether the pricing page re-listed a removed id the
-    # candidate page omits: a hard failure, never a reappearance row
+    # candidate page omits: a hard failure naming the page ids, never a
+    # reappearance row
     calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
     price = stored_row("qwen-max-0501")
     removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-20", VERSION, price)
@@ -3597,11 +3598,63 @@ def test_refresh_refuses_a_removed_id_only_the_priced_set_lists(
 
     assert ("dashscope", "qwen-max-0501") not in calls
     [error] = report.providers["dashscope"].errors
-    assert error.startswith("FetchError: 'qwen-max-0501'")
+    assert error == (
+        "FetchError: page ids ['qwen-max-0501'] reach stored 'qwen-max-0501', removed in the store "
+        "(the fake_det detector lists [] and prices ['qwen-max-0501']): refresh cannot tell a "
+        "reappearance; fix: re-verify on the provider's pages whether the model is sold again, "
+        "then make exactly one page id reach 'qwen-max-0501', detected as well as priced, if it "
+        "is, or none if it is not"
+    )
     assert health.parse_log(_logged_lines(caplog))["dashscope"]["hard"]
     assert appended_rows(repo_root, "dashscope") == [
         ("qwen-new", {"input": 0.27, "output": 1.1}, None)
     ]
+
+
+def test_refresh_refuses_a_removed_priced_id_by_its_own_detector_and_scraper(
+    tmp_path, repo_root, monkeypatch
+):
+    # a second provider's removed spelling reached by a priced-only page id:
+    # the line names that provider's page id, stored spelling and detector,
+    # so a literal of the first removed fixture cannot stand in
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: []
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-latest"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+
+    def scrape(cfg, model_id):
+        return {"qwen-turbo-latest": pricing(3.0e-7, 1.2e-6)}[model_id]
+
+    qwen_scr.scrape = scrape
+    qwen_scr.dedup_keys = lambda model_id: (
+        ["qwen-turbo-0915"] if model_id == "qwen-turbo-latest" else []
+    )
+    price = stored_row("qwen-turbo-0915", source="qwen")
+    removal = store.build_removal_row("qwen", "qwen-turbo-0915", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [price, removal])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    [error] = report.providers["qwen"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-turbo-latest'] reach stored 'qwen-turbo-0915', removed in the "
+        "store (the qwen_det detector lists [] and prices ['qwen-turbo-latest']): refresh cannot "
+        "tell a reappearance; fix: re-verify on the provider's pages whether the model is sold "
+        "again, then make exactly one page id reach 'qwen-turbo-0915', detected as well as priced, "
+        "if it is, or none if it is not"
+    )
 
 
 def test_refresh_scrapes_a_held_priced_only_id_without_planning_a_row(
@@ -3640,8 +3693,8 @@ def test_refresh_scrapes_a_held_priced_only_id_without_planning_a_row(
 def test_refresh_refuses_a_priced_only_dedup_twin_of_a_detected_id(
     tmp_path, fake_modules, repo_root, monkeypatch
 ):
-    # a priced-only page id whose stored spelling a detected id already
-    # refreshes would read one key from two page rows
+    # a priced-only page id whose stored key a detected id also reaches would
+    # read one stored price from more than one page id
     calls = priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-latest"])
     sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
         ["qwen-max"] if model_id == "qwen-max-latest" else []
@@ -3652,7 +3705,1124 @@ def test_refresh_refuses_a_priced_only_dedup_twin_of_a_detected_id(
 
     assert ("dashscope", "qwen-max-latest") not in calls
     [error] = report.providers["dashscope"].errors
-    assert error.startswith("FetchError: 'qwen-max'")
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest'] reach stored 'qwen-max' (the "
+        "fake_det detector lists ['qwen-max'] and prices ['qwen-max', 'qwen-max-latest']): one "
+        "stored price, more than one page id; fix: re-verify on the provider's pages which page id "
+        "prices the model, make it the only page id reaching 'qwen-max', and confirm the next two "
+        "landed runs refresh it with no absence entry and no removal"
+    )
+
+
+def test_refresh_refuses_a_priced_only_dedup_twin_by_its_own_detector_and_scraper(
+    tmp_path, repo_root, monkeypatch
+):
+    # the same collision on a second provider: the page id, stored spelling
+    # and detector name all come from the fixture
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: ["qwen-turbo-0915"]
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-0915", "qwen-turbo-latest"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+    calls: list[str] = []
+
+    def scrape(cfg, model_id):
+        calls.append(model_id)
+        return {"qwen-turbo-0915": pricing(3.0e-7, 1.2e-6)}[model_id]
+
+    qwen_scr.scrape = scrape
+    qwen_scr.dedup_keys = lambda model_id: (
+        ["qwen-turbo"] if model_id in ("qwen-turbo-0915", "qwen-turbo-latest") else []
+    )
+    seed_store(repo_root, [stored_row("qwen-turbo", source="qwen")])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    assert calls == ["qwen-turbo-0915"]
+    [error] = report.providers["qwen"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-turbo-0915', 'qwen-turbo-latest'] reach stored 'qwen-turbo' "
+        "(the qwen_det detector lists ['qwen-turbo-0915'] and prices ['qwen-turbo-0915', "
+        "'qwen-turbo-latest']): one stored price, more than one page id; fix: re-verify on the "
+        "provider's pages which page id prices the model, make it the only page id reaching "
+        "'qwen-turbo', and confirm the next two landed runs refresh it with no absence entry and "
+        "no removal"
+    )
+
+
+def test_refresh_refuses_a_priced_only_twin_that_is_the_stored_spelling(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a priced-only id that is its own stored spelling still collides with the
+    # detected id that dedups onto it: one stored price, two page ids, so the
+    # refusal names both
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-latest"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-latest",
+        "qwen-max",
+    ]
+    scrape["dashscope"] = {"qwen-max-latest": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id == "qwen-max-latest" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-latest")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest'] reach stored 'qwen-max' (the "
+        "fake_det detector lists ['qwen-max-latest'] and prices ['qwen-max', 'qwen-max-latest']): "
+        "one stored price, more than one page id; fix: re-verify on the provider's pages which "
+        "page id prices the model, make it the only page id reaching 'qwen-max', and confirm the "
+        "next two landed runs refresh it with no absence entry and no removal"
+    )
+
+
+def test_refresh_refuses_a_priced_only_twin_whose_detected_collider_is_unpriced(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the detected id is absent from the pricing page and its scrape reads no
+    # price, so the priced-only id is the stored key's only priced spelling:
+    # one stored price, more than one page id
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-latest"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: ["qwen-max"]
+    scrape["dashscope"] = {"qwen-max-latest": None, "qwen-max": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id == "qwen-max-latest" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-latest")]
+    assert report.providers["dashscope"].skipped_no_pricing == ["qwen-max"]
+    assert report.providers["dashscope"].prs == []
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest'] reach stored 'qwen-max' (the "
+        "fake_det detector lists ['qwen-max-latest'] and prices ['qwen-max']): one stored price, "
+        "more than one page id; fix: re-verify on the provider's pages which page id prices the "
+        "model, make it the only page id reaching 'qwen-max', and confirm the next two landed runs "
+        "refresh it with no absence entry and no removal"
+    )
+
+
+def test_refresh_refuses_a_priced_only_twin_when_one_detected_collider_is_unpriced(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # one of two detected colliders is absent from the pricing page: the other
+    # one prices the key, and the priced-only id reaches the same stored key
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501", "qwen-max-0815"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-0501",
+        "qwen-twin",
+    ]
+    scrape["dashscope"] = {
+        "qwen-max-0501": pricing(3.0e-7, 1.2e-6),
+        "qwen-max-0815": None,
+        "qwen-twin": pricing(),
+    }
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-0501", "qwen-max-0815", "qwen-twin") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-0501")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max-0501', 'qwen-max-0815', 'qwen-twin'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max-0501', 'qwen-max-0815'] and prices "
+        "['qwen-max-0501', 'qwen-twin']): one stored price, more than one page id; fix: re-verify "
+        "on the provider's pages which page id prices the model, make it the only page id reaching "
+        "'qwen-max', and confirm the next two landed runs refresh it with no absence entry and no "
+        "removal"
+    )
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max", {"input": 0.3, "output": 1.2}, None)
+    ]
+
+
+def test_refresh_refuses_a_priced_only_twin_when_no_detected_collider_is_priced(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # no detected collider is on the pricing page, so the priced-only id is the
+    # stored key's only priced spelling, and two page ids still reach the key
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-latest"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: ["qwen-max-new"]
+    scrape["dashscope"] = {
+        "qwen-max-latest": pricing(),
+        "qwen-max-new": pricing(3.0e-7, 1.2e-6),
+    }
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-latest", "qwen-max-new") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-latest")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max-latest', 'qwen-max-new'] reach stored 'qwen-max' (the "
+        "fake_det detector lists ['qwen-max-latest'] and prices ['qwen-max-new']): one stored "
+        "price, more than one page id; fix: re-verify on the provider's pages which page id prices "
+        "the model, make it the only page id reaching 'qwen-max', and confirm the next two landed "
+        "runs refresh it with no absence entry and no removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_beside_two_unpriced_detected_colliders(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # two detected colliders read no price and one priced-only id reaches the
+    # key: neither detected id prices it, and the priced-only id is its only
+    # priced spelling
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501", "qwen-max-0815"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: ["qwen-twin"]
+    scrape["dashscope"] = {
+        "qwen-max-0501": None,
+        "qwen-max-0815": None,
+        "qwen-twin": pricing(3.0e-7, 1.2e-6),
+    }
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-0501", "qwen-max-0815", "qwen-twin") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == [("dashscope", "qwen-max-0501"), ("dashscope", "qwen-max-0815")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max-0501', 'qwen-max-0815', 'qwen-twin'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max-0501', 'qwen-max-0815'] and prices "
+        "['qwen-twin']): one stored price, more than one page id; fix: re-verify on the provider's "
+        "pages which page id prices the model, make it the only page id reaching 'qwen-max', and "
+        "confirm the next two landed runs refresh it with no absence entry and no removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_of_a_detected_stored_spelling(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored spelling is itself a detected collider and another detected
+    # collider prices the key: the priced-only id reaches the same stored key
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max", "qwen-max-latest"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-latest",
+        "qwen-twin",
+    ]
+    scrape["dashscope"] = {"qwen-max": pricing(), "qwen-max-latest": pricing()}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-latest", "qwen-twin") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max"), ("dashscope", "qwen-max-latest")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest', 'qwen-twin'] reach stored 'qwen-max' "
+        "(the fake_det detector lists ['qwen-max', 'qwen-max-latest'] and prices "
+        "['qwen-max-latest', 'qwen-twin']): one stored price, more than one page id; fix: "
+        "re-verify on the provider's pages which page id prices the model, make it the only page "
+        "id reaching 'qwen-max', and confirm the next two landed runs refresh it with no absence "
+        "entry and no removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_of_a_stored_spelling_detected_alone(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored spelling is a detected collider absent from detect_priced, and
+    # the priced-only id is listed there: the key's one stored price would be
+    # read by both page ids
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: ["qwen-max-new"]
+    scrape["dashscope"] = {"qwen-max": pricing()}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id == "qwen-max-new" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-new'] reach stored 'qwen-max' (the fake_det "
+        "detector lists ['qwen-max'] and prices ['qwen-max-new']): one stored price, more than one "
+        "page id; fix: re-verify on the provider's pages which page id prices the model, make it "
+        "the only page id reaching 'qwen-max', and confirm the next two landed runs refresh it "
+        "with no absence entry and no removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_of_a_detected_stored_spelling_beside_a_collider(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored spelling and a second detected collider both read no price,
+    # and the priced-only id is listed in detect_priced: one stored price,
+    # more than one page id
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max", "qwen-max-latest"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: ["qwen-max-new"]
+    scrape["dashscope"] = {
+        "qwen-max": None,
+        "qwen-max-latest": None,
+        "qwen-max-new": pricing(3.0e-7, 1.2e-6),
+    }
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-latest", "qwen-max-new") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == [("dashscope", "qwen-max"), ("dashscope", "qwen-max-latest")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest', 'qwen-max-new'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max', 'qwen-max-latest'] and prices "
+        "['qwen-max-new']): one stored price, more than one page id; fix: re-verify on the "
+        "provider's pages which page id prices the model, make it the only page id reaching "
+        "'qwen-max', and confirm the next two landed runs refresh it with no absence entry and no "
+        "removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_by_its_own_detector(repo_root, monkeypatch):
+    # the same collision on a second provider: the page ids, stored spelling
+    # and detector name all come from the fixture
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: ["qwen-turbo"]
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-latest"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+    qwen_scr.scrape = lambda cfg, model_id: {"qwen-turbo": pricing()}[model_id]
+    qwen_scr.dedup_keys = lambda model_id: ["qwen-turbo"] if model_id == "qwen-turbo-latest" else []
+    seed_store(repo_root, [stored_row("qwen-turbo", source="qwen")])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    [error] = report.providers["qwen"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-turbo', 'qwen-turbo-latest'] reach stored 'qwen-turbo' (the "
+        "qwen_det detector lists ['qwen-turbo'] and prices ['qwen-turbo-latest']): one stored "
+        "price, more than one page id; fix: re-verify on the provider's pages which page id prices "
+        "the model, make it the only page id reaching 'qwen-turbo', and confirm the next two "
+        "landed runs refresh it with no absence entry and no removal"
+    )
+    assert report.providers["qwen"].prs == []
+
+
+def test_refresh_refuses_two_priced_only_twins_of_one_stored_key(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # two ids the candidate page omits both dedup to one stored key: one
+    # stored price would be read by more than one page id, so the key gets one
+    # line naming both ids; their scrapes are scripted, so a run that skipped
+    # the refusal lands their rows instead of tripping the unscripted-call
+    # fixture
+    calls = priced_only_source(
+        fake_modules, monkeypatch, ["qwen-max", "qwen-twin-a", "qwen-twin-b"]
+    )
+    _, scrape = fake_modules
+    scrape["dashscope"]["qwen-twin-a"] = pricing(3.0e-7, 1.2e-6)
+    scrape["dashscope"]["qwen-twin-b"] = pricing(3.3e-7, 1.3e-6)
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max-0501"] if model_id.startswith("qwen-twin-") else []
+    )
+    seed_store(repo_root, [stored_row("qwen-max"), stored_row("qwen-max-0501")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert ("dashscope", "qwen-twin-a") not in calls
+    assert ("dashscope", "qwen-twin-b") not in calls
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-twin-a', 'qwen-twin-b'] reach stored 'qwen-max-0501' (the "
+        "fake_det detector lists [] and prices ['qwen-twin-a', 'qwen-twin-b']): one stored price, "
+        "more than one page id; fix: re-verify on the provider's pages which page id prices the "
+        "model, make it the only page id reaching 'qwen-max-0501', and confirm the next two landed "
+        "runs refresh it with no absence entry and no removal"
+    ]
+    # the refused key is one attempt, however many priced-only ids reach it
+    assert report.providers["dashscope"].tried.count("qwen-max-0501") == 1
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+
+
+def test_refresh_refuses_two_priced_only_twins_of_a_second_stored_key(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the same collision on another stored key: the refusal's id list and
+    # stored spelling follow the fixture
+    calls = priced_only_source(
+        fake_modules, monkeypatch, ["qwen-max", "qwen-plus-twin-a", "qwen-plus-twin-b"]
+    )
+    _, scrape = fake_modules
+    scrape["dashscope"]["qwen-plus-twin-a"] = pricing(3.0e-7, 1.2e-6)
+    scrape["dashscope"]["qwen-plus-twin-b"] = pricing(3.3e-7, 1.3e-6)
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-plus"] if model_id.startswith("qwen-plus-twin-") else []
+    )
+    seed_store(repo_root, [stored_row("qwen-max"), stored_row("qwen-plus")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert ("dashscope", "qwen-plus-twin-a") not in calls
+    assert ("dashscope", "qwen-plus-twin-b") not in calls
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-plus-twin-a', 'qwen-plus-twin-b'] reach stored 'qwen-plus' "
+        "(the fake_det detector lists [] and prices ['qwen-plus-twin-a', 'qwen-plus-twin-b']): one "
+        "stored price, more than one page id; fix: re-verify on the provider's pages which page id "
+        "prices the model, make it the only page id reaching 'qwen-plus', and confirm the next two "
+        "landed runs refresh it with no absence entry and no removal"
+    ]
+
+
+def test_refresh_refuses_two_priced_only_twins_by_their_own_detector_and_scraper(
+    tmp_path, repo_root, monkeypatch
+):
+    # the twin refusal on a second provider: the page ids, stored spelling
+    # and detector name all come from the fixture
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: []
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-latest", "qwen-turbo-old"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+    calls: list[str] = []
+    qwen_scr.scrape = lambda cfg, model_id: calls.append(model_id)
+    qwen_scr.dedup_keys = lambda model_id: (
+        ["qwen-turbo"] if model_id.startswith("qwen-turbo-") else []
+    )
+    seed_store(repo_root, [stored_row("qwen-turbo", source="qwen")])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    assert calls == []
+    assert report.providers["qwen"].errors == [
+        "FetchError: page ids ['qwen-turbo-latest', 'qwen-turbo-old'] reach stored 'qwen-turbo' "
+        "(the qwen_det detector lists [] and prices ['qwen-turbo-latest', 'qwen-turbo-old']): one "
+        "stored price, more than one page id; fix: re-verify on the provider's pages which page id "
+        "prices the model, make it the only page id reaching 'qwen-turbo', and confirm the next "
+        "two landed runs refresh it with no absence entry and no removal"
+    ]
+
+
+def test_refresh_refuses_two_priced_only_ids_one_of_them_the_stored_spelling(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # one priced-only id is the stored spelling and the other dedups to it:
+    # both page ids reach one stored key, so its one line names both
+    detect, scrape = fake_modules
+    detect["dashscope"] = []
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max",
+        "qwen-max-latest",
+    ]
+    scrape["dashscope"] = {"qwen-max": pricing(), "qwen-max-latest": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id == "qwen-max-latest" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == []
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max', 'qwen-max-latest'] reach stored 'qwen-max' (the "
+        "fake_det detector lists [] and prices ['qwen-max', 'qwen-max-latest']): one stored price, "
+        "more than one page id; fix: re-verify on the provider's pages which page id prices the "
+        "model, make it the only page id reaching 'qwen-max', and confirm the next two landed runs "
+        "refresh it with no absence entry and no removal"
+    ]
+
+
+def test_refresh_refuses_three_priced_only_ids_of_one_stored_key(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # three priced-only ids reach one stored key: one stored price would be
+    # read by more than one page id, so the key gets one line naming all three
+    calls = one_key_source(
+        fake_modules,
+        monkeypatch,
+        "qwen-tw",
+        [],
+        ["qwen-tw-c", "qwen-tw-a", "qwen-tw-b"],
+    )
+    seed_store(repo_root, [stored_row("qwen-tw")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == []
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-tw-a', 'qwen-tw-b', 'qwen-tw-c'] reach stored 'qwen-tw' (the "
+        "fake_det detector lists [] and prices ['qwen-tw-a', 'qwen-tw-b', 'qwen-tw-c']): one "
+        "stored price, more than one page id; fix: re-verify on the provider's pages which page id "
+        "prices the model, make it the only page id reaching 'qwen-tw', and confirm the next two "
+        "landed runs refresh it with no absence entry and no removal"
+    ]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_behind_a_planned_detected_row(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the detected id's refresh plans a row under the stored spelling this
+    # run; the priced-only twin of that key is still refused, not skipped as
+    # a fresh row
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-0501",
+        "qwen-twin",
+    ]
+    scrape["dashscope"] = {"qwen-max-0501": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-0501", "qwen-twin") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert ("dashscope", "qwen-twin") not in calls
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max-0501', 'qwen-twin'] reach stored 'qwen-max' (the fake_det "
+        "detector lists ['qwen-max-0501'] and prices ['qwen-max-0501', 'qwen-twin']): one stored "
+        "price, more than one page id; fix: re-verify on the provider's pages which page id prices "
+        "the model, make it the only page id reaching 'qwen-max', and confirm the next two landed "
+        "runs refresh it with no absence entry and no removal"
+    )
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max", {"input": 0.3, "output": 1.2}, None)
+    ]
+
+
+def test_refresh_refuses_two_priced_only_twins_of_a_detected_key(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # one stored key reached by a detected id and two priced-only ids: one
+    # line names all three, and neither twin reads a row
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-0501",
+        "qwen-twin-a",
+        "qwen-twin-b",
+    ]
+    scrape["dashscope"] = {"qwen-max-0501": pricing()}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-0501", "qwen-twin-a", "qwen-twin-b") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == [("dashscope", "qwen-max-0501")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max-0501', 'qwen-twin-a', 'qwen-twin-b'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max-0501'] and prices ['qwen-max-0501', "
+        "'qwen-twin-a', 'qwen-twin-b']): one stored price, more than one page id; fix: re-verify "
+        "on the provider's pages which page id prices the model, make it the only page id reaching "
+        "'qwen-max', and confirm the next two landed runs refresh it with no absence entry and no "
+        "removal"
+    ]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_naming_every_detected_collider(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # two detected ids reach one stored key beside a priced-only twin: the
+    # detector lists them in page order, the refusal names every detected id
+    # that also reaches the key, and the line sorts them
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-plus-0815", "qwen-plus-0501"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-plus-0501",
+        "qwen-plus-0815",
+        "qwen-plus-twin",
+    ]
+    scrape["dashscope"] = {
+        "qwen-plus-0501": pricing(),
+        "qwen-plus-0815": pricing(),
+        "qwen-plus-twin": pricing(3.0e-7, 1.2e-6),
+    }
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-plus"] if model_id.startswith("qwen-plus-") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-plus")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert calls == [("dashscope", "qwen-plus-0815"), ("dashscope", "qwen-plus-0501")]
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-plus-0501', 'qwen-plus-0815', 'qwen-plus-twin'] reach stored "
+        "'qwen-plus' (the fake_det detector lists ['qwen-plus-0501', 'qwen-plus-0815'] and prices "
+        "['qwen-plus-0501', 'qwen-plus-0815', 'qwen-plus-twin']): one stored price, more than one "
+        "page id; fix: re-verify on the provider's pages which page id prices the model, make it "
+        "the only page id reaching 'qwen-plus', and confirm the next two landed runs refresh it "
+        "with no absence entry and no removal"
+    )
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_of_a_planned_reappearance(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the detected id's refresh plans the removed key's revival row this run:
+    # the detected id confirms the reappearance, so the priced-only twin of
+    # that key is refused by name with the detected reading, before the
+    # planned-row skip can hide it
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-0501",
+        "qwen-twin",
+    ]
+    scrape["dashscope"] = {"qwen-max-0501": pricing(3.0e-7, 1.2e-6)}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id in ("qwen-max-0501", "qwen-twin") else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    price = stored_row("qwen-max")
+    removal = store.build_removal_row("dashscope", "qwen-max", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [price, removal])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert ("dashscope", "qwen-twin") not in calls
+    [error] = report.providers["dashscope"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-max-0501', 'qwen-twin'] reach stored 'qwen-max' (the fake_det "
+        "detector lists ['qwen-max-0501'] and prices ['qwen-max-0501', 'qwen-twin']): one stored "
+        "price, more than one page id; fix: re-verify on the provider's pages which page id prices "
+        "the model, make it the only page id reaching 'qwen-max', detected as well as priced since "
+        "'qwen-max' is removed in the store, and confirm the next two landed runs refresh it with "
+        "no absence entry and no removal"
+    )
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max", {"input": 0.3, "output": 1.2}, None)
+    ]
+
+
+def one_key_source(
+    fake_modules, monkeypatch, stored: str, detected: list[str], priced: list[str]
+) -> list[tuple[str, str]]:
+    """One stored key every page id but the stored spelling dedups onto.
+
+    A detected id off the pricing page reads no price; every other id prices,
+    so a run that skipped a refusal would read a row instead of failing quietly.
+    """
+    detect, scrape = fake_modules
+    detect["dashscope"] = list(detected)
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: list(priced)
+    scrape["dashscope"] = {
+        page_id: None if page_id not in priced else pricing(3.0e-7, 1.2e-6)
+        for page_id in [*detected, *priced]
+    }
+    colliders = {*detected, *priced} - {stored}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        [stored] if model_id in colliders else []
+    )
+    return counted_scrapes(monkeypatch)
+
+
+def test_refresh_refuses_two_priced_only_ids_of_an_unpriced_detected_key(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the detected id reads no price and two priced-only ids reach the key:
+    # one stored price cannot follow three page ids
+    calls = one_key_source(
+        fake_modules,
+        monkeypatch,
+        "qwen-max",
+        ["qwen-max-latest"],
+        ["qwen-twin", "qwen-max-0501"],
+    )
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-latest")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max-0501', 'qwen-max-latest', 'qwen-twin'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max-latest'] and prices ['qwen-max-0501', "
+        "'qwen-twin']): one stored price, more than one page id; fix: re-verify on the provider's "
+        "pages which page id prices the model, make it the only page id reaching 'qwen-max', and "
+        "confirm the next two landed runs refresh it with no absence entry and no removal"
+    ]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_beside_the_stored_spelling(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored spelling is priced-only beside a twin that sorts before it:
+    # both page ids reach the key, and the line names them in sorted order
+    calls = one_key_source(
+        fake_modules,
+        monkeypatch,
+        "qwen-max",
+        ["qwen-max-latest"],
+        ["qwen-early", "qwen-max"],
+    )
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-latest")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-early', 'qwen-max', 'qwen-max-latest'] reach stored "
+        "'qwen-max' (the fake_det detector lists ['qwen-max-latest'] and prices ['qwen-early', "
+        "'qwen-max']): one stored price, more than one page id; fix: re-verify on the provider's "
+        "pages which page id prices the model, make it the only page id reaching 'qwen-max', and "
+        "confirm the next two landed runs refresh it with no absence entry and no removal"
+    ]
+
+
+def test_refresh_refuses_two_priced_only_ids_of_a_detected_stored_spelling(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored spelling is the only detected collider and reads no price:
+    # two priced-only ids reach the key beside it
+    calls = one_key_source(
+        fake_modules,
+        monkeypatch,
+        "qwen-max",
+        ["qwen-max"],
+        ["qwen-twin", "qwen-max-new"],
+    )
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max', 'qwen-max-new', 'qwen-twin'] reach stored 'qwen-max' "
+        "(the fake_det detector lists ['qwen-max'] and prices ['qwen-max-new', 'qwen-twin']): one "
+        "stored price, more than one page id; fix: re-verify on the provider's pages which page id "
+        "prices the model, make it the only page id reaching 'qwen-max', and confirm the next two "
+        "landed runs refresh it with no absence entry and no removal"
+    ]
+
+
+def test_refresh_refuses_a_priced_only_id_of_a_removed_key_an_unpriced_detected_id_reaches(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a removed key an unpriced detected id reaches: the detected id reaches
+    # the stored key, so the line names the collision
+    calls = one_key_source(fake_modules, monkeypatch, "qwen-max", ["qwen-max-0501"], ["qwen-twin"])
+    price = stored_row("qwen-max")
+    removal = store.build_removal_row("dashscope", "qwen-max", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [price, removal])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max-0501")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max-0501', 'qwen-twin'] reach stored 'qwen-max' (the fake_det "
+        "detector lists ['qwen-max-0501'] and prices ['qwen-twin']): one stored price, more than "
+        "one page id; fix: re-verify on the provider's pages which page id prices the model, make "
+        "it the only page id reaching 'qwen-max', detected as well as priced since 'qwen-max' is "
+        "removed in the store, and confirm the next two landed runs refresh it with no absence "
+        "entry and no removal"
+    ]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_id_of_a_removed_key_whose_stored_spelling_is_detected(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a removed key the detector lists under its stored spelling: the stored
+    # spelling is a detected collider, so the line names the collision
+    calls = one_key_source(fake_modules, monkeypatch, "qwen-max", ["qwen-max"], ["qwen-twin"])
+    price = stored_row("qwen-max")
+    removal = store.build_removal_row("dashscope", "qwen-max", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [price, removal])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert calls == [("dashscope", "qwen-max")]
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-max', 'qwen-twin'] reach stored 'qwen-max' (the fake_det "
+        "detector lists ['qwen-max'] and prices ['qwen-twin']): one stored price, more than one "
+        "page id; fix: re-verify on the provider's pages which page id prices the model, make it "
+        "the only page id reaching 'qwen-max', detected as well as priced since 'qwen-max' is "
+        "removed in the store, and confirm the next two landed runs refresh it with no absence "
+        "entry and no removal"
+    ]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_refuses_a_priced_only_twin_of_a_planned_reappearance_on_a_second_provider(
+    tmp_path, repo_root, monkeypatch
+):
+    # the live form on a removed key, on a second provider: the page ids, the
+    # stored spelling and the detector name all come from the fixture, so no
+    # literal of the first removed fixture stands in
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: ["qwen-turbo-latest"]
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-latest", "qwen-turbo-old"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+    calls: list[str] = []
+
+    def scrape(cfg, model_id):
+        calls.append(model_id)
+        return {"qwen-turbo-latest": pricing(3.0e-7, 1.2e-6)}[model_id]
+
+    qwen_scr.scrape = scrape
+    qwen_scr.dedup_keys = lambda model_id: (
+        ["qwen-turbo-0915"] if model_id in ("qwen-turbo-latest", "qwen-turbo-old") else []
+    )
+    price = stored_row("qwen-turbo-0915", source="qwen")
+    removal = store.build_removal_row("qwen", "qwen-turbo-0915", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [price, removal])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    assert calls == ["qwen-turbo-latest"]
+    [error] = report.providers["qwen"].errors
+    assert error == (
+        "FetchError: page ids ['qwen-turbo-latest', 'qwen-turbo-old'] reach stored "
+        "'qwen-turbo-0915' (the qwen_det detector lists ['qwen-turbo-latest'] and prices "
+        "['qwen-turbo-latest', 'qwen-turbo-old']): one stored price, more than one page id; fix: "
+        "re-verify on the provider's pages which page id prices the model, make it the only page "
+        "id reaching 'qwen-turbo-0915', detected as well as priced since 'qwen-turbo-0915' is "
+        "removed in the store, and confirm the next two landed runs refresh it with no absence "
+        "entry and no removal"
+    )
+    assert appended_rows(repo_root, "qwen") == [
+        ("qwen-turbo-0915", {"input": 0.3, "output": 1.2}, None)
+    ]
+
+
+def removed_twin_source(fake_modules, monkeypatch, repo_root) -> list[tuple[str, str]]:
+    """One removed stored key two priced-only ids dedup onto.
+
+    Both candidate-page ids stay priced, so no stored key but the removed one
+    can count absent.
+    """
+    _, scrape = fake_modules
+    priced = ["qwen-max", "qwen-new", "qwen-twin-b", "qwen-twin-a"]
+    calls = priced_only_source(fake_modules, monkeypatch, priced)
+    scrape["dashscope"]["qwen-twin-a"] = pricing(3.0e-7, 1.2e-6)
+    scrape["dashscope"]["qwen-twin-b"] = pricing(3.3e-7, 1.3e-6)
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max-0501"] if model_id.startswith("qwen-twin-") else []
+    )
+    price = stored_row("qwen-max-0501")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [stored_row("qwen-max"), price, removal])
+    return calls
+
+
+def test_refresh_refuses_two_priced_only_twins_of_a_removed_key_in_one_line(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # a removed key two priced-only ids reach gets one line naming both, and
+    # neither id reads a row
+    calls = removed_twin_source(fake_modules, monkeypatch, repo_root)
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert ("dashscope", "qwen-twin-a") not in calls
+    assert ("dashscope", "qwen-twin-b") not in calls
+    assert report.providers["dashscope"].errors == [
+        "FetchError: page ids ['qwen-twin-a', 'qwen-twin-b'] reach stored 'qwen-max-0501', removed "
+        "in the store (the fake_det detector lists [] and prices ['qwen-twin-a', 'qwen-twin-b']): "
+        "refresh cannot tell a reappearance; fix: re-verify on the provider's pages whether the "
+        "model is sold again, then make exactly one page id reach 'qwen-max-0501', detected as "
+        "well as priced, if it is, or none if it is not"
+    ]
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+
+
+def test_refresh_lands_the_revival_of_a_removed_key_once_its_page_id_is_detected_and_priced(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the removed line's end state: the one page id reaching the key is
+    # detected and priced, so the run plans its revival row and refuses nothing
+    detect, _ = fake_modules
+    priced_only_source(fake_modules, monkeypatch, ["qwen-max", "qwen-max-0501"])
+    detect["dashscope"] = ["qwen-max", "qwen-new", "qwen-max-0501"]
+    price = stored_row("qwen-max-0501")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-20", VERSION, price)
+    seed_store(repo_root, [stored_row("qwen-max"), price, removal])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["dashscope"].errors == []
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max-0501", {"input": 0.3, "output": 1.2}, None),
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None),
+    ]
+
+
+def test_refresh_refuses_two_priced_only_ids_by_their_own_detector(repo_root, monkeypatch):
+    # two priced-only ids beside an unpriced detected id, on a second provider:
+    # the page ids, stored spelling and detector name all come from the fixture
+    qwen_det = register_fake_module(monkeypatch, "detectors", "qwen_det")
+    qwen_det.detect = lambda cfg: ["qwen-turbo-latest"]
+    qwen_det.detect_priced = lambda cfg: ["qwen-turbo-old", "qwen-turbo-new"]
+    qwen_scr = register_fake_module(monkeypatch, "scrapers", "qwen_scr")
+    qwen_scr.scrape = lambda cfg, model_id: {"qwen-turbo-latest": None}[model_id]
+    qwen_scr.dedup_keys = lambda model_id: (
+        ["qwen-turbo"] if model_id.startswith("qwen-turbo-") else []
+    )
+    seed_store(repo_root, [stored_row("qwen-turbo", source="qwen")])
+    cfg = config.Config(
+        providers=(
+            config.ProviderCfg(
+                key="qwen",
+                provider="Qwen",
+                detector="qwen_det",
+                detector_url="https://example.com/qwen-models",
+                scraper="qwen_scr",
+                scraper_url="https://example.com/qwen-pricing",
+            ),
+        )
+    )
+
+    report = pipeline.run(cfg, repo_root, PipelineRunner(), today=TODAY, now="000000")
+
+    assert report.providers["qwen"].errors == [
+        "FetchError: page ids ['qwen-turbo-latest', 'qwen-turbo-new', 'qwen-turbo-old'] reach "
+        "stored 'qwen-turbo' (the qwen_det detector lists ['qwen-turbo-latest'] and prices "
+        "['qwen-turbo-new', 'qwen-turbo-old']): one stored price, more than one page id; fix: "
+        "re-verify on the provider's pages which page id prices the model, make it the only page "
+        "id reaching 'qwen-turbo', and confirm the next two landed runs refresh it with no absence "
+        "entry and no removal"
+    ]
+
+
+def test_refresh_does_not_refuse_a_held_priced_only_twin(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the stored key rides an open pr: a held key is read for the health
+    # verdict and never refused, even when two priced-only ids reach it
+    calls = priced_only_source(
+        fake_modules, monkeypatch, ["qwen-max", "qwen-twin-a", "qwen-twin-b"]
+    )
+    _, scrape = fake_modules
+    scrape["dashscope"]["qwen-twin-a"] = pricing()
+    scrape["dashscope"]["qwen-twin-b"] = pricing()
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max-0501"] if model_id.startswith("qwen-twin-") else []
+    )
+    price = stored_row("qwen-max-0501")
+    seed_store(repo_root, [stored_row("qwen-max"), price])
+    pending_branch = pr.branch_name("dashscope@2026-08-25-000000")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-25", VERSION, price)
+    push_pending_branch(repo_root, pending_branch, "dashscope", [price, removal])
+    runner = PipelineRunner(
+        open_prs=[{"title": "Remove dashscope ids", "body": "", "headRefName": pending_branch}]
+    )
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, runner, today=TODAY, now="000000")
+
+    assert report.providers["dashscope"].errors == []
+    assert ("dashscope", "qwen-twin-a") in calls
+    assert ("dashscope", "qwen-twin-b") in calls
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
+
+
+def test_refresh_keeps_two_detected_ids_sharing_a_stored_key_unrefused(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # two detected page ids dedup to one stored key: both read, neither is
+    # the priced-only collision the refusal exists for
+    detect, scrape = fake_modules
+    detect["dashscope"] = ["qwen-max-0501", "qwen-max-0815"]
+    sys.modules["ai_pricelog.detectors.fake_det"].detect_priced = lambda cfg: [
+        "qwen-max-0501",
+        "qwen-max-0815",
+    ]
+    scrape["dashscope"] = {"qwen-max-0501": pricing(), "qwen-max-0815": pricing()}
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max"] if model_id != "qwen-max" else []
+    )
+    calls = counted_scrapes(monkeypatch)
+    seed_store(repo_root, [stored_row("qwen-max")])
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY)
+
+    assert report.providers["dashscope"].errors == []
+    assert calls == [("dashscope", "qwen-max-0501"), ("dashscope", "qwen-max-0815")]
+    assert report.providers["dashscope"].prs == []
+
+
+def test_refresh_reads_a_repeated_priced_only_id_once(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # the priced set repeats a stored id the candidate page omits: one scrape
+    # and one row, because a repeat is not a second page id reaching the key;
+    # the fresh id beside it has no stored spelling and lands nothing
+    calls = priced_only_source(
+        fake_modules, monkeypatch, ["qwen-max-0501", "qwen-max-0501", "qwen-fresh"]
+    )
+    seed_store(repo_root, [stored_row("qwen-max"), stored_row("qwen-max-0501")])
+
+    report = pipeline.run(
+        make_cfg("dashscope"), repo_root, PipelineRunner(), today=TODAY, now="000000"
+    )
+
+    assert report.providers["dashscope"].errors == []
+    assert calls.count(("dashscope", "qwen-max-0501")) == 1
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-max-0501", {"input": 0.3, "output": 1.2}, None),
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None),
+    ]
+
+
+def test_refresh_reads_a_repeated_held_priced_only_id_once(
+    tmp_path, fake_modules, repo_root, monkeypatch
+):
+    # an open pr holds a stored key whose priced set repeats one id: the
+    # repeat is one page id, so refresh scrapes it and reports the hold once
+    calls = priced_only_source(
+        fake_modules, monkeypatch, ["qwen-max", "qwen-twin-a", "qwen-twin-a"]
+    )
+    _, scrape = fake_modules
+    scrape["dashscope"]["qwen-twin-a"] = pricing()
+    sys.modules["ai_pricelog.scrapers.fake_scr"].dedup_keys = lambda model_id: (
+        ["qwen-max-0501"] if model_id.startswith("qwen-twin-") else []
+    )
+    price = stored_row("qwen-max-0501")
+    seed_store(repo_root, [stored_row("qwen-max"), price])
+    pending_branch = pr.branch_name("dashscope@2026-08-25-000000")
+    removal = store.build_removal_row("dashscope", "qwen-max-0501", "2026-08-25", VERSION, price)
+    push_pending_branch(repo_root, pending_branch, "dashscope", [price, removal])
+    runner = PipelineRunner(
+        open_prs=[{"title": "Remove dashscope ids", "body": "", "headRefName": pending_branch}]
+    )
+
+    report = pipeline.run(make_cfg("dashscope"), repo_root, runner, today=TODAY, now="000000")
+
+    dashscope_report = report.providers["dashscope"]
+    assert dashscope_report.errors == []
+    assert calls.count(("dashscope", "qwen-twin-a")) == 1
+    assert dashscope_report.skipped_pending == ["qwen-max-0501"]
+    assert dashscope_report.tried.count("qwen-max-0501") == 1
+    assert appended_rows(repo_root, "dashscope") == [
+        ("qwen-new", {"input": 0.27, "output": 1.1}, None)
+    ]
 
 
 def test_refresh_without_detect_priced_reads_the_detected_ids(

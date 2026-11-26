@@ -64,7 +64,8 @@ class ProviderReport:
     prs: list[tuple[str, str]] = field(default_factory=list)
     skipped_pending: list[str] = field(default_factory=list)
     # every id the provider attempted, one entry per attempt (openrouter: to
-    # build_row); a priced-only id the refresh refuses counts as attempted
+    # build_row); a refused stored key counts as one attempt, and a detected
+    # collider scraped on that key adds another entry before the refusal
     tried: list[str] = field(default_factory=list)
     skipped_no_pricing: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -576,27 +577,47 @@ def _refresh_drift(
     the candidate page does not) stays live in absence, so it refreshes
     too, through its stored spelling only: it never seeds a candidate.
     `_refuse_priced_only` raises for the stored states refresh has no
-    reading for.
+    reading for: a removed spelling, one a detected id also reaches, or one
+    another priced-only id also reaches. A key in one of those states is
+    refused once, at its first priced-only id, and its line names every page
+    id reaching the key, so the key's other priced-only ids add no line of
+    their own; a held key is never refused.
     """
     listed = set(detected)
+    priced = set(absence_ids or ())
     priced_only = [page_id for page_id in dict.fromkeys(absence_ids or ()) if page_id not in listed]
-    covered = (
-        {_stored_spelling(rows, pcfg.key, page_id, dedup_keys) for page_id in detected}
-        if priced_only
-        else set()
-    )
+    stored_of = {
+        page_id: _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
+        for page_id in dict.fromkeys([*detected, *priced_only])
+    }
+    reach: dict[str, list[str]] = {}
+    for page_id, stored in stored_of.items():
+        if stored is not None:
+            reach.setdefault(stored, []).append(page_id)
+    consulted: set[str] = set()
+    # detected ids first: nothing below reads the sequence; the order sets the
+    # tried, errors, skipped_pending and skipped_no_pricing entries and the PR
+    # body's row lines
     for page_id in [*detected, *priced_only]:
-        stored = _stored_spelling(rows, pcfg.key, page_id, dedup_keys)
-        if stored is None or (pcfg.key, stored) in plan:
-            continue  # nothing stored yet, or the row is fresh from this run
+        stored = stored_of[page_id]
+        if stored is None:
+            continue  # nothing stored yet
         held = (pcfg.key, stored) in held_keys
+        # a priced-only id consults the refusal before the planned-row skip,
+        # so a twin cannot hide behind a row this run already planned
+        refusal_due = page_id not in listed and not held
+        if refusal_due and stored in consulted:
+            continue  # the key's one refusal line already names this id
+        if (pcfg.key, stored) in plan and not refusal_due:
+            continue  # the row is fresh from this run
         if held:
             log.info("refresh row for %r skipped: pending pr", stored)
             provider_report.skipped_pending.append(stored)
         provider_report.tried.append(stored)
         try:
-            if page_id not in listed and not held:
-                _refuse_priced_only(pcfg, rows, stored, covered)
+            if refusal_due:
+                consulted.add(stored)
+                _refuse_priced_only(pcfg, rows, stored, reach[stored], listed, priced)
             pricing = scraper.scrape(pcfg, page_id)
         except Exception as exc:
             log.exception("refresh scrape failed for %r (%s)", stored, pcfg.key)
@@ -638,24 +659,51 @@ def _refuse_priced_only(
     pcfg: config.ProviderCfg,
     rows: list[dict[str, object]],
     stored: str,
-    covered: set[str | None],
+    colliders: list[str],
+    listed: set[str],
+    priced: set[str],
 ) -> None:
-    """Raise when a priced-only id's stored spelling has no refresh reading.
+    """Raise when a stored key a priced-only id reaches has no single refresh reading.
 
-    A removed spelling only the pricing page lists is no reappearance the
-    candidate page confirms, and a spelling a detected id already refreshes
-    would read one key from two page rows.
+    A key a detected id or another priced-only id also reaches leaves one
+    stored price that more than one page id would read; a removed key only
+    the priced set lists, one no detected id confirms this run, is no
+    reappearance the candidate page settles. The line names every page id
+    reaching the key, which of them are detected and which priced, and ends
+    with the goal state its fix clause states: one page id prices the model
+    and reaches a live key; a removed key clears only once one page id
+    reaches it, detected as well as priced, so its end state is that one id
+    or, when the model is not sold again, none.
     """
-    if store.newest(rows, pcfg.key, stored).get("removed") is True:
-        raise web.FetchError(
-            f"{stored!r} is removed in the store and absent from {pcfg.detector_url}, "
-            f"but priced on {pcfg.scraper_url}: refresh cannot tell a reappearance"
+    removed = store.newest(rows, pcfg.key, stored).get("removed") is True
+    if len(colliders) < 2 and not removed:
+        return
+    detected = sorted(page_id for page_id in colliders if page_id in listed)
+    reach = f"page ids {sorted(colliders)!r} reach stored {stored!r}"
+    pages = (
+        f"(the {pcfg.detector} detector lists {detected!r} and prices "
+        f"{sorted(page_id for page_id in colliders if page_id in priced)!r})"
+    )
+    if detected or not removed:
+        reason = f"{reach} {pages}: one stored price, more than one page id"
+        removed_clause = (
+            f", detected as well as priced since {stored!r} is removed in the store"
+            if removed
+            else ""
         )
-    if stored in covered:
-        raise web.FetchError(
-            f"{stored!r} is refreshed through a detected id and through another "
-            f"page id priced on {pcfg.scraper_url}"
+        fix = (
+            f"re-verify on the provider's pages which page id prices the model, make it the only "
+            f"page id reaching {stored!r}{removed_clause}, and confirm the next two "
+            f"landed runs refresh it with no absence entry and no removal"
         )
+    else:
+        reason = f"{reach}, removed in the store {pages}: refresh cannot tell a reappearance"
+        fix = (
+            f"re-verify on the provider's pages whether the model is sold again, then make exactly "
+            f"one page id reach {stored!r}, detected as well as priced, if it is, or none if "
+            f"it is not"
+        )
+    raise web.FetchError(f"{reason}; fix: {fix}")
 
 
 def _openrouter_rows(
