@@ -46,8 +46,8 @@
     },
     "https://platform.kimi.ai/docs/llms.txt": {
       "file": "state/announce/moonshot/llms-txt.md",
-      "sha256": "e534fdc3a301384c0d140fbffd15156381e099485a3de9029d9dfa79ec09db7d",
-      "fetched": "2026-11-24T15:00:17Z"
+      "sha256": "a8674baf1a9583327c4ead3b9f66e6639768213db9e7fd7096ce762e04d58c8c",
+      "fetched": "2026-11-26T10:00:16Z"
     }
   },
   "minimax": {
@@ -58,8 +58,8 @@
     },
     "https://www.minimax.io/blog": {
       "file": "state/announce/minimax/blog.md",
-      "sha256": "17c57f21c561c6468b6adac7205490b04c50134ef09d6e092160cf6c013ec4c1",
-      "fetched": "2026-11-23T16:00:17Z"
+      "sha256": "b0867bacf4a2431385a8c5ae816b78a212bd045cc0645647abf7caa234b3bcba",
+      "fetched": "2026-11-26T10:00:16Z"
     }
   },
   "xai": {

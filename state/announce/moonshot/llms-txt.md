@@ -94,7 +94,7 @@ The secret is never returned.
 - [Revoke API key](https://platform.kimi.ai/docs/admin-api/api-key-revoke.md): Revokes (soft-deletes) an inference API key.
 Revocation is not immediate and can be delayed by caches.
 Repeating the revoke returns `404 key_not_found`.
-- [Get organization rate limits](https://platform.kimi.ai/docs/admin-api/rate-limits.md): Get organization rate limits - [Get project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits.md): Project daily/monthly consume limits in milli-cent.
+- [Get organization rate limits](https://platform.kimi.ai/docs/admin-api/rate-limits.md): Get organization rate limits - [Get project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits.md): Project daily, monthly, and total cumulative consume limits in milli-cent.
 - [Update project spend limit](https://platform.kimi.ai/docs/admin-api/project-spend-limits-update.md): Update project consume limits in milli-cent.
 Each field has three semantics: omitted keeps the current value; `null` clears the limit (unlimited); a number sets a new limit.
 - [Model Inference Pricing](https://platform.kimi.ai/docs/pricing/chat.md): Understand token billing, input and output charges, cache discounts, and pricing links for Kimi model inference.
