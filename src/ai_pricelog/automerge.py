@@ -43,8 +43,11 @@ as a merged PR. the step passes only branches the pass marked
 - each shard line the union appends passes `validate_row` in the pre-flight:
   the pass is authorized to hand-edit a branch row, so the merge is the one
   path a shape the contract forbids can take into the store, and a refused
-  line stops the run by name before any branch merges. HEAD's own lines are
-  exempt, they already sit in the append-only store
+  line stops the run by name before any branch merges. each date field it
+  checks (`observed_at`, `effective_at`, `provenance.fx_rate_date`) must be
+  ASCII digits naming a real calendar day, since the schema's pattern pins
+  the shape only. HEAD's own lines are exempt, they already sit in the
+  append-only store
 - every line the merge stages with the branch's own bytes (a shard line the
   union appends, a channel or absence file it copies, the billing pin while
   the rules stay unchanged) passes the staged merge's `git diff --check`
@@ -63,8 +66,22 @@ as a merged PR. the step passes only branches the pass marked
   in-flight tree lacks (an earlier merge of the burst pruned it); a merge base
   that moved because the branch shares commits with an earlier branch of the
   burst; and git's own failures. after the last merge commit, the README stats
-  refresh and the clean-tree and ancestry checks can still refuse the push,
-  leaving the merge commits local
+  refresh can still refuse the push on an input the pre-flight does not
+  check (among them the README's stats blocks, and a HEAD-side catalog or
+  shard input the pre-flight leaves alone, which the refresh's own read
+  refuses: a models.json HEAD carries emptied, missing or at another version
+  that no branch's diff names, a HEAD row missing a field the stats read or
+  whose observed_at names no calendar day), and so can the clean-tree and
+  ancestry checks, leaving the merge commits local
+- the catalog the burst lands (the models.json union run over the branches
+  in merge order, what the README stats refresh loads after the last merge
+  commit) passes the catalog loader's own entry check
+  (`models.check_model_entries`) in the pre-flight, each entry named by the
+  branch whose union landed it or by HEAD; and it still claims every key
+  HEAD's shards store that HEAD's catalog claims, so a branch edit the union
+  lands that leaves such a key unclaimed is refused by key, and a source swap
+  it lands merges by hand, unless a later branch of the burst claims the key
+  again
 - each branch pre-flights two bounds before anything lands: the churn gate
   (at most 50 models created, 50 removed, 500 rows appended vs the burst
   base) returns an `unsafe` refusal naming the counts, and every appended
@@ -765,8 +782,7 @@ def _catalog_claims(text: str, label: str, fix: str) -> set[tuple[str, str]]:
     """
     if not text:
         return set()
-    entries = _parse_models(text, label, fix).values()
-    return {claim for entry in entries for claim in _entry_claims(entry)}
+    return _models_claims(_parse_models(text, label, fix))
 
 
 def _entry_claims(entry: dict[str, Any]) -> set[tuple[str, str]]:
@@ -880,7 +896,9 @@ def _check_carried_claims(
                     )
 
 
-def _burst_catalog(runner: pr.PrRunner, repo_root: Path, branches: list[str]) -> str:
+def _burst_catalog(
+    runner: pr.PrRunner, repo_root: Path, branches: list[str], head_keys: set[tuple[str, str]]
+) -> str:
     """models.json as the burst lands it: the merge's own union over ``branches`` in order.
 
     starting from HEAD's copy, each branch whose diff names the catalog (the
@@ -889,19 +907,90 @@ def _burst_catalog(runner: pr.PrRunner, repo_root: Path, branches: list[str]) ->
     catalog-changing merge writes. a copy the diff does not name equals its
     merge base's and lands nothing; it still parses here, so a junk copy
     refuses by name whether or not the union reads it. HEAD's copy parses
-    first, so a junk base copy is the cause reported before any branch's.
+    before any branch's copy the union does not read, so a junk base copy is
+    the cause reported before such a branch copy.
+
+    the README stats refresh after the last merge commit loads the landed
+    file through `models.load_models`, and the default branch's coverage
+    check needs a claim for every key its shards store under a source
+    `providers.json` names: every landed entry passes the loader's own entry
+    check here and every claim HEAD holds for a stored key stays claimed
+    (_check_landed_catalog). a HEAD copy no branch's diff names keeps the
+    loader's file-level checks (among them a missing, emptied or other-version
+    file) post-merge, and the module docstring names that class. each entry is
+    named by the revision that landed it: HEAD, or the last branch whose union
+    changed it.
     """
     landed = _head_text(runner, repo_root, models.MODELS_FILE)
-    if landed:
-        _parse_models(landed, "HEAD", _FIX_HEAD_COPY)
+    head_models = _parse_models(landed, "HEAD", _FIX_HEAD_COPY) if landed else {}
+    current = head_models
+    landed_by: dict[str, str] = {}
+    dropped_by: dict[tuple[str, str], str] = {}
     for branch in branches:
         if models.MODELS_FILE in _branch_diff_paths(runner, repo_root, branch):
             landed = _branch_union(runner, repo_root, branch, landed)
+            unioned = json.loads(landed)["models"]
+            landed_by.update(
+                (canonical, branch)
+                for canonical, entry in unioned.items()
+                if current.get(canonical) != entry
+            )
+            # a later branch can land a dropped claim again, so the branch
+            # named is the last one whose union dropped it
+            dropped_by.update(
+                (claim, branch) for claim in _models_claims(current) - _models_claims(unioned)
+            )
+            current = unioned
             continue
         branch_text = _branch_text(runner, repo_root, branch, models.MODELS_FILE)
         if branch_text:
             _parse_models(branch_text, f"branch {branch}", _FIX_BRANCH_COPY)
+    if landed:
+        _check_landed_catalog(landed, landed_by, head_models, head_keys, dropped_by)
     return landed
+
+
+def _models_claims(entries: dict[str, dict[str, Any]]) -> set[tuple[str, str]]:
+    """Every (source, model_id) pair a parsed models map claims."""
+    return {claim for entry in entries.values() for claim in _entry_claims(entry)}
+
+
+def _check_landed_catalog(
+    landed: str,
+    landed_by: dict[str, str],
+    head_models: dict[str, dict[str, Any]],
+    head_keys: set[tuple[str, str]],
+    dropped_by: dict[tuple[str, str], str],
+) -> None:
+    """Refuse a landed catalog whose entries the loader refuses or that drops a stored key's claim.
+
+    each entry runs through `models.check_model_entries`, the loader's own
+    entry check, so a rule the loader gains reaches this pre-flight too; it
+    is named against the branch in ``landed_by`` that landed it, else HEAD.
+    then every claim HEAD's catalog holds for a key HEAD's shards store must
+    still be claimed: the union lands an entry only when none of its pairs is
+    claimed already, so a claim leaves the catalog only when a branch's entry
+    replaces the entry of the same canonical id with one claiming none of its
+    pairs; the refusal sends that landing to a hand merge, which
+    tests/test_catalog.py's coverage check judges.
+    """
+    entries = json.loads(landed)["models"]
+    for canonical, entry in entries.items():
+        branch = landed_by.get(canonical)
+        label, fix = (f"branch {branch}", _FIX_BRANCH_COPY) if branch else ("HEAD", _FIX_HEAD_COPY)
+        try:
+            models.check_model_entries({canonical: entry}, f"{label}: {models.MODELS_FILE}")
+        except models.MappingError as exc:
+            raise AutoMergeError(f"{exc}; fix: {fix}") from exc
+    kept = _models_claims(entries)
+    for canonical, entry in sorted(head_models.items()):
+        for claim in sorted((_entry_claims(entry) & head_keys) - kept):
+            raise AutoMergeError(
+                f"branch {dropped_by[claim]}: the catalog the burst lands no longer claims"
+                f" {claim!r}, a key HEAD's shards store and HEAD's entry {canonical!r}"
+                " claims; fix: merge the PR by hand so that tests/test_catalog.py's coverage"
+                " check passes on the result, or close the PR"
+            )
 
 
 def _branch_union(runner: pr.PrRunner, repo_root: Path, branch: str, landed: str) -> str:
@@ -936,7 +1025,7 @@ def _union_models(head_text: str, branch_text: str, base_text: str, branch: str)
         if base_text
         else {}
     )
-    head_claims = {claim for entry in merged.values() for claim in _entry_claims(entry)}
+    head_claims = _models_claims(merged)
     for canonical, entry in branch_models.items():
         if base_models.get(canonical) == entry:
             continue
@@ -1459,8 +1548,9 @@ def merge_branches(
     absence file a branch changed lands unless HEAD's copy comes from a newer
     run, so a held older-run branch never reverts newer counters). every
     branch pre-flights the branch-side files the merge reads, its appended
-    rows, the churn bounds (waived with a logged count under `human`) and the
-    catalog-claim check (never waived) before the first git merge. a branch
+    rows, the churn bounds (waived with a logged count under `human`), the
+    landed catalog's entry and stored-key checks and the catalog-claim check
+    (none of the three ever waived) before the first git merge. a branch
     whose tip HEAD already holds (the state a failed branch-ref cleanup
     strands: the merge landed, the PR stayed open) is dropped with a skip line,
     its remote ref deleted under push once its rows are provably on
@@ -1543,7 +1633,9 @@ def merge_branches(
         runner,
         repo_root,
         branches,
-        _catalog_claims(_burst_catalog(runner, repo_root, branches), "HEAD", _FIX_HEAD_COPY),
+        _catalog_claims(
+            _burst_catalog(runner, repo_root, branches, head_keys), "HEAD", _FIX_HEAD_COPY
+        ),
     )
 
     # the burst base, captured once before the first merge commit advances

@@ -329,6 +329,72 @@ def test_provenance_bad_fx_rate_date_rejected():
         )
 
 
+DATE_FIELDS = ("observed_at", "effective_at", "provenance.fx_rate_date")
+
+# the fullwidth digit forms: \d matches them, the ISO parser does not
+FULLWIDTH_DATE = "2026-08-26".translate(
+    str.maketrans("0123456789", "".join(chr(0xFF10 + digit) for digit in range(10)))
+)
+
+
+def date_row(field: str, value: object) -> dict:
+    """A row carrying ``value`` in ``field``, so one bad spelling reaches one date check."""
+    if field == "observed_at":
+        return row(observed_at=value)
+    if field == "effective_at":
+        return row(effective_at=value)
+    return row(
+        currency="EUR",
+        provenance={"url": "https://example.com", "fx_rate": 1.1643, "fx_rate_date": value},
+    )
+
+
+def bad_date_message(field: str, value: object) -> str:
+    return (
+        f"row field '{field}' has bad value {value!r}; fix: ASCII digits in a"
+        " YYYY-MM-DD date that exists on the calendar"
+    )
+
+
+@pytest.mark.parametrize("field", DATE_FIELDS)
+@pytest.mark.parametrize(
+    "bad", ["2026-02-29", "2026-02-30", "2026-13-01", "2026-00-10", FULLWIDTH_DATE]
+)
+def test_a_date_field_must_name_a_real_calendar_day(field, bad):
+    # the row contract's date pattern pins a shape only: such a row can land in
+    # the append-only store and then stop the stats refresh
+    with pytest.raises(ValidationError) as excinfo:
+        check(date_row(field, bad))
+
+    assert str(excinfo.value) == bad_date_message(field, bad)
+
+
+@pytest.mark.parametrize(
+    ("field", "bad"),
+    [
+        ("observed_at", None),
+        ("observed_at", 5),
+        ("effective_at", 5),
+        ("provenance.fx_rate_date", 5),
+    ],
+)
+def test_a_date_field_must_be_a_string(field, bad):
+    with pytest.raises(ValidationError) as excinfo:
+        check(date_row(field, bad))
+
+    assert str(excinfo.value) == bad_date_message(field, bad)
+
+
+@pytest.mark.parametrize("field", DATE_FIELDS)
+def test_a_date_field_accepts_a_leap_day(field):
+    check(date_row(field, "2024-02-29"))
+
+
+def test_an_explicit_null_effective_at_stays_legal():
+    # the field is optional, and null spells "no effective date" as absence does
+    check(row(effective_at=None))
+
+
 def test_override_empty_entry_rejected():
     with pytest.raises(ValidationError, match="overrides"):
         check(row(overrides=[{}]))

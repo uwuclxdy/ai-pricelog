@@ -924,7 +924,9 @@ def test_burst_catalog_is_the_catalog_the_merge_lands(tmp_path):
     )
     branches = ["pricelog/alpha-00000001", "pricelog/beta-00000002"]
 
-    landed = automerge._burst_catalog(pr.PrRunner(), repo, branches)
+    landed = automerge._burst_catalog(
+        pr.PrRunner(), repo, branches, automerge._head_store_keys(pr.PrRunner(), repo)
+    )
     automerge.merge_branches(branches, repo, pr.PrRunner(), "main", push=False)
 
     assert landed == (repo / models.MODELS_FILE).read_text(encoding="utf-8")
@@ -2553,6 +2555,69 @@ def test_merge_refuses_an_appended_row_the_contract_forbids(tmp_path, monkeypatc
         )
 
     assert git(repo, "rev-parse", "main").strip() == before
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_an_appended_row_whose_date_is_no_calendar_day(tmp_path, monkeypatch):
+    # the row contract's date pattern pins a shape only: 2026-02-30 would land
+    # in the append-only store and then stop the README stats refresh after
+    # HEAD moved, so the pre-flight refuses it naming the branch line
+    repo, _bare = build_repo(tmp_path)
+    make_branch(
+        repo,
+        "pricelog/xi-77777777",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-02-30", 0.44)],
+    )
+    before = git(repo, "rev-parse", "main").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/xi-77777777"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        "branch pricelog/xi-77777777: origin/pricelog/xi-77777777:data/history/"
+        "deepseek.ndjson line 1 fails the row contract: row field 'observed_at' has"
+        " bad value '2026-02-30'; fix: ASCII digits in a YYYY-MM-DD date that exists"
+        " on the calendar. do not retry: report the error and leave every PR open"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_bad_date_row_the_stats_refresh_would_not_stop_on(tmp_path, monkeypatch):
+    # 2026-02-30 sorts between two HEAD dates, so the stats refresh parses only
+    # real days and the row would land silently in the append-only store; the
+    # pre-flight still refuses it before any merge
+    repo, _bare = build_repo(tmp_path)
+    shard_dir = repo / "data" / "history"
+    store.save_shard(
+        [
+            *store.load_shard(shard_dir, "deepseek"),
+            make_row("deepseek", "deepseek-v4-pro", "2026-01-15", 0.4),
+        ],
+        shard_dir,
+        "deepseek",
+    )
+    git(repo, "commit", "-am", "land an earlier observation")
+    git(repo, "push", "origin", "main")
+    make_branch(
+        repo,
+        "pricelog/omicron-66666666",
+        [make_row("deepseek", "deepseek-v4-pro", "2026-02-30", 0.42)],
+    )
+    before = git(repo, "rev-parse", "main").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/omicron-66666666"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/omicron-66666666: origin/pricelog/omicron-66666666:data/history/"
+        "deepseek.ndjson line 2 fails the row contract: row field 'observed_at' has"
+        " bad value '2026-02-30'; fix: ASCII digits in a YYYY-MM-DD date that exists"
+        " on the calendar. do not retry: report the error and leave every PR open"
+    )
     assert_refused_before_any_merge(repo, before, calls)
 
 
@@ -4359,6 +4424,442 @@ def test_row_for_a_source_an_edit_adds_to_a_head_entry_is_refused(tmp_path, monk
         "pricelog/edit-00000001", "zai", "deepseek-v4-pro"
     )
     assert_refused_before_any_merge(repo, before, calls)
+
+
+HEAD_ENTRY = {"vendor": "deepseek", "curated": False, "sources": {"deepseek": ["deepseek-v4-pro"]}}
+
+
+def set_entries(entries: dict[str, object]) -> Callable[[Path], None]:
+    """An edit that sets ``entries`` over the checkout's catalog copy and stages it."""
+
+    def edit(repo: Path) -> None:
+        path = repo / models.MODELS_FILE
+        catalog = json.loads(path.read_text(encoding="utf-8"))
+        catalog["models"].update(entries)
+        path.write_text(json.dumps(catalog, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        git(repo, "add", "--", models.MODELS_FILE)
+
+    return edit
+
+
+def commit_on_main(repo: Path, edit: Callable[[Path], None]) -> None:
+    """Commit the change ``edit`` stages on main, and push it."""
+    edit(repo)
+    git(repo, "commit", "-m", "hand edit on main")
+    git(repo, "push", "origin", "main")
+
+
+def append_rows(rows: list[dict]) -> Callable[[Path], None]:
+    """An edit appending ``rows`` to their source shards, the catalog untouched."""
+
+    def edit(repo: Path) -> None:
+        shard_dir = repo / "data" / "history"
+        for row in rows:
+            source = row["source"]
+            store.save_shard(store.load_shard(shard_dir, source) + [row], shard_dir, source)
+        git(repo, "add", "--", "data/history")
+
+    return edit
+
+
+def dropped_claim_refusal(branch: str) -> str:
+    return (
+        f"branch {branch}: the catalog the burst lands no longer claims"
+        " ('deepseek', 'deepseek-v4-pro'), a key HEAD's shards store and HEAD's entry"
+        " 'deepseek/deepseek-v4-pro' claims; fix: merge the PR by hand so that"
+        " tests/test_catalog.py's coverage check passes on the result, or close the PR"
+    )
+
+
+@pytest.mark.parametrize(
+    ("entry", "reason"),
+    [
+        ({"curated": False, "sources": {"vendor": ["new"]}}, "is missing 'vendor'"),
+        (
+            {"vendor": "vendor", "curated": False, "sources": {}},
+            "sources must be a non-empty object",
+        ),
+        ({"vendor": "vendor", "sources": {"vendor": ["new"]}}, "curated must be a boolean"),
+        (
+            {"vendor": "vendor", "curated": False, "sources": {"vendor": []}},
+            "sources entry 'vendor' must map to one id or a non-empty list of ids",
+        ),
+        (
+            {"vendor": "vendor", "curated": False, "sources": {"vendor": ["new"]}, "note": "x"},
+            "has unknown key 'note'",
+        ),
+    ],
+    ids=["no-vendor", "no-sources", "no-curated", "empty-id-list", "unknown-key"],
+)
+def test_merge_refuses_a_branch_entry_the_catalog_loader_refuses(
+    tmp_path, monkeypatch, entry, reason
+):
+    # the README stats refresh after the last merge commit loads the landed
+    # catalog through models.load_models, so an entry the union lands that the
+    # loader refuses would stop the run with HEAD already moved; the pre-flight
+    # runs the loader's own entry check on the catalog the burst lands
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(repo, "pricelog/entry-00000001", set_entries({"vendor/new": entry}))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/entry-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        f"branch pricelog/entry-00000001: data/catalog/models.json: model 'vendor/new' {reason};"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_refuses_a_head_entry_the_catalog_loader_refuses(tmp_path, monkeypatch):
+    # every HEAD entry no branch replaces lands as it is, and the refresh loads
+    # it beside the rest, so a HEAD entry the loader refuses is named against
+    # the base branch
+    repo, _bare = build_repo(tmp_path)
+    commit_on_main(
+        repo, set_entries({"vendor/old": {"curated": True, "sources": {"vendor": ["old"]}}})
+    )
+    commit_on_branch(
+        repo,
+        "pricelog/upd-00000001",
+        append_rows([make_row("deepseek", "deepseek-v4-pro", "2026-08-31", 0.5)]),
+    )
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/upd-00000001"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        "HEAD: data/catalog/models.json: model 'vendor/old' is missing 'vendor';"
+        " fix: correct the named copy on the base branch, then re-run"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize("shape", ["empty-models-map", "head-lacks-catalog"])
+def test_merge_refuses_a_branch_entry_when_head_holds_no_catalog(tmp_path, monkeypatch, shape):
+    # the entry check reads the catalog the burst lands, which can hold only
+    # branch entries: a HEAD carrying an empty model map, or no catalog at
+    # all, still refuses a landed entry the loader refuses
+    repo, _bare = build_repo(tmp_path)
+    entry = {"curated": False, "sources": {"vendor": ["new"]}}
+    branch = "pricelog/none-00000001"
+    if shape == "empty-models-map":
+        commit_on_main(
+            repo, write_file(models.MODELS_FILE, json.dumps({"version": 4, "models": {}}) + "\n")
+        )
+        commit_on_branch(repo, branch, set_entries({"vendor/new": entry}))
+    else:
+        git(repo, "rm", "-q", models.MODELS_FILE)
+        git(repo, "commit", "-m", "drop the catalog")
+        git(repo, "push", "origin", "main")
+        added = json.dumps({"version": 4, "models": {"vendor/new": entry}}) + "\n"
+        commit_on_branch(repo, branch, write_file(models.MODELS_FILE, added))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches([branch], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        f"branch {branch}: data/catalog/models.json: model 'vendor/new' is missing 'vendor';"
+        " fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_names_the_last_branch_landing_an_entry_the_loader_refuses(tmp_path, monkeypatch):
+    # an entry is named against the branch whose union landed the copy that
+    # stays: the older branch seeds it, the newer replaces it with a copy
+    # claiming other pairs that carries no vendor
+    repo, _bare = build_repo(tmp_path)
+    seeded = {"vendor": "vendor", "curated": False, "sources": {"a": ["x"]}}
+    commit_on_branch(repo, "pricelog/first-00000001", set_entries({"vendor/x": seeded}))
+    replaced = {"curated": False, "sources": {"b": ["y"]}}
+    commit_on_branch(repo, "pricelog/redo-00000002", set_entries({"vendor/x": replaced}))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/first-00000001", "pricelog/redo-00000002"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/redo-00000002: data/catalog/models.json: model 'vendor/x' is missing"
+        " 'vendor'; fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_lands_a_branch_edit_replacing_a_head_entry_the_loader_refuses(tmp_path):
+    # the check reads the catalog the burst lands, never HEAD's raw copy: a
+    # branch edit replacing every source of a HEAD entry the loader refuses
+    # lands its own entry, and the merged catalog loads
+    repo, _bare = build_repo(tmp_path)
+    commit_on_main(
+        repo, set_entries({"vendor/old": {"curated": True, "sources": {"vendor": ["old"]}}})
+    )
+    edited = {"vendor": "vendor", "curated": True, "sources": {"other": ["old-v2"]}}
+    commit_on_branch(repo, "pricelog/fix-00000001", set_entries({"vendor/old": edited}))
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/fix-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/fix-00000001"]
+    assert models.load_models(repo / models.MODELS_FILE) == {
+        "deepseek/deepseek-v4-pro": HEAD_ENTRY,
+        "vendor/old": edited,
+    }
+    assert git(repo, "status", "--porcelain") == ""
+
+
+@pytest.mark.parametrize("shape", ["unchanged-from-its-merge-base", "twin-of-a-head-claim"])
+def test_merge_does_not_check_a_branch_entry_the_union_skips(tmp_path, shape):
+    # an entry the union skips never reaches the landed catalog, so the
+    # loader's check never reads it: one the branch carries unchanged from its
+    # merge base (HEAD deleted it since), and one claiming a pair HEAD claims
+    repo, _bare = build_repo(tmp_path)
+    junk = {"curated": False, "sources": {"vendor": ["old"]}}
+    seed = {"vendor": "zai", "curated": False, "sources": {"zai": ["glm-5"]}}
+    if shape == "unchanged-from-its-merge-base":
+        commit_on_main(repo, set_entries({"vendor/old": junk}))
+        commit_on_branch(repo, "pricelog/skip-00000001", set_entries({"zai/glm-5": seed}))
+        catalog = json.loads((repo / models.MODELS_FILE).read_text(encoding="utf-8"))
+        del catalog["models"]["vendor/old"]
+        commit_on_main(repo, write_file(models.MODELS_FILE, json.dumps(catalog) + "\n"))
+    else:
+        twin = {"curated": False, "sources": {"deepseek": ["deepseek-v4-pro"]}}
+        commit_on_branch(
+            repo, "pricelog/skip-00000001", set_entries({"deepseek/twin": twin, "zai/glm-5": seed})
+        )
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/skip-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/skip-00000001"]
+    assert models.load_models(repo / models.MODELS_FILE) == {
+        "deepseek/deepseek-v4-pro": HEAD_ENTRY,
+        "zai/glm-5": seed,
+    }
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_a_rule_the_catalog_loader_gains_reaches_the_merge_pre_flight(tmp_path, monkeypatch):
+    # the pre-flight calls the loader's own entry check, never a copy of it:
+    # a rule planted in models.check_model_entries refuses the loader's read
+    # and the merge alike
+    real_check = models.check_model_entries
+
+    def planted(entries, label):
+        for canonical, entry in entries.items():
+            if entry.get("name") == "planted":
+                raise models.MappingError(f"{label}: model '{canonical}' name is planted")
+        return real_check(entries, label)
+
+    entry = {"name": "planted", "vendor": "vendor", "curated": False, "sources": {"v": ["new"]}}
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(repo, "pricelog/plant-00000001", set_entries({"vendor/new": entry}))
+    monkeypatch.setattr(models, "check_model_entries", planted)
+    loaded = tmp_path / "models.json"
+    loaded.write_text(json.dumps({"version": 4, "models": {"vendor/new": entry}}), encoding="utf-8")
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(models.MappingError) as loader_error:
+        models.load_models(loaded)
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/plant-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(loader_error.value) == f"models file '{loaded}': model 'vendor/new' name is planted"
+    assert str(excinfo.value) == (
+        "branch pricelog/plant-00000001: data/catalog/models.json: model 'vendor/new'"
+        " name is planted; fix: correct the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize("human", [False, True], ids=["ci", "human"])
+def test_merge_refuses_a_branch_edit_dropping_the_claim_of_a_stored_key(
+    tmp_path, monkeypatch, human
+):
+    # a branch edit replacing every source of HEAD's entry lands (it claims no
+    # pair HEAD claims), leaving the key HEAD's shards store unclaimed though
+    # HEAD's catalog claims it; the merge refuses that landing by key unless a
+    # later branch of the burst claims the key again, and `--human` waives
+    # only the churn bounds
+    repo, _bare = build_repo(tmp_path)
+    swapped = {
+        "vendor": "deepseek",
+        "curated": True,
+        "sources": {"openrouter": ["deepseek/deepseek-v4-pro"]},
+    }
+    commit_on_branch(
+        repo, "pricelog/swap-00000001", set_entries({"deepseek/deepseek-v4-pro": swapped})
+    )
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/swap-00000001"], repo, pr.PrRunner(), "main", push=False, human=human
+        )
+
+    assert str(excinfo.value) == dropped_claim_refusal("pricelog/swap-00000001")
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+SWAPPED = {"vendor": "deepseek", "curated": True, "sources": {"openrouter": ["ds/v4"]}}
+RECLAIMED = {"vendor": "deepseek", "curated": False, "sources": {"deepseek": ["deepseek-v4-pro"]}}
+
+
+def test_merge_lands_a_stored_claim_a_later_branch_claims_again(tmp_path):
+    # the check reads the catalog the burst lands, so a claim one branch's
+    # edit drops and a later branch of the burst claims again merges
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(
+        repo, "pricelog/swap-00000001", set_entries({"deepseek/deepseek-v4-pro": SWAPPED})
+    )
+    commit_on_branch(repo, "pricelog/again-00000002", set_entries({"deepseek/again": RECLAIMED}))
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/swap-00000001", "pricelog/again-00000002"],
+        repo,
+        pr.PrRunner(),
+        "main",
+        push=False,
+    )
+
+    assert [r.branch for r in results] == ["pricelog/swap-00000001", "pricelog/again-00000002"]
+    assert models.load_models(repo / models.MODELS_FILE) == {
+        "deepseek/deepseek-v4-pro": SWAPPED,
+        "deepseek/again": RECLAIMED,
+    }
+    assert git(repo, "status", "--porcelain") == ""
+
+
+def test_merge_names_the_last_branch_dropping_a_stored_claim(tmp_path, monkeypatch):
+    # a dropped claim a later branch claims again and a still later one drops
+    # once more is named against the last branch that dropped it
+    repo, _bare = build_repo(tmp_path)
+    commit_on_branch(
+        repo, "pricelog/swap-00000001", set_entries({"deepseek/deepseek-v4-pro": SWAPPED})
+    )
+    commit_on_branch(repo, "pricelog/again-00000002", set_entries({"deepseek/again": RECLAIMED}))
+    elsewhere = {"vendor": "deepseek", "curated": False, "sources": {"together": ["ds-v4"]}}
+    commit_on_branch(repo, "pricelog/away-00000003", set_entries({"deepseek/again": elsewhere}))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/swap-00000001", "pricelog/again-00000002", "pricelog/away-00000003"],
+            repo,
+            pr.PrRunner(),
+            "main",
+            push=False,
+        )
+
+    assert str(excinfo.value) == dropped_claim_refusal("pricelog/away-00000003")
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+TWO_ENTRY = {"vendor": "vendor", "curated": False, "sources": {"vendor": ["two"]}}
+
+
+def test_merge_names_the_dropped_key_among_two_stored_keys(tmp_path, monkeypatch):
+    # HEAD stores and claims two keys; an edit replacing the second entry's
+    # every source names that key, never the first entry's
+    repo, _bare = build_repo(tmp_path)
+    commit_on_main(repo, append_rows([make_row("vendor", "two", "2026-09-01", 0.7)]))
+    commit_on_main(repo, set_entries({"vendor/two": TWO_ENTRY}))
+    edited = {"vendor": "vendor", "curated": True, "sources": {"reseller": ["two-v2"]}}
+    commit_on_branch(repo, "pricelog/two-00000001", set_entries({"vendor/two": edited}))
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(["pricelog/two-00000001"], repo, pr.PrRunner(), "main", push=False)
+
+    assert str(excinfo.value) == (
+        "branch pricelog/two-00000001: the catalog the burst lands no longer claims"
+        " ('vendor', 'two'), a key HEAD's shards store and HEAD's entry 'vendor/two'"
+        " claims; fix: merge the PR by hand so that tests/test_catalog.py's coverage"
+        " check passes on the result, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+def test_merge_reports_a_refused_entry_before_a_dropped_stored_claim(tmp_path, monkeypatch):
+    # one edit lands a loader-refused entry and drops a stored key's claim; the
+    # entry is the cause reported first, its empty sources the reason no claim
+    # lands
+    repo, _bare = build_repo(tmp_path)
+    emptied = {"vendor": "deepseek", "curated": True, "sources": {}}
+    commit_on_branch(
+        repo, "pricelog/both-00000001", set_entries({"deepseek/deepseek-v4-pro": emptied})
+    )
+    before = git(repo, "rev-parse", "HEAD").strip()
+    calls = merge_spy(monkeypatch)
+
+    with pytest.raises(automerge.AutoMergeError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/both-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    assert str(excinfo.value) == (
+        "branch pricelog/both-00000001: data/catalog/models.json: model"
+        " 'deepseek/deepseek-v4-pro' sources must be a non-empty object; fix: correct"
+        " the named copy on the branch, or close the PR"
+    )
+    assert_refused_before_any_merge(repo, before, calls)
+
+
+@pytest.mark.parametrize(
+    ("head_sources", "edited_sources"),
+    [
+        (
+            {"deepseek": ["deepseek-v4-pro"]},
+            {"deepseek": ["deepseek-v4-pro"], "openrouter": ["deepseek/deepseek-v4-pro"]},
+        ),
+        (
+            {"deepseek": ["deepseek-v4-pro"], "openrouter": ["deepseek/deepseek-v4-pro"]},
+            {"deepseek": ["deepseek-v4-pro"], "together": ["deepseek-ai/deepseek-v4-pro"]},
+        ),
+    ],
+    ids=["adds-a-source", "swaps-another-source"],
+)
+def test_merge_lands_an_edit_keeping_the_stored_keys_claim(tmp_path, head_sources, edited_sources):
+    # an edit that keeps the stored key's claim still claims a pair HEAD
+    # claims, so the union keeps HEAD's entry and the stored key stays claimed
+    repo, _bare = build_repo(tmp_path)
+    head_entry = {**HEAD_ENTRY, "sources": head_sources}
+    commit_on_main(repo, set_entries({"deepseek/deepseek-v4-pro": head_entry}))
+    edited = {**HEAD_ENTRY, "curated": True, "sources": edited_sources}
+    commit_on_branch(
+        repo, "pricelog/keep-00000001", set_entries({"deepseek/deepseek-v4-pro": edited})
+    )
+
+    _sha, results = automerge.merge_branches(
+        ["pricelog/keep-00000001"], repo, pr.PrRunner(), "main", push=False
+    )
+
+    assert [r.branch for r in results] == ["pricelog/keep-00000001"]
+    assert models.load_models(repo / models.MODELS_FILE) == {"deepseek/deepseek-v4-pro": head_entry}
+    assert git(repo, "status", "--porcelain") == ""
 
 
 def test_merge_skips_the_announce_step_for_a_branch_with_no_index(tmp_path):

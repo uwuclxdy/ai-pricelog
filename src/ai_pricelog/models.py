@@ -17,6 +17,7 @@ import re
 from collections.abc import Iterable, Mapping
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from ai_pricelog.store import _atomic_write
 
@@ -53,44 +54,47 @@ def load_models(path: Path, allow_missing: bool = True) -> dict[str, dict[str, o
     models = data.get("models")
     if not isinstance(models, dict):
         raise MappingError(f"models file '{path}': 'models' must be an object")
+    return check_model_entries(models, f"models file '{path}'")
+
+
+def check_model_entries(models: dict[str, Any], label: str) -> dict[str, dict[str, object]]:
+    """Schema-check parsed catalog entries.
+
+    Every error starts with ``label``; every error after the canonical-id
+    check names the model. Each entry's `sources` is normalized in place to
+    lists of ids, the shape every reader of the loaded catalog walks.
+    """
     for canonical, entry in models.items():
         if not isinstance(canonical, str) or not canonical:
-            raise MappingError(f"models file '{path}': canonical id must be a non-empty string")
+            raise MappingError(f"{label}: canonical id must be a non-empty string")
         if not isinstance(entry, dict):
-            raise MappingError(f"models file '{path}': model '{canonical}' must be an object")
+            raise MappingError(f"{label}: model '{canonical}' must be an object")
         unknown = set(entry) - {"name", "vendor", "curated", "sources"}
         if unknown:
             raise MappingError(
-                f"models file '{path}': model '{canonical}' has unknown key '{sorted(unknown)[0]}'"
+                f"{label}: model '{canonical}' has unknown key '{sorted(unknown)[0]}'"
             )
         name = entry.get("name")
         if name is not None and (not isinstance(name, str) or not name):
-            raise MappingError(
-                f"models file '{path}': model '{canonical}' name must be a non-empty string"
-            )
+            raise MappingError(f"{label}: model '{canonical}' name must be a non-empty string")
         vendor = entry.get("vendor")
         if vendor is not None and (not isinstance(vendor, str) or not vendor):
             raise MappingError(
-                f"models file '{path}': model '{canonical}' vendor must be"
-                " a non-empty string or null"
+                f"{label}: model '{canonical}' vendor must be a non-empty string or null"
             )
         if "vendor" not in entry:
-            raise MappingError(f"models file '{path}': model '{canonical}' is missing 'vendor'")
+            raise MappingError(f"{label}: model '{canonical}' is missing 'vendor'")
         curated = entry.get("curated")
         if not isinstance(curated, bool):
-            raise MappingError(
-                f"models file '{path}': model '{canonical}' curated must be a boolean"
-            )
+            raise MappingError(f"{label}: model '{canonical}' curated must be a boolean")
         sources = entry.get("sources")
         if not isinstance(sources, dict) or not sources:
-            raise MappingError(
-                f"models file '{path}': model '{canonical}' sources must be a non-empty object"
-            )
+            raise MappingError(f"{label}: model '{canonical}' sources must be a non-empty object")
         normalized: dict[str, list[str]] = {}
         for source, model_ids in sources.items():
             if not isinstance(source, str) or not source:
                 raise MappingError(
-                    f"models file '{path}': model '{canonical}' sources must map"
+                    f"{label}: model '{canonical}' sources must map"
                     " non-empty source names to non-empty ids"
                 )
             if isinstance(model_ids, str):
@@ -99,12 +103,12 @@ def load_models(path: Path, allow_missing: bool = True) -> dict[str, dict[str, o
                 ids = model_ids
             else:
                 raise MappingError(
-                    f"models file '{path}': model '{canonical}' sources entry"
+                    f"{label}: model '{canonical}' sources entry"
                     f" '{source}' must map to one id or a non-empty list of ids"
                 )
             if not all(isinstance(model_id, str) and model_id for model_id in ids):
                 raise MappingError(
-                    f"models file '{path}': model '{canonical}' sources entry"
+                    f"{label}: model '{canonical}' sources entry"
                     f" '{source}' ids must be non-empty strings"
                 )
             normalized[source] = ids

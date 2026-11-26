@@ -203,6 +203,21 @@ def test_bad_models_file_rejected(tmp_path, overrides, match):
         load_models(models_file(tmp_path, **overrides))
 
 
+def test_model_entry_check_names_the_caller_label():
+    # the check the loader runs, callable on entries parsed elsewhere: each
+    # error starts with the label the caller names the entries by
+    with pytest.raises(MappingError) as excinfo:
+        models.check_model_entries({"m1": {"curated": True, "sources": {"a": "m1"}}}, "branch b")
+    assert str(excinfo.value) == "branch b: model 'm1' is missing 'vendor'"
+
+
+def test_model_entry_check_returns_the_entries_with_their_ids_as_lists():
+    entries = {"m1": {"vendor": "v1", "curated": True, "sources": {"a": "m1", "b": ["m1-b"]}}}
+    assert models.check_model_entries(entries, "label") == {
+        "m1": {"vendor": "v1", "curated": True, "sources": {"a": ["m1"], "b": ["m1-b"]}}
+    }
+
+
 def test_load_aliases_accepts_dated_records(tmp_path):
     path = aliases_file(
         tmp_path,

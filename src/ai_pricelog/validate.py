@@ -15,12 +15,17 @@ import functools
 import json
 import math
 import re
+from datetime import date
 from pathlib import Path
 from typing import Any, NamedTuple
 
 
 class ValidationError(ValueError):
     """a row failed validation; the message names the field, bad value, fix."""
+
+
+# the contract's date pattern is a shape check: ASCII digits, then the calendar
+_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
 def validate_row(row: dict[str, Any], keys: SchemaKeys) -> None:
@@ -51,18 +56,10 @@ def validate_row(row: dict[str, Any], keys: SchemaKeys) -> None:
                 f"row field 'modality' has bad value {modality!r};"
                 f" fix: use one of {sorted(keys.modalities)!r}"
             )
-    observed = row["observed_at"]
-    if not isinstance(observed, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", observed) is None:
-        raise ValidationError(
-            f"row field 'observed_at' has bad value {observed!r}; fix: YYYY-MM-DD"
-        )
+    _check_date("observed_at", row["observed_at"])
     effective = row.get("effective_at")
-    if effective is not None and (
-        not isinstance(effective, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", effective) is None
-    ):
-        raise ValidationError(
-            f"row field 'effective_at' has bad value {effective!r}; fix: YYYY-MM-DD"
-        )
+    if effective is not None:
+        _check_date("effective_at", effective)
     if "removed" in row:
         removed = row["removed"]
         if not isinstance(removed, bool) or removed is not True:
@@ -137,6 +134,24 @@ def validate_row(row: dict[str, Any], keys: SchemaKeys) -> None:
             )
         for entry in overrides:
             _check_override(entry, keys)
+
+
+def _check_date(field: str, value: Any) -> None:
+    """A row date: ASCII digits in YYYY-MM-DD form, naming a real calendar day.
+
+    The schema's pattern pins the shape only, so 2026-02-30 or a fullwidth
+    digit spelling would otherwise land in the append-only store.
+    """
+    if isinstance(value, str) and _DATE.fullmatch(value) is not None:
+        try:
+            date.fromisoformat(value)
+            return
+        except ValueError:
+            pass
+    raise ValidationError(
+        f"row field '{field}' has bad value {value!r};"
+        " fix: ASCII digits in a YYYY-MM-DD date that exists on the calendar"
+    )
 
 
 def _check_override(entry: Any, keys: SchemaKeys) -> None:
@@ -287,13 +302,8 @@ def _check_provenance(provenance: Any, currency: Any, keys: SchemaKeys) -> None:
             "row field 'provenance.fx_rate' and 'provenance.fx_rate_date' are only valid"
             " with a non-USD 'currency'; fix: drop them or set currency"
         )
-    if fx_rate_date is not None and (
-        not isinstance(fx_rate_date, str)
-        or re.fullmatch(r"\d{4}-\d{2}-\d{2}", fx_rate_date) is None
-    ):
-        raise ValidationError(
-            f"row field 'provenance.fx_rate_date' has bad value {fx_rate_date!r}; fix: YYYY-MM-DD"
-        )
+    if fx_rate_date is not None:
+        _check_date("provenance.fx_rate_date", fx_rate_date)
 
 
 def _check_container_rate(container: str, field: str, value: Any) -> None:
