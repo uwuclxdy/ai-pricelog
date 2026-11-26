@@ -47,8 +47,9 @@ rows is a prop-less shell and contributes no table; a call whose props do
 not parse raises. the rendered titles (Model, Input, Output, Cached Input,
 5m writes, 1h writes) fold onto the markdown vocabulary before the shared
 read, and a cell or title wrapped in _jsx/_jsxs carries its text in a
-backtick children string. the fallback fires when the export carries no
-table with pricing columns. a non-pricing table the export does carry falls
+backtick children string. an export DocTable whose rows carry no data is
+dropped, so the fallback fires when the export carries no table with
+pricing columns and a data row. a non-pricing table the export does carry falls
 back the same way; when the rendered surfaces price nothing either, an
 export that carried such a table keeps the no Model pricing table raise. a
 pricing candidate carries a
@@ -185,8 +186,8 @@ def _page_text(url: str) -> str:
 def pricing_tables(cfg: ProviderCfg) -> tuple[list[tuple[list[str], list[list[str]]]], str]:
     """the model-inference page's pricing tables and the url they came from.
 
-    the markdown export's tables when it carries one with pricing columns,
-    else the rendered page's flight payload, else its manifest's compiled MDX
+    the markdown export's tables when it carries one with pricing columns
+    and a data row, else the rendered page's flight payload, else its manifest's compiled MDX
     source; a page whose flight payload and manifest both carry a pricing
     table raises instead of reading either one silently. when nothing prices,
     an export that carried an incidental table keeps the
