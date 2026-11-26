@@ -96,8 +96,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "5f67a46496edeb762bec659242771de754f138997cec127aa4c3b8b2dd7ba86f",
-      "fetched": "2026-11-25T22:00:19Z"
+      "sha256": "c9263b3d66ddab9f833f39cff0df32c041d9e479a6abeb91a341eb29c9814830",
+      "fetched": "2026-11-26T06:00:18Z"
     }
   },
   "novita": {
