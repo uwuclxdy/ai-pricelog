@@ -2810,12 +2810,30 @@
       },
       "vendor": "zai"
     },
+    "fireworks/glm-5.3-flash-flex": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "glm-5.3-flash-flex"
+        ]
+      },
+      "vendor": "zai"
+    },
     "fireworks/glm-5.3-flash-us": {
       "curated": true,
       "name": "GLM 5.3 Flash (US)",
       "sources": {
         "fireworks": [
           "glm-5.3-flash-us"
+        ]
+      },
+      "vendor": "zai"
+    },
+    "fireworks/glm-5.3-flex": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "glm-5.3-flex"
         ]
       },
       "vendor": "zai"
@@ -2898,6 +2916,15 @@
       "sources": {
         "fireworks": [
           "kimi-k3.1-pro"
+        ]
+      },
+      "vendor": "moonshot"
+    },
+    "fireworks/kimi-k3.1-pro-ultra-fast-preview": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "kimi-k3.1-pro-ultra-fast-preview"
         ]
       },
       "vendor": "moonshot"
