@@ -149,7 +149,7 @@ class PrRunner:
                 continue
             break
         raise PrError(
-            f"command {cmd} failed: {_stderr_tail(result.stderr)}{refusal}",
+            f"command {cmd} failed: {_failure_tail(result.stderr, result.stdout)}{refusal}",
             stderr=result.stderr,
             stdout=result.stdout,
         )
@@ -733,6 +733,16 @@ def ensure_author(slot: Path, runner: PrRunner) -> None:
     runner.run(["git", "config", "user.email", f"{login}@users.noreply.github.com"], cwd=slot)
 
 
-def _stderr_tail(stderr: str) -> str:
-    tail = stderr.strip()[-500:]
-    return tail if tail else "(no stderr)"
+def _failure_tail(stderr: str, stdout: str) -> str:
+    """The last 500 characters of each stream the failed command printed.
+
+    git prints a check's findings (a conflict marker, a whitespace error) on
+    stdout with an empty stderr, so the message must carry both.
+    """
+    stderr_tail = stderr.strip()[-500:]
+    stdout_tail = stdout.strip()[-500:]
+    if stderr_tail and stdout_tail:
+        return f"{stderr_tail}; stdout: {stdout_tail}"
+    if stdout_tail:
+        return f"(no stderr); stdout: {stdout_tail}"
+    return stderr_tail or "(no stderr, no stdout)"

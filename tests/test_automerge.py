@@ -1685,6 +1685,42 @@ def test_merge_refuses_a_whitespace_error_in_a_channel_file_no_index_resolves(
     assert_refused_before_any_merge(repo, before, calls)
 
 
+def test_merge_refusal_carries_the_staged_checks_conflict_marker_report(tmp_path):
+    # a channel file both sides change with no index in effect lands as git
+    # merged it, so the staged check sees the markers; git prints that report on
+    # stdout only, and the refusal must carry it or names no line to fix
+    repo, _bare = build_repo(tmp_path)
+    git(repo, "rm", "-q", "state/announce/index.json")
+    git(repo, "commit", "-m", "drop the index from the base")
+    path = "state/announce/deepseek/notes.md"
+    (repo / path).parent.mkdir(parents=True, exist_ok=True)
+    (repo / path).write_text("base prose\n", encoding="utf-8")
+    git(repo, "add", "--", path)
+    git(repo, "commit", "-m", "base prose")
+    git(repo, "push", "origin", "main")
+    commit_on_branch(repo, "pricelog/marker-00000001", channel_file(path, "branch prose\n"))
+    # the base moves the same line after the branch was cut, so the merge conflicts
+    (repo / path).write_text("newer base prose\n", encoding="utf-8")
+    git(repo, "add", "--", path)
+    git(repo, "commit", "-m", "newer base prose")
+    git(repo, "push", "origin", "main")
+
+    with pytest.raises(pr.PrError) as excinfo:
+        automerge.merge_branches(
+            ["pricelog/marker-00000001"], repo, pr.PrRunner(), "main", push=False
+        )
+
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--check"], cwd=repo, capture_output=True, text=True
+    )
+    assert staged.returncode == 2
+    assert f"{path}:1: leftover conflict marker" in staged.stdout
+    assert str(excinfo.value) == (
+        "command ['git', 'diff', '--cached', '--check'] failed: (no stderr);"
+        f" stdout: {staged.stdout.strip()[-500:]}"
+    )
+
+
 def test_merge_lands_a_whitespace_error_in_a_channel_file_its_index_drops(tmp_path):
     # a channel file the branch's own index does not name is pruned by the
     # announce step and never lands, so its bytes take no whitespace check

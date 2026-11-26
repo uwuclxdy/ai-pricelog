@@ -846,6 +846,65 @@ def test_runner_failure_without_a_refused_retry_keeps_the_plain_message(
     assert str(excinfo.value) == f"command {cmd} failed: {stderr.strip()}"
 
 
+def test_runner_failure_with_only_stdout_carries_its_tail(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    # git's --check findings print on stdout with an empty stderr, so a refusal
+    # that drops them is undiagnosable after the fact; the head marker proves the
+    # bound keeps the tail's end, not the stream's front
+    cmd = ["git", "diff", "--cached", "--check"]
+    stdout = "H" + "m" * 499 + "T\n"
+    _scripted_subprocess(monkeypatch, [(2, stdout, "")])
+    with pytest.raises(pr.PrError) as excinfo:
+        pr.PrRunner().run(cmd, tmp_path)
+    assert str(excinfo.value) == f"command {cmd} failed: (no stderr); stdout: {'m' * 499}T"
+    assert excinfo.value.stdout == stdout
+    assert excinfo.value.stderr == ""
+
+
+def test_runner_failure_with_a_long_stderr_keeps_its_tail(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    # the same 500-character bound on the stderr half; the head marker never renders
+    cmd = ["git", "diff", "--cached", "--check"]
+    stderr = "H" + "m" * 499 + "T\n"
+    _scripted_subprocess(monkeypatch, [(1, "", stderr)])
+    with pytest.raises(pr.PrError) as excinfo:
+        pr.PrRunner().run(cmd, tmp_path)
+    assert str(excinfo.value) == f"command {cmd} failed: {'m' * 499}T"
+    assert excinfo.value.stderr == stderr
+    assert excinfo.value.stdout == ""
+
+
+def test_runner_failure_with_both_streams_keeps_the_stderr_tail_and_adds_stdout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    cmd = ["git", "diff", "--cached", "--check"]
+    stderr = "warning: both sides changed the file\n"
+    stdout = 'state/absence/deepseek.json:3: trailing whitespace.\n+{"a":"b"} \n'
+    _scripted_subprocess(monkeypatch, [(2, stdout, stderr)])
+    with pytest.raises(pr.PrError) as excinfo:
+        pr.PrRunner().run(cmd, tmp_path)
+    assert str(excinfo.value) == (
+        f"command {cmd} failed: warning: both sides changed the file;"
+        ' stdout: state/absence/deepseek.json:3: trailing whitespace.\n+{"a":"b"}'
+    )
+    assert excinfo.value.stderr == stderr
+    assert excinfo.value.stdout == stdout
+
+
+def test_runner_failure_with_both_streams_empty_names_both(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    cmd = ["git", "diff", "--cached", "--check"]
+    _scripted_subprocess(monkeypatch, [(1, "", "")])
+    with pytest.raises(pr.PrError) as excinfo:
+        pr.PrRunner().run(cmd, tmp_path)
+    assert str(excinfo.value) == f"command {cmd} failed: (no stderr, no stdout)"
+    assert excinfo.value.stderr == ""
+    assert excinfo.value.stdout == ""
+
+
 def test_spec_body_flags_a_cache_read_above_input():
     # baseten beam landed 2026-10-16 with cache_read 4.3 above input 1.3
     # (e0f404c, #548); the body must flag the row needs-human so a reviewer
