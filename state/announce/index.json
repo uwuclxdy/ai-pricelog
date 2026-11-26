@@ -72,8 +72,8 @@
   "mistral": {
     "https://docs.mistral.ai/resources/changelogs": {
       "file": "state/announce/mistral/changelogs.md",
-      "sha256": "45d4a2ebfa0d37fa71f844db4a39d8bc7c77d3b35d48845fecd1730b6e7d32d7",
-      "fetched": "2026-11-16T14:44:42Z"
+      "sha256": "851013873562c8a6d3eca23b845bdebc1dac20c5e0a49a53573b7cb3e646aa23",
+      "fetched": "2026-11-26T00:00:19Z"
     },
     "https://mistral.ai/news/rss": {
       "file": "state/announce/mistral/rss.md",
