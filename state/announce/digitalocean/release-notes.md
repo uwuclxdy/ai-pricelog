@@ -13,7 +13,14 @@ Beginning 15 October 2026 for accounts that have never created a PostgreSQL or M
 On 15 October 2026, Advanced Edition adds Basic - Shared CPU plans with 8 GiB to 64 GiB of RAM.
 Existing clusters are not affected.
 Learn more on PostgreSQL and MySQL Plan Changes Beginning 15 October 2026 .
-November 2026 24 November In public preview, agents in DigitalOcean Harness Runtime sessions can deploy the apps they build to App Platform.
+November 2026 26 November You can add, change, or remove custom MCP servers on an existing DigitalOcean Harness Runtime session without creating a new session.
+The agent restarts between turns to apply the change, and the session keeps its conversation history and workspace files.
+Changing custom MCP servers is enabled per team.
+For more information, see Change Custom MCP Servers .
+You can replace the inline skills of an existing DigitalOcean Harness Runtime session without creating a new session.
+Skills updates apply on Claude Code, Codex, and OpenCode sessions, reload without restarting the agent, and are enabled per team.
+For more information, see How to Update the Settings of a Session .
+24 November In public preview, agents in DigitalOcean Harness Runtime sessions can deploy the apps they build to App Platform.
 When you add the App Builder pack to an environment, the agent proposes a deployment plan, then pushes the code to GitHub and creates or updates the app after you approve it.
 See How to Deploy Apps from Harness Runtime Sessions .
 23 November The following open-source models are deprecated from DigitalOcean Inference as of 23 November 2026: DeepSeek V4 Pro MiMo V2.5 Pro DeepSeek V3.2 Migrate DeepSeek V4 Pro to DeepSeek V4 Pro 0813 ( deepseek-v4-pro-0813 ), MiMo V2.5 Pro to GLM-5.3 ( glm-5.3 ), and DeepSeek V3.2 to DeepSeek V4.1 Flash 1017 ( deepseek-v4.1-flash-1017 ) to avoid service disruption.
@@ -327,7 +334,6 @@ The plugin uses Spegel to mirror container image layers across cluster nodes, so
 This reduces the number of pulls that leave the cluster, lowers your exposure to external registries’ rate limits, and speeds up image pulls on clusters that reuse the same images across many nodes.
 The plugin is disabled by default and is available on clusters running Kubernetes 1.36 or later.
 The following Anthropic model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : Claude Fable 5.1 For more information, see the Available Models page .
-August 2026 28 August The following Z.ai model is now available on DigitalOcean Inference for serverless inference , Agent Development Kit, and agents : GLM-5.3 For more information, see the Available Models page .
 Release Notes Regional Availability Accounts Teams Organizations Billing AI Assistant public Support DDoS Protection Product Lifecycle Stages Resource Limits Service-Level Agreements Security on DigitalOcean DigitalOcean IP ranges (CSV) In this article...
 Release Notes Company About Careers Blog Docs Docs Home API Reference CLI Reference Release Notes llms.txt Trust Platform Community Tutorials Q&A Write for DOnations Currents Research Legal Code of Conduct Support Support Center Report Abuse © 2026 DigitalOcean, LLC.
 All rights reserved We can't find any results for your search.
