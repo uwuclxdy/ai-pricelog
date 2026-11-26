@@ -2866,6 +2866,15 @@
       },
       "vendor": null
     },
+    "fireworks/inkling-2-mini": {
+      "curated": false,
+      "sources": {
+        "fireworks": [
+          "inkling-2-mini"
+        ]
+      },
+      "vendor": "thinkingmachines"
+    },
     "fireworks/inkling-2-small": {
       "curated": false,
       "sources": {
