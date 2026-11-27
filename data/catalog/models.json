@@ -7984,6 +7984,15 @@
       },
       "vendor": "inclusionai"
     },
+    "openrouter/inclusionai/ling-3.2-flash": {
+      "curated": false,
+      "sources": {
+        "openrouter": [
+          "inclusionai/ling-3.2-flash"
+        ]
+      },
+      "vendor": "inclusionai"
+    },
     "openrouter/inclusionai/ling-3.2-flash:free": {
       "curated": false,
       "sources": {
