@@ -65,8 +65,8 @@
   "xai": {
     "https://docs.x.ai/developers/release-notes": {
       "file": "state/announce/xai/release-notes.md",
-      "sha256": "fc918b5608451e26e322b8bf9c487f3ebdbe4846fc6e80122769e1bc4c2aadd3",
-      "fetched": "2026-11-23T20:00:23Z"
+      "sha256": "09351de3b38ac2851032c269d8dad9b5e92828c17fa27eac9abce166049ddded",
+      "fetched": "2026-11-27T01:00:16Z"
     }
   },
   "mistral": {
@@ -96,8 +96,8 @@
     },
     "https://www.together.ai/blog/rss.xml": {
       "file": "state/announce/together/rss-xml.md",
-      "sha256": "c9263b3d66ddab9f833f39cff0df32c041d9e479a6abeb91a341eb29c9814830",
-      "fetched": "2026-11-26T06:00:18Z"
+      "sha256": "2933dd09d2cd1269406a45fb965df347aa8c2d284a2fac37f561a9a6223e8838",
+      "fetched": "2026-11-27T01:00:16Z"
     }
   },
   "novita": {
