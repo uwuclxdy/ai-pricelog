@@ -1,1 +1,1 @@
-{"microsoft/mai-image-2.5": {"absent_runs": 2, "since": "2026-11-27"}, "microsoft/mai-image-2.5-pro": {"absent_runs": 2, "since": "2026-11-27"}}
+{"qwen/qwen3-235b-a22b-thinking-2507": {"absent_runs": 1, "since": "2026-11-28"}, "recraft/recraft-v4.1-flash-v2:free": {"absent_runs": 1, "since": "2026-11-28"}}
